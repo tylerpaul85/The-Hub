@@ -1,0 +1,1 @@
+ALTER TABLE public.content_items ADD COLUMN IF NOT EXISTS note_attachments jsonb NOT NULL DEFAULT '[]'::jsonb;

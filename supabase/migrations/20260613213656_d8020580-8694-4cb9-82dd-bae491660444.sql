@@ -1,0 +1,2 @@
+ALTER TABLE public.content_items ADD COLUMN IF NOT EXISTS image_urls text[] NOT NULL DEFAULT '{}';
+UPDATE public.content_items SET image_urls = ARRAY[thumbnail_url] WHERE thumbnail_url IS NOT NULL AND (image_urls IS NULL OR array_length(image_urls, 1) IS NULL);

@@ -1,0 +1,2 @@
+DROP POLICY IF EXISTS "Owner or admin can update listings" ON public.toolbox_listings;
+CREATE POLICY "Authenticated can update listings" ON public.toolbox_listings FOR UPDATE TO authenticated USING (true) WITH CHECK (true);

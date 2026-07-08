@@ -1,0 +1,1 @@
+ALTER TABLE public.marketing_requests ADD COLUMN IF NOT EXISTS closing_gift jsonb;

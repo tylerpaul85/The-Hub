@@ -1,0 +1,2 @@
+DROP INDEX IF EXISTS public.content_archive_source_content_id_key;
+ALTER TABLE public.content_archive ADD CONSTRAINT content_archive_source_content_id_key UNIQUE (source_content_id);

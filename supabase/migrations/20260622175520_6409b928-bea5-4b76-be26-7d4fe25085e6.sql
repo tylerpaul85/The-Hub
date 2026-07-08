@@ -1,0 +1,1 @@
+ALTER TABLE public.scorecard_measurables ALTER COLUMN weekly_target TYPE text USING weekly_target::text;
