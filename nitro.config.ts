@@ -1,6 +1,4 @@
-import { defineNitroConfig } from "nitropack";
-
-export default defineNitroConfig({
+export default {
   externals: {
     external: [
       "@tanstack/react-router",
@@ -28,4 +26,4 @@ export default defineNitroConfig({
       "@radix-ui/react-menu",
     ],
   },
-});
+};
