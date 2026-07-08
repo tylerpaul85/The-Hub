@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Send, Images, ChevronRight, Share, Plus, Gift, CalendarClock } from "lucide-react";
-import logo from "@/assets/msreg-logo.png.asset.json";
+import logo from "@/assets/msreg-logo.png";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/agents/")({
@@ -41,7 +41,7 @@ function AgentsHome() {
     <div className="min-h-screen bg-background px-4 py-8 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
       <div className="max-w-3xl mx-auto">
         <header className="text-center mb-8 sm:mb-12">
-          <img src={logo.url} alt="Matt Smith Real Estate Group" className="h-24 sm:h-28 w-auto mx-auto" />
+          <img src={logo} alt="Matt Smith Real Estate Group" className="h-24 sm:h-28 w-auto mx-auto" />
           <p className="text-[11px] uppercase tracking-[0.2em] text-gold/80 mt-3">Agent Hub</p>
           <h1 className="text-2xl sm:text-3xl font-semibold mt-2">Welcome</h1>
           <p className="text-sm text-muted-foreground mt-2">What do you need today?</p>

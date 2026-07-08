@@ -14,7 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
-import favicon from "@/assets/msreg-logo.png.asset.json";
+import favicon from "@/assets/msreg-logo.png";
 import { registerServiceWorker } from "@/lib/register-sw";
 import { IosInstallPrompt } from "@/components/ios-install-prompt";
 
@@ -77,7 +77,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", type: "image/png", href: favicon.url },
+      { rel: "icon", type: "image/png", href: favicon },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
       { rel: "manifest", href: "/manifest.webmanifest" },
     ],

@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { isImageUrl } from "@/lib/sanitize-filename";
 import { DownloadPhotosButton } from "@/components/download-photos-button";
-import logo from "@/assets/msreg-logo.png.asset.json";
+import logo from "@/assets/msreg-logo.png";
 import {
   Search, Download, Copy, ExternalLink, ArrowLeft, X, Image as ImageIcon,
   FileText, Video as VideoIcon, Home, Lock, Loader2, Package, User,
@@ -99,7 +99,7 @@ function Gate({ onUnlock }: { onUnlock: (token: string) => void }) {
     <div className="min-h-screen bg-background flex items-center justify-center px-4 pt-[max(1rem,env(safe-area-inset-top))]">
       <Card className="w-full max-w-sm p-6 space-y-5">
         <div className="flex flex-col items-center text-center gap-3">
-          <img src={logo.url} alt="MSREG" className="h-20 w-auto" />
+          <img src={logo} alt="MSREG" className="h-20 w-auto" />
           <div>
             <h1 className="text-lg font-semibold">Agent Toolbox</h1>
             <p className="text-xs text-muted-foreground mt-1">Matt Smith Real Estate Group</p>
@@ -141,7 +141,7 @@ function Toolbox({ token, onLock }: { token: string; onLock: () => void }) {
       <header className="sticky top-0 z-30 bg-sidebar/95 backdrop-blur border-b border-border pt-[max(0.5rem,env(safe-area-inset-top))]">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
-            <img src={logo.url} alt="MSREG" className="h-9 w-auto shrink-0" />
+            <img src={logo} alt="MSREG" className="h-9 w-auto shrink-0" />
             <div className="min-w-0">
               <div className="font-semibold text-sm truncate">Agent Toolbox</div>
               <div className="text-[10px] uppercase tracking-[0.15em] text-gold/80 truncate">Matt Smith Real Estate Group</div>

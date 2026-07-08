@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import logo from "@/assets/msreg-logo.png.asset.json";
+import logo from "@/assets/msreg-logo.png";
 import { NotificationBell } from "@/components/notification-bell";
 import { QuickHeadlineButton } from "@/components/quick-headline-button";
 
@@ -48,7 +48,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex bg-background">
       <aside className="hidden md:flex w-60 flex-col bg-sidebar border-r border-sidebar-border">
         <div className="px-4 py-5 border-b border-sidebar-border flex flex-col items-center gap-2">
-          <img src={logo.url} alt="Matt Smith Real Estate Group" className="h-20 w-auto" />
+          <img src={logo} alt="Matt Smith Real Estate Group" className="h-20 w-auto" />
           <div className="text-[10px] uppercase tracking-[0.18em] text-gold/80">Marketing Department</div>
         </div>
 
@@ -172,7 +172,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex-1 flex flex-col min-w-0">
         <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-sidebar/60 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="md:hidden flex items-center gap-2">
-            <img src={logo.url} alt="MSREG" className="h-8 w-auto" />
+            <img src={logo} alt="MSREG" className="h-8 w-auto" />
             <span className="font-semibold text-sm">Marketing Department</span>
           </div>
           <div className="hidden md:block" />

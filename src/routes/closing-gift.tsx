@@ -13,7 +13,7 @@ import {
   submitClosingGiftRequest,
   listClosingGiftInventory,
 } from "@/lib/closing-gift.functions";
-import logo from "@/assets/msreg-logo.png.asset.json";
+import logo from "@/assets/msreg-logo.png";
 
 const SECURITY_CODE = "MSREG2026";
 const SIZES = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"] as const;
@@ -351,7 +351,7 @@ function Shell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background px-4 py-10 pt-[max(2rem,env(safe-area-inset-top))]">
       <div className="max-w-2xl mx-auto">
         <header className="text-center mb-8">
-          <img src={logo.url} alt="MSREG" className="h-20 w-auto mx-auto" />
+          <img src={logo} alt="MSREG" className="h-20 w-auto mx-auto" />
           <p className="text-[11px] uppercase tracking-[0.2em] text-gold/80 mt-3">Closing Gift Request</p>
           <h1 className="text-2xl font-semibold mt-2 flex items-center justify-center gap-2">
             <Gift className="h-6 w-6 text-gold" /> Request Closing Gift

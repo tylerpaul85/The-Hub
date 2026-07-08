@@ -12,7 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { CheckCircle2 } from "lucide-react";
-import logo from "@/assets/msreg-logo.png.asset.json";
+import logo from "@/assets/msreg-logo.png";
 import { checkRateLimit } from "@/lib/audit.functions";
 
 const ALLOWED_UPLOAD_MIME = new Set([
@@ -160,7 +160,7 @@ function PublicRequestPage() {
     return (
       <main className="min-h-screen flex items-center justify-center bg-background px-4 py-12">
         <div className="max-w-md w-full bg-card border border-border rounded-lg p-8 text-center">
-          <img src={logo.url} alt="Matt Smith Real Estate Group" className="h-20 w-auto mx-auto mb-6" />
+          <img src={logo} alt="Matt Smith Real Estate Group" className="h-20 w-auto mx-auto mb-6" />
           <CheckCircle2 className="h-12 w-12 text-gold mx-auto mb-4" />
           <h1 className="text-2xl font-semibold">Request received</h1>
           <p className="mt-3 text-sm text-muted-foreground">
@@ -188,7 +188,7 @@ function PublicRequestPage() {
       <div className="max-w-2xl mx-auto">
         <AgentHubBackLink />
         <header className="text-center mb-8">
-          <img src={logo.url} alt="Matt Smith Real Estate Group" className="h-24 w-auto mx-auto mb-3" />
+          <img src={logo} alt="Matt Smith Real Estate Group" className="h-24 w-auto mx-auto mb-3" />
           <h1 className="text-2xl font-semibold">Agent Marketing Request</h1>
           <p className="text-sm text-muted-foreground mt-1">Tell the marketing team what you need.</p>
         </header>

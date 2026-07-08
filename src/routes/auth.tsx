@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import logo from "@/assets/msreg-logo.png.asset.json";
+import logo from "@/assets/msreg-logo.png";
 import { logAuthEvent, checkRateLimit } from "@/lib/audit.functions";
 import { ParticleConstellation } from "@/components/particle-constellation";
 
@@ -88,7 +88,7 @@ function AuthPage() {
       <ParticleConstellation />
       <div className="relative z-10 w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <img src={logo.url} alt="Matt Smith Real Estate Group" className="h-32 w-auto mb-4" />
+          <img src={logo} alt="Matt Smith Real Estate Group" className="h-32 w-auto mb-4" />
           <h1 className="text-xl font-semibold tracking-tight text-center">Content Hub</h1>
           <p className="text-sm text-muted-foreground mt-1">Marketing operations dashboard</p>
         </div>

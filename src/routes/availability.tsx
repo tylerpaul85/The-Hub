@@ -30,7 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import logo from "@/assets/msreg-logo.png.asset.json";
+import logo from "@/assets/msreg-logo.png";
 import {
   publicListActiveAgents,
   publicListAvailability,
@@ -162,7 +162,7 @@ function PublicAvailabilityPage() {
           </Link>
         </div>
         <header className="text-center mb-8">
-          <img src={logo.url} alt="MSREG" className="h-20 w-auto mx-auto" />
+          <img src={logo} alt="MSREG" className="h-20 w-auto mx-auto" />
           <p className="text-[11px] uppercase tracking-[0.2em] text-gold/80 mt-3">Agent Hub</p>
           <h1 className="text-2xl sm:text-3xl font-semibold mt-2">Submit Availability</h1>
           <p className="text-sm text-muted-foreground mt-2">

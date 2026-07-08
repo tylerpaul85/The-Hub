@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Lock, Loader2 } from "lucide-react";
-import logo from "@/assets/msreg-logo.png.asset.json";
+import logo from "@/assets/msreg-logo.png";
 import { verifyToolboxCode } from "@/lib/toolbox-public.functions";
 
 export const Route = createFileRoute("/agents")({
@@ -105,7 +105,7 @@ function Gate({ onUnlock }: { onUnlock: (token: string) => void }) {
     <div className="min-h-screen bg-background flex items-center justify-center px-4 pt-[max(1rem,env(safe-area-inset-top))]">
       <Card className="w-full max-w-sm p-6 space-y-5 border-gold/20">
         <div className="flex flex-col items-center text-center gap-3">
-          <img src={logo.url} alt="Matt Smith Real Estate Group" className="h-24 w-auto" />
+          <img src={logo} alt="Matt Smith Real Estate Group" className="h-24 w-auto" />
           <div>
             <h1 className="text-lg font-semibold">Agent Hub</h1>
             <p className="text-[11px] uppercase tracking-[0.18em] text-gold/80 mt-1">

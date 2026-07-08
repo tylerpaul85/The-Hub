@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, LogIn, Users } from "lucide-react";
-import logo from "@/assets/msreg-logo.png.asset.json";
+import logo from "@/assets/msreg-logo.png";
 
 export const Route = createFileRoute("/")({
   ssr: false,
@@ -42,7 +42,7 @@ function RootSplash() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-10 pt-[max(2rem,env(safe-area-inset-top))]">
       <div className="w-full max-w-md text-center">
-        <img src={logo.url} alt="Matt Smith Real Estate Group" className="h-24 w-auto mx-auto mb-4" />
+        <img src={logo} alt="Matt Smith Real Estate Group" className="h-24 w-auto mx-auto mb-4" />
         <p className="text-[11px] uppercase tracking-[0.2em] text-gold/80">Matt Smith Real Estate Group</p>
         <h1 className="text-2xl font-semibold mt-2">Welcome</h1>
         <p className="text-sm text-muted-foreground mt-2">Where would you like to go?</p>
