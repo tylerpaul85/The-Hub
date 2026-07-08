@@ -6,6 +6,22 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+// A custom Vite plugin to strip "use client" directives from node_modules files to prevent Rollup warnings/errors.
+const removeUseClientPlugin = () => ({
+  name: "remove-use-client",
+  transform(code: string, id: string) {
+    if (id.includes("node_modules")) {
+      if (code.includes('"use client"') || code.includes("'use client'")) {
+        return {
+          code: code.replace(/"use client";?|'use client';?/g, ""),
+          map: null,
+        };
+      }
+    }
+    return null;
+  },
+});
+
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
@@ -13,39 +29,7 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
-    ssr: {
-      external: [
-        "sonner",
-        "@tanstack/react-router",
-        "@tanstack/react-query",
-        "@radix-ui/react-accordion",
-        "@radix-ui/react-alert-dialog",
-        "@radix-ui/react-aspect-ratio",
-        "@radix-ui/react-avatar",
-        "@radix-ui/react-checkbox",
-        "@radix-ui/react-collapsible",
-        "@radix-ui/react-context-menu",
-        "@radix-ui/react-dialog",
-        "@radix-ui/react-dropdown-menu",
-        "@radix-ui/react-hover-card",
-        "@radix-ui/react-label",
-        "@radix-ui/react-menubar",
-        "@radix-ui/react-navigation-menu",
-        "@radix-ui/react-popover",
-        "@radix-ui/react-progress",
-        "@radix-ui/react-radio-group",
-        "@radix-ui/react-scroll-area",
-        "@radix-ui/react-select",
-        "@radix-ui/react-separator",
-        "@radix-ui/react-slider",
-        "@radix-ui/react-slot",
-        "@radix-ui/react-switch",
-        "@radix-ui/react-tabs",
-        "@radix-ui/react-toggle",
-        "@radix-ui/react-toggle-group",
-        "@radix-ui/react-tooltip",
-      ],
-    },
+    plugins: [removeUseClientPlugin()],
     build: {
       rollupOptions: {
         onwarn(warning, warn) {
