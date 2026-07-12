@@ -67,7 +67,7 @@ function AgentsHome() {
             subtitle="Order shirts for your clients (access code required)"
           />
           <HubCard
-            href="https://www.listings.msreginternal.com"
+            href="https://listings.msreginternal.com/"
             icon={<Signpost className="h-8 w-8" />}
             title="Listing Signs"
             subtitle="Check in or check out signs"
