@@ -77,6 +77,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
+      if (event === "PASSWORD_RECOVERY") {
+        if (typeof window !== "undefined" && window.location.pathname !== "/reset-password") {
+          window.location.assign("/reset-password");
+          return;
+        }
+      }
       if (s?.user) {
         // Only refetch roles on identity transitions; skip TOKEN_REFRESHED/INITIAL_SESSION to avoid extra DB calls.
         if (event === "SIGNED_IN" || event === "USER_UPDATED") {
