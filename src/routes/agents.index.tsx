@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Send, Images, ChevronRight, Share, Plus, Gift, CalendarClock } from "lucide-react";
+import { Send, Images, ChevronRight, Share, Plus, Gift, Signpost } from "lucide-react";
 import logo from "@/assets/msreg-logo.png";
 import { Button } from "@/components/ui/button";
 
@@ -67,10 +67,10 @@ function AgentsHome() {
             subtitle="Order shirts for your clients (access code required)"
           />
           <HubCard
-            to="/availability"
-            icon={<CalendarClock className="h-8 w-8" />}
-            title="Submit Availability"
-            subtitle="Let us know when you're unavailable"
+            href="https://www.listings.msreginternal.com"
+            icon={<Signpost className="h-8 w-8" />}
+            title="Listing Signs"
+            subtitle="Check in or check out signs"
           />
         </div>
 
@@ -100,32 +100,53 @@ function AgentsHome() {
 
 function HubCard({
   to,
+  href,
   icon,
   title,
   subtitle,
 }: {
-  to: string;
+  to?: string;
+  href?: string;
   icon: React.ReactNode;
   title: string;
   subtitle: string;
 }) {
+  const className = "group relative block rounded-2xl border border-gold/30 bg-card p-6 sm:p-8 min-h-[180px] sm:min-h-[220px] hover:border-gold hover:bg-card/80 active:scale-[0.99] transition-all shadow-lg";
+
+  const content = (
+    <div className="flex flex-col h-full">
+      <div className="h-14 w-14 rounded-xl bg-gold/15 text-gold flex items-center justify-center mb-4 group-hover:bg-gold group-hover:text-navy transition-colors">
+        {icon}
+      </div>
+      <div className="flex-1">
+        <h2 className="text-lg sm:text-xl font-semibold leading-tight">{title}</h2>
+        <p className="text-sm text-muted-foreground mt-1.5">{subtitle}</p>
+      </div>
+      <div className="mt-4 flex items-center gap-1 text-xs text-gold font-medium">
+        Open <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+      </div>
+    </div>
+  );
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={className}
+      >
+        {content}
+      </a>
+    );
+  }
+
   return (
     <Link
-      to={to}
-      className="group relative block rounded-2xl border border-gold/30 bg-card p-6 sm:p-8 min-h-[180px] sm:min-h-[220px] hover:border-gold hover:bg-card/80 active:scale-[0.99] transition-all shadow-lg"
+      to={to as any}
+      className={className}
     >
-      <div className="flex flex-col h-full">
-        <div className="h-14 w-14 rounded-xl bg-gold/15 text-gold flex items-center justify-center mb-4 group-hover:bg-gold group-hover:text-navy transition-colors">
-          {icon}
-        </div>
-        <div className="flex-1">
-          <h2 className="text-lg sm:text-xl font-semibold leading-tight">{title}</h2>
-          <p className="text-sm text-muted-foreground mt-1.5">{subtitle}</p>
-        </div>
-        <div className="mt-4 flex items-center gap-1 text-xs text-gold font-medium">
-          Open <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-        </div>
-      </div>
+      {content}
     </Link>
   );
 }

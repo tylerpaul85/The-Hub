@@ -19,7 +19,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -83,6 +83,26 @@ function AuthPage() {
     }
   };
 
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error("Please enter your email.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: "https://www.msreginternal.com/reset-password",
+      });
+      if (error) throw error;
+      toast.success("Password reset email sent. Check your inbox.");
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to send password reset email");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-background px-4 overflow-hidden">
       <ParticleConstellation />
@@ -94,59 +114,80 @@ function AuthPage() {
         </div>
 
         <div className="bg-card border border-border rounded-xl p-6 shadow-xl">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === "signup" && (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="first-name">First name</Label>
-                  <Input id="first-name" required value={firstName} onChange={(e) => setFirstName(e.target.value)} className="mt-1.5" autoComplete="given-name" />
-                </div>
-                <div>
-                  <Label htmlFor="last-name">Last name</Label>
-                  <Input id="last-name" required value={lastName} onChange={(e) => setLastName(e.target.value)} className="mt-1.5" autoComplete="family-name" />
-                </div>
+          {mode === "forgot" ? (
+            <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="forgot-email">Email</Label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="mt-1.5"
+                  autoComplete="email"
+                />
               </div>
-            )}
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1.5" autoComplete="email" />
-            </div>
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5" autoComplete={mode === "signin" ? "current-password" : "new-password"} />
-            </div>
-            <Button type="submit" disabled={busy} className="w-full bg-gold text-gold-foreground hover:bg-gold/90">
-              {busy ? "Please wait..." : mode === "signin" ? "Sign in" : "Create account"}
-            </Button>
-          </form>
-          {mode === "signin" && (
-            <div className="mt-3 text-center text-sm">
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!email) return toast.error("Enter your email above, then click Forgot password.");
-                  setBusy(true);
-                  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                    redirectTo: `${window.location.origin}/reset-password`,
-                  });
-                  setBusy(false);
-                  if (error) return toast.error(error.message);
-                  toast.success("Password reset email sent. Check your inbox.");
-                }}
-                className="text-muted-foreground hover:text-gold hover:underline"
-              >
-                Forgot password?
-              </button>
-            </div>
+              <Button type="submit" disabled={busy} className="w-full bg-gold text-gold-foreground hover:bg-gold/90">
+                {busy ? "Please wait..." : "Send recovery link"}
+              </Button>
+              <div className="mt-4 text-center text-sm">
+                <button
+                  type="button"
+                  onClick={() => setMode("signin")}
+                  className="text-gold hover:underline cursor-pointer"
+                >
+                  Back to sign in
+                </button>
+              </div>
+            </form>
+          ) : (
+            <>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {mode === "signup" && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="first-name">First name</Label>
+                      <Input id="first-name" required value={firstName} onChange={(e) => setFirstName(e.target.value)} className="mt-1.5" autoComplete="given-name" />
+                    </div>
+                    <div>
+                      <Label htmlFor="last-name">Last name</Label>
+                      <Input id="last-name" required value={lastName} onChange={(e) => setLastName(e.target.value)} className="mt-1.5" autoComplete="family-name" />
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1.5" autoComplete="email" />
+                </div>
+                <div>
+                  <Label htmlFor="password">Password</Label>
+                  <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5" autoComplete={mode === "signin" ? "current-password" : "new-password"} />
+                </div>
+                <Button type="submit" disabled={busy} className="w-full bg-gold text-gold-foreground hover:bg-gold/90">
+                  {busy ? "Please wait..." : mode === "signin" ? "Sign in" : "Create account"}
+                </Button>
+              </form>
+              {mode === "signin" && (
+                <div className="mt-3 text-center text-sm">
+                  <button
+                    type="button"
+                    onClick={() => setMode("forgot")}
+                    className="text-muted-foreground hover:text-gold hover:underline cursor-pointer"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
+              <div className="mt-4 text-center text-sm text-muted-foreground">
+                {mode === "signin" ? (
+                  <>Need an account? <button onClick={() => setMode("signup")} className="text-gold hover:underline">Sign up</button></>
+                ) : (
+                  <>Already have one? <button onClick={() => setMode("signin")} className="text-gold hover:underline">Sign in</button></>
+                )}
+              </div>
+            </>
           )}
-          <div className="mt-4 text-center text-sm text-muted-foreground">
-            {mode === "signin" ? (
-              <>Need an account? <button onClick={() => setMode("signup")} className="text-gold hover:underline">Sign up</button></>
-            ) : (
-              <>Already have one? <button onClick={() => setMode("signin")} className="text-gold hover:underline">Sign in</button></>
-            )}
-          </div>
-
         </div>
       </div>
     </div>
