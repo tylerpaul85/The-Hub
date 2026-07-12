@@ -18,6 +18,14 @@ function AuthLayout() {
   const isClientCareOnly = roles.length > 0 && roles.every((r) => r === "client_care");
 
   useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash) {
+      const hash = window.location.hash;
+      if (hash.includes("type=recovery") || hash.includes("access_token=")) {
+        navigate({ to: "/reset-password", hash: hash.substring(1), replace: true });
+        return;
+      }
+    }
+
     if (!loading && !user) navigate({ to: "/auth", replace: true });
   }, [user, loading, navigate]);
 

@@ -71,14 +71,17 @@ function ResetPasswordPage() {
     
     setSaving(true);
     const { error } = await supabase.auth.updateUser({ password });
-    setSaving(false);
 
     if (error) {
+      setSaving(false);
       return toast.error(error.message);
     }
+
+    await supabase.auth.signOut();
+    setSaving(false);
     
-    toast.success("Password reset successfully. Welcome!");
-    navigate({ to: "/dashboard" });
+    toast.success("Password reset successful. Please sign in with your new password.");
+    navigate({ to: "/auth" });
   };
 
   return (

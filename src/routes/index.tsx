@@ -18,6 +18,15 @@ function RootSplash() {
 
   useEffect(() => {
     let cancelled = false;
+
+    if (typeof window !== "undefined" && window.location.hash) {
+      const hash = window.location.hash;
+      if (hash.includes("type=recovery") || hash.includes("access_token=")) {
+        navigate({ to: "/reset-password", hash: hash.substring(1), replace: true });
+        return;
+      }
+    }
+
     supabase.auth.getSession().then(({ data }) => {
       if (cancelled) return;
       if (data.session?.user) {
