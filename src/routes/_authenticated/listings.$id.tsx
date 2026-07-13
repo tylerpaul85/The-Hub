@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -8,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -35,8 +33,14 @@ import {
   calcDaysListed, formatPrice,
 } from "@/lib/listings";
 import {
-  updateListing, markUnderContract, markSold, archiveListing,
-  scheduleManualPost, autoScheduleReposts, cancelListingPost, saveListingCopy,
+  updateListing,
+  markUnderContract,
+  markSold,
+  archiveListing,
+  scheduleManualPost,
+  autoScheduleReposts,
+  cancelListingPost,
+  saveListingCopy,
 } from "@/lib/listings.functions";
 
 export const Route = createFileRoute("/_authenticated/listings/$id")({
@@ -51,7 +55,8 @@ const BUCKET = "toolbox";
 
 function ListingDetailPage() {
   const { id } = Route.useParams();
-  const { isAdmin, canEditContent, roles } = useAuth();
+  const { user, isAdmin, canEditContent, roles } = useAuth();
+  const userId = user?.id ?? "";
   const canManage = isAdmin || canEditContent || roles.includes("marketing_coordinator" as any);
   const navigate = useNavigate({ from: "/listings/$id" });
   const qc = useQueryClient();
@@ -158,9 +163,9 @@ function ListingDetailPage() {
           </div>
         </div>
         {canManage && (
-          <div className="flex gap-2 shrink-0">
+          <div className="flex gap-2 shrink-0 flex-wrap">
             {listing.status === "active" && (
-              <MarkUnderContractButton listingId={listing.id} onSuccess={invalidateAll} />
+              <MarkUnderContractButton listingId={listing.id} userId={userId} onSuccess={invalidateAll} />
             )}
             {listing.status !== "sold" && (
               <MarkSoldButton listingId={listing.id} onSuccess={invalidateAll} />
@@ -175,6 +180,7 @@ function ListingDetailPage() {
       {/* Section 2: Graphics & Copy */}
       <GraphicsCopySection
         listingId={id}
+        userId={userId}
         graphics={graphics}
         copyData={copyData ?? null}
         canManage={canManage}
@@ -185,6 +191,7 @@ function ListingDetailPage() {
       {/* Section 3: Scheduled Posts */}
       <PostsSection
         listing={listing}
+        userId={userId}
         posts={posts}
         graphics={graphics}
         canManage={canManage}
@@ -205,13 +212,16 @@ function ListingDetailPage() {
 
 // ─── Mark Under Contract Button ───────────────────────────────────────────────
 
-function MarkUnderContractButton({ listingId, onSuccess }: { listingId: string; onSuccess: () => void }) {
-  const fn = useServerFn(markUnderContract);
+function MarkUnderContractButton({
+  listingId, userId, onSuccess,
+}: { listingId: string; userId: string; onSuccess: () => void }) {
   const [confirm, setConfirm] = useState(false);
   const mut = useMutation({
-    mutationFn: () => fn({ data: { id: listingId } }),
-    onSuccess: (result: any) => {
-      toast.success(`Under contract post created for ${result.agentName ?? "agent"}. ${result.cancelledCount} future repost${result.cancelledCount !== 1 ? "s" : ""} cancelled.`);
+    mutationFn: () => markUnderContract(sb, userId, listingId),
+    onSuccess: (result) => {
+      toast.success(
+        `Under contract post created for ${result.agentName ?? "agent"}. ${result.cancelledCount} future repost${result.cancelledCount !== 1 ? "s" : ""} cancelled.`
+      );
       setConfirm(false);
       onSuccess();
     },
@@ -256,10 +266,9 @@ function MarkUnderContractButton({ listingId, onSuccess }: { listingId: string; 
 // ─── Mark Sold Button ─────────────────────────────────────────────────────────
 
 function MarkSoldButton({ listingId, onSuccess }: { listingId: string; onSuccess: () => void }) {
-  const fn = useServerFn(markSold);
   const [confirm, setConfirm] = useState(false);
   const mut = useMutation({
-    mutationFn: () => fn({ data: { id: listingId } }),
+    mutationFn: () => markSold(sb, listingId),
     onSuccess: () => {
       toast.success("Listing marked as sold. Future posts cancelled.");
       setConfirm(false);
@@ -308,7 +317,6 @@ function MarkSoldButton({ listingId, onSuccess }: { listingId: string; onSuccess
 function ListingInfoSection({
   listing, canManage, onSaved,
 }: { listing: Listing; canManage: boolean; onSaved: () => void }) {
-  const fn = useServerFn(updateListing);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
     address: listing.address,
@@ -320,19 +328,15 @@ function ListingInfoSection({
   });
 
   const mut = useMutation({
-    mutationFn: async () => {
-      await fn({
-        data: {
-          id: listing.id,
-          address: form.address.trim() || undefined,
-          agent_name: form.agent_name.trim() || null,
-          mls_id: form.mls_id.trim() || null,
-          list_price: form.list_price ? parseFloat(form.list_price) : null,
-          list_date: form.list_date || undefined,
-          status: form.status,
-        },
-      });
-    },
+    mutationFn: () =>
+      updateListing(sb, listing.id, {
+        address: form.address.trim() || undefined,
+        agent_name: form.agent_name.trim() || null,
+        mls_id: form.mls_id.trim() || null,
+        list_price: form.list_price ? parseFloat(form.list_price) : null,
+        list_date: form.list_date || undefined,
+        status: form.status,
+      }),
     onSuccess: () => {
       toast.success("Listing updated");
       setEditing(false);
@@ -358,7 +362,12 @@ function ListingInfoSection({
             <Button variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={mut.isPending}>
               <X className="h-3.5 w-3.5" />
             </Button>
-            <Button size="sm" onClick={() => mut.mutate()} disabled={mut.isPending} className="bg-gold hover:bg-gold/90 text-navy font-semibold">
+            <Button
+              size="sm"
+              onClick={() => mut.mutate()}
+              disabled={mut.isPending}
+              className="bg-gold hover:bg-gold/90 text-navy font-semibold"
+            >
               {mut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
               Save
             </Button>
@@ -426,9 +435,10 @@ function InfoField({ label, value, className, mono }: { label: string; value: st
 // ─── Graphics & Copy Section ──────────────────────────────────────────────────
 
 function GraphicsCopySection({
-  listingId, graphics, copyData, canManage, onGraphicsChanged, onCopyChanged,
+  listingId, userId, graphics, copyData, canManage, onGraphicsChanged, onCopyChanged,
 }: {
   listingId: string;
+  userId: string;
   graphics: ListingGraphic[];
   copyData: ListingCopy | null;
   canManage: boolean;
@@ -439,9 +449,8 @@ function GraphicsCopySection({
   const [uploading, setUploading] = useState(false);
   const [copyText, setCopyText] = useState(copyData?.social_media_copy ?? "");
   const [copySaving, setCopySaving] = useState(false);
-  const saveCopyFn = useServerFn(saveListingCopy);
 
-  // Keep in sync if copyData changes (e.g. after refetch)
+  // Keep copy text in sync when data reloads
   const prevCopyRef = useRef(copyData?.social_media_copy ?? "");
   if ((copyData?.social_media_copy ?? "") !== prevCopyRef.current) {
     prevCopyRef.current = copyData?.social_media_copy ?? "";
@@ -455,11 +464,11 @@ function GraphicsCopySection({
       for (const file of Array.from(files)) {
         const ext = file.name.split(".").pop() ?? "jpg";
         const path = `listings/${listingId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error: upErr } = await (sb as any).storage.from(BUCKET).upload(path, file, { upsert: false, cacheControl: "3600" });
+        const { error: upErr } = await sb.storage.from(BUCKET).upload(path, file, { upsert: false, cacheControl: "3600" });
         if (upErr) throw upErr;
-        const { data: urlData } = await (sb as any).storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 24 * 365);
+        const { data: urlData } = await sb.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 24 * 365);
         const url = urlData?.signedUrl as string;
-        await (sb as any).from("listing_graphics").insert({ listing_id: listingId, image_url: url, label: file.name });
+        await sb.from("listing_graphics").insert({ listing_id: listingId, image_url: url, label: file.name });
       }
       toast.success(`${files.length} graphic${files.length > 1 ? "s" : ""} uploaded`);
       onGraphicsChanged();
@@ -467,19 +476,20 @@ function GraphicsCopySection({
       toast.error(e.message ?? "Upload failed");
     } finally {
       setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
     }
   };
 
   const deleteGraphic = async (g: ListingGraphic) => {
-    await (sb as any).from("listing_graphics").delete().eq("id", g.id);
+    await sb.from("listing_graphics").delete().eq("id", g.id);
     onGraphicsChanged();
     toast.success("Graphic removed");
   };
 
-  const saveCopy = async () => {
+  const handleSaveCopy = async () => {
     setCopySaving(true);
     try {
-      await saveCopyFn({ data: { listing_id: listingId, social_media_copy: copyText } });
+      await saveListingCopy(sb, listingId, copyText);
       toast.success("Copy saved");
       onCopyChanged();
     } catch (e: any) {
@@ -546,7 +556,7 @@ function GraphicsCopySection({
                     className="w-full h-full object-cover"
                   />
                   {canManage && (
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <button
                         onClick={() => deleteGraphic(g)}
                         className="p-1.5 bg-rose-500/80 rounded-md text-white hover:bg-rose-500"
@@ -571,12 +581,7 @@ function GraphicsCopySection({
           <div className="flex items-center justify-between mb-2">
             <Label>Social Media Copy</Label>
             {canManage && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={saveCopy}
-                disabled={copySaving}
-              >
+              <Button variant="outline" size="sm" onClick={handleSaveCopy} disabled={copySaving}>
                 {copySaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
                 Save Copy
               </Button>
@@ -599,9 +604,10 @@ function GraphicsCopySection({
 // ─── Posts Section ────────────────────────────────────────────────────────────
 
 function PostsSection({
-  listing, posts, graphics, canManage, onChanged,
+  listing, userId, posts, graphics, canManage, onChanged,
 }: {
   listing: Listing;
+  userId: string;
   posts: ListingPost[];
   graphics: ListingGraphic[];
   canManage: boolean;
@@ -609,11 +615,9 @@ function PostsSection({
 }) {
   const [manualOpen, setManualOpen] = useState(false);
   const [autoOpen, setAutoOpen] = useState(false);
-  const cancelFn = useServerFn(cancelListingPost);
 
   const cancelPost = useMutation({
-    mutationFn: (post: ListingPost) =>
-      cancelFn({ data: { id: post.id, calendar_entry_id: post.calendar_entry_id } }),
+    mutationFn: (post: ListingPost) => cancelListingPost(sb, post.id, post.calendar_entry_id),
     onSuccess: () => {
       toast.success("Post cancelled and calendar entry removed");
       onChanged();
@@ -624,7 +628,6 @@ function PostsSection({
   const existingRepostTypes = new Set(
     posts.filter((p) => p.post_type.startsWith("repost")).map((p) => p.post_type)
   );
-  const allRepostsScheduled = existingRepostTypes.size === 3;
 
   return (
     <section className="bg-card border border-border rounded-xl overflow-hidden">
@@ -702,6 +705,7 @@ function PostsSection({
           <ManualPostModal
             open={manualOpen}
             listing={listing}
+            userId={userId}
             graphics={graphics}
             onClose={() => setManualOpen(false)}
             onSuccess={() => { setManualOpen(false); onChanged(); }}
@@ -709,6 +713,7 @@ function PostsSection({
           <AutoScheduleModal
             open={autoOpen}
             listing={listing}
+            userId={userId}
             existingTypes={existingRepostTypes}
             onClose={() => setAutoOpen(false)}
             onSuccess={() => { setAutoOpen(false); onChanged(); }}
@@ -722,15 +727,15 @@ function PostsSection({
 // ─── Manual Post Modal ────────────────────────────────────────────────────────
 
 function ManualPostModal({
-  open, listing, graphics, onClose, onSuccess,
+  open, listing, userId, graphics, onClose, onSuccess,
 }: {
   open: boolean;
   listing: Listing;
+  userId: string;
   graphics: ListingGraphic[];
   onClose: () => void;
   onSuccess: () => void;
 }) {
-  const fn = useServerFn(scheduleManualPost);
   const [form, setForm] = useState({
     date: new Date().toISOString().slice(0, 10),
     graphicUrl: "",
@@ -740,14 +745,12 @@ function ManualPostModal({
 
   const mut = useMutation({
     mutationFn: () =>
-      fn({
-        data: {
-          listing_id: listing.id,
-          address: listing.address,
-          scheduled_date: form.date,
-          graphic_url: form.graphicUrl || null,
-          copy: form.copy || null,
-        },
+      scheduleManualPost(sb, userId, {
+        listing_id: listing.id,
+        address: listing.address,
+        scheduled_date: form.date,
+        graphic_url: form.graphicUrl || null,
+        copy: form.copy || null,
       }),
     onSuccess: () => {
       toast.success("Post scheduled and added to Content Calendar");
@@ -824,19 +827,19 @@ function ManualPostModal({
 // ─── Auto Schedule Reposts Modal ──────────────────────────────────────────────
 
 function AutoScheduleModal({
-  open, listing, existingTypes, onClose, onSuccess,
+  open, listing, userId, existingTypes, onClose, onSuccess,
 }: {
   open: boolean;
   listing: Listing;
+  userId: string;
   existingTypes: Set<string>;
   onClose: () => void;
   onSuccess: () => void;
 }) {
-  const fn = useServerFn(autoScheduleReposts);
   const mut = useMutation({
     mutationFn: () =>
-      fn({ data: { listing_id: listing.id, address: listing.address, list_date: listing.list_date } }),
-    onSuccess: (result: any) => {
+      autoScheduleReposts(sb, userId, listing.id, listing.address, listing.list_date),
+    onSuccess: (result) => {
       if (result.created === 0) {
         toast.info("All 60/90/120-day reposts are already scheduled.");
       } else {
@@ -926,11 +929,10 @@ function AutoScheduleModal({
 function ActionsSection({
   listing, graphics, onArchived,
 }: { listing: Listing; graphics: ListingGraphic[]; onArchived: () => void }) {
-  const archiveFn = useServerFn(archiveListing);
   const [archiveConfirm, setArchiveConfirm] = useState(false);
 
   const archiveMut = useMutation({
-    mutationFn: () => archiveFn({ data: { id: listing.id } }),
+    mutationFn: () => archiveListing(sb, listing.id),
     onSuccess: () => {
       toast.success("Listing archived");
       setArchiveConfirm(false);
@@ -939,7 +941,7 @@ function ActionsSection({
     onError: (e: any) => toast.error(e.message),
   });
 
-  const downloadGraphics = async () => {
+  const downloadAll = async () => {
     if (graphics.length === 0) { toast.error("No graphics to download"); return; }
     try {
       const { default: JSZip } = await import("jszip");
@@ -949,8 +951,7 @@ function ActionsSection({
         const resp = await fetch(g.image_url, { credentials: "omit" });
         if (!resp.ok) continue;
         const blob = await resp.blob();
-        const filename = g.label ?? `graphic-${g.id}.jpg`;
-        folder.file(filename, blob);
+        folder.file(g.label ?? `graphic-${g.id}.jpg`, blob);
       }
       const content = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(content);
@@ -973,7 +974,7 @@ function ActionsSection({
         <h2 className="font-semibold">Actions</h2>
       </div>
       <div className="p-4 flex flex-wrap gap-3">
-        <Button variant="outline" onClick={downloadGraphics} disabled={graphics.length === 0}>
+        <Button variant="outline" onClick={downloadAll} disabled={graphics.length === 0}>
           <Download className="h-4 w-4 mr-2" /> Download Graphics ({graphics.length})
         </Button>
         <Button

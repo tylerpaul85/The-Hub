@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -17,11 +16,10 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
-  Home, Plus, Upload, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown,
+  Home, Plus, Upload, ArrowUpDown, ArrowUp, ArrowDown,
   AlertTriangle, Loader2, ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -45,7 +43,7 @@ type SortDir = "asc" | "desc";
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function ListingsPage() {
-  const { isAdmin, canEditContent, roles } = useAuth();
+  const { user, isAdmin, canEditContent, roles } = useAuth();
   const canManage = isAdmin || canEditContent || roles.includes("marketing_coordinator" as any);
   const qc = useQueryClient();
 
@@ -134,7 +132,11 @@ function ListingsPage() {
             <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
               <Upload className="h-4 w-4 mr-1.5" /> Bulk Import
             </Button>
-            <Button size="sm" className="bg-gold hover:bg-gold/90 text-navy font-semibold" onClick={() => setNewOpen(true)}>
+            <Button
+              size="sm"
+              className="bg-gold hover:bg-gold/90 text-navy font-semibold"
+              onClick={() => setNewOpen(true)}
+            >
               <Plus className="h-4 w-4 mr-1.5" /> New Listing
             </Button>
           </div>
@@ -149,7 +151,7 @@ function ListingsPage() {
               key={s}
               onClick={() => setStatusFilter(s)}
               className={cn(
-                "px-3 py-1.5 rounded-md text-xs font-medium transition-colors capitalize",
+                "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
                 statusFilter === s
                   ? "bg-gold/20 text-gold"
                   : "text-muted-foreground hover:text-foreground"
@@ -269,6 +271,7 @@ function ListingsPage() {
         <>
           <NewListingModal
             open={newOpen}
+            userId={user?.id ?? ""}
             onClose={() => setNewOpen(false)}
             onSuccess={() => {
               qc.invalidateQueries({ queryKey: ["listings"] });
@@ -277,6 +280,7 @@ function ListingsPage() {
           />
           <BulkImportModal
             open={importOpen}
+            userId={user?.id ?? ""}
             onClose={() => setImportOpen(false)}
             onSuccess={() => {
               qc.invalidateQueries({ queryKey: ["listings"] });
@@ -292,10 +296,8 @@ function ListingsPage() {
 // ─── New Listing Modal ────────────────────────────────────────────────────────
 
 function NewListingModal({
-  open, onClose, onSuccess,
-}: { open: boolean; onClose: () => void; onSuccess: () => void }) {
-  const createFn = useServerFn(createListing);
-
+  open, userId, onClose, onSuccess,
+}: { open: boolean; userId: string; onClose: () => void; onSuccess: () => void }) {
   const [form, setForm] = useState({
     address: "",
     agent_name: "",
@@ -309,20 +311,21 @@ function NewListingModal({
     mutationFn: async () => {
       if (!form.address.trim()) throw new Error("Address is required");
       if (!form.list_date) throw new Error("List date is required");
-      await createFn({
-        data: {
-          address: form.address.trim(),
-          agent_name: form.agent_name.trim() || null,
-          mls_id: form.mls_id.trim() || null,
-          list_price: form.list_price ? parseFloat(form.list_price) : null,
-          list_date: form.list_date,
-          status: form.status,
-        },
+      await createListing(sb, userId, {
+        address: form.address.trim(),
+        agent_name: form.agent_name.trim() || null,
+        mls_id: form.mls_id.trim() || null,
+        list_price: form.list_price ? parseFloat(form.list_price) : null,
+        list_date: form.list_date,
+        status: form.status,
       });
     },
     onSuccess: () => {
-      toast.success("Listing created. 3 repost posts scheduled for 60/90/120 days.");
-      setForm({ address: "", agent_name: "", mls_id: "", list_price: "", list_date: new Date().toISOString().slice(0, 10), status: "active" });
+      toast.success("Listing created! 3 repost posts scheduled for 60/90/120 days.");
+      setForm({
+        address: "", agent_name: "", mls_id: "", list_price: "",
+        list_date: new Date().toISOString().slice(0, 10), status: "active",
+      });
       onSuccess();
     },
     onError: (e: any) => toast.error(e.message ?? "Failed to create listing"),
@@ -431,9 +434,8 @@ const CSV_EXAMPLE = `Address,Agent,MLS #,Price,List Date,Status
 456 Oak Ave STR,Nicole Shaffer,12346,300000,2026-06-15,Active`;
 
 function BulkImportModal({
-  open, onClose, onSuccess,
-}: { open: boolean; onClose: () => void; onSuccess: () => void }) {
-  const importFn = useServerFn(bulkImportListings);
+  open, userId, onClose, onSuccess,
+}: { open: boolean; userId: string; onClose: () => void; onSuccess: () => void }) {
   const [csv, setCsv] = useState("");
   const [parseErrors, setParseErrors] = useState<{ row: number; message: string }[]>([]);
   const [preview, setPreview] = useState<any[]>([]);
@@ -450,16 +452,12 @@ function BulkImportModal({
   };
 
   const mut = useMutation({
-    mutationFn: async () => {
-      const result = await importFn({ data: { listings: preview } });
-      return result;
-    },
-    onSuccess: (result: any) => {
-      toast.success(`Imported ${result.imported} listings${result.skipped > 0 ? `. Skipped ${result.skipped} duplicates.` : "."} Repost posts auto-scheduled.`);
-      setCsv("");
-      setPreview([]);
-      setParseErrors([]);
-      setStage("input");
+    mutationFn: () => bulkImportListings(sb, userId, preview),
+    onSuccess: (result) => {
+      toast.success(
+        `Imported ${result.imported} listing${result.imported !== 1 ? "s" : ""}${result.skipped > 0 ? `. Skipped ${result.skipped} duplicate${result.skipped !== 1 ? "s" : ""}.` : "."} Repost posts auto-scheduled.`
+      );
+      handleClose();
       onSuccess();
     },
     onError: (e: any) => toast.error(e.message ?? "Import failed"),
@@ -574,8 +572,8 @@ function BulkImportModal({
                         <TableCell className="py-2">{formatPrice(row.list_price)}</TableCell>
                         <TableCell className="py-2">{row.list_date}</TableCell>
                         <TableCell className="py-2">
-                          <span className={cn("px-1.5 py-0.5 rounded border text-[10px]", LISTING_STATUS_CLASS[row.status])}>
-                            {LISTING_STATUS_LABEL[row.status]}
+                          <span className={cn("px-1.5 py-0.5 rounded border text-[10px]", LISTING_STATUS_CLASS[row.status as ListingStatus])}>
+                            {LISTING_STATUS_LABEL[row.status as ListingStatus]}
                           </span>
                         </TableCell>
                       </TableRow>
