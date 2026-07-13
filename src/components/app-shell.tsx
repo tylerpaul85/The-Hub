@@ -26,6 +26,12 @@ const EOS_NAV = [
   { to: "/eos/scorecard", label: "Scorecard", icon: BarChart3, adminOnly: false },
 ] as const;
 
+const CLIENT_CARE_NAV = [
+  { to: "/inventory", label: "Closing Gift Inventory", icon: Boxes },
+  { to: "/duty-calendar", label: "Duty Calendar", icon: CalendarDays },
+  { to: "/duty-agents", label: "Duty Agents", icon: Users },
+] as const;
+
 const ADMIN_NAV = [
   { to: "/users", label: "Users", icon: Users, adminOnly: true },
   { to: "/audit-log", label: "Audit Log", icon: ShieldCheck, adminOnly: true },
@@ -67,68 +73,53 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
-
-          {(isAdmin || roles.includes("client_care")) && (
-            <Link
-              to="/inventory"
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                pathname.startsWith("/inventory") ? "bg-gold/15 text-gold" : "text-sidebar-foreground hover:bg-sidebar-accent",
-              )}
-            >
-              <Boxes className="h-4 w-4" />
-              Closing Gift Inventory
-            </Link>
+          {/* EOS Section */}
+          {!isClientCareOnly && (
+            <>
+              <div className="pt-4 pb-1 px-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">EOS</div>
+              {EOS_NAV.filter((n) => !n.adminOnly || isAdmin).map((item) => {
+                const active = pathname === item.to || pathname.startsWith(item.to + "/");
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                      active ? "bg-gold/15 text-gold" : "text-sidebar-foreground hover:bg-sidebar-accent",
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </>
           )}
 
+          {/* Client Care Section */}
           {(isAdmin || roles.includes("client_care")) && (
-            <Link
-              to="/duty-calendar"
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                pathname.startsWith("/duty-calendar") ? "bg-gold/15 text-gold" : "text-sidebar-foreground hover:bg-sidebar-accent",
-              )}
-            >
-              <CalendarDays className="h-4 w-4" />
-              Duty Calendar
-            </Link>
+            <>
+              <div className="pt-4 pb-1 px-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Client Care</div>
+              {CLIENT_CARE_NAV.map((item) => {
+                const active = pathname === item.to || pathname.startsWith(item.to + "/");
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                      active ? "bg-gold/15 text-gold" : "text-sidebar-foreground hover:bg-sidebar-accent",
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </>
           )}
 
-          {(isAdmin || roles.includes("client_care")) && (
-            <Link
-              to="/duty-agents"
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                pathname.startsWith("/duty-agents") ? "bg-gold/15 text-gold" : "text-sidebar-foreground hover:bg-sidebar-accent",
-              )}
-            >
-              <Users className="h-4 w-4" />
-              Duty Agents
-            </Link>
-          )}
-
-
-
-
-          {!isClientCareOnly && (<>
-          <div className="pt-4 pb-1 px-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">EOS</div>
-          {EOS_NAV.filter((n) => !n.adminOnly || isAdmin).map((item) => {
-            const active = pathname === item.to || pathname.startsWith(item.to + "/");
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                  active ? "bg-gold/15 text-gold" : "text-sidebar-foreground hover:bg-sidebar-accent",
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-
+          {/* Admin Section */}
           {isAdmin && (
             <>
               <div className="pt-4 pb-1 px-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Admin</div>
@@ -151,6 +142,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </>
           )}
 
+          {/* Lab/Experiments Section */}
           {canSeeExperiments && (
             <>
               <div className="pt-4 pb-1 px-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Lab</div>
@@ -166,7 +158,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             </>
           )}
-          </>)}
         </nav>
 
         <div className="p-3 border-t border-sidebar-border space-y-2">
