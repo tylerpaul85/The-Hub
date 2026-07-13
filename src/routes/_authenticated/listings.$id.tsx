@@ -17,11 +17,11 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import {
   Home, ArrowLeft, Pencil, Check, X, Loader2, Upload, Trash2,
   Image as ImageIcon, CalendarClock, AlertTriangle, RefreshCw,
-  Archive, Download, Plus, Calendar,
+  Archive, Download, Plus, Calendar, ExternalLink, Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -35,12 +35,12 @@ import {
 import {
   updateListing,
   markUnderContract,
-  markSold,
   archiveListing,
   scheduleManualPost,
   autoScheduleReposts,
   cancelListingPost,
   saveListingCopy,
+  pushToToolbox,
 } from "@/lib/listings.functions";
 
 export const Route = createFileRoute("/_authenticated/listings/$id")({
@@ -162,14 +162,9 @@ function ListingDetailPage() {
             <span className="text-muted-foreground text-sm">{calcDaysListed(listing.list_date)} days on market</span>
           </div>
         </div>
-        {canManage && (
-          <div className="flex gap-2 shrink-0 flex-wrap">
-            {listing.status === "active" && (
-              <MarkUnderContractButton listingId={listing.id} userId={userId} onSuccess={invalidateAll} />
-            )}
-            {listing.status !== "sold" && (
-              <MarkSoldButton listingId={listing.id} onSuccess={invalidateAll} />
-            )}
+        {canManage && listing.status === "active" && (
+          <div className="shrink-0">
+            <MarkUnderContractButton listingId={listing.id} userId={userId} onSuccess={invalidateAll} />
           </div>
         )}
       </div>
@@ -202,15 +197,18 @@ function ListingDetailPage() {
       {canManage && (
         <ActionsSection
           listing={listing}
+          userId={userId}
           graphics={graphics}
+          copyData={copyData ?? null}
           onArchived={() => navigate({ to: "/listings" })}
+          onGraphicsRefresh={() => qc.invalidateQueries({ queryKey: ["listing-graphics", id] })}
         />
       )}
     </div>
   );
 }
 
-// ─── Mark Under Contract Button ───────────────────────────────────────────────
+// ─── Mark Under Contract ──────────────────────────────────────────────────────
 
 function MarkUnderContractButton({
   listingId, userId, onSuccess,
@@ -220,7 +218,7 @@ function MarkUnderContractButton({
     mutationFn: () => markUnderContract(sb, userId, listingId),
     onSuccess: (result) => {
       toast.success(
-        `Under contract post created for ${result.agentName ?? "agent"}. ${result.cancelledCount} future repost${result.cancelledCount !== 1 ? "s" : ""} cancelled.`
+        `${result.cancelledCount} future repost${result.cancelledCount !== 1 ? "s" : ""} cancelled. A task has been created for the content coordinator.`
       );
       setConfirm(false);
       onSuccess();
@@ -243,62 +241,23 @@ function MarkUnderContractButton({
           <DialogHeader>
             <DialogTitle>Mark as Under Contract?</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This will cancel all future 60/90/120-day repost posts and create an "Under Contract" post for today in the Content Calendar.
-          </p>
+          <div className="text-sm text-muted-foreground space-y-2">
+            <p>This will:</p>
+            <ul className="space-y-1.5 pl-3">
+              <li className="flex items-center gap-2">
+                <X className="h-3.5 w-3.5 text-rose-400 shrink-0" />
+                Cancel all future 60/90/120-day repost posts
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                Create a to-do task for the content coordinator to send the Under Contract graphic to the agent
+              </li>
+            </ul>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirm(false)} disabled={mut.isPending}>Cancel</Button>
             <Button
               className="bg-amber-500 hover:bg-amber-600 text-white"
-              onClick={() => mut.mutate()}
-              disabled={mut.isPending}
-            >
-              {mut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Confirm
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
-
-// ─── Mark Sold Button ─────────────────────────────────────────────────────────
-
-function MarkSoldButton({ listingId, onSuccess }: { listingId: string; onSuccess: () => void }) {
-  const [confirm, setConfirm] = useState(false);
-  const mut = useMutation({
-    mutationFn: () => markSold(sb, listingId),
-    onSuccess: () => {
-      toast.success("Listing marked as sold. Future posts cancelled.");
-      setConfirm(false);
-      onSuccess();
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  return (
-    <>
-      <Button
-        variant="outline"
-        size="sm"
-        className="border-rose-500/40 text-rose-400 hover:bg-rose-500/10"
-        onClick={() => setConfirm(true)}
-      >
-        Mark Sold
-      </Button>
-      <Dialog open={confirm} onOpenChange={setConfirm}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>Mark as Sold?</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This will cancel all remaining scheduled posts for this listing.
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirm(false)} disabled={mut.isPending}>Cancel</Button>
-            <Button
-              className="bg-rose-500 hover:bg-rose-600 text-white"
               onClick={() => mut.mutate()}
               disabled={mut.isPending}
             >
@@ -324,7 +283,10 @@ function ListingInfoSection({
     mls_id: listing.mls_id ?? "",
     list_price: listing.list_price?.toString() ?? "",
     list_date: listing.list_date,
+    post_date: listing.post_date ?? listing.list_date,
+    post_time: listing.post_time?.slice(0, 5) ?? "09:00",
     status: listing.status,
+    canva_link: listing.canva_link ?? "",
   });
 
   const mut = useMutation({
@@ -335,7 +297,10 @@ function ListingInfoSection({
         mls_id: form.mls_id.trim() || null,
         list_price: form.list_price ? parseFloat(form.list_price) : null,
         list_date: form.list_date || undefined,
+        post_date: form.post_date || undefined,
+        post_time: form.post_time ? form.post_time + ":00" : undefined,
         status: form.status,
+        canva_link: form.canva_link.trim() || null,
       }),
     onSuccess: () => {
       toast.success("Listing updated");
@@ -362,12 +327,8 @@ function ListingInfoSection({
             <Button variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={mut.isPending}>
               <X className="h-3.5 w-3.5" />
             </Button>
-            <Button
-              size="sm"
-              onClick={() => mut.mutate()}
-              disabled={mut.isPending}
-              className="bg-gold hover:bg-gold/90 text-navy font-semibold"
-            >
+            <Button size="sm" onClick={() => mut.mutate()} disabled={mut.isPending}
+              className="bg-gold hover:bg-gold/90 text-navy font-semibold">
               {mut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
               Save
             </Button>
@@ -398,15 +359,34 @@ function ListingInfoSection({
             <Input type="date" value={form.list_date} onChange={(e) => set("list_date", e.target.value)} />
           </div>
           <div className="grid gap-1.5">
+            <Label>Post Date</Label>
+            <Input type="date" value={form.post_date} onChange={(e) => set("post_date", e.target.value)} />
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Post Time</Label>
+            <Input type="time" value={form.post_time} onChange={(e) => set("post_time", e.target.value)} />
+          </div>
+          <div className="grid gap-1.5">
             <Label>Status</Label>
             <Select value={form.status} onValueChange={(v) => set("status", v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="under_contract">Under Contract</SelectItem>
-                <SelectItem value="sold">Sold</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="sm:col-span-2 grid gap-1.5">
+            <Label>Canva Link</Label>
+            <div className="relative">
+              <ExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                placeholder="https://www.canva.com/design/…"
+                value={form.canva_link}
+                onChange={(e) => set("canva_link", e.target.value)}
+              />
+            </div>
           </div>
         </div>
       ) : (
@@ -417,6 +397,26 @@ function ListingInfoSection({
           <InfoField label="List Price" value={formatPrice(listing.list_price)} />
           <InfoField label="List Date" value={format(new Date(listing.list_date + "T00:00:00"), "MMMM d, yyyy")} />
           <InfoField label="Days on Market" value={`${calcDaysListed(listing.list_date)} days`} />
+          {listing.post_date && (
+            <InfoField
+              label="Post Date/Time"
+              value={`${format(new Date(listing.post_date + "T00:00:00"), "MMM d, yyyy")} @ ${listing.post_time?.slice(0, 5) ?? "09:00"}`}
+            />
+          )}
+          {listing.canva_link && (
+            <div className="sm:col-span-2 space-y-0.5">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Canva Link</p>
+              <a
+                href={listing.canva_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-gold hover:underline flex items-center gap-1.5 truncate"
+              >
+                <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{listing.canva_link}</span>
+              </a>
+            </div>
+          )}
         </div>
       )}
     </section>
@@ -450,7 +450,7 @@ function GraphicsCopySection({
   const [copyText, setCopyText] = useState(copyData?.social_media_copy ?? "");
   const [copySaving, setCopySaving] = useState(false);
 
-  // Keep copy text in sync when data reloads
+  // Sync copy text when data reloads
   const prevCopyRef = useRef(copyData?.social_media_copy ?? "");
   if ((copyData?.social_media_copy ?? "") !== prevCopyRef.current) {
     prevCopyRef.current = copyData?.social_media_copy ?? "";
@@ -507,30 +507,19 @@ function GraphicsCopySection({
       </div>
 
       <div className="p-4 space-y-5">
-        {/* Graphics uploader */}
+        {/* Graphics */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <Label>Listing Graphics</Label>
             {canManage && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading}
-              >
+              <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
                 {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
                 Upload
               </Button>
             )}
           </div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={(e) => handleUpload(e.target.files)}
-          />
+          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
+            onChange={(e) => handleUpload(e.target.files)} />
 
           {graphics.length === 0 ? (
             canManage ? (
@@ -550,17 +539,11 @@ function GraphicsCopySection({
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {graphics.map((g) => (
                 <div key={g.id} className="group relative aspect-square rounded-lg overflow-hidden border border-border bg-muted">
-                  <img
-                    src={g.image_url}
-                    alt={g.label ?? "listing graphic"}
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={g.image_url} alt={g.label ?? "listing graphic"} className="w-full h-full object-cover" />
                   {canManage && (
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <button
-                        onClick={() => deleteGraphic(g)}
-                        className="p-1.5 bg-rose-500/80 rounded-md text-white hover:bg-rose-500"
-                      >
+                      <button onClick={() => deleteGraphic(g)}
+                        className="p-1.5 bg-rose-500/80 rounded-md text-white hover:bg-rose-500">
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -606,22 +589,15 @@ function GraphicsCopySection({
 function PostsSection({
   listing, userId, posts, graphics, canManage, onChanged,
 }: {
-  listing: Listing;
-  userId: string;
-  posts: ListingPost[];
-  graphics: ListingGraphic[];
-  canManage: boolean;
-  onChanged: () => void;
+  listing: Listing; userId: string; posts: ListingPost[];
+  graphics: ListingGraphic[]; canManage: boolean; onChanged: () => void;
 }) {
   const [manualOpen, setManualOpen] = useState(false);
   const [autoOpen, setAutoOpen] = useState(false);
 
   const cancelPost = useMutation({
     mutationFn: (post: ListingPost) => cancelListingPost(sb, post.id, post.calendar_entry_id),
-    onSuccess: () => {
-      toast.success("Post cancelled and calendar entry removed");
-      onChanged();
-    },
+    onSuccess: () => { toast.success("Post cancelled"); onChanged(); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -637,12 +613,10 @@ function PostsSection({
         {canManage && (
           <div className="ml-auto flex gap-2">
             <Button variant="outline" size="sm" onClick={() => setAutoOpen(true)}>
-              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-              60/90/120-Day Reposts
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> 60/90/120-Day Reposts
             </Button>
             <Button variant="outline" size="sm" onClick={() => setManualOpen(true)}>
-              <Plus className="h-3.5 w-3.5 mr-1.5" />
-              Schedule Post
+              <Plus className="h-3.5 w-3.5 mr-1.5" /> Schedule Post
             </Button>
           </div>
         )}
@@ -683,8 +657,7 @@ function PostsSection({
                   <TableCell className="text-right">
                     {canManage && post.status === "scheduled" && (
                       <Button
-                        variant="ghost"
-                        size="sm"
+                        variant="ghost" size="sm"
                         className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
                         onClick={() => cancelPost.mutate(post)}
                         disabled={cancelPost.isPending}
@@ -703,18 +676,12 @@ function PostsSection({
       {canManage && (
         <>
           <ManualPostModal
-            open={manualOpen}
-            listing={listing}
-            userId={userId}
-            graphics={graphics}
+            open={manualOpen} listing={listing} userId={userId} graphics={graphics}
             onClose={() => setManualOpen(false)}
             onSuccess={() => { setManualOpen(false); onChanged(); }}
           />
           <AutoScheduleModal
-            open={autoOpen}
-            listing={listing}
-            userId={userId}
-            existingTypes={existingRepostTypes}
+            open={autoOpen} listing={listing} userId={userId} existingTypes={existingRepostTypes}
             onClose={() => setAutoOpen(false)}
             onSuccess={() => { setAutoOpen(false); onChanged(); }}
           />
@@ -726,32 +693,19 @@ function PostsSection({
 
 // ─── Manual Post Modal ────────────────────────────────────────────────────────
 
-function ManualPostModal({
-  open, listing, userId, graphics, onClose, onSuccess,
-}: {
-  open: boolean;
-  listing: Listing;
-  userId: string;
-  graphics: ListingGraphic[];
-  onClose: () => void;
-  onSuccess: () => void;
+function ManualPostModal({ open, listing, userId, graphics, onClose, onSuccess }: {
+  open: boolean; listing: Listing; userId: string; graphics: ListingGraphic[];
+  onClose: () => void; onSuccess: () => void;
 }) {
-  const [form, setForm] = useState({
-    date: new Date().toISOString().slice(0, 10),
-    graphicUrl: "",
-    copy: "",
-  });
+  const [form, setForm] = useState({ date: new Date().toISOString().slice(0, 10), graphicUrl: "", copy: "" });
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const mut = useMutation({
-    mutationFn: () =>
-      scheduleManualPost(sb, userId, {
-        listing_id: listing.id,
-        address: listing.address,
-        scheduled_date: form.date,
-        graphic_url: form.graphicUrl || null,
-        copy: form.copy || null,
-      }),
+    mutationFn: () => scheduleManualPost(sb, userId, {
+      listing_id: listing.id, address: listing.address,
+      scheduled_date: form.date, graphic_url: form.graphicUrl || null,
+      copy: form.copy || null, canva_link: listing.canva_link,
+    }),
     onSuccess: () => {
       toast.success("Post scheduled and added to Content Calendar");
       setForm({ date: new Date().toISOString().slice(0, 10), graphicUrl: "", copy: "" });
@@ -768,26 +722,20 @@ function ManualPostModal({
             <Calendar className="h-4 w-4 text-gold" /> Schedule Manual Post
           </DialogTitle>
         </DialogHeader>
-
         <div className="grid gap-4 py-2">
           <div className="grid gap-1.5">
             <Label>Post Date <span className="text-destructive">*</span></Label>
             <Input type="date" value={form.date} onChange={(e) => set("date", e.target.value)} />
           </div>
-
           {graphics.length > 0 && (
             <div className="grid gap-1.5">
               <Label>Select Graphic <span className="text-muted-foreground text-xs">(optional)</span></Label>
               <Select value={form.graphicUrl} onValueChange={(v) => set("graphicUrl", v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose uploaded graphic…" />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Choose uploaded graphic…" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">No graphic</SelectItem>
                   {graphics.map((g) => (
-                    <SelectItem key={g.id} value={g.image_url}>
-                      {g.label ?? g.image_url.split("/").pop()}
-                    </SelectItem>
+                    <SelectItem key={g.id} value={g.image_url}>{g.label ?? g.image_url.split("/").pop()}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -796,25 +744,15 @@ function ManualPostModal({
               )}
             </div>
           )}
-
           <div className="grid gap-1.5">
             <Label>Copy <span className="text-muted-foreground text-xs">(optional)</span></Label>
-            <Textarea
-              rows={3}
-              placeholder="Social media caption for this post…"
-              value={form.copy}
-              onChange={(e) => set("copy", e.target.value)}
-            />
+            <Textarea rows={3} placeholder="Social media caption…" value={form.copy} onChange={(e) => set("copy", e.target.value)} />
           </div>
         </div>
-
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={mut.isPending}>Cancel</Button>
-          <Button
-            onClick={() => mut.mutate()}
-            disabled={mut.isPending || !form.date}
-            className="bg-gold hover:bg-gold/90 text-navy font-semibold"
-          >
+          <Button onClick={() => mut.mutate()} disabled={mut.isPending || !form.date}
+            className="bg-gold hover:bg-gold/90 text-navy font-semibold">
             {mut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Schedule Post
           </Button>
@@ -824,48 +762,34 @@ function ManualPostModal({
   );
 }
 
-// ─── Auto Schedule Reposts Modal ──────────────────────────────────────────────
+// ─── Auto-Schedule Reposts Modal ──────────────────────────────────────────────
 
-function AutoScheduleModal({
-  open, listing, userId, existingTypes, onClose, onSuccess,
-}: {
-  open: boolean;
-  listing: Listing;
-  userId: string;
-  existingTypes: Set<string>;
-  onClose: () => void;
-  onSuccess: () => void;
+function AutoScheduleModal({ open, listing, userId, existingTypes, onClose, onSuccess }: {
+  open: boolean; listing: Listing; userId: string; existingTypes: Set<string>;
+  onClose: () => void; onSuccess: () => void;
 }) {
   const mut = useMutation({
-    mutationFn: () =>
-      autoScheduleReposts(sb, userId, listing.id, listing.address, listing.list_date),
+    mutationFn: () => autoScheduleReposts(
+      sb, userId, listing.id, listing.address,
+      listing.post_date ?? listing.list_date,
+      listing.post_time?.slice(0, 5) ?? "09:00",
+      listing.canva_link, null
+    ),
     onSuccess: (result) => {
-      if (result.created === 0) {
-        toast.info("All 60/90/120-day reposts are already scheduled.");
-      } else {
-        toast.success(`${result.created} repost${result.created !== 1 ? "s" : ""} scheduled in Content Calendar.`);
-      }
+      if (result.created === 0) toast.info("All 60/90/120-day reposts are already scheduled.");
+      else toast.success(`${result.created} repost${result.created !== 1 ? "s" : ""} scheduled in Content Calendar.`);
       onSuccess();
     },
     onError: (e: any) => toast.error(e.message),
   });
 
-  const base = new Date(listing.list_date + "T00:00:00");
-  const entries = [
-    { days: 60, type: "repost_60" as PostType },
-    { days: 90, type: "repost_90" as PostType },
-    { days: 120, type: "repost_120" as PostType },
-  ].map(({ days, type }) => {
-    const d = new Date(base);
-    d.setDate(d.getDate() + days);
-    return {
-      days,
-      type,
-      date: format(d, "MMM d, yyyy"),
-      exists: existingTypes.has(type),
-    };
+  const baseDate = listing.post_date ?? listing.list_date;
+  const base = new Date(baseDate + "T00:00:00");
+  const entries = [60, 90, 120].map((days) => {
+    const type = `repost_${days}` as PostType;
+    const d = addDays(base, days);
+    return { days, type, date: format(d, "MMM d, yyyy"), exists: existingTypes.has(type) };
   });
-
   const newCount = entries.filter((e) => !e.exists).length;
 
   return (
@@ -876,30 +800,23 @@ function AutoScheduleModal({
             <RefreshCw className="h-4 w-4 text-gold" /> Auto-Schedule Reposts
           </DialogTitle>
         </DialogHeader>
-
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Creates 60, 90, and 120-day repost entries in the Content Calendar. Already-existing entries will be skipped.
+            Creates 60, 90, and 120-day repost entries in the Content Calendar calculated from the listing's post date ({baseDate}). Existing entries are skipped.
           </p>
-
           <div className="space-y-2">
             {entries.map((e) => (
-              <div
-                key={e.type}
-                className={cn(
-                  "flex items-center justify-between rounded-lg border p-3",
-                  e.exists ? "border-border bg-muted/40 opacity-60" : "border-gold/30 bg-gold/5"
-                )}
-              >
+              <div key={e.type} className={cn(
+                "flex items-center justify-between rounded-lg border p-3",
+                e.exists ? "border-border bg-muted/40 opacity-60" : "border-gold/30 bg-gold/5"
+              )}>
                 <div>
                   <p className="text-sm font-medium">{POST_TYPE_LABEL[e.type]}</p>
-                  <p className="text-xs text-muted-foreground">{e.date}</p>
+                  <p className="text-xs text-muted-foreground">{e.date} @ {listing.post_time?.slice(0, 5) ?? "09:00"}</p>
                 </div>
                 <span className={cn(
                   "text-[10px] px-2 py-0.5 rounded border font-medium",
-                  e.exists
-                    ? "bg-muted text-muted-foreground border-border"
-                    : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                  e.exists ? "bg-muted text-muted-foreground border-border" : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
                 )}>
                   {e.exists ? "Already scheduled" : "Will create"}
                 </span>
@@ -907,14 +824,10 @@ function AutoScheduleModal({
             ))}
           </div>
         </div>
-
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={mut.isPending}>Cancel</Button>
-          <Button
-            onClick={() => mut.mutate()}
-            disabled={mut.isPending || newCount === 0}
-            className="bg-gold hover:bg-gold/90 text-navy font-semibold"
-          >
+          <Button onClick={() => mut.mutate()} disabled={mut.isPending || newCount === 0}
+            className="bg-gold hover:bg-gold/90 text-navy font-semibold">
             {mut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             {newCount === 0 ? "All scheduled" : `Schedule ${newCount} Post${newCount !== 1 ? "s" : ""}`}
           </Button>
@@ -927,9 +840,13 @@ function AutoScheduleModal({
 // ─── Actions Section ──────────────────────────────────────────────────────────
 
 function ActionsSection({
-  listing, graphics, onArchived,
-}: { listing: Listing; graphics: ListingGraphic[]; onArchived: () => void }) {
+  listing, userId, graphics, copyData, onArchived, onGraphicsRefresh,
+}: {
+  listing: Listing; userId: string; graphics: ListingGraphic[];
+  copyData: ListingCopy | null; onArchived: () => void; onGraphicsRefresh: () => void;
+}) {
   const [archiveConfirm, setArchiveConfirm] = useState(false);
+  const [pushConfirm, setPushConfirm] = useState(false);
 
   const archiveMut = useMutation({
     mutationFn: () => archiveListing(sb, listing.id),
@@ -937,6 +854,21 @@ function ActionsSection({
       toast.success("Listing archived");
       setArchiveConfirm(false);
       onArchived();
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const pushMut = useMutation({
+    mutationFn: () =>
+      pushToToolbox(sb, userId, {
+        address: listing.address,
+        agent_name: listing.agent_name,
+        graphics: graphics.map((g) => ({ image_url: g.image_url, label: g.label })),
+        social_copy: copyData?.social_media_copy ?? null,
+      }),
+    onSuccess: () => {
+      toast.success("Listing pushed to Agent Toolbox! Graphics and copy are now available for agents.", { duration: 5000 });
+      setPushConfirm(false);
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -956,11 +888,8 @@ function ActionsSection({
       const content = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(content);
       const a = document.createElement("a");
-      a.href = url;
-      a.download = "listing-graphics.zip";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      a.href = url; a.download = "listing-graphics.zip";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       toast.success(`Downloaded ${graphics.length} graphic${graphics.length !== 1 ? "s" : ""}`);
     } catch (e: any) {
@@ -973,24 +902,87 @@ function ActionsSection({
       <div className="flex items-center gap-2 p-4 border-b border-border">
         <h2 className="font-semibold">Actions</h2>
       </div>
-      <div className="p-4 flex flex-wrap gap-3">
-        <Button variant="outline" onClick={downloadAll} disabled={graphics.length === 0}>
-          <Download className="h-4 w-4 mr-2" /> Download Graphics ({graphics.length})
-        </Button>
-        <Button
-          variant="outline"
-          className="border-rose-500/40 text-rose-400 hover:bg-rose-500/10"
-          onClick={() => setArchiveConfirm(true)}
-        >
-          <Archive className="h-4 w-4 mr-2" /> Archive Listing
-        </Button>
+      <div className="p-4 space-y-4">
+        {/* Push to Toolbox — prominent */}
+        <div className="rounded-lg border border-gold/30 bg-gold/5 p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm text-gold">Push to Agent Toolbox</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Sends all {graphics.length} graphic{graphics.length !== 1 ? "s" : ""} and social copy to the Agent Marketing Toolbox so agents can access and download them.
+            </p>
+          </div>
+          <Button
+            className="bg-gold hover:bg-gold/90 text-navy font-semibold shrink-0"
+            onClick={() => setPushConfirm(true)}
+            disabled={graphics.length === 0 && !copyData?.social_media_copy}
+          >
+            <Send className="h-4 w-4 mr-2" /> Push to Toolbox
+          </Button>
+        </div>
+
+        {/* Secondary actions */}
+        <div className="flex flex-wrap gap-3">
+          <Button variant="outline" onClick={downloadAll} disabled={graphics.length === 0}>
+            <Download className="h-4 w-4 mr-2" /> Download Graphics ({graphics.length})
+          </Button>
+          <Button
+            variant="outline"
+            className="border-rose-500/40 text-rose-400 hover:bg-rose-500/10"
+            onClick={() => setArchiveConfirm(true)}
+          >
+            <Archive className="h-4 w-4 mr-2" /> Archive Listing
+          </Button>
+        </div>
       </div>
 
+      {/* Push to Toolbox confirm */}
+      <Dialog open={pushConfirm} onOpenChange={setPushConfirm}>
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="h-4 w-4 text-gold" /> Push to Agent Toolbox?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-sm text-muted-foreground space-y-2">
+            <p>This will create a new listing in the Agent Toolbox with:</p>
+            <ul className="space-y-1 pl-3">
+              <li className="flex items-center gap-2">
+                <Check className="h-3.5 w-3.5 text-gold shrink-0" />
+                <strong>{listing.address}</strong> — {listing.agent_name ?? "No agent"}
+              </li>
+              {graphics.length > 0 && (
+                <li className="flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-gold shrink-0" />
+                  {graphics.length} graphic{graphics.length !== 1 ? "s" : ""} as pre-made assets
+                </li>
+              )}
+              {copyData?.social_media_copy && (
+                <li className="flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-gold shrink-0" />
+                  Social media copy as a ready-to-use caption
+                </li>
+              )}
+            </ul>
+            <p className="text-xs mt-2">Agents will be able to access, copy, and download these directly from the Agent Toolbox.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPushConfirm(false)} disabled={pushMut.isPending}>Cancel</Button>
+            <Button
+              className="bg-gold hover:bg-gold/90 text-navy font-semibold"
+              onClick={() => pushMut.mutate()}
+              disabled={pushMut.isPending}
+            >
+              {pushMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+              Push to Toolbox
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Archive confirm */}
       <Dialog open={archiveConfirm} onOpenChange={setArchiveConfirm}>
         <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Archive this listing?</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Archive this listing?</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">
             The listing will be hidden from the main list. This does not delete any data.
           </p>

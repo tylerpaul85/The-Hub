@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import {
   Home, Plus, Upload, ArrowUpDown, ArrowUp, ArrowDown,
-  AlertTriangle, Loader2, ChevronRight,
+  AlertTriangle, Loader2, ChevronRight, ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -146,7 +146,7 @@ function ListingsPage() {
       {/* Filter + search bar */}
       <div className="mb-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
         <div className="flex gap-1 bg-card border border-border rounded-lg p-1">
-          {(["all", "active", "under_contract", "sold"] as const).map((s) => (
+          {(["all", "active", "under_contract"] as const).map((s) => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
@@ -237,12 +237,10 @@ function ListingsPage() {
                     {formatPrice(listing.list_price)}
                   </TableCell>
                   <TableCell>
-                    <span
-                      className={cn(
-                        "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border",
-                        LISTING_STATUS_CLASS[listing.status]
-                      )}
-                    >
+                    <span className={cn(
+                      "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border",
+                      LISTING_STATUS_CLASS[listing.status]
+                    )}>
                       {LISTING_STATUS_LABEL[listing.status]}
                     </span>
                   </TableCell>
@@ -298,33 +296,42 @@ function ListingsPage() {
 function NewListingModal({
   open, userId, onClose, onSuccess,
 }: { open: boolean; userId: string; onClose: () => void; onSuccess: () => void }) {
+  const today = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState({
     address: "",
     agent_name: "",
     mls_id: "",
     list_price: "",
-    list_date: new Date().toISOString().slice(0, 10),
+    list_date: today,
+    post_date: today,
+    post_time: "09:00",
     status: "active" as ListingStatus,
+    canva_link: "",
   });
 
   const mut = useMutation({
     mutationFn: async () => {
       if (!form.address.trim()) throw new Error("Address is required");
       if (!form.list_date) throw new Error("List date is required");
+      if (!form.post_date) throw new Error("Post date is required");
       await createListing(sb, userId, {
         address: form.address.trim(),
         agent_name: form.agent_name.trim() || null,
         mls_id: form.mls_id.trim() || null,
         list_price: form.list_price ? parseFloat(form.list_price) : null,
         list_date: form.list_date,
+        post_date: form.post_date,
+        post_time: form.post_time,
         status: form.status,
+        canva_link: form.canva_link.trim() || null,
       });
     },
     onSuccess: () => {
-      toast.success("Listing created! 3 repost posts scheduled for 60/90/120 days.");
+      toast.success("Listing created! Just Listed + 60/90/120-day reposts scheduled.");
       setForm({
         address: "", agent_name: "", mls_id: "", list_price: "",
-        list_date: new Date().toISOString().slice(0, 10), status: "active",
+        list_date: today, post_date: today, post_time: "09:00",
+        status: "active", canva_link: "",
       });
       onSuccess();
     },
@@ -335,7 +342,7 @@ function NewListingModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Home className="h-5 w-5 text-gold" /> New Listing
@@ -343,6 +350,7 @@ function NewListingModal({
         </DialogHeader>
 
         <div className="grid gap-4 py-2">
+          {/* Address */}
           <div className="grid gap-1.5">
             <Label htmlFor="nl-address">Address <span className="text-destructive">*</span></Label>
             <Input
@@ -353,6 +361,7 @@ function NewListingModal({
             />
           </div>
 
+          {/* Agent */}
           <div className="grid gap-1.5">
             <Label htmlFor="nl-agent">Agent Name</Label>
             <Input
@@ -363,6 +372,7 @@ function NewListingModal({
             />
           </div>
 
+          {/* MLS + Price */}
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
               <Label htmlFor="nl-mls">MLS # <span className="text-muted-foreground text-xs">(optional)</span></Label>
@@ -385,11 +395,12 @@ function NewListingModal({
             </div>
           </div>
 
+          {/* List date + Status */}
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
-              <Label htmlFor="nl-date">List Date <span className="text-destructive">*</span></Label>
+              <Label htmlFor="nl-list-date">List Date <span className="text-destructive">*</span></Label>
               <Input
-                id="nl-date"
+                id="nl-list-date"
                 type="date"
                 value={form.list_date}
                 onChange={(e) => set("list_date", e.target.value)}
@@ -398,16 +409,77 @@ function NewListingModal({
             <div className="grid gap-1.5">
               <Label>Status</Label>
               <Select value={form.status} onValueChange={(v) => set("status", v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="under_contract">Under Contract</SelectItem>
-                  <SelectItem value="sold">Sold</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Post Date + Time — the key scheduling fields */}
+          <div className="rounded-lg border border-gold/25 bg-gold/5 p-3 space-y-3">
+            <div>
+              <p className="text-xs font-semibold text-gold mb-0.5">📅 Listing Post Schedule</p>
+              <p className="text-xs text-muted-foreground">
+                When is this listing going live on social? The Just Listed, 60, 90, and 120-day reposts are all scheduled from this date and time.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-1.5">
+                <Label htmlFor="nl-post-date">Post Date <span className="text-destructive">*</span></Label>
+                <Input
+                  id="nl-post-date"
+                  type="date"
+                  value={form.post_date}
+                  onChange={(e) => set("post_date", e.target.value)}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="nl-post-time">Post Time</Label>
+                <Input
+                  id="nl-post-time"
+                  type="time"
+                  value={form.post_time}
+                  onChange={(e) => set("post_time", e.target.value)}
+                />
+              </div>
+            </div>
+            {form.post_date && (
+              <div className="text-[11px] text-muted-foreground space-y-0.5">
+                {[60, 90, 120].map((d) => {
+                  const dt = new Date(form.post_date + "T00:00:00");
+                  dt.setDate(dt.getDate() + d);
+                  return (
+                    <div key={d}>
+                      <span className="text-gold/80 font-medium">{d}-day repost:</span>{" "}
+                      {dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} @ {form.post_time || "09:00"}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Canva link */}
+          <div className="grid gap-1.5">
+            <Label htmlFor="nl-canva" className="flex items-center gap-1.5">
+              Canva Link <span className="text-muted-foreground text-xs">(optional)</span>
+            </Label>
+            <div className="relative">
+              <ExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                id="nl-canva"
+                className="pl-9"
+                placeholder="https://www.canva.com/design/…"
+                value={form.canva_link}
+                onChange={(e) => set("canva_link", e.target.value)}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Will be auto-filled into all 60/90/120-day repost calendar entries.
+            </p>
           </div>
         </div>
 
@@ -496,12 +568,10 @@ function BulkImportModal({
                   className="font-mono text-xs"
                 />
               </div>
-
               <div className="rounded-lg border border-gold/20 bg-gold/5 p-3">
                 <p className="text-xs font-semibold text-gold mb-1.5">Example format:</p>
                 <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap">{CSV_EXAMPLE}</pre>
               </div>
-
               {parseErrors.length > 0 && (
                 <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 space-y-1">
                   {parseErrors.slice(0, 5).map((e, i) => (
@@ -516,7 +586,6 @@ function BulkImportModal({
                 </div>
               )}
             </div>
-
             <DialogFooter>
               <Button variant="outline" onClick={handleClose}>Cancel</Button>
               <Button
@@ -539,7 +608,6 @@ function BulkImportModal({
                   ← Edit CSV
                 </Button>
               </div>
-
               {parseErrors.length > 0 && (
                 <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
                   <p className="text-xs text-amber-400 font-medium mb-1">
@@ -550,7 +618,6 @@ function BulkImportModal({
                   ))}
                 </div>
               )}
-
               <div className="border border-border rounded-lg overflow-hidden max-h-64 overflow-y-auto">
                 <Table>
                   <TableHeader>
@@ -581,12 +648,10 @@ function BulkImportModal({
                   </TableBody>
                 </Table>
               </div>
-
               <p className="text-xs text-muted-foreground">
                 Each listing will automatically have 60, 90, and 120-day repost posts scheduled in the Content Calendar.
               </p>
             </div>
-
             <DialogFooter>
               <Button variant="outline" onClick={handleClose} disabled={mut.isPending}>Cancel</Button>
               <Button

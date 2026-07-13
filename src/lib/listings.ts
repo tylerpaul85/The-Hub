@@ -66,7 +66,10 @@ export type Listing = {
   agent_name: string | null;
   mls_id: string | null;
   list_price: number | null;
-  list_date: string; // ISO date string YYYY-MM-DD
+  list_date: string;    // ISO date YYYY-MM-DD
+  post_date: string;    // When listing goes live / initial post date
+  post_time: string;    // HH:MM:SS
+  canva_link: string | null;
   status: ListingStatus;
   archived: boolean;
   created_at: string;

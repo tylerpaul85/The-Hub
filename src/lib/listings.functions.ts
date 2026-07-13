@@ -1,16 +1,10 @@
 /**
  * listings.functions.ts
- *
  * Client-side async helpers for listing operations.
- * These use the client-side Supabase instance directly — no server functions
- * needed — matching the pattern used throughout the rest of this codebase
- * (calendar.tsx, toolbox.tsx, etc.).
  */
 
 import { addDays, format } from "date-fns";
 import type { ListingStatus, ParsedListing, PostType } from "@/lib/listings";
-
-// ─── Calendar helpers ─────────────────────────────────────────────────────────
 
 const REPOST_OFFSETS: { days: number; type: PostType }[] = [
   { days: 60, type: "repost_60" },
@@ -18,12 +12,34 @@ const REPOST_OFFSETS: { days: number; type: PostType }[] = [
   { days: 120, type: "repost_120" },
 ];
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Insert a task for the content coordinator (used for Under Contract) */
+async function createCoordinatorTask(
+  sb: any,
+  userId: string,
+  title: string,
+  description: string
+): Promise<void> {
+  await sb.from("tasks").insert({
+    title,
+    description,
+    status: "todo",
+    priority: "normal",
+    created_by: userId,
+    owner: null,
+  });
+}
+
+/** Insert a row in content_items (Content Calendar). Returns null on failure (non-fatal). */
 async function createCalendarEntry(
   sb: any,
   userId: string,
   title: string,
   scheduledAt: string,
-  notes: string | null = null
+  notes: string | null = null,
+  canvaLink: string | null = null,
+  copy: string | null = null
 ): Promise<string | null> {
   const { data, error } = await sb
     .from("content_items")
@@ -42,7 +58,7 @@ async function createCalendarEntry(
       revision_note: null,
       created_by: userId,
       brand: "MSREG ALL",
-      canva_link: null,
+      canva_link: canvaLink,
       description: null,
       blog_content: null,
       blog_doc_link: null,
@@ -50,37 +66,49 @@ async function createCalendarEntry(
       youtube_video_title: null,
       email_subject_line: null,
       meta_media_link: null,
-      meta_copy: null,
+      meta_copy: copy,
     })
     .select("id")
     .single();
   if (error) {
-    console.error("[listings] Failed to create calendar entry:", error.message);
+    console.error("[listings] Calendar entry error:", error.message);
     return null;
   }
   return data?.id ?? null;
 }
 
+/**
+ * Creates 60/90/120-day repost entries for a listing.
+ * baseDate: the post_date (when listing went live), time: HH:MM string.
+ */
 async function createRepostEntries(
   sb: any,
   userId: string,
   listingId: string,
   address: string,
-  listDate: string
+  baseDate: string,   // post_date (YYYY-MM-DD)
+  postTime: string,   // HH:MM or HH:MM:SS
+  canvaLink: string | null,
+  socialCopy: string | null
 ): Promise<void> {
-  const base = new Date(listDate + "T00:00:00");
+  const base = new Date(baseDate + "T00:00:00");
   for (const { days, type } of REPOST_OFFSETS) {
     const scheduledDate = format(addDays(base, days), "yyyy-MM-dd");
-    const scheduledAt = scheduledDate + "T09:00:00";
-    const typeLabel = days + "-Day Repost";
-    const calTitle = `[Listing] ${address} — ${typeLabel}`;
-    const calId = await createCalendarEntry(sb, userId, calTitle, scheduledAt, `Auto-scheduled ${typeLabel}`);
+    const timePart = postTime?.slice(0, 5) ?? "09:00";
+    const scheduledAt = `${scheduledDate}T${timePart}:00`;
+    const calTitle = `[Listing] ${address} — ${days}-Day Repost`;
+    const calId = await createCalendarEntry(
+      sb, userId, calTitle, scheduledAt,
+      `Auto-scheduled ${days}-day repost`,
+      canvaLink,
+      socialCopy
+    );
     await sb.from("listing_posts").insert({
       listing_id: listingId,
       scheduled_date: scheduledDate,
       post_type: type,
       graphic_url: null,
-      copy: null,
+      copy: socialCopy ?? null,
       calendar_entry_id: calId,
       status: "scheduled",
     });
@@ -98,9 +126,13 @@ export async function createListing(
     mls_id?: string | null;
     list_price?: number | null;
     list_date: string;
+    post_date: string;       // When the listing goes live / initial post date
+    post_time?: string;      // HH:MM
     status?: ListingStatus;
+    canva_link?: string | null;
   }
 ): Promise<{ id: string }> {
+  const postTime = input.post_time ?? "09:00";
   const { data: row, error } = await sb
     .from("listings")
     .insert({
@@ -109,13 +141,32 @@ export async function createListing(
       mls_id: input.mls_id ?? null,
       list_price: input.list_price ?? null,
       list_date: input.list_date,
+      post_date: input.post_date,
+      post_time: postTime + ":00",
       status: input.status ?? "active",
+      canva_link: input.canva_link ?? null,
     })
     .select()
     .single();
   if (error) throw new Error(error.message);
 
-  await createRepostEntries(sb, userId, row.id, row.address, row.list_date);
+  // Initial "Just Listed" calendar entry
+  await createCalendarEntry(
+    sb, userId,
+    `[Listing] ${row.address} — Just Listed`,
+    `${input.post_date}T${postTime}:00`,
+    "Initial listing post",
+    input.canva_link ?? null,
+    null
+  );
+
+  // 60/90/120 reposts calculated from post_date
+  await createRepostEntries(
+    sb, userId, row.id, row.address,
+    input.post_date, postTime,
+    input.canva_link ?? null, null
+  );
+
   return { id: row.id };
 }
 
@@ -139,13 +190,12 @@ export async function bulkImportListings(
 
   let imported = 0;
   let skipped = 0;
+  const today = new Date().toISOString().slice(0, 10);
 
   for (const item of listings) {
     const key = `${item.address.toLowerCase()}|${(item.agent_name ?? "").toLowerCase()}`;
-    if (existingSet.has(key)) {
-      skipped++;
-      continue;
-    }
+    if (existingSet.has(key)) { skipped++; continue; }
+
     const { data: row, error } = await sb
       .from("listings")
       .insert({
@@ -154,17 +204,18 @@ export async function bulkImportListings(
         mls_id: item.mls_id ?? null,
         list_price: item.list_price ?? null,
         list_date: item.list_date,
+        post_date: item.list_date,   // default post_date = list_date for bulk imports
+        post_time: "09:00:00",
         status: item.status,
+        canva_link: null,
       })
       .select()
       .single();
-    if (error) {
-      console.error("[bulkImport] row error:", error.message);
-      skipped++;
-      continue;
-    }
+
+    if (error) { console.error("[bulkImport] row error:", error.message); skipped++; continue; }
+
     existingSet.add(key);
-    await createRepostEntries(sb, userId, row.id, row.address, row.list_date);
+    await createRepostEntries(sb, userId, row.id, row.address, item.list_date, "09:00", null, null);
     imported++;
   }
 
@@ -182,7 +233,10 @@ export async function updateListing(
     mls_id: string | null;
     list_price: number | null;
     list_date: string;
+    post_date: string;
+    post_time: string;
     status: ListingStatus;
+    canva_link: string | null;
   }>
 ): Promise<void> {
   const { error } = await sb
@@ -193,6 +247,7 @@ export async function updateListing(
 }
 
 // ─── Mark Under Contract ──────────────────────────────────────────────────────
+// Does NOT create a calendar entry — creates a task for the content coordinator instead.
 
 export async function markUnderContract(
   sb: any,
@@ -223,9 +278,7 @@ export async function markUnderContract(
   let cancelledCount = 0;
   if (futurePosts && futurePosts.length > 0) {
     const calIds = futurePosts.map((p: any) => p.calendar_entry_id).filter(Boolean);
-    if (calIds.length > 0) {
-      await sb.from("content_items").delete().in("id", calIds);
-    }
+    if (calIds.length > 0) await sb.from("content_items").delete().in("id", calIds);
     await sb
       .from("listing_posts")
       .update({ status: "cancelled" })
@@ -233,48 +286,15 @@ export async function markUnderContract(
     cancelledCount = futurePosts.length;
   }
 
-  const calTitle = `[Listing] ${listing.address} — Under Contract`;
-  const calId = await createCalendarEntry(
-    sb, userId, calTitle, today + "T09:00:00",
-    `Under contract for ${listing.agent_name ?? "agent"}`
+  // Create a task for content coordinator instead of a calendar entry
+  const agentLine = listing.agent_name ? ` — Agent: ${listing.agent_name}` : "";
+  await createCoordinatorTask(
+    sb, userId,
+    `Under Contract — ${listing.address}`,
+    `This listing is now under contract.${agentLine}\n\nSend the Under Contract graphic to the agent and post to social media.`
   );
-  await sb.from("listing_posts").insert({
-    listing_id: listingId,
-    scheduled_date: today,
-    post_type: "under_contract",
-    graphic_url: null,
-    copy: null,
-    calendar_entry_id: calId,
-    status: "scheduled",
-  });
 
   return { agentName: listing.agent_name, cancelledCount };
-}
-
-// ─── Mark Sold ────────────────────────────────────────────────────────────────
-
-export async function markSold(sb: any, listingId: string): Promise<void> {
-  await sb
-    .from("listings")
-    .update({ status: "sold", updated_at: new Date().toISOString() })
-    .eq("id", listingId);
-
-  const today = new Date().toISOString().slice(0, 10);
-  const { data: futurePosts } = await sb
-    .from("listing_posts")
-    .select("id, calendar_entry_id")
-    .eq("listing_id", listingId)
-    .eq("status", "scheduled")
-    .gte("scheduled_date", today);
-
-  if (futurePosts && futurePosts.length > 0) {
-    const calIds = futurePosts.map((p: any) => p.calendar_entry_id).filter(Boolean);
-    if (calIds.length > 0) await sb.from("content_items").delete().in("id", calIds);
-    await sb
-      .from("listing_posts")
-      .update({ status: "cancelled" })
-      .in("id", futurePosts.map((p: any) => p.id));
-  }
 }
 
 // ─── Archive Listing ──────────────────────────────────────────────────────────
@@ -298,11 +318,13 @@ export async function scheduleManualPost(
     scheduled_date: string;
     graphic_url?: string | null;
     copy?: string | null;
+    canva_link?: string | null;
   }
 ): Promise<void> {
   const calTitle = `[Listing] ${input.address} — Manual Post`;
   const calId = await createCalendarEntry(
-    sb, userId, calTitle, input.scheduled_date + "T09:00:00", input.copy ?? null
+    sb, userId, calTitle, input.scheduled_date + "T09:00:00",
+    input.copy ?? null, input.canva_link ?? null, input.copy ?? null
   );
   const { error } = await sb.from("listing_posts").insert({
     listing_id: input.listing_id,
@@ -323,7 +345,10 @@ export async function autoScheduleReposts(
   userId: string,
   listingId: string,
   address: string,
-  listDate: string
+  postDate: string,
+  postTime: string,
+  canvaLink: string | null,
+  socialCopy: string | null
 ): Promise<{ created: number; alreadyScheduled: number }> {
   const { data: existing } = await sb
     .from("listing_posts")
@@ -333,22 +358,23 @@ export async function autoScheduleReposts(
 
   const existingTypes = new Set((existing ?? []).map((p: any) => p.post_type));
 
-  const base = new Date(listDate + "T00:00:00");
+  const base = new Date(postDate + "T00:00:00");
+  const timePart = postTime?.slice(0, 5) ?? "09:00";
   let created = 0;
   for (const { days, type } of REPOST_OFFSETS) {
     if (existingTypes.has(type)) continue;
     const scheduledDate = format(addDays(base, days), "yyyy-MM-dd");
     const calTitle = `[Listing] ${address} — ${days}-Day Repost`;
     const calId = await createCalendarEntry(
-      sb, userId, calTitle, scheduledDate + "T09:00:00",
-      `Auto-scheduled ${days}-day repost`
+      sb, userId, calTitle, `${scheduledDate}T${timePart}:00`,
+      `Auto-scheduled ${days}-day repost`, canvaLink, socialCopy
     );
     await sb.from("listing_posts").insert({
       listing_id: listingId,
       scheduled_date: scheduledDate,
       post_type: type,
       graphic_url: null,
-      copy: null,
+      copy: socialCopy ?? null,
       calendar_entry_id: calId,
       status: "scheduled",
     });
@@ -393,4 +419,56 @@ export async function saveListingCopy(
       .from("listing_copy")
       .insert({ listing_id: listingId, social_media_copy: socialMediaCopy });
   }
+}
+
+// ─── Push to Agent Toolbox ────────────────────────────────────────────────────
+
+export async function pushToToolbox(
+  sb: any,
+  userId: string,
+  input: {
+    address: string;
+    agent_name: string | null;
+    graphics: { image_url: string; label: string | null }[];
+    social_copy: string | null;
+  }
+): Promise<{ toolboxListingId: string }> {
+  // Create toolbox listing
+  const { data: tbListing, error: tbErr } = await sb
+    .from("toolbox_listings")
+    .insert({
+      address: input.address,
+      agent_name: input.agent_name ?? null,
+      status: "active",
+      description: input.social_copy ?? null,
+      created_by: userId,
+    })
+    .select("id")
+    .single();
+  if (tbErr) throw new Error(tbErr.message);
+
+  const tbId = tbListing.id as string;
+
+  // Add each graphic as a toolbox asset (type: "graphic")
+  for (const g of input.graphics) {
+    await sb.from("toolbox_assets").insert({
+      listing_id: tbId,
+      asset_type: "graphic",
+      file_url: g.image_url,
+      thumbnail_url: g.image_url,
+      name: g.label ?? "Just Listed",
+      created_by: userId,
+    });
+  }
+
+  // Add social copy as a caption
+  if (input.social_copy?.trim()) {
+    await sb.from("toolbox_captions").insert({
+      listing_id: tbId,
+      caption_text: input.social_copy.trim(),
+      created_by: userId,
+    });
+  }
+
+  return { toolboxListingId: tbId };
 }
