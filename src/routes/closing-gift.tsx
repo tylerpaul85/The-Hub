@@ -156,7 +156,7 @@ function ClosingGiftRequestPage() {
       }
 
       // 3. Insert request
-      const { data: inserted, error: insErr } = await supabase
+      const { error: insErr } = await supabase
         .from("closing_gift_requests")
         .insert({
           agent_name: agentName.trim(),
@@ -167,9 +167,7 @@ function ClosingGiftRequestPage() {
           comments: comments.trim() || null,
           shirts: enrichedShirts,
           status: "pending",
-        })
-        .select("id")
-        .single();
+        });
       if (insErr) throw insErr;
 
       // 4. Decrement inventory
