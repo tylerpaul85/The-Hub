@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Calendar, LayoutDashboard, Users, LogOut, Video, BookOpen, Inbox, Target, ClipboardList, BarChart3, ShieldCheck, Ticket, Wrench, ClipboardCheck, CircleAlert, FlaskConical, Boxes, Gift, CalendarOff, CalendarDays } from "lucide-react";
+import { Calendar, LayoutDashboard, Users, LogOut, Video, BookOpen, Inbox, Target, ClipboardList, BarChart3, ShieldCheck, Ticket, Wrench, ClipboardCheck, CircleAlert, FlaskConical, Boxes, Gift, CalendarOff, CalendarDays, Home } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,7 @@ import { QuickHeadlineButton } from "@/components/quick-headline-button";
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, adminOnly: false },
   { to: "/calendar", label: "Calendar", icon: Calendar, adminOnly: false },
+  { to: "/listings", label: "Listings", icon: Home, adminOnly: false },
   { to: "/toolbox", label: "Agent Toolbox", icon: Wrench, adminOnly: false },
   { to: "/videos", label: "Video Pipeline", icon: Video, adminOnly: false },
   { to: "/requests", label: "Requests", icon: Inbox, adminOnly: false },
