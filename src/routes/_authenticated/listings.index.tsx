@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import {
   Home, Plus, Upload, ArrowUpDown, ArrowUp, ArrowDown,
-  AlertTriangle, Loader2, ChevronRight, ExternalLink,
+  AlertTriangle, Loader2, ChevronRight, ExternalLink, Link as LinkIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -307,6 +307,7 @@ function NewListingModal({
     post_time: "09:00",
     status: "active" as ListingStatus,
     canva_link: "",
+    website_link: "",
   });
 
   const mut = useMutation({
@@ -324,6 +325,7 @@ function NewListingModal({
         post_time: form.post_time,
         status: form.status,
         canva_link: form.canva_link.trim() || null,
+        website_link: form.website_link.trim() || null,
       });
     },
     onSuccess: () => {
@@ -331,7 +333,7 @@ function NewListingModal({
       setForm({
         address: "", agent_name: "", mls_id: "", list_price: "",
         list_date: today, post_date: today, post_time: "09:00",
-        status: "active", canva_link: "",
+        status: "active", canva_link: "", website_link: "",
       });
       onSuccess();
     },
@@ -479,6 +481,26 @@ function NewListingModal({
             </div>
             <p className="text-xs text-muted-foreground">
               Will be auto-filled into all 60/90/120-day repost calendar entries.
+            </p>
+          </div>
+
+          {/* MSREG Website Link */}
+          <div className="grid gap-1.5">
+            <Label htmlFor="nl-website" className="flex items-center gap-1.5">
+              MSREG Website Link <span className="text-muted-foreground text-xs">(optional)</span>
+            </Label>
+            <div className="relative">
+              <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                id="nl-website"
+                className="pl-9"
+                placeholder="https://www.realtysignatures.com/properties/…"
+                value={form.website_link}
+                onChange={(e) => set("website_link", e.target.value)}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Will be auto-filled into all scheduled Content Calendar entries and pushed to the Agent Toolbox.
             </p>
           </div>
         </div>

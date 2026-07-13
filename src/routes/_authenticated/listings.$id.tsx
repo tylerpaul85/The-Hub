@@ -41,6 +41,7 @@ import {
   cancelListingPost,
   saveListingCopy,
   pushToToolbox,
+  syncListingAssets,
 } from "@/lib/listings.functions";
 
 export const Route = createFileRoute("/_authenticated/listings/$id")({
@@ -316,6 +317,7 @@ function ListingInfoSection({
     post_time: listing.post_time?.slice(0, 5) ?? "09:00",
     status: listing.status,
     canva_link: listing.canva_link ?? "",
+    website_link: listing.website_link ?? "",
   });
 
   const mut = useMutation({
@@ -330,9 +332,10 @@ function ListingInfoSection({
         post_time: form.post_time ? form.post_time + ":00" : undefined,
         status: form.status,
         canva_link: form.canva_link.trim() || null,
+        website_link: form.website_link.trim() || null,
       }),
     onSuccess: () => {
-      toast.success("Listing updated");
+      toast.success("Listing updated and calendar synced");
       setEditing(false);
       onSaved();
     },
@@ -405,15 +408,27 @@ function ListingInfoSection({
               </SelectContent>
             </Select>
           </div>
-          <div className="sm:col-span-2 grid gap-1.5">
+          <div className="grid gap-1.5">
             <Label>Canva Link</Label>
             <div className="relative">
               <ExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                className="pl-9"
+                className="pl-9 text-sm"
                 placeholder="https://www.canva.com/design/…"
                 value={form.canva_link}
                 onChange={(e) => set("canva_link", e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="grid gap-1.5">
+            <Label>MSREG Website Link</Label>
+            <div className="relative">
+              <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                className="pl-9 text-sm"
+                placeholder="https://www.realtysignatures.com/properties/…"
+                value={form.website_link}
+                onChange={(e) => set("website_link", e.target.value)}
               />
             </div>
           </div>
@@ -433,7 +448,7 @@ function ListingInfoSection({
             />
           )}
           {listing.canva_link && (
-            <div className="sm:col-span-2 space-y-0.5">
+            <div className="space-y-0.5">
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Canva Link</p>
               <a
                 href={listing.canva_link}
@@ -443,6 +458,20 @@ function ListingInfoSection({
               >
                 <ExternalLink className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">{listing.canva_link}</span>
+              </a>
+            </div>
+          )}
+          {listing.website_link && (
+            <div className="space-y-0.5">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">MSREG Website Link</p>
+              <a
+                href={listing.website_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-gold hover:underline flex items-center gap-1.5 truncate"
+              >
+                <LinkIcon className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{listing.website_link}</span>
               </a>
             </div>
           )}
@@ -688,7 +717,11 @@ function VideosSection({
         created_by: userId,
       });
       if (error) throw error;
-      toast.success("Video link added");
+
+      // Sync updated videos list to Content Calendar
+      await syncListingAssets(sb, listingId);
+
+      toast.success("Video link added & calendar synced");
       setUrl("");
       setLabel("");
       onChanged();
@@ -701,8 +734,10 @@ function VideosSection({
 
   const removeVideo = async (id: string) => {
     await sb.from("listing_videos").delete().eq("id", id);
+    // Sync updated videos list to Content Calendar
+    await syncListingAssets(sb, listingId);
     onChanged();
-    toast.success("Video removed");
+    toast.success("Video removed & calendar synced");
   };
 
   return (

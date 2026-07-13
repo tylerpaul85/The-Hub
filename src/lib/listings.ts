@@ -70,6 +70,7 @@ export type Listing = {
   post_date: string;    // When listing goes live / initial post date
   post_time: string;    // HH:MM:SS
   canva_link: string | null;
+  website_link: string | null;
   status: ListingStatus;
   archived: boolean;
   created_at: string;

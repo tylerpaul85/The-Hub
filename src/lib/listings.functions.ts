@@ -39,7 +39,7 @@ async function createCalendarEntry(
   scheduledAt: string,
   notes: string | null = null,
   canvaLink: string | null = null,
-  copy: string | null = null
+  websiteLink: string | null = null
 ): Promise<string | null> {
   const { data, error } = await sb
     .from("content_items")
@@ -49,10 +49,11 @@ async function createCalendarEntry(
       platforms: ["Meta"],
       scheduled_at: scheduledAt,
       priority: "normal",
-      notes: [notes, copy ? `Copy: ${copy}` : null].filter(Boolean).join("\n") || null,
+      notes: notes || null,
       created_by: userId,
       brand: "MSREG ALL",
       canva_link: canvaLink,
+      link: websiteLink,
     })
     .select("id")
     .single();
@@ -75,20 +76,31 @@ async function createRepostEntries(
   baseDate: string,   // post_date (YYYY-MM-DD)
   postTime: string,   // HH:MM or HH:MM:SS
   canvaLink: string | null,
+  websiteLink: string | null,
   socialCopy: string | null
 ): Promise<void> {
   const base = new Date(baseDate + "T00:00:00");
   for (const { days, type } of REPOST_OFFSETS) {
     const scheduledDate = format(addDays(base, days), "yyyy-MM-dd");
     const timePart = postTime?.slice(0, 5) ?? "09:00";
-    const scheduledAt = `${scheduledDate}T${timePart}:00`;
+    
+    // Parse to local date object first, then call toISOString to guarantee correct offset formatting
+    const localDateTimeStr = `${scheduledDate}T${timePart}:00`;
+    const scheduledAt = new Date(localDateTimeStr).toISOString();
+
     const calTitle = `[Listing] ${address} — ${days}-Day Repost`;
+    const notesParts = [
+      `Auto-scheduled ${days}-day repost for ${address}`,
+      socialCopy ? `Copy:\n${socialCopy}` : null,
+    ].filter(Boolean);
+
     const calId = await createCalendarEntry(
       sb, userId, calTitle, scheduledAt,
-      `Auto-scheduled ${days}-day repost`,
+      notesParts.join("\n\n"),
       canvaLink,
-      socialCopy
+      websiteLink
     );
+
     await sb.from("listing_posts").insert({
       listing_id: listingId,
       scheduled_date: scheduledDate,
@@ -98,6 +110,69 @@ async function createRepostEntries(
       calendar_entry_id: calId,
       status: "scheduled",
     });
+  }
+}
+
+// ─── Sync Assets to Calendar ──────────────────────────────────────────────────
+// Automatically keeps all scheduled content pieces up-to-date with copy, videos, website, and Canva link.
+
+export async function syncListingAssets(sb: any, listingId: string): Promise<void> {
+  // 1. Fetch listing details
+  const { data: listing } = await sb
+    .from("listings")
+    .select("address, canva_link, website_link")
+    .eq("id", listingId)
+    .single();
+  if (!listing) return;
+
+  // 2. Fetch copy
+  const { data: copyRow } = await sb
+    .from("listing_copy")
+    .select("social_media_copy")
+    .eq("listing_id", listingId)
+    .maybeSingle();
+  const copy = copyRow?.social_media_copy ?? null;
+
+  // 3. Fetch videos
+  const { data: videoRows } = await sb
+    .from("listing_videos")
+    .select("drive_url, label")
+    .eq("listing_id", listingId);
+  const videoNotes = (videoRows ?? [])
+    .map((v: any) => `Video (${v.label ?? "Drive Link"}): ${v.drive_url}`)
+    .join("\n");
+
+  // 4. Fetch all scheduled posts for this listing
+  const { data: posts } = await sb
+    .from("listing_posts")
+    .select("calendar_entry_id, post_type")
+    .eq("listing_id", listingId)
+    .eq("status", "scheduled");
+
+  const calIds = (posts ?? []).map((p: any) => p.calendar_entry_id).filter(Boolean);
+  if (calIds.length === 0) return;
+
+  // 5. Update each content item
+  for (const post of posts ?? []) {
+    if (!post.calendar_entry_id) continue;
+
+    const isJustListed = post.post_type === "active";
+    const postLabel = isJustListed ? "Just Listed" : "Repost";
+
+    const notesParts = [
+      `${postLabel} post for ${listing.address}`,
+      copy ? `Copy:\n${copy}` : null,
+      videoNotes ? `Videos:\n${videoNotes}` : null,
+    ].filter(Boolean);
+
+    await sb
+      .from("content_items")
+      .update({
+        canva_link: listing.canva_link,
+        link: listing.website_link,
+        notes: notesParts.join("\n\n"),
+      })
+      .eq("id", post.calendar_entry_id);
   }
 }
 
@@ -116,6 +191,7 @@ export async function createListing(
     post_time?: string;      // HH:MM
     status?: ListingStatus;
     canva_link?: string | null;
+    website_link?: string | null;
   }
 ): Promise<{ id: string }> {
   const postTime = input.post_time ?? "09:00";
@@ -131,19 +207,24 @@ export async function createListing(
       post_time: postTime + ":00",
       status: input.status ?? "active",
       canva_link: input.canva_link ?? null,
+      website_link: input.website_link ?? null,
     })
     .select()
     .single();
   if (error) throw new Error(error.message);
 
+  // Form a robust ISO date/time string with timezone offset
+  const localDateTimeStr = `${input.post_date}T${postTime}:00`;
+  const scheduledAt = new Date(localDateTimeStr).toISOString();
+
   // Initial "Just Listed" calendar entry
   const calId = await createCalendarEntry(
     sb, userId,
     `[Listing] ${row.address} — Just Listed`,
-    `${input.post_date}T${postTime}:00`,
-    "Initial listing post",
+    scheduledAt,
+    `Initial Just Listed post for ${row.address}`,
     input.canva_link ?? null,
-    null
+    input.website_link ?? null
   );
 
   // Add the live day post to listing_posts
@@ -161,7 +242,9 @@ export async function createListing(
   await createRepostEntries(
     sb, userId, row.id, row.address,
     input.post_date, postTime,
-    input.canva_link ?? null, null
+    input.canva_link ?? null,
+    input.website_link ?? null,
+    null
   );
 
   return { id: row.id };
@@ -204,6 +287,7 @@ export async function bulkImportListings(
         post_time: "09:00:00",
         status: item.status,
         canva_link: null,
+        website_link: null,
       })
       .select()
       .single();
@@ -213,11 +297,14 @@ export async function bulkImportListings(
     existingSet.add(key);
 
     // Initial post for bulk imported active listing
+    const localDateTimeStr = `${item.list_date}T09:00:00`;
+    const scheduledAt = new Date(localDateTimeStr).toISOString();
+
     const calId = await createCalendarEntry(
       sb, userId,
       `[Listing] ${row.address} — Just Listed`,
-      `${item.list_date}T09:00:00`,
-      "Initial listing post (Bulk Imported)",
+      scheduledAt,
+      `Initial Just Listed post for ${row.address} (Bulk Imported)`,
       null, null
     );
 
@@ -231,7 +318,7 @@ export async function bulkImportListings(
       status: "scheduled",
     });
 
-    await createRepostEntries(sb, userId, row.id, row.address, item.list_date, "09:00", null, null);
+    await createRepostEntries(sb, userId, row.id, row.address, item.list_date, "09:00", null, null, null);
     imported++;
   }
 
@@ -253,6 +340,7 @@ export async function updateListing(
     post_time: string;
     status: ListingStatus;
     canva_link: string | null;
+    website_link: string | null;
   }>
 ): Promise<void> {
   const { error } = await sb
@@ -260,6 +348,9 @@ export async function updateListing(
     .update({ ...fields, updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw new Error(error.message);
+
+  // Automatically synchronize Canva link and Website link to all scheduled Content Calendar entries
+  await syncListingAssets(sb, id);
 }
 
 // ─── Mark Under Contract ──────────────────────────────────────────────────────
@@ -335,12 +426,22 @@ export async function scheduleManualPost(
     graphic_url?: string | null;
     copy?: string | null;
     canva_link?: string | null;
+    website_link?: string | null;
   }
 ): Promise<void> {
   const calTitle = `[Listing] ${input.address} — Manual Post`;
+  const scheduledAt = new Date(`${input.scheduled_date}T09:00:00`).toISOString();
+  
+  const notesParts = [
+    `Manual post for ${input.address}`,
+    input.copy ? `Copy:\n${input.copy}` : null
+  ].filter(Boolean);
+
   const calId = await createCalendarEntry(
-    sb, userId, calTitle, input.scheduled_date + "T09:00:00",
-    input.copy ?? null, input.canva_link ?? null, input.copy ?? null
+    sb, userId, calTitle, scheduledAt,
+    notesParts.join("\n\n"),
+    input.canva_link ?? null,
+    input.website_link ?? null
   );
   const { error } = await sb.from("listing_posts").insert({
     listing_id: input.listing_id,
@@ -364,6 +465,7 @@ export async function autoScheduleReposts(
   postDate: string,
   postTime: string,
   canvaLink: string | null,
+  websiteLink: string | null,
   socialCopy: string | null
 ): Promise<{ created: number; alreadyScheduled: number }> {
   const { data: existing } = await sb
@@ -381,9 +483,19 @@ export async function autoScheduleReposts(
     if (existingTypes.has(type)) continue;
     const scheduledDate = format(addDays(base, days), "yyyy-MM-dd");
     const calTitle = `[Listing] ${address} — ${days}-Day Repost`;
+    const localDateTimeStr = `${scheduledDate}T${timePart}:00`;
+    const scheduledAt = new Date(localDateTimeStr).toISOString();
+
+    const notesParts = [
+      `Auto-scheduled ${days}-day repost for ${address}`,
+      socialCopy ? `Copy:\n${socialCopy}` : null,
+    ].filter(Boolean);
+
     const calId = await createCalendarEntry(
-      sb, userId, calTitle, `${scheduledDate}T${timePart}:00`,
-      `Auto-scheduled ${days}-day repost`, canvaLink, socialCopy
+      sb, userId, calTitle, scheduledAt,
+      notesParts.join("\n\n"),
+      canvaLink,
+      websiteLink
     );
     await sb.from("listing_posts").insert({
       listing_id: listingId,
@@ -435,6 +547,9 @@ export async function saveListingCopy(
       .from("listing_copy")
       .insert({ listing_id: listingId, social_media_copy: socialMediaCopy });
   }
+
+  // Automatically propagate copy update to all scheduled posts on the calendar
+  await syncListingAssets(sb, listingId);
 }
 
 // ─── Push to Agent Toolbox ────────────────────────────────────────────────────
@@ -448,6 +563,7 @@ export async function pushToToolbox(
     graphics: { image_url: string; label: string | null }[];
     videos: { drive_url: string; label: string | null }[];
     social_copy: string | null;
+    website_link: string | null;
   }
 ): Promise<{ toolboxListingId: string }> {
   // Create toolbox listing
@@ -457,7 +573,10 @@ export async function pushToToolbox(
       address: input.address,
       agent_name: input.agent_name ?? null,
       status: "active",
-      description: input.social_copy ?? null,
+      description: [
+        input.social_copy,
+        input.website_link ? `Listing Website Link: ${input.website_link}` : null
+      ].filter(Boolean).join("\n\n"),
       created_by: userId,
     })
     .select("id")
@@ -489,7 +608,7 @@ export async function pushToToolbox(
     });
   }
 
-  // Add social copy as a caption
+  // Add social copy as a caption in toolbox
   if (input.social_copy?.trim()) {
     await sb.from("toolbox_captions").insert({
       listing_id: tbId,
