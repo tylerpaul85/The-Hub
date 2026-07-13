@@ -137,7 +137,7 @@ export async function createListing(
   if (error) throw new Error(error.message);
 
   // Initial "Just Listed" calendar entry
-  await createCalendarEntry(
+  const calId = await createCalendarEntry(
     sb, userId,
     `[Listing] ${row.address} — Just Listed`,
     `${input.post_date}T${postTime}:00`,
@@ -145,6 +145,17 @@ export async function createListing(
     input.canva_link ?? null,
     null
   );
+
+  // Add the live day post to listing_posts
+  await sb.from("listing_posts").insert({
+    listing_id: row.id,
+    scheduled_date: input.post_date,
+    post_type: "active",
+    graphic_url: null,
+    copy: null,
+    calendar_entry_id: calId,
+    status: "scheduled",
+  });
 
   // 60/90/120 reposts calculated from post_date
   await createRepostEntries(
@@ -176,7 +187,6 @@ export async function bulkImportListings(
 
   let imported = 0;
   let skipped = 0;
-  const today = new Date().toISOString().slice(0, 10);
 
   for (const item of listings) {
     const key = `${item.address.toLowerCase()}|${(item.agent_name ?? "").toLowerCase()}`;
@@ -201,6 +211,26 @@ export async function bulkImportListings(
     if (error) { console.error("[bulkImport] row error:", error.message); skipped++; continue; }
 
     existingSet.add(key);
+
+    // Initial post for bulk imported active listing
+    const calId = await createCalendarEntry(
+      sb, userId,
+      `[Listing] ${row.address} — Just Listed`,
+      `${item.list_date}T09:00:00`,
+      "Initial listing post (Bulk Imported)",
+      null, null
+    );
+
+    await sb.from("listing_posts").insert({
+      listing_id: row.id,
+      scheduled_date: item.list_date,
+      post_type: "active",
+      graphic_url: null,
+      copy: null,
+      calendar_entry_id: calId,
+      status: "scheduled",
+    });
+
     await createRepostEntries(sb, userId, row.id, row.address, item.list_date, "09:00", null, null);
     imported++;
   }
@@ -416,6 +446,7 @@ export async function pushToToolbox(
     address: string;
     agent_name: string | null;
     graphics: { image_url: string; label: string | null }[];
+    videos: { drive_url: string; label: string | null }[];
     social_copy: string | null;
   }
 ): Promise<{ toolboxListingId: string }> {
@@ -443,6 +474,17 @@ export async function pushToToolbox(
       file_url: g.image_url,
       thumbnail_url: g.image_url,
       name: g.label ?? "Just Listed",
+      created_by: userId,
+    });
+  }
+
+  // Add each video as a toolbox asset (type: "video")
+  for (const v of input.videos) {
+    await sb.from("toolbox_assets").insert({
+      listing_id: tbId,
+      asset_type: "video",
+      drive_url: v.drive_url,
+      name: v.label ?? "Listing Video",
       created_by: userId,
     });
   }

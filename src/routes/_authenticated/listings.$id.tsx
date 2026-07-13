@@ -227,6 +227,7 @@ function ListingDetailPage() {
           listing={listing}
           userId={userId}
           graphics={graphics}
+          videos={videos}
           copyData={copyData ?? null}
           onArchived={() => navigate({ to: "/listings" })}
           onGraphicsRefresh={() => qc.invalidateQueries({ queryKey: ["listing-graphics", id] })}
@@ -1037,10 +1038,11 @@ function AutoScheduleModal({ open, listing, userId, existingTypes, onClose, onSu
 // ─── Actions Section ──────────────────────────────────────────────────────────
 
 function ActionsSection({
-  listing, userId, graphics, copyData, onArchived, onGraphicsRefresh,
+  listing, userId, graphics, videos, copyData, onArchived, onGraphicsRefresh,
 }: {
   listing: Listing; userId: string; graphics: ListingGraphic[];
-  copyData: ListingCopy | null; onArchived: () => void; onGraphicsRefresh: () => void;
+  videos: ListingVideo[]; copyData: ListingCopy | null;
+  onArchived: () => void; onGraphicsRefresh: () => void;
 }) {
   const [archiveConfirm, setArchiveConfirm] = useState(false);
   const [pushConfirm, setPushConfirm] = useState(false);
@@ -1061,10 +1063,11 @@ function ActionsSection({
         address: listing.address,
         agent_name: listing.agent_name,
         graphics: graphics.map((g) => ({ image_url: g.image_url, label: g.label })),
+        videos: videos.map((v) => ({ drive_url: v.drive_url, label: v.label })),
         social_copy: copyData?.social_media_copy ?? null,
       }),
     onSuccess: () => {
-      toast.success("Listing pushed to Agent Toolbox! Graphics and copy are now available for agents.", { duration: 5000 });
+      toast.success("Listing pushed to Agent Toolbox! Graphics, videos, and copy are now available for agents.", { duration: 5000 });
       setPushConfirm(false);
     },
     onError: (e: any) => toast.error(e.message),
@@ -1094,6 +1097,8 @@ function ActionsSection({
     }
   };
 
+  const hasAssetsToPush = graphics.length > 0 || videos.length > 0 || !!copyData?.social_media_copy;
+
   return (
     <section className="bg-card border border-border rounded-xl overflow-hidden">
       <div className="flex items-center gap-2 p-4 border-b border-border">
@@ -1105,13 +1110,13 @@ function ActionsSection({
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm text-gold">Push to Agent Toolbox</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Sends all {graphics.length} graphic{graphics.length !== 1 ? "s" : ""} and social copy to the Agent Marketing Toolbox so agents can access and download them.
+              Sends all {graphics.length} graphic{graphics.length !== 1 ? "s" : ""}, {videos.length} video{videos.length !== 1 ? "s" : ""}, and social copy to the Agent Marketing Toolbox so agents can access and download them.
             </p>
           </div>
           <Button
             className="bg-gold hover:bg-gold/90 text-navy font-semibold shrink-0"
             onClick={() => setPushConfirm(true)}
-            disabled={graphics.length === 0 && !copyData?.social_media_copy}
+            disabled={!hasAssetsToPush}
           >
             <Send className="h-4 w-4 mr-2" /> Push to Toolbox
           </Button>
@@ -1151,6 +1156,12 @@ function ActionsSection({
                 <li className="flex items-center gap-2">
                   <Check className="h-3.5 w-3.5 text-gold shrink-0" />
                   {graphics.length} graphic{graphics.length !== 1 ? "s" : ""} as pre-made assets
+                </li>
+              )}
+              {videos.length > 0 && (
+                <li className="flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-gold shrink-0" />
+                  {videos.length} video{videos.length !== 1 ? "s" : ""} linked in Google Drive section
                 </li>
               )}
               {copyData?.social_media_copy && (
