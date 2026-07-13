@@ -9,9 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  submitClosingGiftRequest,
-} from "@/lib/closing-gift.functions";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/msreg-logo.png";
 
@@ -47,7 +44,7 @@ function ClosingGiftRequestPage() {
   const [shirtCount, setShirtCount] = useState<1 | 2 | 3>(1);
   const [shirts, setShirts] = useState<Shirt[]>([{ size: "", color: "" }]);
 
-  const submitFn = useServerFn(submitClosingGiftRequest);
+
 
   const { data: inventory = [] } = useQuery({
     queryKey: ["closing-gift-inventory", unlocked],
@@ -124,18 +121,67 @@ function ClosingGiftRequestPage() {
     }
     setBusy(true);
     try {
-      await submitFn({
-        data: {
-          security_code: SECURITY_CODE,
+      // 1. Fetch current inventory details for the requested sizes/colors
+      const sizes = Array.from(new Set(shirts.map((s) => s.size)));
+      const colors = Array.from(new Set(shirts.map((s) => s.color)));
+      const { data: inv, error: invErr } = await supabase
+        .from("closing_gift_inventory")
+        .select("id,size,color,color_hex,quantity_available")
+        .in("size", sizes)
+        .in("color", colors);
+      if (invErr) throw invErr;
+
+      // 2. Tally and validate stock
+      const tally = new Map<string, number>();
+      for (const s of shirts) {
+        const key = `${s.size}|${s.color}`;
+        tally.set(key, (tally.get(key) ?? 0) + 1);
+      }
+      const invByKey = new Map<string, any>();
+      for (const row of inv ?? []) {
+        invByKey.set(`${row.size}|${row.color}`, row);
+      }
+
+      const enrichedShirts: Array<{ size: string; color: string; color_hex: string }> = [];
+      for (const [key, count] of tally.entries()) {
+        const row = invByKey.get(key);
+        if (!row) throw new Error(`Out of stock: ${key.replace("|", " / ")}`);
+        if (row.quantity_available < count) {
+          throw new Error(`Not enough stock for ${row.size} ${row.color}`);
+        }
+      }
+      for (const s of shirts) {
+        const row = invByKey.get(`${s.size}|${s.color}`);
+        enrichedShirts.push({ size: s.size, color: s.color, color_hex: row.color_hex });
+      }
+
+      // 3. Insert request
+      const { data: inserted, error: insErr } = await supabase
+        .from("closing_gift_requests")
+        .insert({
           agent_name: agentName.trim(),
           client_first_name: clientFirst.trim(),
           client_last_name: clientLast.trim(),
           closing_date: closingDate,
           closing_location: closingLocation,
           comments: comments.trim() || null,
-          shirts,
-        },
-      });
+          shirts: enrichedShirts,
+          status: "pending",
+        })
+        .select("id")
+        .single();
+      if (insErr) throw insErr;
+
+      // 4. Decrement inventory
+      for (const [key, count] of tally.entries()) {
+        const row = invByKey.get(key);
+        const { error: updErr } = await supabase
+          .from("closing_gift_inventory")
+          .update({ quantity_available: row.quantity_available - count })
+          .eq("id", row.id);
+        if (updErr) throw updErr;
+      }
+
       setSubmitted(true);
     } catch (err: any) {
       toast.error(err?.message || "Could not submit request.");
