@@ -212,6 +212,7 @@ function ListingsTab({ onOpen, userId }: { onOpen: (id: string) => void; userId:
   const qc = useQueryClient();
   const [creating, setCreating] = useState(false);
   const [view, setView] = useState<"active" | "archived">("active");
+  const [searchQuery, setSearchQuery] = useState("");
   const [form, setForm] = useState({ address: "", agent_name: "", status: "active", description: "" });
 
   const { data: allListings = [], isLoading } = useQuery<Listing[]>({
@@ -223,7 +224,17 @@ function ListingsTab({ onOpen, userId }: { onOpen: (id: string) => void; userId:
     },
   });
 
-  const listings = allListings.filter((l) => (view === "archived" ? l.archived : !l.archived));
+  const listings = allListings
+    .filter((l) => (view === "archived" ? l.archived : !l.archived))
+    .filter((l) => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        (l.address ?? "").toLowerCase().includes(q) ||
+        (l.agent_name ?? "").toLowerCase().includes(q) ||
+        (l.description ?? "").toLowerCase().includes(q)
+      );
+    });
   const activeCount = allListings.filter((l) => !l.archived).length;
   const archivedCount = allListings.filter((l) => l.archived).length;
 
@@ -300,29 +311,48 @@ function ListingsTab({ onOpen, userId }: { onOpen: (id: string) => void; userId:
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="inline-flex rounded-md border border-border overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setView("active")}
-            className={cn(
-              "px-3 py-1.5 text-sm transition-colors",
-              view === "active" ? "bg-gold text-navy font-medium" : "bg-transparent text-foreground hover:bg-accent/40",
+        <div className="flex items-center gap-3 flex-wrap flex-1 min-w-[280px]">
+          <div className="inline-flex rounded-md border border-border overflow-hidden shrink-0">
+            <button
+              type="button"
+              onClick={() => setView("active")}
+              className={cn(
+                "px-3 py-1.5 text-sm transition-colors",
+                view === "active" ? "bg-gold text-navy font-medium" : "bg-transparent text-foreground hover:bg-accent/40",
+              )}
+            >
+              Active <span className="ml-1 text-xs opacity-70">({activeCount})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("archived")}
+              className={cn(
+                "px-3 py-1.5 text-sm border-l border-border transition-colors",
+                view === "archived" ? "bg-gold text-navy font-medium" : "bg-transparent text-foreground hover:bg-accent/40",
+              )}
+            >
+              Archived <span className="ml-1 text-xs opacity-70">({archivedCount})</span>
+            </button>
+          </div>
+          <div className="relative flex-1 max-w-sm min-w-[200px]">
+            <Input
+              type="search"
+              placeholder="Search listings..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-3 pr-8"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
             )}
-          >
-            Active <span className="ml-1 text-xs opacity-70">({activeCount})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("archived")}
-            className={cn(
-              "px-3 py-1.5 text-sm border-l border-border transition-colors",
-              view === "archived" ? "bg-gold text-navy font-medium" : "bg-transparent text-foreground hover:bg-accent/40",
-            )}
-          >
-            Archived <span className="ml-1 text-xs opacity-70">({archivedCount})</span>
-          </button>
+          </div>
         </div>
-        <Button onClick={() => setCreating(true)} className="bg-gold text-navy hover:bg-gold/90">
+        <Button onClick={() => setCreating(true)} className="bg-gold text-navy hover:bg-gold/90 shrink-0">
           <Plus className="h-4 w-4 mr-2" /> New Listing
         </Button>
       </div>

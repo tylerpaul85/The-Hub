@@ -15,7 +15,6 @@ const NAV = [
   { to: "/toolbox", label: "Agent Toolbox", icon: Wrench, adminOnly: false },
   { to: "/videos", label: "Video Pipeline", icon: Video, adminOnly: false },
   { to: "/requests", label: "Requests", icon: Inbox, adminOnly: false },
-  { to: "/closing-gift", label: "Closing Gift Request", icon: Gift, adminOnly: false },
   { to: "/tasks", label: "Projects & Tasks", icon: ClipboardCheck, adminOnly: false },
   { to: "/processes", label: "Internal Processes", icon: BookOpen, adminOnly: false },
   { to: "/my-availability", label: "My Availability", icon: CalendarOff, adminOnly: false },
@@ -30,11 +29,10 @@ const EOS_NAV = [
 
 const ADMIN_NAV = [
   { to: "/users", label: "Users", icon: Users, adminOnly: true },
-  { to: "/duty-agents", label: "Duty Agents", icon: Users, adminOnly: true },
   { to: "/audit-log", label: "Audit Log", icon: ShieldCheck, adminOnly: true },
 ] as const;
 
-const CLIENT_CARE_ALLOWED = ["/dashboard", "/tasks", "/requests", "/inventory", "/closing-gift", "/my-availability", "/duty-calendar"];
+const CLIENT_CARE_ALLOWED = ["/dashboard", "/tasks", "/requests", "/inventory", "/closing-gift", "/my-availability", "/duty-calendar", "/duty-agents"];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { isAdmin, user, signOut, role, roles } = useAuth();
@@ -94,6 +92,19 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               <CalendarDays className="h-4 w-4" />
               Duty Calendar
+            </Link>
+          )}
+
+          {(isAdmin || roles.includes("client_care")) && (
+            <Link
+              to="/duty-agents"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                pathname.startsWith("/duty-agents") ? "bg-gold/15 text-gold" : "text-sidebar-foreground hover:bg-sidebar-accent",
+              )}
+            >
+              <Users className="h-4 w-4" />
+              Duty Agents
             </Link>
           )}
 

@@ -46,10 +46,11 @@ function parseOffice(raw: string): "rolla" | "str" | "loz" | null {
 
 function DutyAgentsPage() {
   const navigate = useNavigate();
-  const { isAdmin, loading } = useAuth();
+  const { isAdmin, roles, loading } = useAuth();
+  const isAllowed = isAdmin || roles.includes("client_care");
   useEffect(() => {
-    if (!loading && !isAdmin) navigate({ to: "/dashboard", replace: true });
-  }, [loading, isAdmin, navigate]);
+    if (!loading && !isAllowed) navigate({ to: "/dashboard", replace: true });
+  }, [loading, isAllowed, navigate]);
 
   const qc = useQueryClient();
   const list = useServerFn(listDutyAgents);
@@ -57,7 +58,7 @@ function DutyAgentsPage() {
   const remove = useServerFn(deleteDutyAgent);
   const bulk = useServerFn(bulkImportDutyAgents);
 
-  const agentsQ = useQuery({ queryKey: ["duty-agents"], queryFn: () => list(), enabled: isAdmin });
+  const agentsQ = useQuery({ queryKey: ["duty-agents"], queryFn: () => list(), enabled: isAllowed });
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
@@ -167,7 +168,7 @@ function DutyAgentsPage() {
     return out;
   }, [agentsQ.data]);
 
-  if (!isAdmin) return null;
+  if (!isAllowed) return null;
 
   return (
     <div className="p-4 md:p-8 max-w-5xl">
