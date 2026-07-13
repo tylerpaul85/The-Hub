@@ -63,11 +63,10 @@ async function createCalendarEntry(
     return null;
   }
   return data?.id ?? null;
-}
-
-/**
+}/**
  * Creates 60/90/120-day repost entries for a listing.
  * baseDate: the post_date (when listing went live), time: HH:MM string.
+ * Note: 60/90/120-day reposts are automatically scheduled at 5:00 AM.
  */
 async function createRepostEntries(
   sb: any,
@@ -84,7 +83,7 @@ async function createRepostEntries(
   const base = new Date(baseDate + "T00:00:00");
   for (const { days, type } of REPOST_OFFSETS) {
     const scheduledDate = format(addDays(base, days), "yyyy-MM-dd");
-    const timePart = postTime?.slice(0, 5) ?? "09:00";
+    const timePart = "05:00";
     
     // Parse to local date object first, then call toISOString to guarantee correct offset formatting
     const localDateTimeStr = `${scheduledDate}T${timePart}:00`;
@@ -491,7 +490,7 @@ export async function autoScheduleReposts(
   const existingTypes = new Set((existing ?? []).map((p: any) => p.post_type));
 
   const base = new Date(postDate + "T00:00:00");
-  const timePart = postTime?.slice(0, 5) ?? "09:00";
+  const timePart = "05:00";
   let created = 0;
   for (const { days, type } of REPOST_OFFSETS) {
     if (existingTypes.has(type)) continue;
