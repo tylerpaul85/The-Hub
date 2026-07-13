@@ -11,6 +11,7 @@ import { DndContext, useDraggable, useDroppable, PointerSensor, useSensor, useSe
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { ContentItemForm } from "@/components/content-item-form";
 import { CalendarListView } from "@/components/calendar-list-view";
@@ -50,6 +51,7 @@ function CalendarPage() {
   const [prefill, setPrefill] = useState<{ title?: string; thumbnail_url?: string; platforms?: string[]; notes?: string } | undefined>();
   const [analyzeOpen, setAnalyzeOpen] = useState(false);
   const [brandFilter, setBrandFilter] = useState<"all" | Brand>("all");
+  const [hideReposts, setHideReposts] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -109,8 +111,19 @@ function CalendarPage() {
   });
 
   const filteredItems = useMemo(
-    () => items.filter((it) => brandFilter === "all" || (it.brand ?? "PP") === brandFilter),
-    [items, brandFilter],
+    () => items.filter((it) => {
+      if (brandFilter !== "all" && (it.brand ?? "PP") !== brandFilter) {
+        return false;
+      }
+      if (hideReposts) {
+        const titleLower = (it.title ?? "").toLowerCase();
+        if (titleLower.includes("60-day") || titleLower.includes("90-day") || titleLower.includes("120-day")) {
+          return false;
+        }
+      }
+      return true;
+    }),
+    [items, brandFilter, hideReposts],
   );
 
 
@@ -209,20 +222,37 @@ function CalendarPage() {
           <p className="text-xs sm:text-sm text-muted-foreground truncate">{title}</p>
         </div>
 
-        {/* Brand filter — own row, horizontal scroll on small screens */}
-        <div className="flex gap-1 bg-muted rounded-md p-0.5 overflow-x-auto flex-nowrap w-full sm:w-fit">
-          {(["all", "LOZ", "PP", "AON", "MSREG ALL"] as const).map((b) => (
-            <button key={b} onClick={() => setBrandFilter(b)} className={cn(
-              "shrink-0 px-2.5 py-1.5 text-xs font-semibold rounded transition-colors whitespace-nowrap",
-              brandFilter === b
-                ? (b === "PP" ? "bg-gold text-gold-foreground"
-                  : b === "LOZ" ? "bg-indigo-400 text-background"
-                  : b === "MSREG ALL" ? "bg-purple-400 text-background"
-                  : b === "AON" ? "bg-sky-500 text-white"
-                  : "bg-foreground text-background")
-                : "text-muted-foreground hover:text-foreground",
-            )}>{b === "all" ? "All" : b}</button>
-          ))}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Brand filter — own row, horizontal scroll on small screens */}
+          <div className="flex gap-1 bg-muted rounded-md p-0.5 overflow-x-auto flex-nowrap w-full sm:w-fit">
+            {(["all", "LOZ", "PP", "AON", "MSREG ALL"] as const).map((b) => (
+              <button key={b} onClick={() => setBrandFilter(b)} className={cn(
+                "shrink-0 px-2.5 py-1.5 text-xs font-semibold rounded transition-colors whitespace-nowrap",
+                brandFilter === b
+                  ? (b === "PP" ? "bg-gold text-gold-foreground"
+                    : b === "LOZ" ? "bg-indigo-400 text-background"
+                    : b === "MSREG ALL" ? "bg-purple-400 text-background"
+                    : b === "AON" ? "bg-sky-500 text-white"
+                    : "bg-foreground text-background")
+                  : "text-muted-foreground hover:text-foreground",
+              )}>{b === "all" ? "All" : b}</button>
+            ))}
+          </div>
+
+          {/* Hide 60/90/120 Reposts Checkbox */}
+          <div className="flex items-center gap-2 px-1">
+            <Checkbox
+              id="hide-reposts-check"
+              checked={hideReposts}
+              onCheckedChange={(checked) => setHideReposts(!!checked)}
+            />
+            <label
+              htmlFor="hide-reposts-check"
+              className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer select-none"
+            >
+              Hide 60/90/120 Reposts
+            </label>
+          </div>
         </div>
 
         {/* Toolbar — wraps on mobile */}

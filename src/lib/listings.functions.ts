@@ -9,7 +9,6 @@ import type { ListingStatus, ParsedListing, PostType } from "@/lib/listings";
 const REPOST_OFFSETS: { days: number; type: PostType }[] = [
   { days: 60, type: "repost_60" },
   { days: 90, type: "repost_90" },
-  { days: 120, type: "repost_120" },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -389,7 +388,7 @@ export async function markUnderContract(
     .select("id, calendar_entry_id")
     .eq("listing_id", listingId)
     .eq("status", "scheduled")
-    .in("post_type", ["repost_60", "repost_90", "repost_120"])
+    .in("post_type", ["repost_60", "repost_90"])
     .gte("scheduled_date", today);
 
   let cancelledCount = 0;
@@ -485,7 +484,7 @@ export async function autoScheduleReposts(
     .from("listing_posts")
     .select("post_type")
     .eq("listing_id", listingId)
-    .in("post_type", ["repost_60", "repost_90", "repost_120"]);
+    .in("post_type", ["repost_60", "repost_90"]);
 
   const existingTypes = new Set((existing ?? []).map((p: any) => p.post_type));
 
