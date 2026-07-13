@@ -45,33 +45,19 @@ async function createCalendarEntry(
     .from("content_items")
     .insert({
       title,
-      caption: null,
-      platforms: ["Meta"],
       status: "approved",
+      platforms: ["Meta"],
       scheduled_at: scheduledAt,
-      link: null,
       priority: "normal",
-      notes,
-      thumbnail_url: null,
-      image_urls: null,
-      target_publish_date: null,
-      revision_note: null,
+      notes: [notes, copy ? `Copy: ${copy}` : null].filter(Boolean).join("\n") || null,
       created_by: userId,
       brand: "MSREG ALL",
       canva_link: canvaLink,
-      description: null,
-      blog_content: null,
-      blog_doc_link: null,
-      youtube_thumbnail_url: null,
-      youtube_video_title: null,
-      email_subject_line: null,
-      meta_media_link: null,
-      meta_copy: copy,
     })
     .select("id")
     .single();
   if (error) {
-    console.error("[listings] Calendar entry error:", error.message);
+    console.error("[listings] Calendar entry error:", error.message, error.code);
     return null;
   }
   return data?.id ?? null;

@@ -21,12 +21,12 @@ import { format, addDays } from "date-fns";
 import {
   Home, ArrowLeft, Pencil, Check, X, Loader2, Upload, Trash2,
   Image as ImageIcon, CalendarClock, AlertTriangle, RefreshCw,
-  Archive, Download, Plus, Calendar, ExternalLink, Send,
+  Archive, Download, Plus, Calendar, ExternalLink, Send, Video, Link as LinkIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   type Listing, type ListingGraphic, type ListingCopy, type ListingPost,
-  type ListingStatus, type PostType,
+  type ListingVideo, type ListingStatus, type PostType,
   LISTING_STATUS_LABEL, LISTING_STATUS_CLASS,
   POST_TYPE_LABEL, POST_TYPE_CLASS,
   POST_STATUS_LABEL, POST_STATUS_CLASS,
@@ -108,6 +108,23 @@ function ListingDetailPage() {
     },
   });
 
+  const { data: videos = [] } = useQuery({
+    queryKey: ["listing-videos", id],
+    queryFn: async () => {
+      const { data, error } = await sb
+        .from("listing_videos")
+        .select("*")
+        .eq("listing_id", id)
+        .order("created_at");
+      if (error) {
+        // table may not exist yet — return empty gracefully
+        console.warn("[listing-videos]", error.message);
+        return [] as ListingVideo[];
+      }
+      return data as ListingVideo[];
+    },
+  });
+
   const invalidateAll = () => {
     qc.invalidateQueries({ queryKey: ["listing", id] });
     qc.invalidateQueries({ queryKey: ["listings"] });
@@ -179,11 +196,22 @@ function ListingDetailPage() {
         graphics={graphics}
         copyData={copyData ?? null}
         canManage={canManage}
+        canvaLink={listing.canva_link}
         onGraphicsChanged={() => qc.invalidateQueries({ queryKey: ["listing-graphics", id] })}
         onCopyChanged={() => qc.invalidateQueries({ queryKey: ["listing-copy", id] })}
+        onCanvaLinkSaved={invalidateAll}
       />
 
-      {/* Section 3: Scheduled Posts */}
+      {/* Section 3: Listing Videos */}
+      <VideosSection
+        listingId={id}
+        userId={userId}
+        videos={videos}
+        canManage={canManage}
+        onChanged={() => qc.invalidateQueries({ queryKey: ["listing-videos", id] })}
+      />
+
+      {/* Section 4: Scheduled Posts */}
       <PostsSection
         listing={listing}
         userId={userId}
@@ -435,20 +463,24 @@ function InfoField({ label, value, className, mono }: { label: string; value: st
 // ─── Graphics & Copy Section ──────────────────────────────────────────────────
 
 function GraphicsCopySection({
-  listingId, userId, graphics, copyData, canManage, onGraphicsChanged, onCopyChanged,
+  listingId, userId, graphics, copyData, canManage, canvaLink, onGraphicsChanged, onCopyChanged, onCanvaLinkSaved,
 }: {
   listingId: string;
   userId: string;
   graphics: ListingGraphic[];
   copyData: ListingCopy | null;
   canManage: boolean;
+  canvaLink: string | null;
   onGraphicsChanged: () => void;
   onCopyChanged: () => void;
+  onCanvaLinkSaved: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [copyText, setCopyText] = useState(copyData?.social_media_copy ?? "");
   const [copySaving, setCopySaving] = useState(false);
+  const [canvaValue, setCanvaValue] = useState(canvaLink ?? "");
+  const [canvaSaving, setCanvaSaving] = useState(false);
 
   // Sync copy text when data reloads
   const prevCopyRef = useRef(copyData?.social_media_copy ?? "");
@@ -499,6 +531,19 @@ function GraphicsCopySection({
     }
   };
 
+  const handleSaveCanva = async () => {
+    setCanvaSaving(true);
+    try {
+      await updateListing(sb, listingId, { canva_link: canvaValue.trim() || null });
+      toast.success("Canva link saved");
+      onCanvaLinkSaved();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setCanvaSaving(false);
+    }
+  };
+
   return (
     <section className="bg-card border border-border rounded-xl overflow-hidden">
       <div className="flex items-center gap-2 p-4 border-b border-border">
@@ -507,6 +552,38 @@ function GraphicsCopySection({
       </div>
 
       <div className="p-4 space-y-5">
+        {/* ── Canva Link — always visible, easy to update ── */}
+        <div className="rounded-lg border border-gold/30 bg-gold/5 p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <ExternalLink className="h-3.5 w-3.5 text-gold" />
+            <Label className="text-gold text-xs font-semibold uppercase tracking-wide">Canva Design Link</Label>
+            {canvaLink && (
+              <a href={canvaLink} target="_blank" rel="noopener noreferrer"
+                className="ml-auto text-xs text-gold hover:underline flex items-center gap-1">
+                Open <ExternalLink className="h-3 w-3" />
+              </a>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Input
+              className="flex-1 h-8 text-sm bg-background/50"
+              placeholder="https://www.canva.com/design/…"
+              value={canvaValue}
+              onChange={(e) => setCanvaValue(e.target.value)}
+              readOnly={!canManage}
+            />
+            {canManage && (
+              <Button size="sm" className="h-8 bg-gold hover:bg-gold/90 text-navy font-semibold shrink-0"
+                onClick={handleSaveCanva} disabled={canvaSaving}>
+                {canvaSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+              </Button>
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-1.5">
+            Auto-filled into all 60/90/120-day repost calendar entries.
+          </p>
+        </div>
+
         {/* Graphics */}
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -579,6 +656,126 @@ function GraphicsCopySection({
             className={cn("text-sm", !canManage && "opacity-70 cursor-default")}
           />
         </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Listing Videos Section ───────────────────────────────────────────────────
+
+function VideosSection({
+  listingId, userId, videos, canManage, onChanged,
+}: {
+  listingId: string;
+  userId: string;
+  videos: ListingVideo[];
+  canManage: boolean;
+  onChanged: () => void;
+}) {
+  const [url, setUrl] = useState("");
+  const [label, setLabel] = useState("");
+  const [adding, setAdding] = useState(false);
+
+  const addVideo = async () => {
+    if (!url.trim()) return;
+    setAdding(true);
+    try {
+      const { error } = await sb.from("listing_videos").insert({
+        listing_id: listingId,
+        drive_url: url.trim(),
+        label: label.trim() || null,
+        created_by: userId,
+      });
+      if (error) throw error;
+      toast.success("Video link added");
+      setUrl("");
+      setLabel("");
+      onChanged();
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to add video");
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const removeVideo = async (id: string) => {
+    await sb.from("listing_videos").delete().eq("id", id);
+    onChanged();
+    toast.success("Video removed");
+  };
+
+  return (
+    <section className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="flex items-center gap-2 p-4 border-b border-border">
+        <Video className="h-4 w-4 text-gold" />
+        <h2 className="font-semibold">Listing Videos</h2>
+        <span className="ml-auto text-xs text-muted-foreground">Google Drive, YouTube, or any video URL</span>
+      </div>
+
+      <div className="p-4 space-y-3">
+        {/* Existing videos */}
+        {videos.length > 0 && (
+          <div className="space-y-2">
+            {videos.map((v) => (
+              <div key={v.id} className="flex items-center gap-3 rounded-lg border border-border bg-card/50 px-3 py-2.5">
+                <Video className="h-4 w-4 text-muted-foreground shrink-0" />
+                <div className="flex-1 min-w-0">
+                  {v.label && <p className="text-xs font-medium truncate">{v.label}</p>}
+                  <a
+                    href={v.drive_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-gold hover:underline flex items-center gap-1.5 truncate"
+                  >
+                    <LinkIcon className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{v.drive_url}</span>
+                  </a>
+                </div>
+                {canManage && (
+                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0"
+                    onClick={() => removeVideo(v.id)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add new video */}
+        {canManage && (
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  className="pl-9 text-sm"
+                  placeholder="Paste Google Drive or YouTube URL…"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addVideo()}
+                />
+              </div>
+              <Input
+                className="text-sm w-36 shrink-0"
+                placeholder="Label (optional)"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+              />
+              <Button
+                onClick={addVideo}
+                disabled={!url.trim() || adding}
+                className="bg-gold hover:bg-gold/90 text-navy font-semibold shrink-0"
+              >
+                {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {videos.length === 0 && !canManage && (
+          <p className="text-sm text-muted-foreground text-center py-4">No videos linked yet.</p>
+        )}
       </div>
     </section>
   );

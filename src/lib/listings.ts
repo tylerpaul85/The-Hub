@@ -104,6 +104,14 @@ export type ListingPost = {
   created_at: string;
 };
 
+export type ListingVideo = {
+  id: string;
+  listing_id: string;
+  drive_url: string;
+  label: string | null;
+  created_at: string;
+};
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export function calcDaysListed(listDate: string): number {
