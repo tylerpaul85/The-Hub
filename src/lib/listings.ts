@@ -71,6 +71,7 @@ export type Listing = {
   post_time: string;    // HH:MM:SS
   canva_link: string | null;
   website_link: string | null;
+  brand: string | null;
   status: ListingStatus;
   archived: boolean;
   created_at: string;

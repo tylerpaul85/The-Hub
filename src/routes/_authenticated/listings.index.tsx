@@ -308,6 +308,7 @@ function NewListingModal({
     status: "active" as ListingStatus,
     canva_link: "",
     website_link: "",
+    brand: "MSREG ALL",
   });
 
   const mut = useMutation({
@@ -326,6 +327,7 @@ function NewListingModal({
         status: form.status,
         canva_link: form.canva_link.trim() || null,
         website_link: form.website_link.trim() || null,
+        brand: form.brand,
       });
     },
     onSuccess: () => {
@@ -333,7 +335,7 @@ function NewListingModal({
       setForm({
         address: "", agent_name: "", mls_id: "", list_price: "",
         list_date: today, post_date: today, post_time: "09:00",
-        status: "active", canva_link: "", website_link: "",
+        status: "active", canva_link: "", website_link: "", brand: "MSREG ALL",
       });
       onSuccess();
     },
@@ -418,6 +420,22 @@ function NewListingModal({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Brand select */}
+          <div className="grid gap-1.5">
+            <Label>Marketing Brand / Destination</Label>
+            <Select value={form.brand} onValueChange={(v) => set("brand", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PP">PP (Premier Properties / Signature Brands)</SelectItem>
+                <SelectItem value="LOZ">LOZ (Lake of the Ozarks)</SelectItem>
+                <SelectItem value="MSREG ALL">MSREG ALL (Mike Thomas Group)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Controls which calendar filters and social media groups this listing maps to.
+            </p>
           </div>
 
           {/* Post Date + Time — the key scheduling fields */}

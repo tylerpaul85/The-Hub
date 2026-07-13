@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -95,6 +95,16 @@ function ListingDetailPage() {
       return data as ListingCopy | null;
     },
   });
+
+  const [copyText, setCopyText] = useState("");
+
+  useEffect(() => {
+    if (copyData) {
+      setCopyText(copyData.social_media_copy ?? "");
+    } else {
+      setCopyText("");
+    }
+  }, [copyData]);
 
   const { data: posts = [] } = useQuery({
     queryKey: ["listing-posts", id],
@@ -195,7 +205,8 @@ function ListingDetailPage() {
         listingId={id}
         userId={userId}
         graphics={graphics}
-        copyData={copyData ?? null}
+        copyText={copyText}
+        setCopyText={setCopyText}
         canManage={canManage}
         canvaLink={listing.canva_link}
         onGraphicsChanged={() => qc.invalidateQueries({ queryKey: ["listing-graphics", id] })}
@@ -229,7 +240,7 @@ function ListingDetailPage() {
           userId={userId}
           graphics={graphics}
           videos={videos}
-          copyData={copyData ?? null}
+          copyText={copyText}
           onArchived={() => navigate({ to: "/listings" })}
           onGraphicsRefresh={() => qc.invalidateQueries({ queryKey: ["listing-graphics", id] })}
         />
@@ -318,6 +329,7 @@ function ListingInfoSection({
     status: listing.status,
     canva_link: listing.canva_link ?? "",
     website_link: listing.website_link ?? "",
+    brand: listing.brand ?? "MSREG ALL",
   });
 
   const mut = useMutation({
@@ -333,6 +345,7 @@ function ListingInfoSection({
         status: form.status,
         canva_link: form.canva_link.trim() || null,
         website_link: form.website_link.trim() || null,
+        brand: form.brand,
       }),
     onSuccess: () => {
       toast.success("Listing updated and calendar synced");
@@ -409,6 +422,17 @@ function ListingInfoSection({
             </Select>
           </div>
           <div className="grid gap-1.5">
+            <Label>Marketing Brand / Destination</Label>
+            <Select value={form.brand} onValueChange={(v) => set("brand", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PP">PP (Premier Properties / Signature Brands)</SelectItem>
+                <SelectItem value="LOZ">LOZ (Lake of the Ozarks)</SelectItem>
+                <SelectItem value="MSREG ALL">MSREG ALL (Mike Thomas Group)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-1.5">
             <Label>Canva Link</Label>
             <div className="relative">
               <ExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -447,6 +471,7 @@ function ListingInfoSection({
               value={`${format(new Date(listing.post_date + "T00:00:00"), "MMM d, yyyy")} @ ${listing.post_time?.slice(0, 5) ?? "09:00"}`}
             />
           )}
+          <InfoField label="Marketing Brand" value={listing.brand ?? "MSREG ALL"} />
           {listing.canva_link && (
             <div className="space-y-0.5">
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Canva Link</p>
@@ -493,12 +518,13 @@ function InfoField({ label, value, className, mono }: { label: string; value: st
 // ─── Graphics & Copy Section ──────────────────────────────────────────────────
 
 function GraphicsCopySection({
-  listingId, userId, graphics, copyData, canManage, canvaLink, onGraphicsChanged, onCopyChanged, onCanvaLinkSaved,
+  listingId, userId, graphics, copyText, setCopyText, canManage, canvaLink, onGraphicsChanged, onCopyChanged, onCanvaLinkSaved,
 }: {
   listingId: string;
   userId: string;
   graphics: ListingGraphic[];
-  copyData: ListingCopy | null;
+  copyText: string;
+  setCopyText: (v: string) => void;
   canManage: boolean;
   canvaLink: string | null;
   onGraphicsChanged: () => void;
@@ -507,17 +533,9 @@ function GraphicsCopySection({
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [copyText, setCopyText] = useState(copyData?.social_media_copy ?? "");
   const [copySaving, setCopySaving] = useState(false);
   const [canvaValue, setCanvaValue] = useState(canvaLink ?? "");
   const [canvaSaving, setCanvaSaving] = useState(false);
-
-  // Sync copy text when data reloads
-  const prevCopyRef = useRef(copyData?.social_media_copy ?? "");
-  if ((copyData?.social_media_copy ?? "") !== prevCopyRef.current) {
-    prevCopyRef.current = copyData?.social_media_copy ?? "";
-    setCopyText(copyData?.social_media_copy ?? "");
-  }
 
   const handleUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -1073,14 +1091,15 @@ function AutoScheduleModal({ open, listing, userId, existingTypes, onClose, onSu
 // ─── Actions Section ──────────────────────────────────────────────────────────
 
 function ActionsSection({
-  listing, userId, graphics, videos, copyData, onArchived, onGraphicsRefresh,
+  listing, userId, graphics, videos, copyText, onArchived, onGraphicsRefresh,
 }: {
   listing: Listing; userId: string; graphics: ListingGraphic[];
-  videos: ListingVideo[]; copyData: ListingCopy | null;
+  videos: ListingVideo[]; copyText: string;
   onArchived: () => void; onGraphicsRefresh: () => void;
 }) {
   const [archiveConfirm, setArchiveConfirm] = useState(false);
   const [pushConfirm, setPushConfirm] = useState(false);
+  const qc = useQueryClient();
 
   const archiveMut = useMutation({
     mutationFn: () => archiveListing(sb, listing.id),
@@ -1095,15 +1114,18 @@ function ActionsSection({
   const pushMut = useMutation({
     mutationFn: () =>
       pushToToolbox(sb, userId, {
+        listing_id: listing.id,
         address: listing.address,
         agent_name: listing.agent_name,
         graphics: graphics.map((g) => ({ image_url: g.image_url, label: g.label })),
         videos: videos.map((v) => ({ drive_url: v.drive_url, label: v.label })),
-        social_copy: copyData?.social_media_copy ?? null,
+        social_copy: copyText || null,
+        website_link: listing.website_link || null,
       }),
     onSuccess: () => {
       toast.success("Listing pushed to Agent Toolbox! Graphics, videos, and copy are now available for agents.", { duration: 5000 });
       setPushConfirm(false);
+      qc.invalidateQueries({ queryKey: ["listing-copy", listing.id] });
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -1132,7 +1154,7 @@ function ActionsSection({
     }
   };
 
-  const hasAssetsToPush = graphics.length > 0 || videos.length > 0 || !!copyData?.social_media_copy;
+  const hasAssetsToPush = graphics.length > 0 || videos.length > 0 || !!copyText;
 
   return (
     <section className="bg-card border border-border rounded-xl overflow-hidden">
@@ -1199,7 +1221,7 @@ function ActionsSection({
                   {videos.length} video{videos.length !== 1 ? "s" : ""} linked in Google Drive section
                 </li>
               )}
-              {copyData?.social_media_copy && (
+              {copyText && (
                 <li className="flex items-center gap-2">
                   <Check className="h-3.5 w-3.5 text-gold shrink-0" />
                   Social media copy as a ready-to-use caption
