@@ -20,11 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Boxes, Plus, Pencil, AlertTriangle, CheckCircle2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import {
-  addOrUpdateInventory,
-  deleteInventoryRow,
-  markRequestCompleted,
-} from "@/lib/closing-gift.functions";
+
 
 const SIZES = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"] as const;
 const LOW_STOCK = 2;
@@ -130,9 +126,14 @@ function InventoryTab({ canEdit }: { canEdit: boolean }) {
     .filter((r) => colorFilter === "all" || r.color === colorFilter)
     .sort((a, b) => sizeOrder(a.size) - sizeOrder(b.size) || a.color.localeCompare(b.color));
 
-  const deleteFn = useServerFn(deleteInventoryRow);
   const delMut = useMutation({
-    mutationFn: (id: string) => deleteFn({ data: { id } }),
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("closing_gift_inventory")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       toast.success("Removed from inventory");
       qc.invalidateQueries({ queryKey: ["closing-gift-inventory-admin"] });
@@ -243,21 +244,53 @@ function InventoryDialog({
   const [hex, setHex] = useState(row?.color_hex ?? "#001F3F");
   const [qty, setQty] = useState<number>(row?.quantity_available ?? 0);
   const [busy, setBusy] = useState(false);
-  const upsertFn = useServerFn(addOrUpdateInventory);
-
   async function handleSave() {
     if (!color.trim()) { toast.error("Color name is required"); return; }
     if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex)) { toast.error("Hex must be like #001F3F"); return; }
     setBusy(true);
     try {
-      await upsertFn({
-        data: {
-          size,
-          color: color.trim(),
-          color_hex: hex.trim(),
-          quantity: Number(qty) || 0,
-        },
-      });
+      if (row) {
+        // Update existing row
+        const { error } = await supabase
+          .from("closing_gift_inventory")
+          .update({
+            color_hex: hex.trim(),
+            quantity_available: Number(qty) || 0,
+          })
+          .eq("id", row.id);
+        if (error) throw error;
+      } else {
+        // Insert new row
+        // Check if already exists
+        const { data: existing, error: findErr } = await supabase
+          .from("closing_gift_inventory")
+          .select("id")
+          .eq("size", size)
+          .eq("color", color.trim())
+          .maybeSingle();
+        if (findErr) throw findErr;
+
+        if (existing) {
+          const { error } = await supabase
+            .from("closing_gift_inventory")
+            .update({
+              color_hex: hex.trim(),
+              quantity_available: Number(qty) || 0,
+            })
+            .eq("id", existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("closing_gift_inventory")
+            .insert({
+              size,
+              color: color.trim(),
+              color_hex: hex.trim(),
+              quantity_available: Number(qty) || 0,
+            });
+          if (error) throw error;
+        }
+      }
       toast.success(row ? "Inventory updated" : "Inventory added");
       onSaved();
       onClose();
@@ -336,10 +369,14 @@ function RequestsTab() {
 
   const filtered = requests.filter((r) => statusFilter === "all" || r.status === statusFilter);
 
-  const markFn = useServerFn(markRequestCompleted);
   const markMut = useMutation({
-    mutationFn: (vars: { id: string; status: "fulfilled" | "completed" }) =>
-      markFn({ data: { request_id: vars.id, status: vars.status } }),
+    mutationFn: async (vars: { id: string; status: "fulfilled" | "completed" }) => {
+      const { error } = await supabase
+        .from("closing_gift_requests")
+        .update({ status: vars.status })
+        .eq("id", vars.id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       toast.success("Request updated");
       qc.invalidateQueries({ queryKey: ["closing-gift-requests-admin"] });
