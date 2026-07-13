@@ -112,7 +112,7 @@ export const submitClosingGiftRequest = createServerFn({ method: "POST" })
     return { ok: true, id: inserted.id as string };
   });
 
-export const listClosingGiftInventory = createServerFn({ method: "GET" })
+export const listClosingGiftInventory = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => z.object({ security_code: z.string() }).parse(data))
   .handler(async ({ data }) => {
     if (data.security_code !== SECURITY_CODE) {
