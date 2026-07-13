@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import {
   submitClosingGiftRequest,
-  listClosingGiftInventory,
 } from "@/lib/closing-gift.functions";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/msreg-logo.png";
 
 const SECURITY_CODE = "MSREG2026";
@@ -47,12 +47,19 @@ function ClosingGiftRequestPage() {
   const [shirtCount, setShirtCount] = useState<1 | 2 | 3>(1);
   const [shirts, setShirts] = useState<Shirt[]>([{ size: "", color: "" }]);
 
-  const fetchInventory = useServerFn(listClosingGiftInventory);
   const submitFn = useServerFn(submitClosingGiftRequest);
 
   const { data: inventory = [] } = useQuery({
     queryKey: ["closing-gift-inventory", unlocked],
-    queryFn: () => fetchInventory({ data: { security_code: SECURITY_CODE } }),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("closing_gift_inventory")
+        .select("size,color,color_hex,quantity_available")
+        .order("size")
+        .order("color");
+      if (error) throw error;
+      return data ?? [];
+    },
     enabled: unlocked,
   });
 
