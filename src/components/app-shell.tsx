@@ -17,7 +17,6 @@ const NAV = [
   { to: "/requests", label: "Requests", icon: Inbox, adminOnly: false },
   { to: "/tasks", label: "Projects & Tasks", icon: ClipboardCheck, adminOnly: false },
   { to: "/processes", label: "Internal Processes", icon: BookOpen, adminOnly: false },
-  { to: "/my-availability", label: "My Availability", icon: CalendarOff, adminOnly: false },
 ] as const;
 
 const EOS_NAV = [

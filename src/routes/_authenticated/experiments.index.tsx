@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
-import { Tv, FlaskConical, Wand2 } from "lucide-react";
+import { Tv, FlaskConical, Wand2, CalendarOff } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/experiments/")({
   component: ExperimentsIndex,
@@ -20,6 +20,19 @@ function ExperimentsIndex() {
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
+        <Link to="/my-availability">
+          <Card className="p-5 hover:border-gold/60 transition-colors cursor-pointer h-full">
+            <div className="flex items-start gap-3">
+              <CalendarOff className="h-5 w-5 text-gold mt-1" />
+              <div>
+                <div className="font-semibold">My Availability</div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  Manage agent unavailability dates for the duty calendar. (Moved to Lab).
+                </div>
+              </div>
+            </div>
+          </Card>
+        </Link>
         <Link to="/experiments/tv-dashboard">
           <Card className="p-5 hover:border-gold/60 transition-colors cursor-pointer h-full border-gold/30 bg-gradient-to-br from-gold/5 to-transparent">
             <div className="flex items-start gap-3">

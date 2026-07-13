@@ -604,11 +604,11 @@ export async function pushToToolbox(
 
   const tbId = tbListing.id as string;
 
-  // Add each graphic as a toolbox asset (type: "graphic")
+  // Add each graphic as a toolbox asset (type: "photo")
   for (const g of input.graphics) {
     await sb.from("toolbox_assets").insert({
       listing_id: tbId,
-      asset_type: "graphic",
+      asset_type: "photo",
       file_url: g.image_url,
       thumbnail_url: g.image_url,
       name: g.label ?? "Just Listed",

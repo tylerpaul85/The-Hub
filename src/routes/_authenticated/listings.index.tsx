@@ -428,9 +428,9 @@ function NewListingModal({
             <Select value={form.brand} onValueChange={(v) => set("brand", v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="PP">PP (Premier Properties / Signature Brands)</SelectItem>
-                <SelectItem value="LOZ">LOZ (Lake of the Ozarks)</SelectItem>
-                <SelectItem value="MSREG ALL">MSREG ALL (Mike Thomas Group)</SelectItem>
+                <SelectItem value="PP">PP</SelectItem>
+                <SelectItem value="LOZ">LOZ</SelectItem>
+                <SelectItem value="MSREG ALL">MSREG ALL</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
