@@ -89,6 +89,7 @@ type Req = {
   closing_gift: ClosingGift;
   closing_gift_completed_at: string | null;
   closing_gift_completed_by: string | null;
+  is_closing_gift_request_table_row?: boolean;
 };
 
 const priorityColor: Record<string, string> = {
@@ -122,12 +123,52 @@ function RequestsInbox() {
   const { data: requests = [], isLoading } = useQuery<Req[]>({
     queryKey: ["marketing-requests"],
     queryFn: async () => {
-      const { data, error } = await sb
+      // 1. Fetch marketing requests
+      const { data: marketing, error: mErr } = await sb
         .from("marketing_requests")
         .select("*")
         .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as Req[];
+      if (mErr) throw mErr;
+
+      // 2. Fetch closing gift requests
+      const { data: closingGifts, error: cErr } = await sb
+        .from("closing_gift_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (cErr) throw cErr;
+
+      // 3. Map closing gift requests to standard Req shape
+      const mappedGifts = (closingGifts || []).map((r: any) => ({
+        id: r.id,
+        agent_name: r.agent_name,
+        agent_email: "—",
+        request_types: ["Closing Gift"],
+        scope: "personal",
+        property_address: r.closing_location,
+        deadline: r.closing_date,
+        description: r.comments || `Request for closing gift shirts for client ${r.client_first_name} ${r.client_last_name}.`,
+        priority: "normal",
+        copy_notes: null,
+        file_urls: [],
+        status: r.status === "pending" ? "pending" : "approved",
+        decline_note: null,
+        created_at: r.created_at,
+        reviewed_at: r.created_at,
+        closing_gift: {
+          closing_date: r.closing_date,
+          office_location: r.closing_location,
+          shirt_count: (r.shirts as any[]).length,
+          shirt_sizes: (r.shirts as any[]).map(s => `${s.size} (${s.color})`),
+        },
+        closing_gift_completed_at: r.status === "completed" || r.status === "fulfilled" ? r.created_at : null,
+        closing_gift_completed_by: null,
+        is_closing_gift_request_table_row: true,
+      }));
+
+      // 4. Merge and sort by created_at descending
+      const merged = [...(marketing || []), ...mappedGifts];
+      merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      return merged as Req[];
     },
   });
 
@@ -141,14 +182,23 @@ function RequestsInbox() {
 
   const completeGift = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await sb
-        .from("marketing_requests")
-        .update({
-          closing_gift_completed_at: new Date().toISOString(),
-          closing_gift_completed_by: user?.id ?? null,
-        })
-        .eq("id", id);
-      if (error) throw error;
+      const isTableReq = requests.find(r => r.id === id)?.is_closing_gift_request_table_row;
+      if (isTableReq) {
+        const { error } = await sb
+          .from("closing_gift_requests")
+          .update({ status: "completed" })
+          .eq("id", id);
+        if (error) throw error;
+      } else {
+        const { error } = await sb
+          .from("marketing_requests")
+          .update({
+            closing_gift_completed_at: new Date().toISOString(),
+            closing_gift_completed_by: user?.id ?? null,
+          })
+          .eq("id", id);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       toast.success("Closing gift marked completed");
@@ -161,11 +211,20 @@ function RequestsInbox() {
 
   const reopenGift = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await sb
-        .from("marketing_requests")
-        .update({ closing_gift_completed_at: null, closing_gift_completed_by: null })
-        .eq("id", id);
-      if (error) throw error;
+      const isTableReq = requests.find(r => r.id === id)?.is_closing_gift_request_table_row;
+      if (isTableReq) {
+        const { error } = await sb
+          .from("closing_gift_requests")
+          .update({ status: "pending" })
+          .eq("id", id);
+        if (error) throw error;
+      } else {
+        const { error } = await sb
+          .from("marketing_requests")
+          .update({ closing_gift_completed_at: null, closing_gift_completed_by: null })
+          .eq("id", id);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       toast.success("Reopened");
@@ -419,7 +478,7 @@ function RequestsInbox() {
                   )}
                 </DialogFooter>
               )}
-              {isAdmin && selected.status === "pending" && (
+              {isAdmin && selected.status === "pending" && !selected.closing_gift && (
                 <DialogFooter className="gap-2">
                   <Button variant="outline" onClick={() => { setDeclineNote(""); setDeclineOpen(true); }}>
                     <X className="h-4 w-4 mr-1" /> Decline
