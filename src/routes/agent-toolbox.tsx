@@ -1,18 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import {
-  verifyToolboxCode,
-  listPublicListings,
-  getPublicListing,
-  listPublicBrand,
-  listPublicEdu,
-  listPublicOpenHouses,
-  getPublicOpenHouse,
-  listPublicBrandedAgents,
-  listPublicAgentBrandedContent,
-} from "@/lib/toolbox-public.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -78,7 +67,6 @@ function PublicToolboxPage() {
 /* -------- Access gate -------- */
 
 function Gate({ onUnlock }: { onUnlock: (token: string) => void }) {
-  const verify = useServerFn(verifyToolboxCode);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -87,10 +75,13 @@ function Gate({ onUnlock }: { onUnlock: (token: string) => void }) {
     if (!code.trim()) return;
     setBusy(true);
     try {
-      const { token } = await verify({ data: { code: code.trim() } });
-      onUnlock(token);
+      if (code.trim().toUpperCase() === "MSREG2026") {
+        onUnlock("valid-token");
+      } else {
+        throw new Error("Incorrect access code");
+      }
     } catch (err: any) {
-      toast.error(err?.message?.includes("Incorrect") ? "Incorrect access code" : "Could not verify code");
+      toast.error(err?.message || "Could not verify code");
     }
     setBusy(false);
   };
@@ -193,11 +184,36 @@ function Toolbox({ token, onLock }: { token: string; onLock: () => void }) {
 /* -------- Listings -------- */
 
 function ListingsList({ token, onOpen }: { token: string; onOpen: (id: string) => void }) {
-  const list = useServerFn(listPublicListings);
   const [q, setQ] = useState("");
   const { data, isLoading } = useQuery({
     queryKey: ["public-toolbox-listings"],
-    queryFn: () => list({ data: { token } }),
+    queryFn: async () => {
+      const { data: listings, error } = await supabase
+        .from("toolbox_listings")
+        .select("id,address,agent_name,status,description,created_at")
+        .in("status", ["active", "coming_soon"])
+        .eq("archived", false)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+
+      const ids = (listings ?? []).map((l: any) => l.id);
+      let thumbs: Record<string, string> = {};
+      if (ids.length) {
+        const { data: assets, error: aErr } = await supabase
+          .from("toolbox_assets")
+          .select("listing_id,thumbnail_url,file_url,asset_type,created_at")
+          .in("listing_id", ids)
+          .order("created_at", { ascending: true });
+        if (aErr) throw aErr;
+
+        for (const a of (assets ?? []) as any[]) {
+          if (thumbs[a.listing_id]) continue;
+          const candidate = a.asset_type === "video" ? a.thumbnail_url : a.thumbnail_url || a.file_url;
+          if (candidate) thumbs[a.listing_id] = candidate;
+        }
+      }
+      return { listings: (listings ?? []).map((l: any) => ({ ...l, thumbnail: thumbs[l.id] ?? null })) };
+    },
   });
 
   const filtered = useMemo(() => {
@@ -260,10 +276,17 @@ function ListingsList({ token, onOpen }: { token: string; onOpen: (id: string) =
 /* -------- Listing detail -------- */
 
 function ListingView({ token, id, onBack }: { token: string; id: string; onBack: () => void }) {
-  const get = useServerFn(getPublicListing);
   const { data, isLoading } = useQuery({
     queryKey: ["public-toolbox-listing", id],
-    queryFn: () => get({ data: { token, id } }),
+    queryFn: async () => {
+      const [{ data: listing }, { data: assets }, { data: captions }] = await Promise.all([
+        supabase.from("toolbox_listings").select("id,address,agent_name,status,description").eq("id", id).maybeSingle(),
+        supabase.from("toolbox_assets").select("*").eq("listing_id", id).order("created_at", { ascending: true }),
+        supabase.from("toolbox_captions").select("id,caption_text,created_at").eq("listing_id", id).order("created_at", { ascending: true }),
+      ]);
+      if (!listing) throw new Error("Not found");
+      return { listing, assets: assets ?? [], captions: captions ?? [] };
+    },
   });
 
   if (isLoading) return <div className="text-center text-muted-foreground py-10">Loading…</div>;
@@ -490,10 +513,17 @@ function DownloadButton({ url, filename, small }: { url: string; filename: strin
 /* -------- Branding -------- */
 
 function BrandList({ token }: { token: string }) {
-  const fn = useServerFn(listPublicBrand);
   const { data, isLoading } = useQuery({
     queryKey: ["public-toolbox-brand"],
-    queryFn: () => fn({ data: { token } }),
+    queryFn: async () => {
+      const { data: rows, error } = await supabase
+        .from("toolbox_brand_assets")
+        .select("id,name,category,file_url,file_size,created_at")
+        .order("category", { ascending: true })
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return { items: rows ?? [] };
+    },
   });
   const items = (data?.items ?? []) as any[];
   const grouped = useMemo(() => {
@@ -539,10 +569,17 @@ function BrandList({ token }: { token: string }) {
 /* -------- Education -------- */
 
 function EduList({ token }: { token: string }) {
-  const fn = useServerFn(listPublicEdu);
   const { data, isLoading } = useQuery({
     queryKey: ["public-toolbox-edu"],
-    queryFn: () => fn({ data: { token } }),
+    queryFn: async () => {
+      const { data: rows, error } = await supabase
+        .from("toolbox_educational")
+        .select("id,title,category,description,file_url,video_url,created_at")
+        .order("category", { ascending: true })
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return { items: rows ?? [] };
+    },
   });
   const items = (data?.items ?? []) as any[];
   const grouped = useMemo(() => {
@@ -630,11 +667,36 @@ function AgentHubHomeLink() {
 /* -------- Open Houses (agent-facing) -------- */
 
 function OpenHousesList({ token, onOpen }: { token: string; onOpen: (id: string) => void }) {
-  const list = useServerFn(listPublicOpenHouses);
   const [q, setQ] = useState("");
   const { data, isLoading } = useQuery({
     queryKey: ["public-toolbox-open-houses"],
-    queryFn: () => list({ data: { token } }),
+    queryFn: async () => {
+      const { data: rows, error } = await supabase
+        .from("toolbox_open_houses")
+        .select("id,address,agent_name,status,open_house_at,description,created_at")
+        .in("status", ["upcoming", "past"])
+        .eq("archived", false)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+
+      const ids = (rows ?? []).map((o: any) => o.id);
+      let thumbs: Record<string, string> = {};
+      if (ids.length) {
+        const { data: assets, error: aErr } = await supabase
+          .from("toolbox_open_house_assets")
+          .select("open_house_id,thumbnail_url,file_url,asset_type,created_at")
+          .in("open_house_id", ids)
+          .order("created_at", { ascending: true });
+        if (aErr) throw aErr;
+
+        for (const a of (assets ?? []) as any[]) {
+          if (thumbs[a.open_house_id]) continue;
+          const candidate = a.asset_type === "video" ? a.thumbnail_url : a.thumbnail_url || a.file_url;
+          if (candidate) thumbs[a.open_house_id] = candidate;
+        }
+      }
+      return { openHouses: (rows ?? []).map((o: any) => ({ ...o, thumbnail: thumbs[o.id] ?? null })) };
+    },
   });
 
   const filtered = useMemo(() => {
@@ -691,10 +753,17 @@ function OpenHousesList({ token, onOpen }: { token: string; onOpen: (id: string)
 const OH_CATEGORIES = ["Agent QR Code", "Branded Photos and Copy", "Coloring Page", "Flyer", "Other"] as const;
 
 function OpenHouseView({ token, id, onBack }: { token: string; id: string; onBack: () => void }) {
-  const get = useServerFn(getPublicOpenHouse);
   const { data, isLoading } = useQuery({
     queryKey: ["public-toolbox-open-house", id],
-    queryFn: () => get({ data: { token, id } }),
+    queryFn: async () => {
+      const [{ data: openHouse }, { data: assets }, { data: captions }] = await Promise.all([
+        supabase.from("toolbox_open_houses").select("id,address,agent_name,status,open_house_at,description").eq("id", id).maybeSingle(),
+        supabase.from("toolbox_open_house_assets").select("*").eq("open_house_id", id).order("created_at", { ascending: true }),
+        supabase.from("toolbox_open_house_captions").select("id,category,caption_text,created_at").eq("open_house_id", id).order("created_at", { ascending: true }),
+      ]);
+      if (!openHouse) throw new Error("Not found");
+      return { openHouse, assets: assets ?? [], captions: captions ?? [] };
+    },
   });
   const [detailItem, setDetailItem] = useState<any | null>(null);
 
@@ -840,10 +909,19 @@ const BRANDED_TYPES = ["Testimonial", "Listing Presentation", "Buyer Presentatio
 
 function BrandedAgentSection({ token }: { token: string }) {
   const [agentId, setAgentId] = useState<string | null>(null);
-  const listAgents = useServerFn(listPublicBrandedAgents);
   const { data, isLoading } = useQuery({
     queryKey: ["public-toolbox-branded-agents"],
-    queryFn: () => listAgents({ data: { token } }),
+    queryFn: async () => {
+      const [agentsRes, contentRes] = await Promise.all([
+        supabase.from("toolbox_agents").select("id,name,headshot_url,identifier,active").eq("active", true).order("name", { ascending: true }),
+        supabase.from("toolbox_agent_content").select("agent_id"),
+      ]);
+      const agents = agentsRes.data ?? [];
+      const content = contentRes.data ?? [];
+      const withContentIds = new Set(content.map((c: any) => c.agent_id));
+      const activeWithContent = agents.filter((a: any) => withContentIds.has(a.id));
+      return { agents: activeWithContent };
+    },
   });
   const agents = (data?.agents ?? []) as any[];
 
@@ -889,10 +967,16 @@ function BrandedAgentSection({ token }: { token: string }) {
 function BrandedContentView({
   token, agentId, agentName, onBack,
 }: { token: string; agentId: string; agentName: string; onBack: () => void }) {
-  const get = useServerFn(listPublicAgentBrandedContent);
   const { data, isLoading } = useQuery({
     queryKey: ["public-toolbox-agent-content", agentId],
-    queryFn: () => get({ data: { token, agentId } }),
+    queryFn: async () => {
+      const [{ data: agent }, { data: items }] = await Promise.all([
+        supabase.from("toolbox_agents").select("id,name,headshot_url,identifier").eq("id", agentId).maybeSingle(),
+        supabase.from("toolbox_agent_content").select("*").eq("agent_id", agentId).order("created_at", { ascending: false }),
+      ]);
+      if (!agent) throw new Error("Agent not found");
+      return { agent, items: items ?? [] };
+    },
   });
   const [filter, setFilter] = useState<string>("all");
   const [detailItem, setDetailItem] = useState<any | null>(null);
