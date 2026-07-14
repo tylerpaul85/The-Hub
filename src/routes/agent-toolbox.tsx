@@ -574,7 +574,7 @@ function EduList({ token }: { token: string }) {
     queryFn: async () => {
       const { data: rows, error } = await supabase
         .from("toolbox_educational")
-        .select("id,title,category,description,file_url,video_url,created_at")
+        .select("id,title,category,file_url,drive_url,caption,file_size,created_at")
         .order("category", { ascending: true })
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -759,7 +759,7 @@ function OpenHouseView({ token, id, onBack }: { token: string; id: string; onBac
       const [{ data: openHouse }, { data: assets }, { data: captions }] = await Promise.all([
         supabase.from("toolbox_open_houses").select("id,address,agent_name,status,open_house_at,description").eq("id", id).maybeSingle(),
         supabase.from("toolbox_open_house_assets").select("*").eq("open_house_id", id).order("created_at", { ascending: true }),
-        supabase.from("toolbox_open_house_captions").select("id,category,caption_text,created_at").eq("open_house_id", id).order("created_at", { ascending: true }),
+        supabase.from("toolbox_open_house_captions").select("id,caption_text,created_at").eq("open_house_id", id).order("created_at", { ascending: true }),
       ]);
       if (!openHouse) throw new Error("Not found");
       return { openHouse, assets: assets ?? [], captions: captions ?? [] };
