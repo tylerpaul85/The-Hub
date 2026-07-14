@@ -683,15 +683,46 @@ function OpenHousesList({ token, onOpen }: { token: string; onOpen: (id: string)
       if (ids.length) {
         const { data: assets, error: aErr } = await supabase
           .from("toolbox_open_house_assets")
-          .select("open_house_id,thumbnail_url,file_url,asset_type,created_at")
+          .select("open_house_id,thumbnail_url,file_url,asset_type,created_at,category")
           .in("open_house_id", ids)
           .order("created_at", { ascending: true });
         if (aErr) throw aErr;
 
+        // Group assets by open_house_id
+        const assetsByOH: Record<string, any[]> = {};
         for (const a of (assets ?? []) as any[]) {
-          if (thumbs[a.open_house_id]) continue;
-          const candidate = a.asset_type === "video" ? a.thumbnail_url : a.thumbnail_url || a.file_url;
-          if (candidate) thumbs[a.open_house_id] = candidate;
+          (assetsByOH[a.open_house_id] ||= []).push(a);
+        }
+
+        for (const [ohId, ohAssets] of Object.entries(assetsByOH)) {
+          // Prioritize categories: Branded Photos and Copy first, then other media, fallback to QR code
+          const preferredCategories = [
+            "Branded Photos and Copy",
+            "Flyer",
+            "Coloring Page",
+            "Other",
+            "Agent QR Code"
+          ];
+          
+          let bestCandidate = null;
+          for (const cat of preferredCategories) {
+            const match = ohAssets.find(a => a.category === cat && (a.asset_type === "video" ? a.thumbnail_url : a.thumbnail_url || a.file_url));
+            if (match) {
+              bestCandidate = match.asset_type === "video" ? match.thumbnail_url : match.thumbnail_url || match.file_url;
+              break;
+            }
+          }
+
+          if (!bestCandidate && ohAssets.length) {
+            const fallback = ohAssets.find(a => a.asset_type === "video" ? a.thumbnail_url : a.thumbnail_url || a.file_url);
+            if (fallback) {
+              bestCandidate = fallback.asset_type === "video" ? fallback.thumbnail_url : fallback.thumbnail_url || fallback.file_url;
+            }
+          }
+
+          if (bestCandidate) {
+            thumbs[ohId] = bestCandidate;
+          }
         }
       }
       return { openHouses: (rows ?? []).map((o: any) => ({ ...o, thumbnail: thumbs[o.id] ?? null })) };
