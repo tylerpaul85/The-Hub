@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+// Forced build trigger to synchronize server function mapping IDs on Netlify after build regrouping
+
 const InviteSchema = z.object({
   email: z.string().email().max(255),
   firstName: z.string().trim().min(1).max(100),

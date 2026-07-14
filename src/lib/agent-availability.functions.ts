@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+// Forced build trigger to synchronize server function mapping IDs on Netlify after build regrouping
 // Public (no-auth) availability functions for the Agent Hub.
 // Backed by supabaseAdmin since the public Agent Hub has no signed-in user.
 

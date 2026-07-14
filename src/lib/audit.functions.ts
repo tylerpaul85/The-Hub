@@ -3,6 +3,8 @@ import { z } from "zod";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+// Forced build trigger to synchronize server function mapping IDs on Netlify after build regrouping
+
 function clientIp(): string | null {
   return (
     getRequestHeader("cf-connecting-ip") ||
