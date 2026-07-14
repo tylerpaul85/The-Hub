@@ -12,9 +12,10 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
       throw error;
     }
     console.error(error);
-    return new Response(renderErrorPage(), {
+    const errObj = error as any;
+    return new Response(`Request Error: ${errObj?.message || error}\nStack:\n${errObj?.stack || ""}`, {
       status: 500,
-      headers: { "content-type": "text/html; charset=utf-8" },
+      headers: { "content-type": "text/plain; charset=utf-8" },
     });
   }
 });
