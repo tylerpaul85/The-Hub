@@ -675,7 +675,6 @@ function OpenHousesList({ token, onOpen }: { token: string; onOpen: (id: string)
         .from("toolbox_open_houses")
         .select("id,address,agent_name,status,open_house_at,description,created_at")
         .in("status", ["upcoming", "past"])
-        .eq("archived", false)
         .order("created_at", { ascending: false });
       if (error) throw error;
 
