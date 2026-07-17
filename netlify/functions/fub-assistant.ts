@@ -149,28 +149,26 @@ async function fubPaginate(
     total = data?._metadata?.total ?? total;
     pagesFetched++;
 
-    // Keyset next pointer
-    nextUrl = data?._metadata?.next || null;
-    if (!nextUrl && data?._metadata?.nextLink) {
-      nextUrl = data._metadata.nextLink;
-    }
+    // Keyset pagination: prefer nextLink (full URL)
+    let nextUrlCandidate = data?._metadata?.nextLink || null;
 
-    if (nextUrl && !nextUrl.startsWith("http")) {
-      let path = nextUrl.startsWith("/") ? nextUrl : `/${nextUrl}`;
-      if (!path.startsWith("/v1/")) {
-        path = `/v1${path}`;
-      }
-      nextUrl = `https://api.followupboss.com${path}`;
+    // If nextLink is missing but next cursor string is present, append next query param to baseUrl
+    if (!nextUrlCandidate && data?._metadata?.next) {
+      const cursor = data._metadata.next;
+      const sep = baseUrl.includes("?") ? "&" : "?";
+      nextUrlCandidate = `${baseUrl}${sep}next=${encodeURIComponent(cursor)}`;
     }
 
     // Offset fallback
-    if (!nextUrl && items.length === 100 && total > out.length) {
+    if (!nextUrlCandidate && items.length === 100 && total > out.length) {
       const currentOffset = data?._metadata?.offset ?? ((pagesFetched - 1) * 100);
       const nextOffset = currentOffset + 100;
       const baseWithoutOffset = baseUrl.replace(/[&?]offset=\d+/, "");
       const newSep = baseWithoutOffset.includes("?") ? "&" : "?";
-      nextUrl = `${baseWithoutOffset}${newSep}offset=${nextOffset}`;
+      nextUrlCandidate = `${baseWithoutOffset}${newSep}offset=${nextOffset}`;
     }
+
+    nextUrl = nextUrlCandidate;
 
     if (items.length < 100) break;
   }
