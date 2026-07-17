@@ -784,40 +784,43 @@ ANALYSIS:
       }
 
       const toolUses = result.content.filter((c: any) => c.type === "tool_use");
-      const toolResultsContent = [];
+      
+      const toolResults = await Promise.all(
+        toolUses.map(async (toolUse: any) => {
+          const { name, input, id: toolUseId } = toolUse;
+          let toolResultData;
 
-      for (const toolUse of toolUses) {
-        const { name, input, id: toolUseId } = toolUse;
-        let toolResultData;
-
-        try {
-          if (name === "search_people") {
-            toolResultData = await handleSearchPeople(input, fubApiKey);
-          } else if (name === "get_agent_leaderboard") {
-            toolResultData = await handleGetAgentLeaderboard(input, fubApiKey);
-          } else if (name === "get_pipeline_summary") {
-            toolResultData = await handleGetPipelineSummary(input, fubApiKey);
-          } else if (name === "get_lead_sources") {
-            toolResultData = await handleGetLeadSources(input, fubApiKey);
-          } else {
-            throw new Error(`Tool ${name} is not defined.`);
+          try {
+            if (name === "search_people") {
+              toolResultData = await handleSearchPeople(input, fubApiKey);
+            } else if (name === "get_agent_leaderboard") {
+              toolResultData = await handleGetAgentLeaderboard(input, fubApiKey);
+            } else if (name === "get_pipeline_summary") {
+              toolResultData = await handleGetPipelineSummary(input, fubApiKey);
+            } else if (name === "get_lead_sources") {
+              toolResultData = await handleGetLeadSources(input, fubApiKey);
+            } else {
+              throw new Error(`Tool ${name} is not defined.`);
+            }
+          } catch (err: any) {
+            toolResultData = {
+              error: err.message || String(err),
+              details: {
+                endpoint: name,
+                params: input,
+              },
+            };
           }
-        } catch (err: any) {
-          toolResultData = {
-            error: err.message || String(err),
-            details: {
-              endpoint: name,
-              params: input,
-            },
-          };
-        }
 
-        toolResultsContent.push({
-          type: "tool_result",
-          tool_use_id: toolUseId,
-          content: JSON.stringify(toolResultData),
-        });
-      }
+          return {
+            type: "tool_result",
+            tool_use_id: toolUseId,
+            content: JSON.stringify(toolResultData),
+          };
+        })
+      );
+
+      const toolResultsContent = toolResults;
 
       currentMessages.push({
         role: "user",
