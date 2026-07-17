@@ -661,7 +661,7 @@ function TeamConfigSection({ onChanged }: { onChanged: () => void }) {
 
   const { data: config, isLoading } = useQuery({
     queryKey: ["signature-team-config"],
-    queryFn: () => getRosterFn(),
+    queryFn: () => getRosterFn({ data: undefined }),
   });
 
   const [form, setForm] = useState<Partial<TeamConfig>>({});
@@ -797,16 +797,16 @@ function SignaturesPage() {
   const getRosterFn = useServerFn(getSignatureRoster);
   const getConfigFn = useServerFn(getTeamConfig);
 
-  const { data: roster = [], isLoading: rosterLoading } = useQuery({
+  const { data: roster = [], isLoading: rosterLoading, error: rosterError } = useQuery({
     queryKey: ["signature-roster"],
     enabled: canAccess,
-    queryFn: () => getRosterFn(),
+    queryFn: () => getRosterFn({ data: undefined }),
   });
 
   const { data: teamConfig } = useQuery({
     queryKey: ["signature-team-config"],
     enabled: canAccess,
-    queryFn: () => getConfigFn(),
+    queryFn: () => getConfigFn({ data: undefined }),
   });
 
   const [selectedAgent, setSelectedAgent] = useState<AgentSig | null>(null);
@@ -915,6 +915,11 @@ function SignaturesPage() {
         {rosterLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm flex items-center justify-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" /> Loading agents…
+          </div>
+        ) : rosterError ? (
+          <div className="p-8 text-center text-sm">
+            <div className="text-rose-400 font-medium mb-1">Failed to load roster</div>
+            <div className="text-muted-foreground text-xs font-mono">{(rosterError as any)?.message ?? String(rosterError)}</div>
           </div>
         ) : total === 0 ? (
           <div className="p-8 text-center text-muted-foreground text-sm">No agents found.</div>

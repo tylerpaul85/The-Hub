@@ -56,7 +56,7 @@ const PushSchema = z.object({
 // Returns all profiles that have a non-client_care role, joined with
 // their agent_signature_data row (may be null for new agents).
 // ----------------------------------------------------------------
-export const getSignatureRoster = createServerFn({ method: "GET" })
+export const getSignatureRoster = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdminOrMarketing(context.supabase, context.userId);
@@ -112,7 +112,7 @@ export const getSignatureRoster = createServerFn({ method: "GET" })
 // ----------------------------------------------------------------
 // getTeamConfig
 // ----------------------------------------------------------------
-export const getTeamConfig = createServerFn({ method: "GET" })
+export const getTeamConfig = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdminOrMarketing(context.supabase, context.userId);
