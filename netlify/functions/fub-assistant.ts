@@ -310,7 +310,7 @@ async function handleGetAgentLeaderboard(input: any, apiKey: string) {
     `https://api.followupboss.com/v1/people?${peopleParams.toString()}`,
     apiKey,
     "people",
-    5
+    3
   );
 
   const leads = peopleRes.items;
@@ -390,7 +390,7 @@ async function handleGetPipelineSummary(input: any, apiKey: string) {
   const [stagesR, pipelinesR, dealsRes] = await Promise.all([
     fubFetch("https://api.followupboss.com/v1/stages?limit=100", apiKey).then((r) => r.json()),
     fubFetch("https://api.followupboss.com/v1/pipelines?limit=50", apiKey).then((r) => r.json()),
-    fubPaginate("https://api.followupboss.com/v1/deals", apiKey, "deals", 5),
+    fubPaginate("https://api.followupboss.com/v1/deals", apiKey, "deals", 3),
   ]);
 
   const stages = stagesR?.stages ?? [];
@@ -480,7 +480,7 @@ async function handleGetLeadSources(input: any, apiKey: string) {
     `https://api.followupboss.com/v1/people?${queryParams.toString()}`,
     apiKey,
     "people",
-    5
+    3
   );
 
   let leads = peopleRes.items;
