@@ -1,28 +1,41 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Helper function to paginate FUB resources
+// Helper function to paginate FUB resources in parallel to avoid timeouts
 async function fubPaginate(
   baseUrl: string,
   headers: Record<string, string>,
   collectionKey: string,
   maxPages = 5
 ): Promise<any[]> {
-  const out: any[] = [];
+  const urls: string[] = [];
+  const sep = baseUrl.includes("?") ? "&" : "?";
+  
   for (let page = 0; page < maxPages; page++) {
-    const sep = baseUrl.includes("?") ? "&" : "?";
-    const url = `${baseUrl}${sep}limit=100&offset=${page * 100}`;
-    const res = await fetch(url, { headers });
-    if (!res.ok) break;
-    const data = await res.json() as any;
-    if (!data) break;
-    const items = data[collectionKey] ?? [];
-    out.push(...items);
-    const total = data?._metadata?.total;
-    if (items.length < 100) break;
-    if (typeof total === "number" && out.length >= total) break;
+    urls.push(`${baseUrl}${sep}limit=100&offset=${page * 100}`);
   }
-  return out;
+
+  try {
+    const responses = await Promise.all(
+      urls.map((url) =>
+        fetch(url, { headers })
+          .then((res) => (res.ok ? res.json() : null))
+          .catch(() => null)
+      )
+    );
+
+    const out: any[] = [];
+    for (const data of responses) {
+      if (!data) continue;
+      const items = data[collectionKey] ?? [];
+      out.push(...items);
+      if (items.length < 100) break;
+    }
+    return out;
+  } catch (e) {
+    return [];
+  }
 }
+
 
 // 1. Tool: search_people handler
 async function handleSearchPeople(input: any, apiKey: string) {
@@ -200,18 +213,7 @@ async function handleGetAgentResponseTimes(input: any, apiKey: string) {
     Accept: "application/json",
   };
 
-  // 1. Fetch FUB users to get user name mapping
-  const usersR = await fetch("https://api.followupboss.com/v1/users?limit=100", { headers }).then((r) => r.json());
-  const userMap = new Map<number, string>();
-  const users = usersR?.users ?? [];
-  for (const u of users) {
-    userMap.set(
-      u.id,
-      u.name || [u.firstName, u.lastName].filter(Boolean).join(" ").trim() || `User #${u.id}`
-    );
-  }
-
-  // 2. Format query bounds
+  // 1. Format query bounds
   let createdAfter = start_date;
   if (!createdAfter) {
     const thirtyDaysAgo = new Date();
@@ -228,32 +230,35 @@ async function handleGetAgentResponseTimes(input: any, apiKey: string) {
     createdBefore = `${createdBefore}T23:59:59Z`;
   }
 
-  // 3. Paginate people created in that range
+  // 2. Prepare query parameters
   const peopleParams = new URLSearchParams();
   peopleParams.append("createdAfter", createdAfter);
   peopleParams.append("createdBefore", createdBefore);
   peopleParams.append("fields", "id,name,created,assignedUserId,stage");
 
-  const peopleList = await fubPaginate(
-    `https://api.followupboss.com/v1/people?${peopleParams.toString()}`,
-    headers,
-    "people",
-    5
-  );
+  const callsParams = new URLSearchParams();
+  callsParams.append("createdAfter", createdAfter);
 
-  if (peopleList.length === 0) {
+  // 3. Fetch users, people, and calls concurrently to reduce roundtrip latency
+  const [usersR, peopleList, callsList] = await Promise.all([
+    fetch("https://api.followupboss.com/v1/users?limit=100", { headers }).then((r) => r.json()).catch(() => null),
+    fubPaginate(`https://api.followupboss.com/v1/people?${peopleParams.toString()}`, headers, "people", 5),
+    fubPaginate(`https://api.followupboss.com/v1/calls?${callsParams.toString()}`, headers, "calls", 5)
+  ]);
+
+  const userMap = new Map<number, string>();
+  const users = usersR?.users ?? [];
+  for (const u of users) {
+    userMap.set(
+      u.id,
+      u.name || [u.firstName, u.lastName].filter(Boolean).join(" ").trim() || `User #${u.id}`
+    );
+  }
+
+  if (!peopleList || peopleList.length === 0) {
     return [];
   }
 
-  // 4. Fetch all calls created since createdAfter
-  const callsParams = new URLSearchParams();
-  callsParams.append("createdAfter", createdAfter);
-  const callsList = await fubPaginate(
-    `https://api.followupboss.com/v1/calls?${callsParams.toString()}`,
-    headers,
-    "calls",
-    5
-  );
 
   // Group calls by personId
   const callsByPerson = new Map<number, any[]>();
