@@ -45,6 +45,7 @@ const TeamConfigSchema = z.object({
   icon_fb_url: z.string().max(1000),
   icon_ig_url: z.string().max(1000),
   icon_web_url: z.string().max(1000),
+  html_template: z.string().max(30000).optional().nullable(),
 });
 
 const PushSchema = z.object({
@@ -161,6 +162,7 @@ export const saveTeamConfig = createServerFn({ method: "POST" })
         icon_fb_url: data.icon_fb_url,
         icon_ig_url: data.icon_ig_url,
         icon_web_url: data.icon_web_url,
+        html_template: data.html_template ?? null,
       })
       .neq("id", "00000000-0000-0000-0000-000000000000"); // matches all rows
     if (error) throw new Error(error.message);

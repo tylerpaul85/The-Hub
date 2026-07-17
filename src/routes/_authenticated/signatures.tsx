@@ -78,6 +78,7 @@ interface TeamConfig {
   icon_fb_url: string;
   icon_ig_url: string;
   icon_web_url: string;
+  html_template?: string | null;
 }
 
 // ----------------------------------------------------------------
@@ -98,156 +99,223 @@ function sigCompleteness(agent: AgentSig): { complete: boolean; missing: string[
 // ----------------------------------------------------------------
 // HTML Signature Generator  (client-side, pixel-perfect match to prototype)
 // ----------------------------------------------------------------
-function buildSignatureHtml(agent: AgentSig, team: TeamConfig): string {
-  const s = agent.sig;
-  const fullName = agent.name || "";
-  const title = s?.title ?? "";
-  const mobile = s?.mobile_phone ?? "";
-  const office = s?.office_phone ?? "";
-  const headshot = s?.headshot_url ?? "";
-  const o1label = s?.office1_label ?? "";
-  const o1addr = s?.office1_addr ?? "";
-  const o2label = s?.office2_label ?? "";
-  const o2addr = s?.office2_addr ?? "";
-  const logo = team.logo_url;
-  const fbIcon = team.icon_fb_url;
-  const igIcon = team.icon_ig_url;
-  const webIcon = team.icon_web_url;
+// Simple Handlebars-like parser for signature templates
+function compileTemplate(template: string, data: Record<string, any>): string {
+  let rendered = template;
 
-  // Phone display helper
-  const phoneRow = (label: string, num: string) =>
-    num
-      ? `<tr>
-          <td style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:11px; line-height:16px; color:#4a5568; padding:0;">
-            <span style="color:#C9A84C; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">${label}</span>
-            <span style="color:#2d3748;"> &nbsp;${num}</span>
-          </td>
-        </tr>`
-      : "";
+  // 1. Process {{#if key}} ... {{else}} ... {{/if}}
+  const ifElseRegex = /\{\{#if\s+(\w+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))?\{\{\/if\}\}/g;
+  rendered = rendered.replace(ifElseRegex, (match, key, trueBranch, falseBranch) => {
+    const val = data[key];
+    const isTrue = val && String(val).trim() !== "" && String(val) !== "null";
+    if (isTrue) {
+      return trueBranch;
+    } else {
+      return falseBranch || "";
+    }
+  });
 
-  // Office address block
-  const officeBlock = (label: string, addr: string) =>
-    addr
-      ? `<tr>
-          <td style="padding:2px 0 0 0;">
-            <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; line-height:14px; font-weight:700; color:#C9A84C; text-transform:uppercase; letter-spacing:0.5px;">${label}</span><br/>
-            <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; line-height:14px; color:#4a5568;">${addr}</span>
-          </td>
-        </tr>`
-      : "";
+  // 2. Process simple variables {{variable}}
+  const varRegex = /\{\{(\w+)\}\}/g;
+  rendered = rendered.replace(varRegex, (match, key) => {
+    const val = data[key];
+    return val !== undefined && val !== null && String(val) !== "null" ? String(val) : "";
+  });
 
-  // Social icon link
-  const socialIcon = (href: string, iconUrl: string, alt: string) =>
-    href && iconUrl
-      ? `<a href="${href}" target="_blank" style="display:inline-block; margin-right:6px; text-decoration:none;">
-          <img src="${iconUrl}" alt="${alt}" width="24" height="24" border="0" style="display:block; width:24px; height:24px;" />
-        </a>`
-      : "";
+  return rendered;
+}
 
-  // Headshot cell
-  const headshotCell = headshot
-    ? `<img src="${headshot}" alt="${fullName}" width="140" height="160" border="0"
-         style="display:block; width:140px; height:160px; object-fit:cover; object-position:center top; border-radius:3px;" />`
-    : `<div style="width:140px; height:160px; background:#e2e8f0; border-radius:3px; display:flex; align-items:center; justify-content:center;">
-         <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:11px; color:#a0aec0;">No photo</span>
-       </div>`;
-
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="700"
-    style="border-collapse:collapse; width:700px; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; background-color:#ffffff;">
-
-  <!-- ACCOLADE STRIP -->
+const DEFAULT_SIGNATURE_TEMPLATE = `<!-- HTML EMAIL SIGNATURE TEMPLATE -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="700" style="border-collapse:collapse; width:700px; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; background-color:#ffffff;">
+  <!-- TOP BANNER -->
   <tr>
-    <td style="padding:0 0 14px 0;">
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="700"
-        style="border-collapse:collapse; width:700px;">
+    <td style="padding:0 0 16px 0;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="700" style="border-collapse:collapse; width:700px;">
         <tr>
-          <td bgcolor="#16232f" align="center" width="700"
-            style="background-color:#16232f; width:700px; padding:9px 0; border-radius:3px;">
-            <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; line-height:13px;
-              font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:#ffffff;">
-              ${team.accolade_line1}
+          <td bgcolor="#16232f" align="center" width="700" style="background-color:#16232f; width:700px; padding:10px 0; border-radius:4px;">
+            <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; line-height:13px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:#ffffff;">
+              {{accolade_line1}}
             </span>
-            ${team.accolade_line2 ? `<span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; line-height:13px;
-              font-weight:400; letter-spacing:1.2px; text-transform:uppercase; color:#8ba3ba;">
-              &nbsp;&nbsp;&middot;&nbsp;&nbsp;${team.accolade_line2}
-            </span>` : ""}
+            <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; line-height:13px; font-weight:400; letter-spacing:1.2px; text-transform:uppercase; color:#8ba3ba;">
+              &nbsp;&nbsp;&middot;&nbsp;&nbsp;{{accolade_line2}}
+            </span>
           </td>
         </tr>
       </table>
     </td>
   </tr>
 
-  <!-- MAIN BAND -->
+  <!-- MAIN AREA -->
   <tr>
     <td style="padding:0;">
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="700"
-        style="border-collapse:collapse; width:700px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="700" style="border-collapse:collapse; width:700px;">
         <tr>
-
-          <!-- HEADSHOT -->
-          <td valign="top" width="158" style="width:158px; padding:0 18px 0 0;">
-            ${headshotCell}
+          <!-- COLUMN 1: CIRCULAR PHOTO -->
+          <td valign="middle" width="130" style="width:130px; padding:0 16px 0 0;">
+            {{#if headshot_url}}
+            <img src="{{headshot_url}}" alt="{{name}}" width="120" height="120" border="0" style="display:block; width:120px; height:120px; border-radius:50%; object-fit:cover; object-position:center top; border:1px solid #e2e8f0;" />
+            {{else}}
+            <div style="width:120px; height:120px; background-color:#f7fafc; border:1px dashed #cbd5e0; border-radius:50%; display:inline-block;"></div>
+            {{/if}}
           </td>
 
-          <!-- NAME / TITLE / PHONES -->
-          <td valign="top" style="padding:4px 18px 0 0;">
+          <!-- DIVIDER LINE -->
+          <td width="1" bgcolor="#e2e8f0" style="width:1px; background-color:#e2e8f0;"></td>
+
+          <!-- COLUMN 2: NAME, TITLE, LOGO -->
+          <td valign="top" style="padding:0 20px 0 20px;">
             <table role="presentation" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td style="padding:0 0 4px 0;">
-                  <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
-                    font-size:20px; line-height:24px; font-weight:700; color:#16232f; letter-spacing:-0.3px;">
-                    ${fullName || "Agent Name"}
+                <td style="padding:4px 0 2px 0;">
+                  <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:24px; line-height:28px; font-weight:700; color:#16232f; letter-spacing:-0.5px;">
+                    {{name}}
                   </span>
                 </td>
               </tr>
-              ${title ? `<tr>
-                <td style="padding:0 0 8px 0;">
-                  <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
-                    font-size:11px; line-height:15px; font-weight:400; color:#C9A84C;
-                    text-transform:uppercase; letter-spacing:0.8px;">
-                    ${title}
-                  </span>
-                </td>
-              </tr>` : ""}
               <tr>
-                <td style="padding:0 0 6px 0; border-bottom:1px solid #e2e8f0;">
-                  <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
-                    font-size:11px; color:#8ba3ba; letter-spacing:0.3px;">
-                    Matt Smith Real Estate Group &middot; eXp Realty
+                <td style="padding:0 0 12px 0;">
+                  <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:11px; line-height:14px; font-weight:700; color:#8ba3ba; text-transform:uppercase; letter-spacing:1px;">
+                    {{title}}
                   </span>
                 </td>
               </tr>
-              <tr><td style="height:8px;"></td></tr>
-              ${phoneRow("M", mobile)}
-              ${phoneRow("O", office)}
+              <tr>
+                <td>
+                  {{#if logo_url}}
+                  <a href="{{website_url}}" target="_blank" style="text-decoration:none; display:block;">
+                    <img src="{{logo_url}}" alt="Matt Smith Real Estate Group" width="140" border="0" style="display:block; width:140px; height:auto;" />
+                  </a>
+                  {{/if}}
+                </td>
+              </tr>
             </table>
           </td>
 
-          <!-- LOGO + OFFICES + SOCIAL -->
-          <td valign="top" align="right" style="padding:0; width:220px; min-width:220px;">
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="right">
-              <!-- Logo -->
-              ${logo ? `<tr>
-                <td style="padding:0 0 10px 0;" align="right">
-                  <img src="${logo}" alt="Matt Smith Real Estate Group" width="180" border="0"
-                    style="display:block; width:180px; height:auto;" />
-                </td>
-              </tr>` : ""}
+          <!-- DIVIDER LINE -->
+          <td width="1" bgcolor="#e2e8f0" style="width:1px; background-color:#e2e8f0;"></td>
 
-              <!-- Office 1 -->
-              ${officeBlock(o1label || "Office", o1addr)}
-
-              <!-- Office 2 (only if present) -->
-              ${o2addr ? officeBlock(o2label || "Office 2", o2addr) : ""}
-
-              <!-- Social icons -->
+          <!-- COLUMN 3: PHONES, SOCIALS, ADDRESSES, CTA -->
+          <td valign="top" style="padding:0 0 0 20px; width:280px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+              <!-- Phones & Socials Header Row -->
               <tr>
-                <td style="padding:10px 0 0 0;" align="right">
-                  ${socialIcon(team.website_url, webIcon, "Website")}
-                  ${socialIcon(team.facebook_url, fbIcon, "Facebook")}
-                  ${socialIcon(team.instagram_url, igIcon, "Instagram")}
+                <td style="padding:4px 0 10px 0;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                    <tr>
+                      <td style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:11px; line-height:16px; color:#16232f;">
+                        {{#if mobile_phone}}
+                        <span style="color:#C9A84C; font-weight:700; text-transform:uppercase; font-size:10px;">M</span>
+                        <strong>{{mobile_phone}}</strong>
+                        {{/if}}
+                        {{#if office_phone}}
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="color:#8ba3ba; font-weight:700; text-transform:uppercase; font-size:10px;">O</span>
+                        <span style="color:#4a5568;">{{office_phone}}</span>
+                        {{/if}}
+                      </td>
+                      <td align="right" style="padding:0;">
+                        {{#if facebook_url}}
+                        <a href="{{facebook_url}}" target="_blank" style="display:inline-block; margin-left:6px; text-decoration:none;">
+                          <img src="{{icon_fb_url}}" alt="Facebook" width="18" height="18" border="0" style="display:block; width:18px; height:18px;" />
+                        </a>
+                        {{/if}}
+                        {{#if instagram_url}}
+                        <a href="{{instagram_url}}" target="_blank" style="display:inline-block; margin-left:6px; text-decoration:none;">
+                          <img src="{{icon_ig_url}}" alt="Instagram" width="18" height="18" border="0" style="display:block; width:18px; height:18px;" />
+                        </a>
+                        {{/if}}
+                        {{#if website_url}}
+                        <a href="{{website_url}}" target="_blank" style="display:inline-block; margin-left:6px; text-decoration:none;">
+                          <img src="{{icon_web_url}}" alt="Website" width="18" height="18" border="0" style="display:block; width:18px; height:18px;" />
+                        </a>
+                        {{/if}}
+                      </td>
+                    </tr>
+                  </table>
                 </td>
               </tr>
+
+              <!-- Office Addresses -->
+              <tr>
+                <td style="padding:0 0 12px 0;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                    <tr>
+                      {{#if office1_addr}}
+                      <td valign="top" style="padding:0 8px 0 0; width:50%;">
+                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; font-weight:700; color:#16232f; text-transform:uppercase; letter-spacing:0.5px;">{{office1_label}}</div>
+                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:9px; line-height:12px; color:#718096; margin-top:2px;">{{office1_addr}}</div>
+                      </td>
+                      {{/if}}
+                      {{#if office2_addr}}
+                      <td valign="top" style="padding:0; width:50%;">
+                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; font-weight:700; color:#16232f; text-transform:uppercase; letter-spacing:0.5px;">{{office2_label}}</div>
+                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:9px; line-height:12px; color:#718096; margin-top:2px;">{{office2_addr}}</div>
+                      </td>
+                      {{/if}}
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              <!-- Call to Action Button -->
+              {{#if valuation_url}}
+              <tr>
+                <td style="padding:2px 0 0 0;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td bgcolor="#1e70e6" style="background-color:#1e70e6; border-radius:4px; padding:8px 16px;" align="center">
+                        <a href="{{valuation_url}}" target="_blank" style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:11px; font-weight:700; color:#ffffff; text-decoration:none; display:inline-block; text-transform:uppercase; letter-spacing:0.5px;">
+                          Instant Home Valuation &rarr;
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              {{/if}}
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <!-- BOTTOM BAR ACCENT -->
+  <tr>
+    <td style="padding:14px 0 0 0; border-top:2px solid #C9A84C; margin-top:10px;"></td>
+  </tr>
+</table>`;
+
+function buildSignatureHtml(agent: AgentSig, team: TeamConfig): string {
+  const s = agent.sig;
+  
+  const data = {
+    name: agent.name || "",
+    email: agent.email || "",
+    title: s?.title ?? "",
+    mobile_phone: s?.mobile_phone ?? "",
+    office_phone: s?.office_phone ?? "",
+    headshot_url: s?.headshot_url ?? "",
+    office1_label: s?.office1_label ?? "",
+    office1_addr: s?.office1_addr ?? "",
+    office2_label: s?.office2_label ?? "",
+    office2_addr: s?.office2_addr ?? "",
+    gmail_email: s?.gmail_email ?? "",
+    accolade_line1: team.accolade_line1 || "",
+    accolade_line2: team.accolade_line2 || "",
+    website_url: team.website_url || "",
+    valuation_url: team.valuation_url || "",
+    facebook_url: team.facebook_url || "",
+    instagram_url: team.instagram_url || "",
+    logo_url: team.logo_url || "",
+    icon_fb_url: team.icon_fb_url || "",
+    icon_ig_url: team.icon_ig_url || "",
+    icon_web_url: team.icon_web_url || "",
+  };
+
+  const template = team.html_template || DEFAULT_SIGNATURE_TEMPLATE;
+  return compileTemplate(template, data);
+}
 
               <!-- Valuation link -->
               ${team.valuation_url ? `<tr>
@@ -768,6 +836,47 @@ function TeamConfigSection({ onChanged }: { onChanged: () => void }) {
                   <Info className="h-3 w-3 shrink-0" />
                   Upload images to Supabase Storage → set to public → paste the permanent URL here.
                 </p>
+              </div>
+              {/* HTML Template Editor */}
+              <div className="space-y-1.5">
+                <Label htmlFor="html_template" className="text-xs text-muted-foreground uppercase tracking-wide">
+                  HTML Email Template (Base Template)
+                </Label>
+                <Textarea
+                  id="html_template"
+                  value={form.html_template ?? ""}
+                  onChange={(e) => setForm((prev) => ({ ...prev, html_template: e.target.value }))}
+                  placeholder="Enter base HTML email template..."
+                  className="font-mono text-xs h-[300px] bg-muted/30 border-border"
+                />
+                <div className="text-[10px] text-muted-foreground mt-2 space-y-1.5 p-3 rounded-lg border border-border bg-sidebar/25">
+                  <p className="font-semibold text-foreground">Available Placeholders:</p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-[9px] text-gold">
+                    <div>{"{{name}}"} - Agent Name</div>
+                    <div>{"{{title}}"} - Title / Role</div>
+                    <div>{"{{mobile_phone}}"} - Mobile Phone</div>
+                    <div>{"{{office_phone}}"} - Office Phone</div>
+                    <div>{"{{headshot_url}}"} - Public Headshot URL</div>
+                    <div>{"{{logo_url}}"} - Public Logo URL</div>
+                    <div>{"{{office1_label}}"} - Office 1 Label</div>
+                    <div>{"{{office1_addr}}"} - Office 1 Address</div>
+                    <div>{"{{office2_label}}"} - Office 2 Label</div>
+                    <div>{"{{office2_addr}}"} - Office 2 Address</div>
+                    <div>{"{{website_url}}"} - Website Link</div>
+                    <div>{"{{valuation_url}}"} - Valuation Link</div>
+                    <div>{"{{facebook_url}}"} - FB Profile Link</div>
+                    <div>{"{{instagram_url}}"} - IG Profile Link</div>
+                    <div>{"{{accolade_line1}}"} - Banner Title</div>
+                    <div>{"{{accolade_line2}}"} - Banner Subtitle</div>
+                  </div>
+                  <p className="text-[9px] text-muted-foreground mt-2 leading-relaxed">
+                    Supports basic Handlebars-style conditionals:
+                    <br />
+                    <code className="bg-muted px-1 py-0.5 rounded text-foreground">{"{{#if mobile_phone}} ... {{/if}}"}</code> or
+                    <br />
+                    <code className="bg-muted px-1 py-0.5 rounded text-foreground">{"{{#if headshot_url}} ... {{else}} ... {{/if}}"}</code>
+                  </p>
+                </div>
               </div>
               <Button
                 className="bg-gold text-navy font-semibold hover:bg-gold/90 gap-2"
