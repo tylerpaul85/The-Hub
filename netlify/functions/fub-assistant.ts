@@ -696,28 +696,12 @@ export async function handler(event: any, context: any) {
     };
   }
 
-  const { messages } = requestBody;
-  if (!Array.isArray(messages)) {
-    return {
-      statusCode: 400,
-      headers,
-      body: JSON.stringify({ error: "messages array is required." }),
-    };
-  }
+  const { messages, action, toolName, input } = requestBody;
 
   // Trigger stage caching at startup/request time
   await getStages(fubApiKey);
 
-  // 5. Agentic Loop
-  const currentMessages = [...messages];
-  let iterations = 0;
-  let finalResponseText = "";
-
-  try {
-    while (iterations < 5) {
-      iterations++;
-
-      const systemPrompt = `You are a CRM analyst for Matt Smith Real Estate Group, a real estate team operating in Rolla, St. Robert, and Lake of the Ozarks.
+  const systemPrompt = `You are a CRM analyst for Matt Smith Real Estate Group, a real estate team operating in Rolla, St. Robert, and Lake of the Ozarks.
 
 STAGES: This account uses custom stages that are TIME-TO-TRANSACTION bands, not intent scores:
   Lead                    — not yet triaged
@@ -744,6 +728,112 @@ ANALYSIS:
 - If the data does not support a conclusion, say so rather than speculating.
 - Distinguish "never contacted" from "contacted then dropped." The first is a process failure; the second is a judgment call.
 - When reporting stale leads, break out paid sources where possible — the cost of an ignored paid lead is a concrete number.`;
+
+  // Action A: Client-orchestrated Chat Proxy (Sends payload directly to Claude)
+  if (action === "chat") {
+    if (!Array.isArray(messages)) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: "messages array is required for action chat." }),
+      };
+    }
+
+    try {
+      const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": anthropicApiKey,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1500,
+          system: systemPrompt,
+          tools: TOOLS,
+          messages: messages,
+        }),
+      });
+
+      if (!claudeRes.ok) {
+        const errText = await claudeRes.text();
+        return {
+          statusCode: 502,
+          headers,
+          body: JSON.stringify({ error: `Anthropic API error: ${errText}` }),
+        };
+      }
+
+      const result = await claudeRes.json();
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ result }),
+      };
+    } catch (err: any) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: err.message || String(err) }),
+      };
+    }
+  }
+
+  // Action B: Client-orchestrated Tool Proxy (Executes specific tool server-side)
+  if (action === "tool") {
+    if (!toolName) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: "toolName is required for action tool." }),
+      };
+    }
+
+    try {
+      let toolResultData;
+      if (toolName === "search_people") {
+        toolResultData = await handleSearchPeople(input, fubApiKey);
+      } else if (toolName === "get_agent_leaderboard") {
+        toolResultData = await handleGetAgentLeaderboard(input, fubApiKey);
+      } else if (toolName === "get_pipeline_summary") {
+        toolResultData = await handleGetPipelineSummary(input, fubApiKey);
+      } else if (toolName === "get_lead_sources") {
+        toolResultData = await handleGetLeadSources(input, fubApiKey);
+      } else {
+        throw new Error(`Tool ${toolName} is not defined.`);
+      }
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ result: toolResultData }),
+      };
+    } catch (err: any) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: err.message || String(err) }),
+      };
+    }
+  }
+
+  // Fallback: Synchronous Agentic Loop (the old behaviour)
+  if (!Array.isArray(messages)) {
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ error: "messages array is required." }),
+    };
+  }
+
+  const currentMessages = [...messages];
+  let iterations = 0;
+  let finalResponseText = "";
+
+  try {
+    while (iterations < 5) {
+      iterations++;
 
       const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",

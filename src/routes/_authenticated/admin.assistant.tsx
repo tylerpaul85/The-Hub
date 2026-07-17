@@ -309,45 +309,122 @@ function AdminAssistantPage() {
         throw new Error("Supabase authentication session expired. Please sign in again.");
       }
 
-      // 2. Format Anthropic-compliant history for server request
-      // Netlify function will receive this list and continue its loop
-      const formattedHistory = updatedMessages.map((m) => {
-        // Claude expects content as block array or string.
-        // For simplicity we just send a string, or structure it standardly.
-        return {
-          role: m.role,
-          content: m.content,
-        };
-      });
+      // Initialize the history array for the agentic loop
+      let currentHistory: any[] = updatedMessages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
 
-      // 3. Post request to Netlify Function
-      const response = await fetch("/.netlify/functions/fub-assistant", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ messages: formattedHistory }),
-      });
+      let iterations = 0;
+      let replyText = "";
+      const maxIterations = 5;
 
-      let body: any = null;
-      const contentType = response.headers.get("Content-Type") || "";
-      if (contentType.includes("application/json")) {
-        body = await response.json();
-      } else {
-        const text = await response.text();
-        const cleanText = text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-        throw new Error(cleanText.slice(0, 180) || `Server responded with status ${response.status}`);
+      while (iterations < maxIterations) {
+        iterations++;
+        setLoadingStatus(`Thinking (Iteration ${iterations}/${maxIterations})...`);
+
+        // Post to chat proxy
+        const chatResponse = await fetch("/.netlify/functions/fub-assistant", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            action: "chat",
+            messages: currentHistory,
+          }),
+        });
+
+        let chatBody: any = null;
+        const chatContentType = chatResponse.headers.get("Content-Type") || "";
+        if (chatContentType.includes("application/json")) {
+          chatBody = await chatResponse.json();
+        } else {
+          const text = await chatResponse.text();
+          const cleanText = text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+          throw new Error(cleanText.slice(0, 180) || `Server responded with status ${chatResponse.status}`);
+        }
+
+        if (!chatResponse.ok) {
+          throw new Error(chatBody?.error || `Chat error: Server responded with status ${chatResponse.status}`);
+        }
+
+        const result = chatBody.result;
+        if (!result) {
+          throw new Error("Assistant response was empty.");
+        }
+
+        // Add assistant's reply to local agent history
+        currentHistory.push({
+          role: "assistant",
+          content: result.content,
+        });
+
+        // Check if tool execution is required
+        if (result.stop_reason !== "tool_use") {
+          const textBlock = result.content.find((c: any) => c.type === "text");
+          replyText = textBlock ? textBlock.text : "";
+          break;
+        }
+
+        // Execute tool calls in parallel from the browser
+        const toolUses = result.content.filter((c: any) => c.type === "tool_use");
+        setLoadingStatus(`Executing ${toolUses.length} FUB tool calls...`);
+
+        const toolResults = await Promise.all(
+          toolUses.map(async (toolUse: any) => {
+            const { name, input, id: toolUseId } = toolUse;
+
+            const toolResponse = await fetch("/.netlify/functions/fub-assistant", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                action: "tool",
+                toolName: name,
+                input,
+              }),
+            });
+
+            let toolBody: any = null;
+            const toolContentType = toolResponse.headers.get("Content-Type") || "";
+            if (toolContentType.includes("application/json")) {
+              toolBody = await toolResponse.json();
+            } else {
+              const text = await toolResponse.text();
+              throw new Error(`Tool execution error: ${text.slice(0, 100)}`);
+            }
+
+            if (!toolResponse.ok) {
+              return {
+                type: "tool_result",
+                tool_use_id: toolUseId,
+                content: JSON.stringify({ error: toolBody?.error || "Tool failed" }),
+              };
+            }
+
+            return {
+              type: "tool_result",
+              tool_use_id: toolUseId,
+              content: JSON.stringify(toolBody.result),
+            };
+          })
+        );
+
+        // Append tool results back into local conversation history
+        currentHistory.push({
+          role: "user",
+          content: toolResults,
+        });
       }
 
-      if (!response.ok) {
-        throw new Error(body?.error || `Server responded with status ${response.status}`);
-      }
-
-      if (body.response) {
-        setMessages((prev) => [...prev, { role: "assistant", content: body.response }]);
+      if (replyText) {
+        setMessages((prev) => [...prev, { role: "assistant", content: replyText }]);
       } else {
-        throw new Error("Assistant response was empty.");
+        throw new Error("Loop completed without generating an answer.");
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to contact CRM Assistant.");
