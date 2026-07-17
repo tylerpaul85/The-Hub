@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Bot, Send, Loader2, User, Sparkles, BarChart3, Users, HelpCircle, AlertCircle } from "lucide-react";
+import { Bot, Send, Loader2, User, Sparkles, BarChart3, Users, HelpCircle, AlertCircle, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/admin/assistant")({
@@ -36,9 +36,9 @@ const SUGGESTIONS = [
     icon: Sparkles,
   },
   {
-    label: "Recently Contacted",
-    prompt: "Find active contacts that have the tag 'Hot'.",
-    icon: HelpCircle,
+    label: "Agent Response Times",
+    prompt: "Show me the average response times and response rates by agent on new leads created in the last 30 days.",
+    icon: Clock,
   },
 ];
 

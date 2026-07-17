@@ -189,6 +189,137 @@ async function handleGetLeadSources(input: any, apiKey: string) {
     .sort((a, b) => b.totalCount - a.totalCount);
 }
 
+// 4. Tool: get_agent_response_times handler
+async function handleGetAgentResponseTimes(input: any, apiKey: string) {
+  const { start_date, end_date } = input;
+
+  const headers = {
+    Authorization: `Basic ${Buffer.from(`${apiKey}:`).toString("base64")}`,
+    "X-System": "MSREG-Marketing-Dashboard",
+    "X-System-Key": apiKey,
+    Accept: "application/json",
+  };
+
+  // 1. Fetch FUB users to get user name mapping
+  const usersR = await fetch("https://api.followupboss.com/v1/users?limit=100", { headers }).then((r) => r.json());
+  const userMap = new Map<number, string>();
+  const users = usersR?.users ?? [];
+  for (const u of users) {
+    userMap.set(
+      u.id,
+      u.name || [u.firstName, u.lastName].filter(Boolean).join(" ").trim() || `User #${u.id}`
+    );
+  }
+
+  // 2. Format query bounds
+  let createdAfter = start_date;
+  if (!createdAfter) {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    createdAfter = thirtyDaysAgo.toISOString();
+  } else if (/^\d{4}-\d{2}-\d{2}$/.test(createdAfter)) {
+    createdAfter = `${createdAfter}T00:00:00Z`;
+  }
+
+  let createdBefore = end_date;
+  if (!createdBefore) {
+    createdBefore = new Date().toISOString();
+  } else if (/^\d{4}-\d{2}-\d{2}$/.test(createdBefore)) {
+    createdBefore = `${createdBefore}T23:59:59Z`;
+  }
+
+  // 3. Paginate people created in that range
+  const peopleParams = new URLSearchParams();
+  peopleParams.append("createdAfter", createdAfter);
+  peopleParams.append("createdBefore", createdBefore);
+  peopleParams.append("fields", "id,name,created,assignedUserId,stage");
+
+  const peopleList = await fubPaginate(
+    `https://api.followupboss.com/v1/people?${peopleParams.toString()}`,
+    headers,
+    "people",
+    5
+  );
+
+  if (peopleList.length === 0) {
+    return [];
+  }
+
+  // 4. Fetch all calls created since createdAfter
+  const callsParams = new URLSearchParams();
+  callsParams.append("createdAfter", createdAfter);
+  const callsList = await fubPaginate(
+    `https://api.followupboss.com/v1/calls?${callsParams.toString()}`,
+    headers,
+    "calls",
+    5
+  );
+
+  // Group calls by personId
+  const callsByPerson = new Map<number, any[]>();
+  for (const c of callsList) {
+    const pid = Number(c.personId);
+    if (!pid) continue;
+    const arr = callsByPerson.get(pid) || [];
+    arr.push(c);
+    callsByPerson.set(pid, arr);
+  }
+
+  // 5. Calculate speed to first action per contact
+  const agentStats: Record<string, { agentName: string; totalAssignedLeads: number; respondedLeads: number; sumResponseTimeMs: number }> = {};
+
+  for (const p of peopleList) {
+    const assignedAgentId = p.assignedUserId;
+    const agentName = userMap.get(assignedAgentId) || "Unassigned";
+
+    if (!agentStats[agentName]) {
+      agentStats[agentName] = {
+        agentName,
+        totalAssignedLeads: 0,
+        respondedLeads: 0,
+        sumResponseTimeMs: 0,
+      };
+    }
+    agentStats[agentName].totalAssignedLeads += 1;
+
+    const contactCreatedTime = new Date(p.created).getTime();
+    const contactCalls = callsByPerson.get(Number(p.id)) ?? [];
+
+    const outgoingCalls = contactCalls
+      .filter((c: any) => {
+        const isIncoming = c.isIncoming === true || String(c.isIncoming) === "true";
+        return !isIncoming && new Date(c.created).getTime() >= contactCreatedTime;
+      })
+      .sort((a: any, b: any) => new Date(a.created).getTime() - new Date(b.created).getTime());
+
+    if (outgoingCalls.length > 0) {
+      const firstCallTime = new Date(outgoingCalls[0].created).getTime();
+      const responseTimeMs = firstCallTime - contactCreatedTime;
+
+      agentStats[agentName].respondedLeads += 1;
+      agentStats[agentName].sumResponseTimeMs += responseTimeMs;
+    }
+  }
+
+  // 6. Format metrics
+  return Object.values(agentStats).map((s) => {
+    const avgResponseTimeMin = s.respondedLeads > 0 
+      ? Math.round((s.sumResponseTimeMs / s.respondedLeads) / (60 * 1000))
+      : null;
+    const responseRate = s.totalAssignedLeads > 0
+      ? Math.round((s.respondedLeads / s.totalAssignedLeads) * 100)
+      : 0;
+
+    return {
+      agentName: s.agentName,
+      totalAssignedLeads: s.totalAssignedLeads,
+      respondedLeads: s.respondedLeads,
+      avgResponseTimeMinutes: avgResponseTimeMin,
+      responseRatePercentage: responseRate,
+    };
+  });
+}
+
 // Define tools available to Claude
 const TOOLS = [
   {
@@ -253,7 +384,25 @@ const TOOLS = [
       required: ["start_date", "end_date"],
     },
   },
+  {
+    name: "get_agent_response_times",
+    description: "Calculate and report the response speed of agents on newly created leads, matching leads with first outgoing call. Returns whitelisted fields: agentName, totalAssignedLeads, respondedLeads, avgResponseTimeMinutes, and responseRatePercentage.",
+    input_schema: {
+      type: "object",
+      properties: {
+        start_date: {
+          type: "string",
+          description: "Optional start date (ISO-8601 or YYYY-MM-DD) for lead creation. Defaults to 30 days ago.",
+        },
+        end_date: {
+          type: "string",
+          description: "Optional end date (ISO-8601 or YYYY-MM-DD) for lead creation. Defaults to today.",
+        },
+      },
+    },
+  },
 ];
+
 
 // Netlify Function handler
 export async function handler(event: any, context: any) {
@@ -436,6 +585,8 @@ export async function handler(event: any, context: any) {
             toolResultData = await handleGetPipelineSummary(input, fubApiKey);
           } else if (name === "get_lead_sources") {
             toolResultData = await handleGetLeadSources(input, fubApiKey);
+          } else if (name === "get_agent_response_times") {
+            toolResultData = await handleGetAgentResponseTimes(input, fubApiKey);
           } else {
             throw new Error(`Tool ${name} is not defined.`);
           }
