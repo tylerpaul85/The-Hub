@@ -21,6 +21,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgentsIndexRouteImport } from './routes/agents.index'
 import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated/videos'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
+import { Route as AuthenticatedSignaturesRouteImport } from './routes/_authenticated/signatures'
 import { Route as AuthenticatedToolboxRouteImport } from './routes/_authenticated/toolbox'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedRequestsRouteImport } from './routes/_authenticated/requests'
@@ -104,6 +105,11 @@ const AuthenticatedVideosRoute = AuthenticatedVideosRouteImport.update({
 const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSignaturesRoute = AuthenticatedSignaturesRouteImport.update({
+  id: '/signatures',
+  path: '/signatures',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedToolboxRoute = AuthenticatedToolboxRouteImport.update({
@@ -266,6 +272,7 @@ export interface FileRoutesByFullPath {
   '/tasks': typeof AuthenticatedTasksRoute
   '/toolbox': typeof AuthenticatedToolboxRoute
   '/users': typeof AuthenticatedUsersRoute
+  '/signatures': typeof AuthenticatedSignaturesRoute
   '/videos': typeof AuthenticatedVideosRoute
   '/agents/': typeof AgentsIndexRoute
   '/eos/issues': typeof AuthenticatedEosIssuesRoute
@@ -302,6 +309,7 @@ export interface FileRoutesByTo {
   '/tasks': typeof AuthenticatedTasksRoute
   '/toolbox': typeof AuthenticatedToolboxRoute
   '/users': typeof AuthenticatedUsersRoute
+  '/signatures': typeof AuthenticatedSignaturesRoute
   '/videos': typeof AuthenticatedVideosRoute
   '/agents': typeof AgentsIndexRoute
   '/eos/issues': typeof AuthenticatedEosIssuesRoute
@@ -341,6 +349,7 @@ export interface FileRoutesById {
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/toolbox': typeof AuthenticatedToolboxRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
+  '/_authenticated/signatures': typeof AuthenticatedSignaturesRoute
   '/_authenticated/videos': typeof AuthenticatedVideosRoute
   '/agents/': typeof AgentsIndexRoute
   '/_authenticated/eos/issues': typeof AuthenticatedEosIssuesRoute
@@ -381,6 +390,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/toolbox'
     | '/users'
+    | '/signatures'
     | '/videos'
     | '/agents/'
     | '/eos/issues'
@@ -417,6 +427,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/toolbox'
     | '/users'
+    | '/signatures'
     | '/videos'
     | '/agents'
     | '/eos/issues'
@@ -800,6 +811,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedToolboxRoute: typeof AuthenticatedToolboxRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
+  AuthenticatedSignaturesRoute: typeof AuthenticatedSignaturesRoute
   AuthenticatedVideosRoute: typeof AuthenticatedVideosRoute
   AuthenticatedEosIssuesRoute: typeof AuthenticatedEosIssuesRoute
   AuthenticatedEosL10Route: typeof AuthenticatedEosL10RouteWithChildren
@@ -822,6 +834,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedToolboxRoute: AuthenticatedToolboxRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
+  AuthenticatedSignaturesRoute: AuthenticatedSignaturesRoute,
   AuthenticatedVideosRoute: AuthenticatedVideosRoute,
   AuthenticatedEosIssuesRoute: AuthenticatedEosIssuesRoute,
   AuthenticatedEosL10Route: AuthenticatedEosL10RouteWithChildren,

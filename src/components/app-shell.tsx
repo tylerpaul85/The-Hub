@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Calendar, LayoutDashboard, Users, LogOut, Video, BookOpen, Inbox, Target, ClipboardList, BarChart3, ShieldCheck, Ticket, Wrench, ClipboardCheck, CircleAlert, FlaskConical, Boxes, Gift, CalendarOff, CalendarDays, Home, Bot } from "lucide-react";
+import { Calendar, LayoutDashboard, Users, LogOut, Video, BookOpen, Inbox, Target, ClipboardList, BarChart3, ShieldCheck, Ticket, Wrench, ClipboardCheck, CircleAlert, FlaskConical, Boxes, Gift, CalendarOff, CalendarDays, Home, Bot, Mail } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,7 @@ const CLIENT_CARE_NAV = [
 
 const ADMIN_NAV = [
   { to: "/users", label: "Users", icon: Users, adminOnly: true },
+  { to: "/signatures", label: "Email Signatures", icon: Mail, adminOnly: true },
   { to: "/audit-log", label: "Audit Log", icon: ShieldCheck, adminOnly: true },
   { to: "/admin/assistant", label: "AI Assistant", icon: Bot, adminOnly: true },
 ] as const;
