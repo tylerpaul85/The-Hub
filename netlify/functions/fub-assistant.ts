@@ -156,7 +156,10 @@ async function fubPaginate(
     }
 
     if (nextUrl && !nextUrl.startsWith("http")) {
-      const path = nextUrl.startsWith("/") ? nextUrl : `/${nextUrl}`;
+      let path = nextUrl.startsWith("/") ? nextUrl : `/${nextUrl}`;
+      if (!path.startsWith("/v1/")) {
+        path = `/v1${path}`;
+      }
       nextUrl = `https://api.followupboss.com${path}`;
     }
 
