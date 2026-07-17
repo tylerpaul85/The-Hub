@@ -155,6 +155,11 @@ async function fubPaginate(
       nextUrl = data._metadata.nextLink;
     }
 
+    if (nextUrl && !nextUrl.startsWith("http")) {
+      const path = nextUrl.startsWith("/") ? nextUrl : `/${nextUrl}`;
+      nextUrl = `https://api.followupboss.com${path}`;
+    }
+
     // Offset fallback
     if (!nextUrl && items.length === 100 && total > out.length) {
       const currentOffset = data?._metadata?.offset ?? ((pagesFetched - 1) * 100);
