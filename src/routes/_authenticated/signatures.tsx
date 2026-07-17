@@ -46,11 +46,11 @@ export const Route = createFileRoute("/_authenticated/signatures")({
 interface AgentSig {
   id: string;
   email: string;
-  first_name: string | null;
-  last_name: string | null;
+  name: string;
+  active: boolean;
   sig: {
     id: string;
-    user_id: string;
+    toolbox_agent_id: string;
     title: string | null;
     mobile_phone: string | null;
     office_phone: string | null;
@@ -100,7 +100,7 @@ function sigCompleteness(agent: AgentSig): { complete: boolean; missing: string[
 // ----------------------------------------------------------------
 function buildSignatureHtml(agent: AgentSig, team: TeamConfig): string {
   const s = agent.sig;
-  const fullName = [agent.first_name, agent.last_name].filter(Boolean).join(" ");
+  const fullName = agent.name || "";
   const title = s?.title ?? "";
   const mobile = s?.mobile_phone ?? "";
   const office = s?.office_phone ?? "";
@@ -385,7 +385,7 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
     if (!agent || !team) return "";
     const synth: AgentSig = {
       ...agent,
-      sig: { ...agent.sig, ...form, user_id: agent.id, id: agent.sig?.id ?? "" } as any,
+      sig: { ...agent.sig, ...form, toolbox_agent_id: agent.id, id: agent.sig?.id ?? "" } as any,
     };
     return buildSignatureHtml(synth, team);
   }, [agent, team, form]);
@@ -411,7 +411,7 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
       });
       const result = await uploadFn({
         data: {
-          user_id: agent.id,
+          toolbox_agent_id: agent.id,
           filename: file.name,
           base64,
           mime_type: file.type as any,
@@ -432,7 +432,7 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
     setSaving(true);
     try {
       await saveFn({
-        data: { user_id: agent.id, ...form },
+        data: { toolbox_agent_id: agent.id, ...form },
       });
       toast.success("Signature data saved");
       onSaved();
@@ -466,7 +466,7 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
   );
 
   if (!agent) return null;
-  const fullName = [agent.first_name, agent.last_name].filter(Boolean).join(" ") || agent.email;
+  const fullName = agent.name || agent.email || "Unknown Agent";
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -475,7 +475,7 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
         <SheetHeader className="px-6 py-5 border-b border-border shrink-0 bg-sidebar/40">
           <SheetTitle className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-full bg-gold/15 text-gold flex items-center justify-center text-sm font-semibold shrink-0">
-              {(agent.first_name?.[0] ?? agent.email[0] ?? "?").toUpperCase()}
+              {(agent.name?.[0] ?? agent.email?.[0] ?? "?").toUpperCase()}
             </div>
             <div>
               <div className="font-semibold">{fullName}</div>
@@ -926,8 +926,7 @@ function SignaturesPage() {
         ) : (
           <div className="divide-y divide-border">
             {(roster as AgentSig[]).map((agent) => {
-              const fullName =
-                [agent.first_name, agent.last_name].filter(Boolean).join(" ") || agent.email;
+              const fullName = agent.name || agent.email || "Unknown Agent";
               const { complete: isComplete, missing } = sigCompleteness(agent);
               const lastPushed = agent.sig?.last_pushed_at;
               const pushStatus = agent.sig?.last_push_status;
@@ -936,7 +935,7 @@ function SignaturesPage() {
                 <div key={agent.id} className="p-4 flex flex-wrap items-center gap-3 hover:bg-sidebar/30 transition-colors">
                   {/* Avatar */}
                   <div className="h-9 w-9 rounded-full bg-gold/10 border border-gold/20 text-gold flex items-center justify-center text-sm font-semibold shrink-0">
-                    {(agent.first_name?.[0] ?? agent.email[0] ?? "?").toUpperCase()}
+                    {(agent.name?.[0] ?? agent.email?.[0] ?? "?").toUpperCase()}
                   </div>
 
                   {/* Name + email */}

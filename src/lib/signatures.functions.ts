@@ -22,7 +22,7 @@ async function assertAdminOrMarketing(supabase: any, userId: string) {
 // Zod schemas
 // ----------------------------------------------------------------
 const AgentSigSchema = z.object({
-  user_id: z.string().uuid(),
+  toolbox_agent_id: z.string().uuid(),
   title: z.string().max(120).nullable().optional(),
   mobile_phone: z.string().max(30).nullable().optional(),
   office_phone: z.string().max(30).nullable().optional(),
@@ -53,8 +53,8 @@ const PushSchema = z.object({
 
 // ----------------------------------------------------------------
 // getSignatureRoster
-// Returns all profiles that have a non-client_care role, joined with
-// their agent_signature_data row (may be null for new agents).
+// Returns all agents from public.toolbox_agents, joined with
+// their agent_signature_data row.
 // ----------------------------------------------------------------
 export const getSignatureRoster = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -64,48 +64,30 @@ export const getSignatureRoster = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const sb = supabaseAdmin as any;
 
-    // Pull all profiles
-    const { data: profiles, error: pErr } = await sb
-      .from("profiles")
-      .select("id, email, first_name, last_name")
-      .order("last_name", { ascending: true });
-    if (pErr) throw new Error(pErr.message);
+    // Pull all toolbox agents
+    const { data: agents, error: aErr } = await sb
+      .from("toolbox_agents")
+      .select("id, name, email, headshot_url, active")
+      .order("name", { ascending: true });
+    if (aErr) throw new Error(aErr.message);
 
-    // Pull their roles
-    const { data: roleRows, error: rErr } = await sb
-      .from("user_roles")
-      .select("user_id, role");
-    if (rErr) throw new Error(rErr.message);
-
-    // Exclude pure client_care users
-    const rolesByUser = new Map<string, string[]>();
-    for (const r of roleRows ?? []) {
-      const arr = rolesByUser.get(r.user_id) ?? [];
-      arr.push(r.role);
-      rolesByUser.set(r.user_id, arr);
-    }
-
-    const agentProfiles = (profiles ?? []).filter((p: any) => {
-      const roles = rolesByUser.get(p.id) ?? [];
-      return roles.length > 0 && !roles.every((r: string) => r === "client_care");
-    });
+    const agentIds = (agents ?? []).map((a: any) => a.id);
 
     // Pull all signature data rows
-    const agentIds = agentProfiles.map((p: any) => p.id);
     const { data: sigRows, error: sErr } = await sb
       .from("agent_signature_data")
       .select("*")
-      .in("user_id", agentIds);
+      .in("toolbox_agent_id", agentIds);
     if (sErr) throw new Error(sErr.message);
 
-    const sigByUser = new Map<string, any>();
+    const sigByAgent = new Map<string, any>();
     for (const s of sigRows ?? []) {
-      sigByUser.set(s.user_id, s);
+      sigByAgent.set(s.toolbox_agent_id, s);
     }
 
-    return agentProfiles.map((p: any) => ({
-      ...p,
-      sig: sigByUser.get(p.id) ?? null,
+    return (agents ?? []).map((a: any) => ({
+      ...a,
+      sig: sigByAgent.get(a.id) ?? null,
     }));
   });
 
@@ -139,7 +121,7 @@ export const saveAgentSignatureData = createServerFn({ method: "POST" })
       .from("agent_signature_data")
       .upsert(
         {
-          user_id: data.user_id,
+          toolbox_agent_id: data.toolbox_agent_id,
           title: data.title ?? null,
           mobile_phone: data.mobile_phone ?? null,
           office_phone: data.office_phone ?? null,
@@ -150,7 +132,7 @@ export const saveAgentSignatureData = createServerFn({ method: "POST" })
           office2_addr: data.office2_addr ?? null,
           gmail_email: data.gmail_email || null,
         },
-        { onConflict: "user_id" }
+        { onConflict: "toolbox_agent_id" }
       );
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -191,7 +173,7 @@ export const saveTeamConfig = createServerFn({ method: "POST" })
 // Storage public bucket "signature-headshots", returns permanent URL.
 // ----------------------------------------------------------------
 const UploadHeadshotSchema = z.object({
-  user_id: z.string().uuid(),
+  toolbox_agent_id: z.string().uuid(),
   filename: z.string().max(200),
   base64: z.string().max(10_000_000), // ~7.5 MB limit
   mime_type: z.enum(["image/jpeg", "image/png", "image/webp"]),
@@ -208,9 +190,9 @@ export const uploadHeadshot = createServerFn({ method: "POST" })
     // Decode base64 → Buffer
     const buffer = Buffer.from(data.base64.replace(/^data:[^;]+;base64,/, ""), "base64");
 
-    // Deterministic storage path: signature-headshots/{user_id}/{filename}
+    // Deterministic storage path: signature-headshots/{toolbox_agent_id}/{filename}
     const ext = data.mime_type.split("/")[1];
-    const path = `${data.user_id}/headshot.${ext}`;
+    const path = `${data.toolbox_agent_id}/headshot.${ext}`;
 
     const { error } = await sb.storage
       .from("signature-headshots")
@@ -233,7 +215,7 @@ export const uploadHeadshot = createServerFn({ method: "POST" })
 // Records the outcome to signatures_push_log and updates agent row.
 // ----------------------------------------------------------------
 const PushResultSchema = z.object({
-  user_id: z.string().uuid(),
+  toolbox_agent_id: z.string().uuid(),
   gmail_email: z.string().email(),
   status: z.enum(["success", "error"]),
   error_msg: z.string().max(1000).nullable().optional(),
@@ -249,7 +231,7 @@ export const recordPushResult = createServerFn({ method: "POST" })
 
     // Write audit log
     await sb.from("signatures_push_log").insert({
-      user_id: data.user_id,
+      toolbox_agent_id: data.toolbox_agent_id,
       pushed_by: context.userId,
       gmail_email: data.gmail_email,
       status: data.status,
@@ -264,7 +246,7 @@ export const recordPushResult = createServerFn({ method: "POST" })
         last_push_status: data.status,
         last_push_error: data.error_msg ?? null,
       })
-      .eq("user_id", data.user_id);
+      .eq("toolbox_agent_id", data.toolbox_agent_id);
 
     return { ok: true };
   });
