@@ -279,8 +279,8 @@ export async function handler(event: any, context: any) {
   // 1. Read environment variables
   const fubApiKey = process.env.FUB_API_KEY || process.env.FUB;
   const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
   if (!fubApiKey) {
     return {
