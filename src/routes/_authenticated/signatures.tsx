@@ -317,32 +317,6 @@ function buildSignatureHtml(agent: AgentSig, team: TeamConfig): string {
   return compileTemplate(template, data);
 }
 
-              <!-- Valuation link -->
-              ${team.valuation_url ? `<tr>
-                <td style="padding:6px 0 0 0;" align="right">
-                  <a href="${team.valuation_url}" target="_blank"
-                    style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
-                    font-size:9px; color:#C9A84C; text-decoration:none; letter-spacing:0.5px;
-                    text-transform:uppercase; font-weight:700;">
-                    What's My Home Worth?
-                  </a>
-                </td>
-              </tr>` : ""}
-            </table>
-          </td>
-
-        </tr>
-      </table>
-    </td>
-  </tr>
-
-  <!-- BOTTOM BORDER -->
-  <tr>
-    <td style="padding:14px 0 0 0; border-top:2px solid #C9A84C; margin-top:10px;"></td>
-  </tr>
-
-</table>`;
-}
 
 // ----------------------------------------------------------------
 // Signature Preview Component
