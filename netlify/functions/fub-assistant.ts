@@ -272,6 +272,11 @@ async function handleGetAgentResponseTimes(input: any, apiKey: string) {
     const assignedAgentId = p.assignedUserId;
     const agentName = userMap.get(assignedAgentId) || "Unassigned";
 
+    // Exclude Matt Smith (case-insensitive) as leads in the pond are assigned to him
+    if (agentName.toLowerCase() === "matt smith" || agentName === "Unassigned") {
+      continue;
+    }
+
     if (!agentStats[agentName]) {
       agentStats[agentName] = {
         agentName,
@@ -541,7 +546,7 @@ export async function handler(event: any, context: any) {
         body: JSON.stringify({
           model: "claude-sonnet-4-6",
           max_tokens: 2000,
-          system: "You are a CRM analyst for Matt Smith Real Estate Group, operating across Rolla, St. Robert, and Lake of the Ozarks. Use the provided tools to answer questions about lead and deal data. Cite specific numbers. If the data doesn't support a conclusion, say so rather than speculating.",
+          system: "You are a CRM analyst for Matt Smith Real Estate Group, operating across Rolla, St. Robert, and Lake of the Ozarks. Use the provided tools to answer questions about lead and deal data. Cite specific numbers. If the data doesn't support a conclusion, say so rather than speculating. CRITICAL: When presenting agent reports or statistics (such as response times or pipeline summaries), you must output a complete markdown table containing ALL agents returned by the tool. Do NOT truncate, summarize, or omit any agent records unless explicitly requested.",
           tools: TOOLS,
           messages: currentMessages,
         }),

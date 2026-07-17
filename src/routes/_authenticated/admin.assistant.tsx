@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Bot, Send, Loader2, User, Sparkles, BarChart3, Users, HelpCircle, AlertCircle, Clock } from "lucide-react";
+import { Bot, Send, Loader2, User, Sparkles, BarChart3, Users, HelpCircle, AlertCircle, Clock, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/admin/assistant")({
@@ -41,6 +41,24 @@ const SUGGESTIONS = [
     icon: Clock,
   },
 ];
+
+// Helper to export parsed markdown table data to CSV file
+function downloadCSV(headers: string[], rows: string[][]) {
+  const csvContent = [
+    headers.map(h => `"${h.replace(/"/g, '""')}"`).join(","),
+    ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(","))
+  ].join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `crm-report-${new Date().toISOString().slice(0, 10)}.csv`);
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 
 // Inline Markdown Parser to render tables, headers, and bullet lists beautifully.
 function parseInline(text: string): React.ReactNode[] {
@@ -106,29 +124,43 @@ function parseMarkdown(text: string): React.ReactNode {
         const bodyRows = rows.slice(2);
 
         return (
-          <div key={idx} className="overflow-x-auto my-4 border border-border/60 rounded-xl bg-muted/10 backdrop-blur-sm">
-            <table className="w-full text-sm text-left border-collapse">
-              <thead>
-                <tr className="border-b border-border bg-muted/40">
-                  {headerRow.map((cell, cIdx) => (
-                    <th key={cIdx} className="p-3 font-semibold text-muted-foreground text-xs uppercase tracking-wider">
-                      {parseInline(cell)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/40">
-                {bodyRows.map((row, rIdx) => (
-                  <tr key={rIdx} className="hover:bg-muted/10 transition-colors">
-                    {row.map((cell, cIdx) => (
-                      <td key={cIdx} className="p-3 text-foreground/90 font-medium">
+          <div key={idx} className="my-4 border border-border/60 rounded-xl bg-card/60 overflow-hidden shadow-sm backdrop-blur-sm">
+            <div className="flex justify-between items-center px-4 py-2 bg-muted/30 border-b border-border/60">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Report Table</span>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => downloadCSV(headerRow, bodyRows)}
+                className="h-7 px-2.5 py-1 text-xs flex items-center gap-1.5 hover:bg-gold/10 hover:text-gold border border-border/50 rounded-lg cursor-pointer transition-colors"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export CSV
+              </Button>
+            </div>
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-sm text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-border bg-muted/15">
+                    {headerRow.map((cell, cIdx) => (
+                      <th key={cIdx} className="p-3 font-semibold text-muted-foreground text-xs uppercase tracking-wider">
                         {parseInline(cell)}
-                      </td>
+                      </th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border/40">
+                  {bodyRows.map((row, rIdx) => (
+                    <tr key={rIdx} className="hover:bg-muted/10 transition-colors">
+                      {row.map((cell, cIdx) => (
+                        <td key={cIdx} className="p-3 text-foreground/90 font-medium">
+                          {parseInline(cell)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         );
       }
