@@ -33,6 +33,7 @@ import {
   saveAgentSignatureData,
   saveTeamConfig,
   uploadHeadshot,
+  pushSignatureToGmail,
 } from "@/lib/signatures.functions";
 
 export const Route = createFileRoute("/_authenticated/signatures")({
@@ -389,7 +390,9 @@ interface AgentSheetProps {
 function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
   const saveFn = useServerFn(saveAgentSignatureData);
   const uploadFn = useServerFn(uploadHeadshot);
+  const pushFn = useServerFn(pushSignatureToGmail);
 
+  const [pushing, setPushing] = useState(false);
   const [form, setForm] = useState({
     title: "",
     mobile_phone: "",
@@ -482,6 +485,28 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
       toast.error(err.message ?? "Save failed");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePush = async () => {
+    if (!agent) return;
+    setPushing(true);
+    try {
+      toast.loading(`Pushing signature for ${fullName}...`, { id: "push-single" });
+      const results = await pushFn({
+        data: { toolbox_agent_ids: [agent.id] },
+      });
+      const res = results[0];
+      if (res.status === "error") {
+        toast.error(res.error ?? "Failed to push signature.", { id: "push-single" });
+      } else {
+        toast.success("Signature successfully pushed to Gmail!", { id: "push-single" });
+        onSaved();
+      }
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to push signature.", { id: "push-single" });
+    } finally {
+      setPushing(false);
     }
   };
 
@@ -681,11 +706,15 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
           <Button
             variant="outline"
             size="sm"
-            className="gap-1.5 text-xs opacity-50 cursor-not-allowed"
-            disabled
-            title="Gmail integration coming soon"
+            className="gap-1.5 text-xs bg-gold text-navy font-semibold hover:bg-gold/90 border-0"
+            disabled={pushing || saving}
+            onClick={handlePush}
           >
-            <Mail className="h-3.5 w-3.5" />
+            {pushing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Mail className="h-3.5 w-3.5" />
+            )}
             Push to Gmail
           </Button>
         </div>
@@ -879,6 +908,9 @@ function SignaturesPage() {
 
   const getRosterFn = useServerFn(getSignatureRoster);
   const getConfigFn = useServerFn(getTeamConfig);
+  const pushFn = useServerFn(pushSignatureToGmail);
+
+  const [pushingAll, setPushingAll] = useState(false);
 
   const { data: roster = [], isLoading: rosterLoading, error: rosterError } = useQuery({
     queryKey: ["signature-roster"],
@@ -894,6 +926,33 @@ function SignaturesPage() {
 
   const [selectedAgent, setSelectedAgent] = useState<AgentSig | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  const handlePushAll = async () => {
+    const activeAgents = (roster as AgentSig[]).filter((a) => a.active);
+    if (activeAgents.length === 0) {
+      toast.error("No active agents found in the roster.");
+      return;
+    }
+    setPushingAll(true);
+    const ids = activeAgents.map((a) => a.id);
+    try {
+      toast.loading(`Pushing signatures for ${activeAgents.length} agents...`, { id: "push-all" });
+      const results = await pushFn({
+        data: { toolbox_agent_ids: ids },
+      });
+      const errors = results.filter((r) => r.status === "error");
+      if (errors.length > 0) {
+        toast.error(`Pushed with ${errors.length} error(s). Check logs.`, { id: "push-all" });
+      } else {
+        toast.success("Successfully pushed all signatures to Gmail!", { id: "push-all" });
+      }
+      qc.invalidateQueries({ queryKey: ["signature-roster"] });
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to push signatures.", { id: "push-all" });
+    } finally {
+      setPushingAll(false);
+    }
+  };
 
   const handleEditAgent = (agent: AgentSig) => {
     setSelectedAgent(agent);
@@ -934,15 +993,16 @@ function SignaturesPage() {
             <Button
               variant="outline"
               size="sm"
-              disabled
-              className="opacity-50 cursor-not-allowed gap-1.5 text-xs"
-              title="Gmail integration coming soon — awaiting service account setup"
+              disabled={pushingAll || rosterLoading || roster.length === 0}
+              onClick={handlePushAll}
+              className="gap-1.5 text-xs bg-gold text-navy font-semibold hover:bg-gold/90 border-0"
             >
-              <Mail className="h-3.5 w-3.5" />
+              {pushingAll ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Mail className="h-3.5 w-3.5" />
+              )}
               Push All to Gmail
-              <Badge className="ml-1 bg-amber-500/15 text-amber-400 border-amber-500/30 border text-[10px] py-0">
-                Coming Soon
-              </Badge>
             </Button>
           </div>
         </div>
@@ -967,12 +1027,11 @@ function SignaturesPage() {
       </header>
 
       {/* Gmail integration notice */}
-      <div className="mb-6 p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 flex items-start gap-3">
-        <Info className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
-        <div className="text-sm text-amber-300">
-          <span className="font-semibold">Gmail push is not yet connected.</span>{" "}
-          You can build out every agent's signature and preview it here. Once you have the Google Workspace
-          service account credentials, the Push to Gmail buttons will activate.
+      <div className="mb-6 p-4 rounded-xl border border-gold/30 bg-gold/5 flex items-start gap-3">
+        <Info className="h-4 w-4 text-gold mt-0.5 shrink-0" />
+        <div className="text-sm text-gold/90">
+          <span className="font-semibold">Gmail Push Setup:</span>{" "}
+          Make sure your Google Workspace Service Account JSON key is added as the <code className="bg-navy px-1.5 py-0.5 rounded font-mono text-xs text-gold">GOOGLE_SA_KEY_JSON</code> environment variable in Netlify.
         </div>
       </div>
 
