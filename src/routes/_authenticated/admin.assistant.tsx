@@ -330,9 +330,18 @@ function AdminAssistantPage() {
         body: JSON.stringify({ messages: formattedHistory }),
       });
 
-      const body = await response.json();
+      let body: any = null;
+      const contentType = response.headers.get("Content-Type") || "";
+      if (contentType.includes("application/json")) {
+        body = await response.json();
+      } else {
+        const text = await response.text();
+        const cleanText = text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+        throw new Error(cleanText.slice(0, 180) || `Server responded with status ${response.status}`);
+      }
+
       if (!response.ok) {
-        throw new Error(body.error || `Server responded with status ${response.status}`);
+        throw new Error(body?.error || `Server responded with status ${response.status}`);
       }
 
       if (body.response) {
