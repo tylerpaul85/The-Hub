@@ -229,24 +229,26 @@ const DEFAULT_SIGNATURE_TEMPLATE = `<!-- HTML EMAIL SIGNATURE TEMPLATE -->
                   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="281" style="width:281px;">
                     <tr>
                       {{#if office1_addr}}
-                      <td align="left" valign="top" style="padding:0 10px 0 0;">
+                      <td align="left" valign="top" style="padding:0 10px 6px 0; width:135px;">
                         <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; line-height:13px; font-weight:700; color:#16232f; text-transform:uppercase; letter-spacing:0.5px;">{{office1_label}}</div>
-                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:9px; line-height:13px; color:#718096; padding-top:3px;">{{office1_addr}}</div>
+                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:9px; line-height:13px; color:#718096; padding-top:2px;">{{office1_addr}}</div>
                       </td>
                       {{/if}}
                       {{#if office2_addr}}
-                      <td align="left" valign="top" style="padding:0 10px 0 0;">
+                      <td align="left" valign="top" style="padding:0 0 6px 0; width:136px;">
                         <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; line-height:13px; font-weight:700; color:#16232f; text-transform:uppercase; letter-spacing:0.5px;">{{office2_label}}</div>
-                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:9px; line-height:13px; color:#718096; padding-top:3px;">{{office2_addr}}</div>
-                      </td>
-                      {{/if}}
-                      {{#if office3_addr}}
-                      <td align="left" valign="top" style="padding:0;">
-                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; line-height:13px; font-weight:700; color:#16232f; text-transform:uppercase; letter-spacing:0.5px;">{{office3_label}}</div>
-                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:9px; line-height:13px; color:#718096; padding-top:3px;">{{office3_addr}}</div>
+                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:9px; line-height:13px; color:#718096; padding-top:2px;">{{office2_addr}}</div>
                       </td>
                       {{/if}}
                     </tr>
+                    {{#if office3_addr}}
+                    <tr>
+                      <td align="left" valign="top" colspan="2" style="padding:4px 0 0 0;">
+                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; line-height:13px; font-weight:700; color:#16232f; text-transform:uppercase; letter-spacing:0.5px;">{{office3_label}}</div>
+                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:9px; line-height:13px; color:#718096; padding-top:2px;">{{office3_addr}}</div>
+                      </td>
+                    </tr>
+                    {{/if}}
                   </table>
                 </td>
               </tr>
@@ -336,6 +338,7 @@ function buildSignatureHtml(agent: AgentSig, team: TeamConfig): string {
 
   const o1 = activeOffices[0];
   const o2 = activeOffices[1];
+  const o3 = activeOffices[2];
 
   const data = {
     name: agent.name || "",
@@ -348,6 +351,8 @@ function buildSignatureHtml(agent: AgentSig, team: TeamConfig): string {
     office1_addr: o1?.addr ?? "",
     office2_label: o2?.label ?? "",
     office2_addr: o2?.addr ?? "",
+    office3_label: o3?.label ?? "",
+    office3_addr: o3?.addr ?? "",
     office_rolla_addr: showRolla ? rollaAddr : "",
     office_strobert_addr: showStRobert ? strobertAddr : "",
     office_osage_addr: showOsage ? osageAddr : "",
