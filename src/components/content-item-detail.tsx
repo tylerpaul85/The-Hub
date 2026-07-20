@@ -102,41 +102,51 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
   const [form, setForm] = useState<FormShape>(emptyForm);
   const lastSavedRef = useRef<string>("");
   const skipNextAutosaveRef = useRef<boolean>(true);
+  const lastItemIdRef = useRef<string>("");
 
   useEffect(() => {
     if (!item) return;
-    const next: FormShape = {
-      title: item.title,
-      caption: item.caption ?? "",
-      platforms: item.platforms,
-      status: item.status,
-      scheduled_at: toLocalInput(new Date(item.scheduled_at)),
-      link: item.link ?? "",
-      priority: item.priority,
-      notes: item.notes ?? "",
-      image_urls: (item.image_urls && item.image_urls.length > 0) ? item.image_urls : (item.thumbnail_url ? [item.thumbnail_url] : []),
-      target_publish_date: item.target_publish_date ?? "",
-      brand: (item.brand ?? "PP") as Brand,
-      canva_link: item.canva_link ?? "",
-      description: item.description ?? "",
-      blog_content: item.blog_content ?? "",
-      blog_doc_link: item.blog_doc_link ?? "",
-      youtube_thumbnail_url: item.youtube_thumbnail_url ?? "",
-      youtube_video_title: item.youtube_video_title ?? "",
-      email_subject_line: item.email_subject_line ?? "",
-      email_body: (item as any).email_body ?? "",
-      meta_media_link: item.meta_media_link ?? "",
-      meta_graphic_link: (item as any).meta_graphic_link ?? "",
-      meta_video_link: (item as any).meta_video_link ?? "",
-      meta_copy: item.meta_copy ?? "",
-      revision_note: item.revision_note ?? "",
-      note_attachments: Array.isArray((item as any).note_attachments) ? (item as any).note_attachments : [],
-    };
-    setForm(next);
-    lastSavedRef.current = JSON.stringify(next);
-    skipNextAutosaveRef.current = true;
-    setSaveState("idle");
-  }, [item]);
+    const isFocused = typeof document !== "undefined" && document.activeElement && (
+      document.activeElement.tagName === "INPUT" ||
+      document.activeElement.tagName === "TEXTAREA"
+    );
+    const isNewItem = lastItemIdRef.current !== itemId;
+    lastItemIdRef.current = itemId;
+
+    if (isNewItem || !isFocused) {
+      const next: FormShape = {
+        title: item.title,
+        caption: item.caption ?? "",
+        platforms: item.platforms,
+        status: item.status,
+        scheduled_at: toLocalInput(new Date(item.scheduled_at)),
+        link: item.link ?? "",
+        priority: item.priority,
+        notes: item.notes ?? "",
+        image_urls: (item.image_urls && item.image_urls.length > 0) ? item.image_urls : (item.thumbnail_url ? [item.thumbnail_url] : []),
+        target_publish_date: item.target_publish_date ?? "",
+        brand: (item.brand ?? "PP") as Brand,
+        canva_link: item.canva_link ?? "",
+        description: item.description ?? "",
+        blog_content: item.blog_content ?? "",
+        blog_doc_link: item.blog_doc_link ?? "",
+        youtube_thumbnail_url: item.youtube_thumbnail_url ?? "",
+        youtube_video_title: item.youtube_video_title ?? "",
+        email_subject_line: item.email_subject_line ?? "",
+        email_body: (item as any).email_body ?? "",
+        meta_media_link: item.meta_media_link ?? "",
+        meta_graphic_link: (item as any).meta_graphic_link ?? "",
+        meta_video_link: (item as any).meta_video_link ?? "",
+        meta_copy: item.meta_copy ?? "",
+        revision_note: item.revision_note ?? "",
+        note_attachments: Array.isArray((item as any).note_attachments) ? (item as any).note_attachments : [],
+      };
+      setForm(next);
+      lastSavedRef.current = JSON.stringify(next);
+      skipNextAutosaveRef.current = true;
+      setSaveState("idle");
+    }
+  }, [item, itemId]);
 
   const buildPayload = (f: FormShape) => ({
     title: f.title.trim(),
