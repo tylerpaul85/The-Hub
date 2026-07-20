@@ -16,3 +16,6 @@ ALTER TABLE public.agent_signature_data
   ADD COLUMN IF NOT EXISTS office_rolla_addr text,
   ADD COLUMN IF NOT EXISTS office_strobert_addr text,
   ADD COLUMN IF NOT EXISTS office_osage_addr text;
+
+-- Force PostgREST to reload its schema cache immediately
+NOTIFY pgrst, 'reload schema';
