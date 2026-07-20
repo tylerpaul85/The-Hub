@@ -140,16 +140,18 @@ const DEFAULT_SIGNATURE_TEMPLATE = `<!-- HTML EMAIL SIGNATURE TEMPLATE -->
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="700" style="border-collapse:collapse; width:700px; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; background-color:#ffffff;">
   <!-- TOP BANNER -->
   <tr>
-    <td style="padding:0 0 16px 0;">
+    <td style="padding:0 0 20px 0;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="700" style="border-collapse:collapse; width:700px;">
         <tr>
-          <td bgcolor="#16232f" align="center" width="700" style="background-color:#16232f; width:700px; padding:10px 0; border-radius:4px;">
+          <td bgcolor="#16232f" align="center" width="700" style="background-color:#16232f; width:700px; padding:9px 0; border-radius:4px;">
             <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; line-height:13px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:#ffffff;">
               {{accolade_line1}}
             </span>
+            {{#if accolade_line2}}
             <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; line-height:13px; font-weight:400; letter-spacing:1.2px; text-transform:uppercase; color:#8ba3ba;">
               &nbsp;&nbsp;&middot;&nbsp;&nbsp;{{accolade_line2}}
             </span>
+            {{/if}}
           </td>
         </tr>
       </table>
@@ -162,39 +164,39 @@ const DEFAULT_SIGNATURE_TEMPLATE = `<!-- HTML EMAIL SIGNATURE TEMPLATE -->
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="700" style="border-collapse:collapse; width:700px;">
         <tr>
           <!-- COLUMN 1: CIRCULAR PHOTO -->
-          <td valign="middle" width="130" style="width:130px; padding:0 16px 0 0;">
+          <td valign="middle" align="left" width="158" style="width:158px; padding:0 18px 0 0;">
             {{#if headshot_url}}
-            <img src="{{headshot_url}}" alt="{{name}}" width="120" height="120" border="0" style="display:block; width:120px; height:120px; border-radius:50%; object-fit:cover; object-position:center top; border:1px solid #e2e8f0;" />
+            <img src="{{headshot_url}}" alt="{{name}}" width="140" height="140" border="0" style="display:block; width:140px; height:140px; border-radius:50%; object-fit:cover; object-position:center top; border:1px solid #e2e8f0;" />
             {{else}}
-            <div style="width:120px; height:120px; background-color:#f7fafc; border:1px dashed #cbd5e0; border-radius:50%; display:inline-block;"></div>
+            <div style="width:140px; height:140px; background-color:#f7fafc; border:1px dashed #cbd5e0; border-radius:50%; display:inline-block;"></div>
             {{/if}}
           </td>
 
           <!-- DIVIDER LINE -->
-          <td width="1" bgcolor="#e2e8f0" style="width:1px; background-color:#e2e8f0;"></td>
+          <td width="1" bgcolor="#e2e8f0" style="width:1px; background-color:#e2e8f0; font-size:0; line-height:0;">&nbsp;</td>
 
           <!-- COLUMN 2: NAME, TITLE, LOGO -->
-          <td valign="top" style="padding:0 20px 0 20px;">
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+          <td valign="middle" align="left" width="205" style="width:205px; padding:0 18px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="169" style="width:169px;">
               <tr>
-                <td style="padding:4px 0 2px 0;">
-                  <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:24px; line-height:28px; font-weight:700; color:#16232f; letter-spacing:-0.5px;">
+                <td align="left" style="padding:0 0 3px 0;">
+                  <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:23px; line-height:27px; font-weight:700; color:#16232f; letter-spacing:-0.4px; white-space:nowrap;">
                     {{name}}
                   </span>
                 </td>
               </tr>
               <tr>
-                <td style="padding:0 0 12px 0;">
-                  <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:11px; line-height:14px; font-weight:700; color:#8ba3ba; text-transform:uppercase; letter-spacing:1px;">
+                <td align="left" style="padding:0 0 14px 0;">
+                  <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; line-height:13px; font-weight:700; color:#8ba3ba; text-transform:uppercase; letter-spacing:1px; white-space:nowrap;">
                     {{title}}
                   </span>
                 </td>
               </tr>
               <tr>
-                <td>
+                <td align="center" style="padding:0;">
                   {{#if logo_url}}
                   <a href="{{website_url}}" target="_blank" style="text-decoration:none; display:block;">
-                    <img src="{{logo_url}}" alt="Matt Smith Real Estate Group" width="140" border="0" style="display:block; width:140px; height:auto;" />
+                    <img src="{{logo_url}}" alt="Matt Smith Real Estate Group" width="125" border="0" style="display:block; width:125px; height:auto; margin:0 auto;" />
                   </a>
                   {{/if}}
                 </td>
@@ -203,64 +205,45 @@ const DEFAULT_SIGNATURE_TEMPLATE = `<!-- HTML EMAIL SIGNATURE TEMPLATE -->
           </td>
 
           <!-- DIVIDER LINE -->
-          <td width="1" bgcolor="#e2e8f0" style="width:1px; background-color:#e2e8f0;"></td>
+          <td width="1" bgcolor="#e2e8f0" style="width:1px; background-color:#e2e8f0; font-size:0; line-height:0;">&nbsp;</td>
 
-          <!-- COLUMN 3: PHONES, SOCIALS, ADDRESSES, CTA -->
-          <td valign="top" style="padding:0 0 0 20px; width:280px;">
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
-              <!-- Phones & Socials Header Row -->
+          <!-- COLUMN 3: PHONES, ADDRESSES, CTA, SOCIALS -->
+          <td valign="top" align="left" width="299" style="padding:0 0 0 18px; width:299px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="281" height="140" style="width:281px; height:140px;">
+              <!-- Phone Row -->
               <tr>
-                <td style="padding:4px 0 10px 0;">
-                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
-                    <tr>
-                      <td style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:11px; line-height:16px; color:#16232f;">
-                        {{#if mobile_phone}}
-                        <span style="color:#C9A84C; font-weight:700; text-transform:uppercase; font-size:10px;">M</span>
-                        <strong>{{mobile_phone}}</strong>
-                        {{/if}}
-                        {{#if office_phone}}
-                        &nbsp;&nbsp;&nbsp;
-                        <span style="color:#8ba3ba; font-weight:700; text-transform:uppercase; font-size:10px;">O</span>
-                        <span style="color:#4a5568;">{{office_phone}}</span>
-                        {{/if}}
-                      </td>
-                      <td align="right" style="padding:0;">
-                        {{#if facebook_url}}
-                        <a href="{{facebook_url}}" target="_blank" style="display:inline-block; margin-left:6px; text-decoration:none;">
-                          <img src="{{icon_fb_url}}" alt="Facebook" width="18" height="18" border="0" style="display:block; width:18px; height:18px;" />
-                        </a>
-                        {{/if}}
-                        {{#if instagram_url}}
-                        <a href="{{instagram_url}}" target="_blank" style="display:inline-block; margin-left:6px; text-decoration:none;">
-                          <img src="{{icon_ig_url}}" alt="Instagram" width="18" height="18" border="0" style="display:block; width:18px; height:18px;" />
-                        </a>
-                        {{/if}}
-                        {{#if website_url}}
-                        <a href="{{website_url}}" target="_blank" style="display:inline-block; margin-left:6px; text-decoration:none;">
-                          <img src="{{icon_web_url}}" alt="Website" width="18" height="18" border="0" style="display:block; width:18px; height:18px;" />
-                        </a>
-                        {{/if}}
-                      </td>
-                    </tr>
-                  </table>
+                <td align="left" valign="top" style="padding:0 0 14px 0; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:11px; line-height:15px; color:#16232f; white-space:nowrap;">
+                  {{#if mobile_phone}}
+                  <span style="color:#C9A84C; font-weight:700; font-size:9px; letter-spacing:0.5px;">M</span>&nbsp;<strong style="font-weight:700;">{{mobile_phone}}</strong>
+                  {{/if}}
+                  {{#if office_phone}}
+                  <span style="color:#cbd5e0;">&nbsp;&nbsp;|&nbsp;&nbsp;</span>
+                  <span style="color:#8ba3ba; font-weight:700; font-size:9px; letter-spacing:0.5px;">O</span>&nbsp;<span style="color:#4a5568;">{{office_phone}}</span>
+                  {{/if}}
                 </td>
               </tr>
 
               <!-- Office Addresses -->
               <tr>
-                <td style="padding:0 0 12px 0;">
-                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                <td valign="top" style="padding:0 0 16px 0;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="281" style="width:281px;">
                     <tr>
                       {{#if office1_addr}}
-                      <td valign="top" style="padding:0 8px 0 0; width:50%;">
-                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; font-weight:700; color:#16232f; text-transform:uppercase; letter-spacing:0.5px;">{{office1_label}}</div>
-                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:9px; line-height:12px; color:#718096; margin-top:2px;">{{office1_addr}}</div>
+                      <td align="left" valign="top" style="padding:0 10px 0 0;">
+                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; line-height:13px; font-weight:700; color:#16232f; text-transform:uppercase; letter-spacing:0.5px;">{{office1_label}}</div>
+                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:9px; line-height:13px; color:#718096; padding-top:3px;">{{office1_addr}}</div>
                       </td>
                       {{/if}}
                       {{#if office2_addr}}
-                      <td valign="top" style="padding:0; width:50%;">
-                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; font-weight:700; color:#16232f; text-transform:uppercase; letter-spacing:0.5px;">{{office2_label}}</div>
-                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:9px; line-height:12px; color:#718096; margin-top:2px;">{{office2_addr}}</div>
+                      <td align="left" valign="top" style="padding:0 10px 0 0;">
+                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; line-height:13px; font-weight:700; color:#16232f; text-transform:uppercase; letter-spacing:0.5px;">{{office2_label}}</div>
+                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:9px; line-height:13px; color:#718096; padding-top:3px;">{{office2_addr}}</div>
+                      </td>
+                      {{/if}}
+                      {{#if office3_addr}}
+                      <td align="left" valign="top" style="padding:0;">
+                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; line-height:13px; font-weight:700; color:#16232f; text-transform:uppercase; letter-spacing:0.5px;">{{office3_label}}</div>
+                        <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:9px; line-height:13px; color:#718096; padding-top:3px;">{{office3_addr}}</div>
                       </td>
                       {{/if}}
                     </tr>
@@ -268,22 +251,58 @@ const DEFAULT_SIGNATURE_TEMPLATE = `<!-- HTML EMAIL SIGNATURE TEMPLATE -->
                 </td>
               </tr>
 
-              <!-- Call to Action Button -->
-              {{#if valuation_url}}
+              <!-- CTA Button + Socials Row -->
               <tr>
-                <td style="padding:2px 0 0 0;">
-                  <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <td valign="bottom" style="padding:0;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="281" style="width:281px;">
                     <tr>
-                      <td bgcolor="#1e70e6" style="background-color:#1e70e6; border-radius:4px; padding:8px 16px;" align="center">
-                        <a href="{{valuation_url}}" target="_blank" style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:11px; font-weight:700; color:#ffffff; text-decoration:none; display:inline-block; text-transform:uppercase; letter-spacing:0.5px;">
-                          Instant Home Valuation &rarr;
-                        </a>
+                      <!-- Call to Action Button -->
+                      <td align="left" valign="middle" style="padding:0;">
+                        {{#if valuation_url}}
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                          <tr>
+                            <td bgcolor="#1e70e6" align="center" style="background-color:#1e70e6; border-radius:4px; padding:9px 16px;">
+                              <a href="{{valuation_url}}" target="_blank" style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:10px; line-height:13px; font-weight:700; color:#ffffff; text-decoration:none; display:inline-block; text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap;">
+                                Instant Home Valuation &rarr;
+                              </a>
+                            </td>
+                          </tr>
+                        </table>
+                        {{/if}}
+                      </td>
+
+                      <!-- Social Icons -->
+                      <td align="right" valign="middle" style="padding:0;">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="right">
+                          <tr>
+                            {{#if facebook_url}}
+                            <td style="padding:0 0 0 8px;">
+                              <a href="{{facebook_url}}" target="_blank" style="text-decoration:none;">
+                                <img src="{{icon_fb_url}}" alt="Facebook" width="18" height="18" border="0" style="display:block; width:18px; height:18px;" />
+                              </a>
+                            </td>
+                            {{/if}}
+                            {{#if instagram_url}}
+                            <td style="padding:0 0 0 8px;">
+                              <a href="{{instagram_url}}" target="_blank" style="text-decoration:none;">
+                                <img src="{{icon_ig_url}}" alt="Instagram" width="18" height="18" border="0" style="display:block; width:18px; height:18px;" />
+                              </a>
+                            </td>
+                            {{/if}}
+                            {{#if website_url}}
+                            <td style="padding:0 0 0 8px;">
+                              <a href="{{website_url}}" target="_blank" style="text-decoration:none;">
+                                <img src="{{icon_web_url}}" alt="Website" width="18" height="18" border="0" style="display:block; width:18px; height:18px;" />
+                              </a>
+                            </td>
+                            {{/if}}
+                          </tr>
+                        </table>
                       </td>
                     </tr>
                   </table>
                 </td>
               </tr>
-              {{/if}}
             </table>
           </td>
         </tr>
@@ -293,7 +312,7 @@ const DEFAULT_SIGNATURE_TEMPLATE = `<!-- HTML EMAIL SIGNATURE TEMPLATE -->
 
   <!-- BOTTOM BAR ACCENT -->
   <tr>
-    <td style="padding:14px 0 0 0; border-top:2px solid #C9A84C; margin-top:10px;"></td>
+    <td height="1" style="font-size:0; line-height:0; padding:20px 0 0 0; border-top:2px solid #C9A84C;">&nbsp;</td>
   </tr>
 </table>`;
 
