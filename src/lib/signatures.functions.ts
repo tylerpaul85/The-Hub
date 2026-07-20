@@ -31,6 +31,12 @@ const AgentSigSchema = z.object({
   office1_addr: z.string().max(200).nullable().optional(),
   office2_label: z.string().max(80).nullable().optional(),
   office2_addr: z.string().max(200).nullable().optional(),
+  show_office_rolla: z.boolean().optional().nullable(),
+  show_office_strobert: z.boolean().optional().nullable(),
+  show_office_osage: z.boolean().optional().nullable(),
+  office_rolla_addr: z.string().max(200).nullable().optional(),
+  office_strobert_addr: z.string().max(200).nullable().optional(),
+  office_osage_addr: z.string().max(200).nullable().optional(),
   gmail_email: z.string().email().max(255).nullable().optional().or(z.literal("")),
 });
 
@@ -46,6 +52,9 @@ const TeamConfigSchema = z.object({
   icon_ig_url: z.string().max(1000),
   icon_web_url: z.string().max(1000),
   html_template: z.string().max(30000).optional().nullable(),
+  office_rolla_addr: z.string().max(250).optional().nullable(),
+  office_strobert_addr: z.string().max(250).optional().nullable(),
+  office_osage_addr: z.string().max(250).optional().nullable(),
 });
 
 const PushSchema = z.object({
@@ -503,6 +512,25 @@ export const pushSignatureToGmail = createServerFn({ method: "POST" })
       }
 
       try {
+        // Calculate active office locations based on agent checkboxes and team defaults
+        const rollaAddr = sig?.office_rolla_addr || teamConfig.office_rolla_addr || "1043 Kingshighway, Rolla, MO 65401";
+        const strobertAddr = sig?.office_strobert_addr || teamConfig.office_strobert_addr || "157 Saint Robert Blvd, St. Robert, MO 65584";
+        const osageAddr = sig?.office_osage_addr || teamConfig.office_osage_addr || "456 Shore Dr, Osage Beach, MO 65065";
+
+        const showRolla = sig?.show_office_rolla ?? true;
+        const showStRobert = sig?.show_office_strobert ?? false;
+        const showOsage = sig?.show_office_osage ?? false;
+
+        const activeOffices: Array<{ label: string; addr: string }> = [];
+        if (showRolla && rollaAddr) activeOffices.push({ label: "Rolla", addr: rollaAddr });
+        if (showStRobert && strobertAddr) activeOffices.push({ label: "St. Robert", addr: strobertAddr });
+        if (showOsage && osageAddr) activeOffices.push({ label: "Osage Beach", addr: osageAddr });
+        if (sig?.office1_addr) activeOffices.push({ label: sig.office1_label || "Primary Office", addr: sig.office1_addr });
+        if (sig?.office2_addr) activeOffices.push({ label: sig.office2_label || "Second Office", addr: sig.office2_addr });
+
+        const o1 = activeOffices[0];
+        const o2 = activeOffices[1];
+
         // Compile signature HTML
         const compilerData = {
           name: agent.name || "",
@@ -511,10 +539,13 @@ export const pushSignatureToGmail = createServerFn({ method: "POST" })
           mobile_phone: sig?.mobile_phone ?? "",
           office_phone: sig?.office_phone ?? "",
           headshot_url: sig?.headshot_url ?? agent.headshot_url ?? "",
-          office1_label: sig?.office1_label ?? "",
-          office1_addr: sig?.office1_addr ?? "",
-          office2_label: sig?.office2_label ?? "",
-          office2_addr: sig?.office2_addr ?? "",
+          office1_label: o1?.label ?? "",
+          office1_addr: o1?.addr ?? "",
+          office2_label: o2?.label ?? "",
+          office2_addr: o2?.addr ?? "",
+          office_rolla_addr: showRolla ? rollaAddr : "",
+          office_strobert_addr: showStRobert ? strobertAddr : "",
+          office_osage_addr: showOsage ? osageAddr : "",
           gmail_email: gmailEmail,
           accolade_line1: teamConfig.accolade_line1 || "",
           accolade_line2: teamConfig.accolade_line2 || "",

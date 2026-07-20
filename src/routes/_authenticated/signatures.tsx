@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -60,6 +61,12 @@ interface AgentSig {
     office1_addr: string | null;
     office2_label: string | null;
     office2_addr: string | null;
+    show_office_rolla?: boolean | null;
+    show_office_strobert?: boolean | null;
+    show_office_osage?: boolean | null;
+    office_rolla_addr?: string | null;
+    office_strobert_addr?: string | null;
+    office_osage_addr?: string | null;
     gmail_email: string | null;
     last_pushed_at: string | null;
     last_push_status: "success" | "error" | null;
@@ -80,6 +87,9 @@ interface TeamConfig {
   icon_ig_url: string;
   icon_web_url: string;
   html_template?: string | null;
+  office_rolla_addr?: string | null;
+  office_strobert_addr?: string | null;
+  office_osage_addr?: string | null;
 }
 
 // ----------------------------------------------------------------
@@ -290,6 +300,24 @@ const DEFAULT_SIGNATURE_TEMPLATE = `<!-- HTML EMAIL SIGNATURE TEMPLATE -->
 function buildSignatureHtml(agent: AgentSig, team: TeamConfig): string {
   const s = agent.sig;
   
+  const rollaAddr = s?.office_rolla_addr || team.office_rolla_addr || "1043 Kingshighway, Rolla, MO 65401";
+  const strobertAddr = s?.office_strobert_addr || team.office_strobert_addr || "157 Saint Robert Blvd, St. Robert, MO 65584";
+  const osageAddr = s?.office_osage_addr || team.office_osage_addr || "456 Shore Dr, Osage Beach, MO 65065";
+
+  const showRolla = s?.show_office_rolla ?? true;
+  const showStRobert = s?.show_office_strobert ?? false;
+  const showOsage = s?.show_office_osage ?? false;
+
+  const activeOffices: Array<{ label: string; addr: string }> = [];
+  if (showRolla && rollaAddr) activeOffices.push({ label: "Rolla", addr: rollaAddr });
+  if (showStRobert && strobertAddr) activeOffices.push({ label: "St. Robert", addr: strobertAddr });
+  if (showOsage && osageAddr) activeOffices.push({ label: "Osage Beach", addr: osageAddr });
+  if (s?.office1_addr) activeOffices.push({ label: s.office1_label || "Primary Office", addr: s.office1_addr });
+  if (s?.office2_addr) activeOffices.push({ label: s.office2_label || "Second Office", addr: s.office2_addr });
+
+  const o1 = activeOffices[0];
+  const o2 = activeOffices[1];
+
   const data = {
     name: agent.name || "",
     email: agent.email || "",
@@ -297,10 +325,13 @@ function buildSignatureHtml(agent: AgentSig, team: TeamConfig): string {
     mobile_phone: s?.mobile_phone ?? "",
     office_phone: s?.office_phone ?? "",
     headshot_url: s?.headshot_url ?? "",
-    office1_label: s?.office1_label ?? "",
-    office1_addr: s?.office1_addr ?? "",
-    office2_label: s?.office2_label ?? "",
-    office2_addr: s?.office2_addr ?? "",
+    office1_label: o1?.label ?? "",
+    office1_addr: o1?.addr ?? "",
+    office2_label: o2?.label ?? "",
+    office2_addr: o2?.addr ?? "",
+    office_rolla_addr: showRolla ? rollaAddr : "",
+    office_strobert_addr: showStRobert ? strobertAddr : "",
+    office_osage_addr: showOsage ? osageAddr : "",
     gmail_email: s?.gmail_email ?? "",
     accolade_line1: team.accolade_line1 || "",
     accolade_line2: team.accolade_line2 || "",
@@ -402,6 +433,12 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
     office1_addr: "",
     office2_label: "",
     office2_addr: "",
+    show_office_rolla: true,
+    show_office_strobert: false,
+    show_office_osage: false,
+    office_rolla_addr: "",
+    office_strobert_addr: "",
+    office_osage_addr: "",
     gmail_email: "",
   });
   const [saving, setSaving] = useState(false);
@@ -422,6 +459,12 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
       office1_addr: s?.office1_addr ?? "",
       office2_label: s?.office2_label ?? "",
       office2_addr: s?.office2_addr ?? "",
+      show_office_rolla: s?.show_office_rolla ?? true,
+      show_office_strobert: s?.show_office_strobert ?? false,
+      show_office_osage: s?.show_office_osage ?? false,
+      office_rolla_addr: s?.office_rolla_addr ?? "",
+      office_strobert_addr: s?.office_strobert_addr ?? "",
+      office_osage_addr: s?.office_osage_addr ?? "",
       gmail_email: s?.gmail_email ?? agent.email ?? "",
     });
   }, [agent]);
@@ -641,11 +684,61 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
               {/* Offices */}
               <div>
                 <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
-                  Office Locations
+                  Office Locations to Display
                 </p>
                 <div className="space-y-3">
+                  {/* Team Location Checkboxes */}
+                  <div className="space-y-3 bg-sidebar/30 p-4 rounded-xl border border-border">
+                    <p className="text-xs font-semibold text-foreground">Select Team Offices for Signature</p>
+                    <label className="flex items-start gap-3 text-xs cursor-pointer">
+                      <Checkbox
+                        checked={form.show_office_rolla}
+                        onCheckedChange={(c) => setForm((prev) => ({ ...prev, show_office_rolla: !!c }))}
+                        className="mt-0.5"
+                      />
+                      <div>
+                        <span className="font-semibold text-foreground">Rolla Office</span>
+                        <p className="text-[11px] text-muted-foreground">
+                          {form.office_rolla_addr || team?.office_rolla_addr || "1043 Kingshighway, Rolla, MO 65401"}
+                        </p>
+                      </div>
+                    </label>
+
+                    <label className="flex items-start gap-3 text-xs cursor-pointer">
+                      <Checkbox
+                        checked={form.show_office_strobert}
+                        onCheckedChange={(c) => setForm((prev) => ({ ...prev, show_office_strobert: !!c }))}
+                        className="mt-0.5"
+                      />
+                      <div>
+                        <span className="font-semibold text-foreground">St. Robert Office</span>
+                        <p className="text-[11px] text-muted-foreground">
+                          {form.office_strobert_addr || team?.office_strobert_addr || "157 Saint Robert Blvd, St. Robert, MO 65584"}
+                        </p>
+                      </div>
+                    </label>
+
+                    <label className="flex items-start gap-3 text-xs cursor-pointer">
+                      <Checkbox
+                        checked={form.show_office_osage}
+                        onCheckedChange={(c) => setForm((prev) => ({ ...prev, show_office_osage: !!c }))}
+                        className="mt-0.5"
+                      />
+                      <div>
+                        <span className="font-semibold text-foreground">Osage Beach Office</span>
+                        <p className="text-[11px] text-muted-foreground">
+                          {form.office_osage_addr || team?.office_osage_addr || "456 Shore Dr, Osage Beach, MO 65065"}
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Optional Custom Offices */}
                   <div className="rounded-lg border border-border p-4 space-y-3">
-                    <p className="text-xs font-medium text-foreground">Primary Office</p>
+                    <p className="text-xs font-medium text-foreground flex items-center gap-2">
+                      Custom Primary Office
+                      <span className="text-[10px] font-normal text-muted-foreground">(Optional override)</span>
+                    </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {field("o1label", "Label (e.g. Rolla)", "office1_label", "Rolla")}
                       {field("o1addr", "Address", "office1_addr", "123 Main St, Rolla, MO 65401")}
@@ -653,8 +746,8 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
                   </div>
                   <div className="rounded-lg border border-border p-4 space-y-3">
                     <p className="text-xs font-medium text-foreground flex items-center gap-2">
-                      Second Office
-                      <span className="text-[10px] font-normal text-muted-foreground">(leave blank if agent has only one)</span>
+                      Custom Second Office
+                      <span className="text-[10px] font-normal text-muted-foreground">(Optional override)</span>
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {field("o2label", "Label (e.g. Lake of Ozarks)", "office2_label", "Lake of Ozarks")}
@@ -802,6 +895,17 @@ function TeamConfigSection({ onChanged }: { onChanged: () => void }) {
             </div>
           ) : (
             <>
+              {/* Default Office Location Addresses */}
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
+                  Team Office Location Addresses
+                </p>
+                <div className="space-y-3">
+                  {f("off_rolla", "Rolla Office Address", "office_rolla_addr", "1043 Kingshighway, Rolla, MO 65401")}
+                  {f("off_strob", "St. Robert Office Address", "office_strobert_addr", "157 Saint Robert Blvd, St. Robert, MO 65584")}
+                  {f("off_osage", "Osage Beach Office Address", "office_osage_addr", "456 Shore Dr, Osage Beach, MO 65065")}
+                </div>
+              </div>
               {/* Accolade */}
               <div>
                 <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
