@@ -1,3 +1,5 @@
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 import logo from "@/assets/msreg-logo.png";
 
 export interface SheetDataForPdf {
@@ -37,50 +39,22 @@ function formatMoney(amount: number): string {
   }).format(amount);
 }
 
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) {
-      resolve();
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = src;
-    script.onload = () => resolve();
-    script.onerror = (e) => reject(e);
-    document.head.appendChild(script);
-  });
-}
-
-async function getPdfTools() {
-  let html2canvasLib: any;
-  let jsPdfLib: any;
-
+async function getBase64ImageFromUrl(url: string): Promise<string> {
   try {
-    const html2canvasModule = await import("html2canvas");
-    html2canvasLib = html2canvasModule.default || html2canvasModule;
-  } catch (e) {
-    if (!(window as any).html2canvas) {
-      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
-    }
-    html2canvasLib = (window as any).html2canvas;
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(url);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return url;
   }
-
-  try {
-    const jspdfModule = await import("jspdf");
-    jsPdfLib = jspdfModule.jsPDF || jspdfModule.default || jspdfModule;
-  } catch (e) {
-    if (!(window as any).jspdf) {
-      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
-    }
-    jsPdfLib = (window as any).jspdf.jsPDF;
-  }
-
-  return { html2canvas: html2canvasLib, jsPDF: jsPdfLib };
 }
 
 export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void> {
-  const { html2canvas, jsPDF } = await getPdfTools();
-
   const numScenarios = data.num_scenarios || 1;
 
   const calculateScenario = (salesPrice: number) => {
@@ -119,26 +93,30 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
   const c2 = calculateScenario(data.scenario2_price || 0);
   const c3 = calculateScenario(data.scenario3_price || 0);
 
-  // Build temporary DOM container for portrait Letter rendering
+  // Convert logo to Base64 to prevent html2canvas network/CORS issues
+  const logoBase64 = await getBase64ImageFromUrl(logo);
+
+  // Build temporary DOM container for Letter portrait layout
   const container = document.createElement("div");
-  container.style.position = "absolute";
+  container.style.position = "fixed";
   container.style.left = "-9999px";
   container.style.top = "0";
-  container.style.width = "794px"; // 8.27" at 96 DPI (Letter width aspect)
+  container.style.width = "794px"; // 8.27" at 96 DPI
   container.style.backgroundColor = "#ffffff";
   container.style.color = "#0f172a";
   container.style.fontFamily = "'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
   container.style.padding = "36px 40px";
   container.style.boxSizing = "border-box";
+  container.style.zIndex = "-9999";
 
-  // HTML content for clean, non-form PDF template
+  // Render clean, non-form print template
   container.innerHTML = `
     <!-- HEADER BLOCK -->
     <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #C9A84C; padding-bottom: 16px;">
       <div style="display: flex; align-items: center; gap: 16px;">
-        <img src="${logo}" alt="Matt Smith Real Estate Group" style="height: 64px; width: auto; object-fit: contain;" />
+        <img src="${logoBase64}" alt="Matt Smith Real Estate Group" style="height: 64px; width: auto; object-fit: contain;" />
         <div style="border-left: 2px solid #cbd5e1; padding-left: 14px;">
-          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; tracking: 0.15em; color: #C9A84C; margin-bottom: 2px;">eXp REALTY</div>
+          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; color: #C9A84C; margin-bottom: 2px;">eXp REALTY</div>
           <div style="font-size: 18px; font-weight: 800; color: #1B2F5B; line-height: 1.1;">SELLER ESTIMATED NET PROCEEDS</div>
         </div>
       </div>
@@ -259,6 +237,7 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
     const canvas = await html2canvas(container, {
       scale: 2,
       useCORS: true,
+      allowTaint: true,
       logging: false,
       backgroundColor: "#ffffff",
     });
@@ -283,7 +262,9 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
 
     pdf.save(`Seller Net Sheet - ${cleanAddress}.pdf`);
   } finally {
-    document.body.removeChild(container);
+    if (document.body.contains(container)) {
+      document.body.removeChild(container);
+    }
   }
 }
 

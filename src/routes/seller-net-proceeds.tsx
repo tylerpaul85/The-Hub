@@ -723,8 +723,8 @@ function CalculatorView({
       await generateSellerNetPdf(data);
       toast.success("Seller Net Sheet PDF downloaded!", { id: toastId });
     } catch (e: any) {
-      console.error(e);
-      toast.error("Failed to generate PDF. Please try again.", { id: toastId });
+      console.error("PDF generation error:", e);
+      toast.error(e?.message || "Failed to generate PDF. Please try again.", { id: toastId });
     }
   };
 
