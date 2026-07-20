@@ -359,10 +359,12 @@ function CalendarPage() {
 }
 
 
-function ContentCard({ item, onClick, draggable, selected, onSelect }: { item: ContentItem; onClick: () => void; draggable: boolean; selected?: boolean; onSelect?: (id: string) => void }) {
+function ContentCard({ item, onClick, draggable, selected, onSelect, showTime = true }: { item: ContentItem; onClick: () => void; draggable: boolean; selected?: boolean; onSelect?: (id: string) => void; showTime?: boolean }) {
   const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({ id: item.id, disabled: !draggable });
   const targetMissed = item.target_publish_date && new Date(item.target_publish_date) < new Date(new Date().toDateString()) && item.status !== "published";
   const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 } : undefined;
+  const scheduledTime = item.scheduled_at ? format(new Date(item.scheduled_at), "h:mm a") : null;
+
   return (
     <div
       ref={setNodeRef}
@@ -371,9 +373,9 @@ function ContentCard({ item, onClick, draggable, selected, onSelect }: { item: C
       {...attributes}
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       className={cn(
-        "relative w-full text-left bg-background/80 hover:bg-background rounded-md p-1.5 text-[11px] leading-tight overflow-hidden border border-border cursor-pointer",
+        "relative w-full text-left bg-background/90 hover:bg-background rounded-md p-1.5 text-[11px] leading-tight overflow-hidden border border-border cursor-pointer shadow-sm transition-all",
         PRIORITY_BORDER[item.priority],
-        isDragging && "opacity-50",
+        isDragging && "opacity-50 z-50",
         draggable && "cursor-grab active:cursor-grabbing",
         selected && "ring-2 ring-gold border-gold shadow-md",
       )}
@@ -394,15 +396,20 @@ function ContentCard({ item, onClick, draggable, selected, onSelect }: { item: C
       )}
       <div className="flex items-start gap-1.5">
         {item.thumbnail_url && <img src={item.thumbnail_url} alt="" className="h-8 w-8 rounded object-cover flex-shrink-0" />}
-        <div className="flex-1 min-w-0 pr-4">
+        <div className="flex-1 min-w-0 pr-3">
           <div className="font-medium truncate text-foreground flex items-center gap-1">
             <span className={cn("text-[8px] font-bold px-1 py-px rounded border shrink-0", BRAND_STYLES[(item.brand ?? "PP") as Brand])}>
               {item.brand ?? "PP"}
             </span>
+            {showTime && scheduledTime && (
+              <span className="text-[9px] font-mono font-semibold text-amber-500/90 dark:text-amber-400 bg-amber-500/10 px-1 py-px rounded border border-amber-500/20 shrink-0">
+                {scheduledTime}
+              </span>
+            )}
             <span className="truncate">{item.title}</span>
             {targetMissed && <AlertTriangle className="h-3 w-3 text-destructive flex-shrink-0" />}
           </div>
-          <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+          <div className="flex items-center gap-1 mt-1 flex-wrap">
             <span className={cn("px-1 py-px rounded border text-[9px]", STATUS_CLASS[item.status as Status])}>{STATUS_LABEL[item.status as Status]}</span>
             {item.platforms.slice(0, 2).map((p) => (<span key={p} className="text-[9px] text-muted-foreground">{p}</span>))}
           </div>
@@ -412,58 +419,29 @@ function ContentCard({ item, onClick, draggable, selected, onSelect }: { item: C
   );
 }
 
-function DropSlot({ date, children, onSlotClick }: { date: Date; children?: React.ReactNode; onSlotClick: (d: Date) => void }) {
+function DropSlot({ date, children, onSlotClick, hasItems }: { date: Date; children?: React.ReactNode; onSlotClick: (d: Date) => void; hasItems?: boolean }) {
   const { setNodeRef, isOver } = useDroppable({ id: slotId(date) });
   const isHour = date.getMinutes() === 0;
+
   return (
     <div
       ref={setNodeRef}
-      onClick={() => onSlotClick(date)}
+      onClick={(e) => { e.stopPropagation(); onSlotClick(date); }}
       title={format(date, "EEE MMM d · h:mm a")}
-      style={{ minHeight: SLOT_HEIGHT_PX }}
       className={cn(
-        "border-l border-border/40 px-0.5 hover:bg-gold/10 hover:ring-1 hover:ring-inset hover:ring-gold/30 cursor-pointer transition-colors",
-        isHour ? "border-b border-border/60" : "border-b border-border/15",
-        isOver && "bg-gold/20 ring-1 ring-inset ring-gold",
+        "px-1 py-0.5 min-h-[20px] transition-colors cursor-pointer group/slot relative rounded-sm",
+        isHour ? "border-t border-border/40" : "border-t border-border/15",
+        "hover:bg-gold/15 hover:ring-1 hover:ring-inset hover:ring-gold/40",
+        isOver && "bg-gold/25 ring-1 ring-inset ring-gold",
       )}
     >
+      {!hasItems && (
+        <div className="opacity-0 group-hover/slot:opacity-100 flex items-center justify-between text-[9px] font-mono text-gold font-medium px-1 pointer-events-none select-none">
+          <span>+ {format(date, "h:mm a")}</span>
+        </div>
+      )}
       {children}
     </div>
-  );
-}
-
-function QuarterRows({ day, items, onSlotClick, onItemClick, draggable, showLabel, selectedId, onSelect }: {
-  day: Date; items: ContentItem[]; onSlotClick: (d: Date) => void; onItemClick: (id: string) => void; draggable: boolean; showLabel: boolean; selectedId?: string | null; onSelect?: (id: string) => void;
-}) {
-  return (
-    <>
-      {HOURS.map((h) =>
-        QUARTERS.map((q) => {
-          const slot = new Date(day); slot.setHours(h, q, 0, 0);
-          const slotItems = items.filter((it) => {
-            const d = new Date(it.scheduled_at);
-            return isSameDay(d, day) && d.getHours() === h && Math.floor(d.getMinutes() / 15) * 15 === q;
-          });
-          return (
-            <div key={`${h}-${q}`} className="contents">
-              {showLabel && (
-                <div className={cn(
-                  "text-[10px] px-2 text-right border-r border-border/40 bg-sidebar/40 flex items-start justify-end",
-                  q === 0 ? "border-b border-border/60 text-muted-foreground pt-0.5" : "border-b border-border/15",
-                )} style={{ minHeight: SLOT_HEIGHT_PX }}>
-                  {q === 0 ? format(slot, "h a") : <span className="text-border/60">·</span>}
-                </div>
-              )}
-              <DropSlot date={slot} onSlotClick={onSlotClick}>
-                <div className="space-y-0.5">
-                  {slotItems.map((it) => <ContentCard key={it.id} item={it} draggable={draggable} onClick={() => onItemClick(it.id)} selected={selectedId === it.id} onSelect={onSelect} />)}
-                </div>
-              </DropSlot>
-            </div>
-          );
-        })
-      )}
-    </>
   );
 }
 
@@ -490,50 +468,32 @@ function HolidayBanner({ date, className }: { date: Date; className?: string }) 
 
 function DailyView({ day, items, onSlotClick, onItemClick, draggable, selectedId, onSelect }: any) {
   return (
-    <div className="grid" style={{ gridTemplateColumns: "60px 1fr" }}>
-      <div className="bg-sidebar/60 border-b border-r border-border px-2 py-2 text-xs font-semibold text-muted-foreground">Time</div>
-      <div className="bg-sidebar/60 border-b border-border text-xs font-semibold">
-        <div className="px-3 py-2">{format(day, "EEEE, MMM d")}</div>
-        <HolidayBanner date={day} />
-      </div>
-      <QuarterRows day={day} items={items} onSlotClick={onSlotClick} onItemClick={onItemClick} draggable={draggable} showLabel selectedId={selectedId} onSelect={onSelect} />
-    </div>
-  );
-}
+    <div className="overflow-auto max-h-[calc(100vh-210px)] relative">
+      <div className="grid" style={{ gridTemplateColumns: "64px 1fr" }}>
+        <div className="sticky top-0 left-0 z-30 bg-sidebar border-b border-r border-border px-2 py-2.5 text-xs font-bold text-muted-foreground shadow-sm">
+          Time
+        </div>
+        <div className="sticky top-0 z-20 bg-sidebar border-b border-border text-xs font-semibold shadow-sm">
+          <div className="px-3 py-2 text-sm font-bold">{format(day, "EEEE, MMMM d, yyyy")}</div>
+          <HolidayBanner date={day} />
+        </div>
 
-function WeeklyView({ start, items, onSlotClick, onItemClick, draggable, selectedId, onSelect }: any) {
-  const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
-  return (
-    <div className="overflow-x-auto">
-      <div className="grid min-w-[900px]" style={{ gridTemplateColumns: "60px repeat(7, 1fr)" }}>
-        <div className="bg-sidebar/60 border-b border-r border-border px-2 py-2 text-xs font-semibold text-muted-foreground">Time</div>
-        {days.map((d) => (
-          <div key={d.toISOString()} className={cn("bg-sidebar/60 border-b border-l border-border text-xs font-semibold text-center", isSameDay(d, new Date()) && "text-gold")}>
-            <div className="px-2 py-2">
-              <div>{format(d, "EEE")}</div>
-              <div className="text-base">{format(d, "d")}</div>
+        {HOURS.map((h) => (
+          <div key={h} className="contents">
+            <div className="sticky left-0 z-20 bg-sidebar border-r border-b border-border/60 px-2 py-2 text-right text-xs font-bold text-muted-foreground flex items-start justify-end shadow-sm select-none min-h-[72px]">
+              {format(new Date(2000, 0, 1, h), "h a")}
             </div>
-            <HolidayBanner date={d} className="justify-center" />
-          </div>
-        ))}
-        {HOURS.map((h) =>
-          QUARTERS.map((q) => (
-            <div key={`${h}-${q}`} className="contents">
-              <div className={cn(
-                "text-[10px] px-2 text-right border-r border-border/40 bg-sidebar/40 flex items-start justify-end",
-                q === 0 ? "border-b border-border/60 text-muted-foreground pt-0.5" : "border-b border-border/15",
-              )} style={{ minHeight: SLOT_HEIGHT_PX }}>
-                {q === 0 ? format(new Date(2000, 0, 1, h), "h a") : <span className="text-border/60">·</span>}
-              </div>
-              {days.map((d) => {
-                const slot = new Date(d); slot.setHours(h, q, 0, 0);
+
+            <div className="border-b border-border/60 min-h-[72px] p-0.5 flex flex-col justify-between hover:bg-accent/5 transition-colors">
+              {QUARTERS.map((q) => {
+                const slot = new Date(day); slot.setHours(h, q, 0, 0);
                 const slotItems = items.filter((it: ContentItem) => {
                   const itd = new Date(it.scheduled_at);
-                  return isSameDay(itd, d) && itd.getHours() === h && Math.floor(itd.getMinutes() / 15) * 15 === q;
+                  return isSameDay(itd, day) && itd.getHours() === h && Math.floor(itd.getMinutes() / 15) * 15 === q;
                 });
                 return (
-                  <DropSlot key={d.toISOString() + h + q} date={slot} onSlotClick={onSlotClick}>
-                    <div className="space-y-0.5">
+                  <DropSlot key={q} date={slot} onSlotClick={onSlotClick} hasItems={slotItems.length > 0}>
+                    <div className="space-y-1">
                       {slotItems.map((it: ContentItem) => (
                         <ContentCard key={it.id} item={it} draggable={draggable} onClick={() => onItemClick(it.id)} selected={selectedId === it.id} onSelect={onSelect} />
                       ))}
@@ -542,8 +502,61 @@ function WeeklyView({ start, items, onSlotClick, onItemClick, draggable, selecte
                 );
               })}
             </div>
-          ))
-        )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function WeeklyView({ start, items, onSlotClick, onItemClick, draggable, selectedId, onSelect }: any) {
+  const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
+  return (
+    <div className="overflow-auto max-h-[calc(100vh-210px)] relative">
+      <div className="grid min-w-[900px]" style={{ gridTemplateColumns: "64px repeat(7, minmax(120px, 1fr))" }}>
+        <div className="sticky top-0 left-0 z-30 bg-sidebar border-b border-r border-border px-2 py-2.5 text-xs font-bold text-muted-foreground shadow-sm">
+          Time
+        </div>
+        {days.map((d) => (
+          <div key={d.toISOString()} className={cn("sticky top-0 z-20 bg-sidebar border-b border-l border-border text-xs font-semibold text-center shadow-sm", isSameDay(d, new Date()) && "text-gold")}>
+            <div className="px-2 py-2">
+              <div>{format(d, "EEE")}</div>
+              <div className="text-base font-bold">{format(d, "d")}</div>
+            </div>
+            <HolidayBanner date={d} className="justify-center" />
+          </div>
+        ))}
+
+        {HOURS.map((h) => (
+          <div key={h} className="contents">
+            <div className="sticky left-0 z-20 bg-sidebar border-r border-b border-border/60 px-2 py-2 text-right text-xs font-bold text-muted-foreground flex items-start justify-end shadow-sm select-none min-h-[72px]">
+              {format(new Date(2000, 0, 1, h), "h a")}
+            </div>
+
+            {days.map((d) => {
+              return (
+                <div key={d.toISOString() + h} className="border-b border-l border-border/60 min-h-[72px] p-0.5 flex flex-col justify-between hover:bg-accent/5 transition-colors">
+                  {QUARTERS.map((q) => {
+                    const slot = new Date(d); slot.setHours(h, q, 0, 0);
+                    const slotItems = items.filter((it: ContentItem) => {
+                      const itd = new Date(it.scheduled_at);
+                      return isSameDay(itd, d) && itd.getHours() === h && Math.floor(itd.getMinutes() / 15) * 15 === q;
+                    });
+                    return (
+                      <DropSlot key={q} date={slot} onSlotClick={onSlotClick} hasItems={slotItems.length > 0}>
+                        <div className="space-y-1">
+                          {slotItems.map((it: ContentItem) => (
+                            <ContentCard key={it.id} item={it} draggable={draggable} onClick={() => onItemClick(it.id)} selected={selectedId === it.id} onSelect={onSelect} />
+                          ))}
+                        </div>
+                      </DropSlot>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </div>
     </div>
   );
