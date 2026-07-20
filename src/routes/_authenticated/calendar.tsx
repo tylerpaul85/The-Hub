@@ -433,7 +433,9 @@ function ContentCard({ item, onClick, draggable, selected, onSelect, showTime = 
 
 function DropSlot({ date, children, onSlotClick, hasItems }: { date: Date; children?: React.ReactNode; onSlotClick: (d: Date) => void; hasItems?: boolean }) {
   const { setNodeRef, isOver } = useDroppable({ id: slotId(date) });
-  const isHour = date.getMinutes() === 0;
+  const mins = date.getMinutes();
+  const isHour = mins === 0;
+  const isHalfHour = mins === 30;
 
   return (
     <div
@@ -442,7 +444,11 @@ function DropSlot({ date, children, onSlotClick, hasItems }: { date: Date; child
       title={format(date, "EEE MMM d · h:mm a")}
       className={cn(
         "px-1 py-0.5 min-h-[22px] transition-colors cursor-pointer group/slot relative rounded-sm",
-        isHour ? "border-t border-border/40" : "border-t border-border/20 border-dashed",
+        isHour
+          ? "border-t-2 border-foreground/40 dark:border-foreground/50"
+          : isHalfHour
+            ? "border-t border-border/50"
+            : "border-t border-border/15 border-dashed",
         "hover:bg-gold/15 hover:ring-1 hover:ring-inset hover:ring-gold/40",
         isOver && "bg-gold/25 ring-1 ring-inset ring-gold",
       )}
@@ -492,11 +498,11 @@ function DailyView({ day, items, onSlotClick, onItemClick, draggable, selectedId
 
         {HOURS.map((h) => (
           <div key={h} className="contents">
-            <div className="sticky left-0 z-20 bg-sidebar border-r-2 border-b-2 border-border/80 px-2.5 py-2 text-right text-xs font-extrabold text-foreground flex items-start justify-end shadow-md select-none min-h-[76px]">
+            <div className="sticky left-0 z-20 bg-sidebar border-r-2 border-t-2 border-foreground/40 dark:border-foreground/50 px-2.5 py-2 text-right text-xs font-extrabold text-foreground flex items-start justify-end shadow-md select-none min-h-[76px]">
               {format(new Date(2000, 0, 1, h), "h a")}
             </div>
 
-            <div className="border-b-2 border-border/80 min-h-[76px] p-1 flex flex-col justify-between hover:bg-accent/5 transition-colors">
+            <div className="border-l border-border/80 min-h-[76px] p-1 flex flex-col justify-between hover:bg-accent/5 transition-colors">
               {QUARTERS.map((q) => {
                 const slot = new Date(day); slot.setHours(h, q, 0, 0);
                 const slotItems = items.filter((it: ContentItem) => {
@@ -539,13 +545,13 @@ function WeeklyView({ start, items, onSlotClick, onItemClick, draggable, selecte
 
         {HOURS.map((h) => (
           <div key={h} className="contents">
-            <div className="sticky left-0 z-20 bg-sidebar border-r-2 border-b-2 border-border/80 px-2.5 py-2 text-right text-xs font-extrabold text-foreground flex items-start justify-end shadow-md select-none min-h-[76px]">
+            <div className="sticky left-0 z-20 bg-sidebar border-r-2 border-t-2 border-foreground/40 dark:border-foreground/50 px-2.5 py-2 text-right text-xs font-extrabold text-foreground flex items-start justify-end shadow-md select-none min-h-[76px]">
               {format(new Date(2000, 0, 1, h), "h a")}
             </div>
 
             {days.map((d) => {
               return (
-                <div key={d.toISOString() + h} className="border-b-2 border-l border-border/80 min-h-[76px] p-1 flex flex-col justify-between hover:bg-accent/5 transition-colors">
+                <div key={d.toISOString() + h} className="border-l border-border/80 min-h-[76px] p-1 flex flex-col justify-between hover:bg-accent/5 transition-colors">
                   {QUARTERS.map((q) => {
                     const slot = new Date(d); slot.setHours(h, q, 0, 0);
                     const slotItems = items.filter((it: ContentItem) => {
