@@ -37,19 +37,49 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
   const [agent, setAgent] = useState<AgentAccount | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchAgentProfile = async (uid: string) => {
+  const fetchAgentProfile = async (u: User) => {
     try {
       const { data, error } = await (supabase as any)
         .from("agent_accounts")
         .select("*")
-        .eq("id", uid)
+        .eq("id", u.id)
         .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching agent profile:", error);
-        setAgent(null);
+      if (data) {
+        setAgent(data as AgentAccount);
+      } else if (u.email && isValidAgentEmail(u.email)) {
+        // Auto-provision agent_accounts profile if missing for valid agent domain
+        const rawName = (u.user_metadata as any)?.full_name || u.email.split("@")[0].replace(".", " ");
+        const fullName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+        const newProfile = {
+          id: u.id,
+          email: u.email.toLowerCase(),
+          full_name: fullName,
+          office_location: "1043 Kingshighway, Rolla, MO 65401",
+          office_phone: "(573) 451-2020",
+        };
+        const { data: created } = await (supabase as any)
+          .from("agent_accounts")
+          .upsert(newProfile)
+          .select("*")
+          .maybeSingle();
+
+        if (created) {
+          setAgent(created as AgentAccount);
+        } else {
+          // Fallback in-memory profile
+          setAgent({
+            id: u.id,
+            email: u.email,
+            full_name: fullName,
+            phone: null,
+            office_location: "1043 Kingshighway, Rolla, MO 65401",
+            office_phone: "(573) 451-2020",
+            created_at: new Date().toISOString(),
+          });
+        }
       } else {
-        setAgent((data as AgentAccount) ?? null);
+        setAgent(null);
       }
     } catch (e) {
       setAgent(null);
@@ -63,7 +93,7 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        fetchAgentProfile(s.user.id);
+        fetchAgentProfile(s.user);
       } else {
         setAgent(null);
         setLoading(false);
@@ -74,7 +104,7 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        fetchAgentProfile(s.user.id);
+        fetchAgentProfile(s.user);
       } else {
         setAgent(null);
         setLoading(false);
@@ -87,8 +117,8 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshAgent = async () => {
-    if (user?.id) {
-      await fetchAgentProfile(user.id);
+    if (user) {
+      await fetchAgentProfile(user);
     }
   };
 
@@ -136,7 +166,7 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
         throw dbErr;
       }
 
-      await fetchAgentProfile(data.user.id);
+      await fetchAgentProfile(data.user);
       toast.success("Agent account created!");
     }
   };
@@ -159,7 +189,7 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (data.user) {
-      await fetchAgentProfile(data.user.id);
+      await fetchAgentProfile(data.user);
       toast.success("Signed in successfully!");
     }
   };
