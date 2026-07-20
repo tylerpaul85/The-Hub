@@ -54,6 +54,8 @@ async function getBase64ImageFromUrl(url: string): Promise<string> {
   }
 }
 
+const BLACK_LOGO_URL = "https://jxymjhmbaqstmrttjdib.supabase.co/storage/v1/object/public/signature-headshots/Blue%20Minimalist%20Circle%20Framed%20Instagram%20Profile%20Picture%20(4).png";
+
 export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void> {
   const numScenarios = data.num_scenarios || 1;
 
@@ -93,8 +95,11 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
   const c2 = calculateScenario(data.scenario2_price || 0);
   const c3 = calculateScenario(data.scenario3_price || 0);
 
-  // Convert logo to Base64 to prevent html2canvas network/CORS issues
-  const logoBase64 = await getBase64ImageFromUrl(logo);
+  // Convert black MSREG logo to Base64 (with fallback to default logo)
+  let logoBase64 = await getBase64ImageFromUrl(BLACK_LOGO_URL);
+  if (!logoBase64 || logoBase64 === BLACK_LOGO_URL) {
+    logoBase64 = await getBase64ImageFromUrl(logo);
+  }
 
   // Build temporary DOM container for Letter portrait layout
   const container = document.createElement("div");
