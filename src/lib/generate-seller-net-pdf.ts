@@ -240,6 +240,12 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
       allowTaint: true,
       logging: false,
       backgroundColor: "#ffffff",
+      onclone: (clonedDoc) => {
+        // Strip external Tailwind v4 style sheets from the cloned DOM
+        // so html2canvas doesn't fail on modern CSS color functions like lab() or oklch()
+        const styles = clonedDoc.querySelectorAll("style, link[rel='stylesheet']");
+        styles.forEach((el) => el.remove());
+      },
     });
 
     const imgData = canvas.toDataURL("image/jpeg", 0.98);
