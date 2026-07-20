@@ -373,9 +373,9 @@ function ContentCard({ item, onClick, draggable, selected, onSelect, showTime = 
       {...attributes}
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       className={cn(
-        "relative w-full text-left bg-background/90 hover:bg-background rounded-md p-1.5 text-[11px] leading-tight overflow-hidden border border-border cursor-pointer shadow-sm transition-all",
+        "relative w-full text-left bg-background hover:bg-accent/40 rounded-lg p-2 text-xs leading-snug border border-border/80 cursor-pointer shadow-sm transition-all space-y-1.5",
         PRIORITY_BORDER[item.priority],
-        isDragging && "opacity-50 z-50",
+        isDragging && "opacity-50 z-50 shadow-lg scale-105",
         draggable && "cursor-grab active:cursor-grabbing",
         selected && "ring-2 ring-gold border-gold shadow-md",
       )}
@@ -387,33 +387,45 @@ function ContentCard({ item, onClick, draggable, selected, onSelect, showTime = 
           onClick={(e) => { e.stopPropagation(); onSelect(selected ? "" : item.id); }}
           title={selected ? "Deselect" : "Select"}
           className={cn(
-            "absolute top-0.5 right-0.5 h-4 w-4 rounded-full border flex items-center justify-center transition-colors z-10",
+            "absolute top-1.5 right-1.5 h-4 w-4 rounded-full border flex items-center justify-center transition-colors z-10",
             selected ? "bg-gold border-gold text-gold-foreground" : "bg-background/80 border-border hover:border-gold text-muted-foreground",
           )}
         >
           {selected ? <Check className="h-2.5 w-2.5" /> : <span className="block h-1.5 w-1.5 rounded-full bg-current opacity-40" />}
         </button>
       )}
-      <div className="flex items-start gap-1.5">
-        {item.thumbnail_url && <img src={item.thumbnail_url} alt="" className="h-8 w-8 rounded object-cover flex-shrink-0" />}
-        <div className="flex-1 min-w-0 pr-3">
-          <div className="font-medium truncate text-foreground flex items-center gap-1">
-            <span className={cn("text-[8px] font-bold px-1 py-px rounded border shrink-0", BRAND_STYLES[(item.brand ?? "PP") as Brand])}>
-              {item.brand ?? "PP"}
-            </span>
-            {showTime && scheduledTime && (
-              <span className="text-[9px] font-mono font-semibold text-amber-500/90 dark:text-amber-400 bg-amber-500/10 px-1 py-px rounded border border-amber-500/20 shrink-0">
-                {scheduledTime}
-              </span>
-            )}
-            <span className="truncate">{item.title}</span>
-            {targetMissed && <AlertTriangle className="h-3 w-3 text-destructive flex-shrink-0" />}
-          </div>
-          <div className="flex items-center gap-1 mt-1 flex-wrap">
-            <span className={cn("px-1 py-px rounded border text-[9px]", STATUS_CLASS[item.status as Status])}>{STATUS_LABEL[item.status as Status]}</span>
-            {item.platforms.slice(0, 2).map((p) => (<span key={p} className="text-[9px] text-muted-foreground">{p}</span>))}
-          </div>
+
+      {/* Header Row: Brand, Time badge, Missed Indicator */}
+      <div className="flex items-center gap-1.5 flex-wrap pr-4">
+        <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0", BRAND_STYLES[(item.brand ?? "PP") as Brand])}>
+          {item.brand ?? "PP"}
+        </span>
+        {showTime && scheduledTime && (
+          <span className="text-[10px] font-mono font-bold text-amber-500/90 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30 shrink-0">
+            {scheduledTime}
+          </span>
+        )}
+        {targetMissed && <AlertTriangle className="h-3.5 w-3.5 text-destructive flex-shrink-0" />}
+      </div>
+
+      {/* Title & Thumbnail */}
+      <div className="flex items-start gap-2">
+        {item.thumbnail_url && <img src={item.thumbnail_url} alt="" className="h-9 w-9 rounded-md object-cover flex-shrink-0 border border-border/40" />}
+        <div className="font-semibold text-foreground text-xs leading-snug line-clamp-2 min-w-0 flex-1">
+          {item.title}
         </div>
+      </div>
+
+      {/* Badges Row: Status & Platforms */}
+      <div className="flex items-center gap-1.5 flex-wrap pt-0.5 border-t border-border/30">
+        <span className={cn("px-1.5 py-0.5 rounded border text-[9px] font-medium", STATUS_CLASS[item.status as Status])}>
+          {STATUS_LABEL[item.status as Status]}
+        </span>
+        {item.platforms.slice(0, 3).map((p) => (
+          <span key={p} className="text-[9px] font-medium text-muted-foreground bg-muted/50 px-1 py-0.5 rounded border border-border/30">
+            {p}
+          </span>
+        ))}
       </div>
     </div>
   );
@@ -429,14 +441,14 @@ function DropSlot({ date, children, onSlotClick, hasItems }: { date: Date; child
       onClick={(e) => { e.stopPropagation(); onSlotClick(date); }}
       title={format(date, "EEE MMM d · h:mm a")}
       className={cn(
-        "px-1 py-0.5 min-h-[20px] transition-colors cursor-pointer group/slot relative rounded-sm",
-        isHour ? "border-t border-border/40" : "border-t border-border/15",
+        "px-1 py-0.5 min-h-[22px] transition-colors cursor-pointer group/slot relative rounded-sm",
+        isHour ? "border-t border-border/40" : "border-t border-border/20 border-dashed",
         "hover:bg-gold/15 hover:ring-1 hover:ring-inset hover:ring-gold/40",
         isOver && "bg-gold/25 ring-1 ring-inset ring-gold",
       )}
     >
       {!hasItems && (
-        <div className="opacity-0 group-hover/slot:opacity-100 flex items-center justify-between text-[9px] font-mono text-gold font-medium px-1 pointer-events-none select-none">
+        <div className="opacity-0 group-hover/slot:opacity-100 flex items-center justify-between text-[10px] font-mono text-gold font-semibold px-1.5 pointer-events-none select-none">
           <span>+ {format(date, "h:mm a")}</span>
         </div>
       )}
@@ -469,22 +481,22 @@ function HolidayBanner({ date, className }: { date: Date; className?: string }) 
 function DailyView({ day, items, onSlotClick, onItemClick, draggable, selectedId, onSelect }: any) {
   return (
     <div className="overflow-auto max-h-[calc(100vh-210px)] relative">
-      <div className="grid" style={{ gridTemplateColumns: "64px 1fr" }}>
-        <div className="sticky top-0 left-0 z-30 bg-sidebar border-b border-r border-border px-2 py-2.5 text-xs font-bold text-muted-foreground shadow-sm">
+      <div className="grid" style={{ gridTemplateColumns: "72px 1fr" }}>
+        <div className="sticky top-0 left-0 z-30 bg-sidebar border-b-2 border-r-2 border-border px-2.5 py-3 text-xs font-extrabold text-foreground shadow-md uppercase tracking-wider select-none">
           Time
         </div>
-        <div className="sticky top-0 z-20 bg-sidebar border-b border-border text-xs font-semibold shadow-sm">
-          <div className="px-3 py-2 text-sm font-bold">{format(day, "EEEE, MMMM d, yyyy")}</div>
+        <div className="sticky top-0 z-20 bg-sidebar border-b-2 border-border text-xs font-bold shadow-sm p-3">
+          <div className="text-base font-black text-foreground">{format(day, "EEEE, MMMM d, yyyy")}</div>
           <HolidayBanner date={day} />
         </div>
 
         {HOURS.map((h) => (
           <div key={h} className="contents">
-            <div className="sticky left-0 z-20 bg-sidebar border-r border-b border-border/60 px-2 py-2 text-right text-xs font-bold text-muted-foreground flex items-start justify-end shadow-sm select-none min-h-[72px]">
+            <div className="sticky left-0 z-20 bg-sidebar border-r-2 border-b-2 border-border/80 px-2.5 py-2 text-right text-xs font-extrabold text-foreground flex items-start justify-end shadow-md select-none min-h-[76px]">
               {format(new Date(2000, 0, 1, h), "h a")}
             </div>
 
-            <div className="border-b border-border/60 min-h-[72px] p-0.5 flex flex-col justify-between hover:bg-accent/5 transition-colors">
+            <div className="border-b-2 border-border/80 min-h-[76px] p-1 flex flex-col justify-between hover:bg-accent/5 transition-colors">
               {QUARTERS.map((q) => {
                 const slot = new Date(day); slot.setHours(h, q, 0, 0);
                 const slotItems = items.filter((it: ContentItem) => {
@@ -493,7 +505,7 @@ function DailyView({ day, items, onSlotClick, onItemClick, draggable, selectedId
                 });
                 return (
                   <DropSlot key={q} date={slot} onSlotClick={onSlotClick} hasItems={slotItems.length > 0}>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       {slotItems.map((it: ContentItem) => (
                         <ContentCard key={it.id} item={it} draggable={draggable} onClick={() => onItemClick(it.id)} selected={selectedId === it.id} onSelect={onSelect} />
                       ))}
@@ -513,29 +525,27 @@ function WeeklyView({ start, items, onSlotClick, onItemClick, draggable, selecte
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
   return (
     <div className="overflow-auto max-h-[calc(100vh-210px)] relative">
-      <div className="grid min-w-[900px]" style={{ gridTemplateColumns: "64px repeat(7, minmax(120px, 1fr))" }}>
-        <div className="sticky top-0 left-0 z-30 bg-sidebar border-b border-r border-border px-2 py-2.5 text-xs font-bold text-muted-foreground shadow-sm">
+      <div className="grid min-w-[1542px]" style={{ gridTemplateColumns: "72px repeat(7, minmax(210px, 1fr))" }}>
+        <div className="sticky top-0 left-0 z-30 bg-sidebar border-b-2 border-r-2 border-border px-2.5 py-3 text-xs font-extrabold text-foreground shadow-md uppercase tracking-wider select-none">
           Time
         </div>
         {days.map((d) => (
-          <div key={d.toISOString()} className={cn("sticky top-0 z-20 bg-sidebar border-b border-l border-border text-xs font-semibold text-center shadow-sm", isSameDay(d, new Date()) && "text-gold")}>
-            <div className="px-2 py-2">
-              <div>{format(d, "EEE")}</div>
-              <div className="text-base font-bold">{format(d, "d")}</div>
-            </div>
+          <div key={d.toISOString()} className={cn("sticky top-0 z-20 bg-sidebar border-b-2 border-l border-border text-xs font-bold text-center shadow-sm py-2 px-2", isSameDay(d, new Date()) && "text-gold bg-gold/10")}>
+            <div className="uppercase tracking-wider text-[11px] text-muted-foreground">{format(d, "EEE")}</div>
+            <div className="text-lg font-black leading-tight text-foreground">{format(d, "d")}</div>
             <HolidayBanner date={d} className="justify-center" />
           </div>
         ))}
 
         {HOURS.map((h) => (
           <div key={h} className="contents">
-            <div className="sticky left-0 z-20 bg-sidebar border-r border-b border-border/60 px-2 py-2 text-right text-xs font-bold text-muted-foreground flex items-start justify-end shadow-sm select-none min-h-[72px]">
+            <div className="sticky left-0 z-20 bg-sidebar border-r-2 border-b-2 border-border/80 px-2.5 py-2 text-right text-xs font-extrabold text-foreground flex items-start justify-end shadow-md select-none min-h-[76px]">
               {format(new Date(2000, 0, 1, h), "h a")}
             </div>
 
             {days.map((d) => {
               return (
-                <div key={d.toISOString() + h} className="border-b border-l border-border/60 min-h-[72px] p-0.5 flex flex-col justify-between hover:bg-accent/5 transition-colors">
+                <div key={d.toISOString() + h} className="border-b-2 border-l border-border/80 min-h-[76px] p-1 flex flex-col justify-between hover:bg-accent/5 transition-colors">
                   {QUARTERS.map((q) => {
                     const slot = new Date(d); slot.setHours(h, q, 0, 0);
                     const slotItems = items.filter((it: ContentItem) => {
@@ -544,7 +554,7 @@ function WeeklyView({ start, items, onSlotClick, onItemClick, draggable, selecte
                     });
                     return (
                       <DropSlot key={q} date={slot} onSlotClick={onSlotClick} hasItems={slotItems.length > 0}>
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           {slotItems.map((it: ContentItem) => (
                             <ContentCard key={it.id} item={it} draggable={draggable} onClick={() => onItemClick(it.id)} selected={selectedId === it.id} onSelect={onSelect} />
                           ))}
