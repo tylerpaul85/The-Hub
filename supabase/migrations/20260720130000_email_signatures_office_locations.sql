@@ -4,7 +4,7 @@
 -- and per-agent office visibility flags.
 -- ============================================================
 
-ALTER TABLE public.team_config 
+ALTER TABLE public.signature_team_config 
   ADD COLUMN IF NOT EXISTS office_rolla_addr text DEFAULT '1043 Kingshighway, Rolla, MO 65401',
   ADD COLUMN IF NOT EXISTS office_strobert_addr text DEFAULT '157 Saint Robert Blvd, St. Robert, MO 65584',
   ADD COLUMN IF NOT EXISTS office_osage_addr text DEFAULT '456 Shore Dr, Osage Beach, MO 65065';
