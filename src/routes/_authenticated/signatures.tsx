@@ -1048,17 +1048,29 @@ function SignaturesPage() {
       return;
     }
     setPushingAll(true);
-    const ids = activeAgents.map((a) => a.id);
+
+    const BATCH_SIZE = 5;
+    const allResults: Array<{ id: string; name: string; status: "success" | "error"; error?: string }> = [];
+
     try {
-      toast.loading(`Pushing signatures for ${activeAgents.length} agents...`, { id: "push-all" });
-      const results = await pushFn({
-        data: { toolbox_agent_ids: ids },
-      });
-      const errors = results.filter((r) => r.status === "error");
+      for (let i = 0; i < activeAgents.length; i += BATCH_SIZE) {
+        const batch = activeAgents.slice(i, i + BATCH_SIZE);
+        const ids = batch.map((a) => a.id);
+        const currentCount = Math.min(i + BATCH_SIZE, activeAgents.length);
+        toast.loading(`Pushing signatures: ${currentCount} / ${activeAgents.length}...`, { id: "push-all" });
+
+        const results = await pushFn({
+          data: { toolbox_agent_ids: ids },
+        });
+
+        allResults.push(...results);
+      }
+
+      const errors = allResults.filter((r) => r.status === "error");
       if (errors.length > 0) {
-        toast.error(`Pushed with ${errors.length} error(s). Check logs.`, { id: "push-all" });
+        toast.error(`Pushed with ${errors.length} error(s). Check roster for details.`, { id: "push-all" });
       } else {
-        toast.success("Successfully pushed all signatures to Gmail!", { id: "push-all" });
+        toast.success(`Successfully pushed all ${activeAgents.length} signatures to Gmail!`, { id: "push-all" });
       }
       qc.invalidateQueries({ queryKey: ["signature-roster"] });
     } catch (err: any) {
