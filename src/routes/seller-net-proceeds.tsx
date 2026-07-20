@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { generateSellerNetPdf } from "@/lib/generate-seller-net-pdf";
 
 export const Route = createFileRoute("/seller-net-proceeds")({
   ssr: false,
@@ -712,18 +713,19 @@ function CalculatorView({
     onError: (e: any) => toast.error(e.message || "Failed to save"),
   });
 
-  const handlePrintPdf = () => {
+  const handlePrintPdf = async () => {
     if (!data.property_address.trim()) {
       toast.error("Please enter a property address before exporting PDF.");
       return;
     }
-    const origTitle = document.title;
-    const cleanAddress = data.property_address.trim().replace(/[^a-zA-Z0-9]/g, "_");
-    document.title = `Seller Net Sheet - ${cleanAddress}`;
-    window.print();
-    setTimeout(() => {
-      document.title = origTitle;
-    }, 1000);
+    const toastId = toast.loading("Generating professional PDF...");
+    try {
+      await generateSellerNetPdf(data);
+      toast.success("Seller Net Sheet PDF downloaded!", { id: toastId });
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Failed to generate PDF. Please try again.", { id: toastId });
+    }
   };
 
   const handleResetDefaults = () => {

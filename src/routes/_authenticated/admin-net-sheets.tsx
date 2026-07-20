@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Calculator, Eye, FileText, Search } from "lucide-react";
+import { Calculator, Eye, FileText, Search, Download } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { generateSellerNetPdf } from "@/lib/generate-seller-net-pdf";
 
 export const Route = createFileRoute("/_authenticated/admin-net-sheets")({
   component: AdminNetSheetsPage,
@@ -174,8 +176,26 @@ function AdminNetSheetsPage() {
       <Dialog open={!!selectedSheet} onOpenChange={(o) => !o && setSelectedSheet(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-950 text-white border-slate-800">
           <DialogHeader>
-            <DialogTitle className="text-base font-bold text-[#C9A84C] flex items-center justify-between">
+            <DialogTitle className="text-base font-bold text-[#C9A84C] flex items-center justify-between pr-6">
               <span>Agent Net Sheet Inspection</span>
+              {selectedSheet?.sheet_data && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    const toastId = toast.loading("Generating PDF...");
+                    try {
+                      await generateSellerNetPdf(selectedSheet.sheet_data);
+                      toast.success("PDF Downloaded!", { id: toastId });
+                    } catch {
+                      toast.error("Failed to generate PDF", { id: toastId });
+                    }
+                  }}
+                  className="text-xs border-[#C9A84C]/50 text-[#C9A84C] hover:bg-[#C9A84C] hover:text-[#1B2F5B] h-7"
+                >
+                  <Download className="h-3.5 w-3.5 mr-1" /> Export PDF
+                </Button>
+              )}
             </DialogTitle>
           </DialogHeader>
 
