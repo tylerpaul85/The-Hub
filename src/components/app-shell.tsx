@@ -35,7 +35,7 @@ const CLIENT_CARE_NAV = [
 const ADMIN_NAV = [
   { to: "/users", label: "Users", icon: Users, adminOnly: true },
   { to: "/signatures", label: "Email Signatures", icon: Mail, adminOnly: true },
-  { to: "/admin/net-sheets", label: "Agent Net Sheets", icon: Calculator, adminOnly: true },
+  { to: "/admin-net-sheets", label: "Agent Net Sheets", icon: Calculator, adminOnly: true },
   { to: "/audit-log", label: "Audit Log", icon: ShieldCheck, adminOnly: true },
   { to: "/admin/assistant", label: "AI Assistant", icon: Bot, adminOnly: true },
 ] as const;

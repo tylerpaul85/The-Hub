@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Calculator, Eye, FileText, Search, User, Calendar, MapPin } from "lucide-react";
+import { Calculator, Eye, FileText, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-export const Route = createFileRoute("/_authenticated/admin/net-sheets" as any)({
+export const Route = createFileRoute("/_authenticated/admin-net-sheets")({
   component: AdminNetSheetsPage,
   head: () => ({
     meta: [{ title: "Agent Net Sheets — MSREG Admin" }],
@@ -224,7 +224,6 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
 
   return (
     <div className="space-y-6 text-xs text-slate-200 p-2">
-      {/* Agent & Property Header Block */}
       <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
         <div className="flex flex-col sm:flex-row justify-between gap-2 border-b border-slate-800 pb-3">
           <div>
@@ -259,7 +258,6 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
         </div>
       </div>
 
-      {/* Calculations Table */}
       <div className="overflow-x-auto border border-slate-800 rounded-xl">
         <table className="w-full text-xs text-left">
           <thead className="bg-[#1B2F5B] text-white">
@@ -335,7 +333,6 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
         </table>
       </div>
 
-      {/* Verbatim Disclaimer */}
       <p className="text-[10px] text-slate-400 font-mono text-center leading-relaxed">
         NOTE: THIS FORM IS INTENDED AS AN ESTIMATE ONLY. IT DOES NOT INCLUDE TAX PRORATION, ESCROW ADJUSTMENTS AND OTHER MISCELLANEOUS COSTS SOMETIMES ASSOCIATED WITH CLOSING. MATT SMITH REAL ESTATE GROUP/EXP REALTY ACCEPTS NO RESPONSIBILITY FOR THIS ESTIMATE.
       </p>

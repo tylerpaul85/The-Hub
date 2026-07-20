@@ -17,7 +17,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as AgentToolboxRouteImport } from './routes/agent-toolbox'
 import { Route as SellerNetProceedsRouteImport } from './routes/seller-net-proceeds'
-import { Route as AuthenticatedAdminNetSheetsRouteImport } from './routes/_authenticated/admin.net-sheets'
+import { Route as AuthenticatedAdminNetSheetsRouteImport } from './routes/_authenticated/admin-net-sheets'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgentsIndexRouteImport } from './routes/agents.index'
@@ -91,8 +91,8 @@ const SellerNetProceedsRoute = SellerNetProceedsRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminNetSheetsRoute = AuthenticatedAdminNetSheetsRouteImport.update({
-  id: '/admin/net-sheets',
-  path: '/admin/net-sheets',
+  id: '/admin-net-sheets',
+  path: '/admin-net-sheets',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
