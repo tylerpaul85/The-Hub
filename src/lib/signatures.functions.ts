@@ -453,6 +453,14 @@ const DEFAULT_SIGNATURE_TEMPLATE = `<!-- HTML EMAIL SIGNATURE TEMPLATE -->
   </tr>
 </table>`;
 
+export function minifySignatureHtml(html: string): string {
+  return html
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/>\s+</g, "><")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function compileTemplateServer(template: string, data: Record<string, any>): string {
   let rendered = template;
   const ifElseRegex = /\{\{#if\s+(\w+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))?\{\{\/if\}\}/g;
@@ -466,7 +474,7 @@ function compileTemplateServer(template: string, data: Record<string, any>): str
     const val = data[key];
     return val !== undefined && val !== null && String(val) !== "null" ? String(val) : "";
   });
-  return rendered;
+  return minifySignatureHtml(rendered);
 }
 
 const PushSignaturesInput = z.object({

@@ -133,7 +133,15 @@ function compileTemplate(template: string, data: Record<string, any>): string {
     return val !== undefined && val !== null && String(val) !== "null" ? String(val) : "";
   });
 
-  return rendered;
+  return minifySignatureHtml(rendered);
+}
+
+export function minifySignatureHtml(html: string): string {
+  return html
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/>\s+</g, "><")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 const DEFAULT_SIGNATURE_TEMPLATE = `<!-- HTML EMAIL SIGNATURE TEMPLATE -->
