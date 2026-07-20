@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Send, Images, ChevronRight, Share, Plus, Gift, Signpost } from "lucide-react";
+import { Send, Images, ChevronRight, Share, Plus, Gift, Signpost, Calculator } from "lucide-react";
 import logo from "@/assets/msreg-logo.png";
 import { Button } from "@/components/ui/button";
 
@@ -65,6 +65,12 @@ function AgentsHome() {
             icon={<Gift className="h-8 w-8" />}
             title="Request Closing Gift"
             subtitle="Order shirts for your clients (access code required)"
+          />
+          <HubCard
+            to="/seller-net-proceeds"
+            icon={<Calculator className="h-8 w-8" />}
+            title="Generate Net Seller Proceeds"
+            subtitle="Calculate & save estimated net proceeds sheets for your sellers"
           />
           <HubCard
             href="https://listings.msreginternal.com/"

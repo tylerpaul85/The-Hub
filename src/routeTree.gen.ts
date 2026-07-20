@@ -16,6 +16,8 @@ import { Route as AvailabilityRouteImport } from './routes/availability'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as AgentToolboxRouteImport } from './routes/agent-toolbox'
+import { Route as SellerNetProceedsRouteImport } from './routes/seller-net-proceeds'
+import { Route as AuthenticatedAdminNetSheetsRouteImport } from './routes/_authenticated/admin.net-sheets'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgentsIndexRouteImport } from './routes/agents.index'
@@ -82,6 +84,16 @@ const AgentToolboxRoute = AgentToolboxRouteImport.update({
   id: '/agent-toolbox',
   path: '/agent-toolbox',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SellerNetProceedsRoute = SellerNetProceedsRouteImport.update({
+  id: '/seller-net-proceeds',
+  path: '/seller-net-proceeds',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAdminNetSheetsRoute = AuthenticatedAdminNetSheetsRouteImport.update({
+  id: '/admin/net-sheets',
+  path: '/admin/net-sheets',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -840,6 +852,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEosL10Route: AuthenticatedEosL10RouteWithChildren,
   AuthenticatedEosRocksRoute: AuthenticatedEosRocksRoute,
   AuthenticatedEosScorecardRoute: AuthenticatedEosScorecardRoute,
+  AuthenticatedAdminNetSheetsRoute: AuthenticatedAdminNetSheetsRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -860,6 +873,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AgentToolboxRoute: AgentToolboxRoute,
+  SellerNetProceedsRoute: SellerNetProceedsRoute,
   AgentsRoute: AgentsRouteWithChildren,
   AuthRoute: AuthRoute,
   AvailabilityRoute: AvailabilityRoute,

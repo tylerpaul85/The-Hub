@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "@/hooks/use-auth";
+import { AgentAuthProvider } from "@/hooks/use-agent-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import favicon from "@/assets/msreg-logo.png";
@@ -115,9 +116,11 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Outlet />
-        <Toaster />
-        <IosInstallPrompt />
+        <AgentAuthProvider>
+          <Outlet />
+          <Toaster />
+          <IosInstallPrompt />
+        </AgentAuthProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
