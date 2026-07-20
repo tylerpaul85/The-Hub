@@ -732,28 +732,6 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
                       </div>
                     </label>
                   </div>
-
-                  {/* Optional Custom Offices */}
-                  <div className="rounded-lg border border-border p-4 space-y-3">
-                    <p className="text-xs font-medium text-foreground flex items-center gap-2">
-                      Custom Primary Office
-                      <span className="text-[10px] font-normal text-muted-foreground">(Optional override)</span>
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {field("o1label", "Label (e.g. Rolla)", "office1_label", "Rolla")}
-                      {field("o1addr", "Address", "office1_addr", "123 Main St, Rolla, MO 65401")}
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-border p-4 space-y-3">
-                    <p className="text-xs font-medium text-foreground flex items-center gap-2">
-                      Custom Second Office
-                      <span className="text-[10px] font-normal text-muted-foreground">(Optional override)</span>
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {field("o2label", "Label (e.g. Lake of Ozarks)", "office2_label", "Lake of Ozarks")}
-                      {field("o2addr", "Address", "office2_addr", "456 Shore Dr, Osage Beach, MO 65065")}
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>

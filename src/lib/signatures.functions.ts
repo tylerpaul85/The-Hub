@@ -140,6 +140,12 @@ export const saveAgentSignatureData = createServerFn({ method: "POST" })
           office1_addr: data.office1_addr ?? null,
           office2_label: data.office2_label ?? null,
           office2_addr: data.office2_addr ?? null,
+          show_office_rolla: data.show_office_rolla ?? true,
+          show_office_strobert: data.show_office_strobert ?? false,
+          show_office_osage: data.show_office_osage ?? false,
+          office_rolla_addr: data.office_rolla_addr ?? null,
+          office_strobert_addr: data.office_strobert_addr ?? null,
+          office_osage_addr: data.office_osage_addr ?? null,
           gmail_email: data.gmail_email || null,
         },
         { onConflict: "toolbox_agent_id" }
@@ -172,6 +178,9 @@ export const saveTeamConfig = createServerFn({ method: "POST" })
         icon_ig_url: data.icon_ig_url,
         icon_web_url: data.icon_web_url,
         html_template: data.html_template ?? null,
+        office_rolla_addr: data.office_rolla_addr ?? null,
+        office_strobert_addr: data.office_strobert_addr ?? null,
+        office_osage_addr: data.office_osage_addr ?? null,
       })
       .neq("id", "00000000-0000-0000-0000-000000000000"); // matches all rows
     if (error) throw new Error(error.message);
