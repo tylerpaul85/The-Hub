@@ -98,12 +98,19 @@ interface TeamConfig {
 function sigCompleteness(agent: AgentSig): { complete: boolean; missing: string[] } {
   const s = agent.sig;
   const missing: string[] = [];
-  if (!s) return { complete: false, missing: ["All fields missing"] };
-  if (!s.title) missing.push("Title");
-  if (!s.mobile_phone) missing.push("Mobile phone");
-  if (!s.headshot_url) missing.push("Headshot");
-  if (!s.office1_addr) missing.push("Office address");
-  if (!s.gmail_email) missing.push("Gmail email");
+  
+  const title = s?.title;
+  const mobilePhone = s?.mobile_phone;
+  const headshotUrl = s?.headshot_url || agent.headshot_url;
+  const gmailEmail = s?.gmail_email || agent.email;
+  const hasOffice = s ? ((s.show_office_rolla ?? true) || s.show_office_strobert || s.show_office_osage || !!s.office1_addr) : true;
+
+  if (!title) missing.push("Title");
+  if (!mobilePhone) missing.push("Mobile phone");
+  if (!headshotUrl) missing.push("Headshot");
+  if (!gmailEmail) missing.push("Gmail email");
+  if (!hasOffice) missing.push("Office address");
+
   return { complete: missing.length === 0, missing };
 }
 
