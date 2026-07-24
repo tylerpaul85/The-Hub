@@ -66,6 +66,9 @@ interface SheetData {
   home_warranty: number;
   transaction_fee: number;
   estimated_taxes: number;
+  estimated_taxes_1?: number;
+  estimated_taxes_2?: number;
+  estimated_taxes_3?: number;
   miscellaneous: number;
   seller_concessions: number;
 }
@@ -94,6 +97,9 @@ const DEFAULT_SHEET_DATA: SheetData = {
   home_warranty: 0,
   transaction_fee: 295,
   estimated_taxes: 1283,
+  estimated_taxes_1: 1283,
+  estimated_taxes_2: 1283,
+  estimated_taxes_3: 1283,
   miscellaneous: 0,
   seller_concessions: 5000,
 };
@@ -633,10 +639,19 @@ function CalculatorView({
   };
 
   // Calculations logic
-  const calculateScenario = (salesPrice: number) => {
+  const calculateScenario = (salesPrice: number, scenarioIndex: 1 | 2 | 3) => {
     const listingComm = salesPrice * ((data.listing_comm_pct || 0) / 100);
     const sellingComm = salesPrice * ((data.selling_comm_pct || 0) / 100);
     const totalComm = listingComm + sellingComm;
+
+    let scenarioTaxes = 0;
+    if (scenarioIndex === 1) {
+      scenarioTaxes = data.estimated_taxes_1 !== undefined ? data.estimated_taxes_1 : (data.estimated_taxes || 0);
+    } else if (scenarioIndex === 2) {
+      scenarioTaxes = data.estimated_taxes_2 !== undefined ? data.estimated_taxes_2 : (data.estimated_taxes || 0);
+    } else {
+      scenarioTaxes = data.estimated_taxes_3 !== undefined ? data.estimated_taxes_3 : (data.estimated_taxes || 0);
+    }
 
     const fixedCosts =
       (data.mortgage_payoff_1 || 0) +
@@ -649,7 +664,7 @@ function CalculatorView({
       (data.inspections || 0) +
       (data.home_warranty || 0) +
       (data.transaction_fee || 0) +
-      (data.estimated_taxes || 0) +
+      scenarioTaxes +
       (data.miscellaneous || 0) +
       (data.seller_concessions || 0);
 
@@ -667,9 +682,9 @@ function CalculatorView({
     };
   };
 
-  const calc1 = useMemo(() => calculateScenario(data.scenario1_price || 0), [data]);
-  const calc2 = useMemo(() => calculateScenario(data.scenario2_price || 0), [data]);
-  const calc3 = useMemo(() => calculateScenario(data.scenario3_price || 0), [data]);
+  const calc1 = useMemo(() => calculateScenario(data.scenario1_price || 0, 1), [data]);
+  const calc2 = useMemo(() => calculateScenario(data.scenario2_price || 0, 2), [data]);
+  const calc3 = useMemo(() => calculateScenario(data.scenario3_price || 0, 3), [data]);
 
   // Save mutation
   const saveMutation = useMutation({
@@ -800,7 +815,7 @@ function CalculatorView({
           </div>
 
           {/* Agent Information Header Block */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-background print:bg-slate-50 border border-border print:border-slate-300 p-3 sm:p-4 rounded-xl text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-background print:bg-slate-50 border border-border print:border-slate-300 p-3 sm:p-4 rounded-xl text-xs">
             <div>
               <label className="text-[10px] uppercase font-bold text-gold">Agent Name</label>
               <Input
@@ -822,14 +837,6 @@ function CalculatorView({
               <Input
                 value={data.agent_email}
                 onChange={(e) => updateField("agent_email", e.target.value)}
-                className="h-8 text-xs bg-card print:bg-white text-white print:text-black border-border print:border-slate-300 mt-1 focus-visible:ring-gold"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] uppercase font-bold text-gold">Office Location</label>
-              <Input
-                value={data.office_address}
-                onChange={(e) => updateField("office_address", e.target.value)}
                 className="h-8 text-xs bg-card print:bg-white text-white print:text-black border-border print:border-slate-300 mt-1 focus-visible:ring-gold"
               />
             </div>
@@ -976,7 +983,63 @@ function CalculatorView({
               <NumberRow label="Well, Water, Septic, Lagoon Inspection" field="inspections" data={data} updateField={updateField} />
               <NumberRow label="Home Warranty (negotiable w/ buyer)" field="home_warranty" data={data} updateField={updateField} />
               <NumberRow label="Transaction Fee" field="transaction_fee" data={data} updateField={updateField} />
-              <NumberRow label="Estimated Taxes" field="estimated_taxes" data={data} updateField={updateField} />
+              {/* Estimated Taxes per Scenario */}
+              <tr>
+                <td className="p-2.5 text-slate-300 print:text-slate-800">Estimated Taxes</td>
+                <td className="p-2 border-l border-border print:border-slate-200">
+                  <div className="flex items-center justify-center gap-1 max-w-[200px] mx-auto">
+                    <span className="text-slate-500 text-xs">$</span>
+                    <Input
+                      type="number"
+                      value={(data.estimated_taxes_1 !== undefined ? data.estimated_taxes_1 : data.estimated_taxes) || ""}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value) || 0;
+                        setData((prev) => ({
+                          ...prev,
+                          estimated_taxes_1: val,
+                          estimated_taxes: val, // legacy sync
+                        }));
+                      }}
+                      placeholder="0"
+                      className="h-7 text-center text-xs bg-background print:bg-white text-white print:text-black border-border print:border-slate-300 focus-visible:ring-gold"
+                    />
+                  </div>
+                </td>
+                {data.num_scenarios >= 2 && (
+                  <td className="p-2 border-l border-border print:border-slate-200">
+                    <div className="flex items-center justify-center gap-1 max-w-[200px] mx-auto">
+                      <span className="text-slate-500 text-xs">$</span>
+                      <Input
+                        type="number"
+                        value={(data.estimated_taxes_2 !== undefined ? data.estimated_taxes_2 : data.estimated_taxes) || ""}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value) || 0;
+                          updateField("estimated_taxes_2", val);
+                        }}
+                        placeholder="0"
+                        className="h-7 text-center text-xs bg-background print:bg-white text-white print:text-black border-border print:border-slate-300 focus-visible:ring-gold"
+                      />
+                    </div>
+                  </td>
+                )}
+                {data.num_scenarios >= 3 && (
+                  <td className="p-2 border-l border-border print:border-slate-200">
+                    <div className="flex items-center justify-center gap-1 max-w-[200px] mx-auto">
+                      <span className="text-slate-500 text-xs">$</span>
+                      <Input
+                        type="number"
+                        value={(data.estimated_taxes_3 !== undefined ? data.estimated_taxes_3 : data.estimated_taxes) || ""}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value) || 0;
+                          updateField("estimated_taxes_3", val);
+                        }}
+                        placeholder="0"
+                        className="h-7 text-center text-xs bg-background print:bg-white text-white print:text-black border-border print:border-slate-300 focus-visible:ring-gold"
+                      />
+                    </div>
+                  </td>
+                )}
+              </tr>
               <NumberRow label="Miscellaneous" field="miscellaneous" data={data} updateField={updateField} />
               <NumberRow label="Sellers Concessions (negotiable w/ buyer)" field="seller_concessions" data={data} updateField={updateField} />
 

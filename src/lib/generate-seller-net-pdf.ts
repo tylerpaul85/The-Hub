@@ -26,6 +26,9 @@ export interface SheetDataForPdf {
   home_warranty: number;
   transaction_fee: number;
   estimated_taxes: number;
+  estimated_taxes_1?: number;
+  estimated_taxes_2?: number;
+  estimated_taxes_3?: number;
   miscellaneous: number;
   seller_concessions: number;
 }
@@ -59,10 +62,19 @@ const BLACK_LOGO_URL = "https://jxymjhmbaqstmrttjdib.supabase.co/storage/v1/obje
 export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void> {
   const numScenarios = data.num_scenarios || 1;
 
-  const calculateScenario = (salesPrice: number) => {
+  const calculateScenario = (salesPrice: number, scenarioIndex: 1 | 2 | 3) => {
     const listingComm = salesPrice * ((data.listing_comm_pct || 0) / 100);
     const sellingComm = salesPrice * ((data.selling_comm_pct || 0) / 100);
     const totalComm = listingComm + sellingComm;
+
+    let scenarioTaxes = 0;
+    if (scenarioIndex === 1) {
+      scenarioTaxes = data.estimated_taxes_1 !== undefined ? data.estimated_taxes_1 : (data.estimated_taxes || 0);
+    } else if (scenarioIndex === 2) {
+      scenarioTaxes = data.estimated_taxes_2 !== undefined ? data.estimated_taxes_2 : (data.estimated_taxes || 0);
+    } else {
+      scenarioTaxes = data.estimated_taxes_3 !== undefined ? data.estimated_taxes_3 : (data.estimated_taxes || 0);
+    }
 
     const fixedCosts =
       (data.mortgage_payoff_1 || 0) +
@@ -75,7 +87,7 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
       (data.inspections || 0) +
       (data.home_warranty || 0) +
       (data.transaction_fee || 0) +
-      (data.estimated_taxes || 0) +
+      scenarioTaxes +
       (data.miscellaneous || 0) +
       (data.seller_concessions || 0);
 
@@ -91,9 +103,9 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
     };
   };
 
-  const c1 = calculateScenario(data.scenario1_price || 0);
-  const c2 = calculateScenario(data.scenario2_price || 0);
-  const c3 = calculateScenario(data.scenario3_price || 0);
+  const c1 = calculateScenario(data.scenario1_price || 0, 1);
+  const c2 = calculateScenario(data.scenario2_price || 0, 2);
+  const c3 = calculateScenario(data.scenario3_price || 0, 3);
 
   // Convert black MSREG logo to Base64 (with fallback to default logo)
   let logoBase64 = await getBase64ImageFromUrl(BLACK_LOGO_URL);
@@ -127,7 +139,6 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
       </div>
       <div style="text-align: right; font-size: 10px; color: #64748b;">
         <div style="font-weight: 600; color: #1B2F5B;">Matt Smith Real Estate Group</div>
-        <div>${data.office_address || "1043 Kingshighway, Rolla, MO 65401"}</div>
         <div>Ph: ${data.office_phone || "(573) 451-2020"}</div>
       </div>
     </div>
@@ -206,7 +217,22 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
         ${renderPdfRow("Well, Water, Septic, Lagoon Inspection", data.inspections, numScenarios)}
         ${renderPdfRow("Home Warranty (negotiable w/ buyer)", data.home_warranty, numScenarios)}
         ${renderPdfRow("Transaction Fee", data.transaction_fee, numScenarios)}
-        ${renderPdfRow("Estimated Taxes", data.estimated_taxes, numScenarios)}
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 5px 10px; color: #475569;">Estimated Taxes</td>
+          <td style="padding: 5px 10px; text-align: right; border-left: 1px solid #f1f5f9; color: #475569;">
+            ${formatMoney(data.estimated_taxes_1 !== undefined ? data.estimated_taxes_1 : (data.estimated_taxes || 0))}
+          </td>
+          ${numScenarios >= 2 ? `
+            <td style="padding: 5px 10px; text-align: right; border-left: 1px solid #f1f5f9; color: #475569;">
+              ${formatMoney(data.estimated_taxes_2 !== undefined ? data.estimated_taxes_2 : (data.estimated_taxes || 0))}
+            </td>
+          ` : ""}
+          ${numScenarios >= 3 ? `
+            <td style="padding: 5px 10px; text-align: right; border-left: 1px solid #f1f5f9; color: #475569;">
+              ${formatMoney(data.estimated_taxes_3 !== undefined ? data.estimated_taxes_3 : (data.estimated_taxes || 0))}
+            </td>
+          ` : ""}
+        </tr>
         ${renderPdfRow("Miscellaneous", data.miscellaneous, numScenarios)}
         ${renderPdfRow("Sellers Concessions (negotiable w/ buyer)", data.seller_concessions, numScenarios)}
 
