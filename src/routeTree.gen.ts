@@ -9,75 +9,58 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as RequestRouteImport } from './routes/request'
-import { Route as ClosingGiftRouteImport } from './routes/closing-gift'
-import { Route as AvailabilityRouteImport } from './routes/availability'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AgentsRouteImport } from './routes/agents'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AgentToolboxRouteImport } from './routes/agent-toolbox'
+import { Route as AgentsRouteImport } from './routes/agents'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AvailabilityRouteImport } from './routes/availability'
+import { Route as ClosingGiftRouteImport } from './routes/closing-gift'
+import { Route as RequestRouteImport } from './routes/request'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SellerNetProceedsRouteImport } from './routes/seller-net-proceeds'
 import { Route as AuthenticatedAdminNetSheetsRouteImport } from './routes/_authenticated/admin-net-sheets'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AgentsIndexRouteImport } from './routes/agents.index'
-import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated/videos'
-import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
-import { Route as AuthenticatedSignaturesRouteImport } from './routes/_authenticated/signatures'
-import { Route as AuthenticatedToolboxRouteImport } from './routes/_authenticated/toolbox'
-import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
-import { Route as AuthenticatedRequestsRouteImport } from './routes/_authenticated/requests'
-import { Route as AuthenticatedProcessesRouteImport } from './routes/_authenticated/processes'
-import { Route as AuthenticatedMyAvailabilityRouteImport } from './routes/_authenticated/my-availability'
-import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
-import { Route as AuthenticatedExperimentsRouteImport } from './routes/_authenticated/experiments'
-import { Route as AuthenticatedDutyCalendarRouteImport } from './routes/_authenticated/duty-calendar'
-import { Route as AuthenticatedDutyAgentsRouteImport } from './routes/_authenticated/duty-agents'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
-import { Route as AuthenticatedAuditLogRouteImport } from './routes/_authenticated/audit-log'
 import { Route as AuthenticatedArchiveRouteImport } from './routes/_authenticated/archive'
-import { Route as AuthenticatedExperimentsIndexRouteImport } from './routes/_authenticated/experiments.index'
-import { Route as AuthenticatedExperimentsVirtualStagingRouteImport } from './routes/_authenticated/experiments.virtual-staging'
-import { Route as AuthenticatedExperimentsTvDashboardRouteImport } from './routes/_authenticated/experiments.tv-dashboard'
-import { Route as AuthenticatedExperimentsLiveStatsRouteImport } from './routes/_authenticated/experiments.live-stats'
-import { Route as AuthenticatedEosScorecardRouteImport } from './routes/_authenticated/eos.scorecard'
-import { Route as AuthenticatedEosRocksRouteImport } from './routes/_authenticated/eos.rocks'
-import { Route as AuthenticatedEosL10RouteImport } from './routes/_authenticated/eos.l10'
+import { Route as AuthenticatedAuditLogRouteImport } from './routes/_authenticated/audit-log'
+import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedDutyAgentsRouteImport } from './routes/_authenticated/duty-agents'
+import { Route as AuthenticatedDutyCalendarRouteImport } from './routes/_authenticated/duty-calendar'
+import { Route as AuthenticatedExperimentsRouteImport } from './routes/_authenticated/experiments'
+import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
+import { Route as AuthenticatedListingsRouteImport } from './routes/_authenticated/listings'
+import { Route as AuthenticatedMyAvailabilityRouteImport } from './routes/_authenticated/my-availability'
+import { Route as AuthenticatedProcessesRouteImport } from './routes/_authenticated/processes'
+import { Route as AuthenticatedRequestsRouteImport } from './routes/_authenticated/requests'
+import { Route as AuthenticatedSignaturesRouteImport } from './routes/_authenticated/signatures'
+import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
+import { Route as AuthenticatedToolboxRouteImport } from './routes/_authenticated/toolbox'
+import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
+import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated/videos'
+import { Route as AgentsIndexRouteImport } from './routes/agents.index'
+import { Route as AuthenticatedAdminAssistantRouteImport } from './routes/_authenticated/admin.assistant'
 import { Route as AuthenticatedEosIssuesRouteImport } from './routes/_authenticated/eos.issues'
+import { Route as AuthenticatedEosL10RouteImport } from './routes/_authenticated/eos.l10'
+import { Route as AuthenticatedEosRocksRouteImport } from './routes/_authenticated/eos.rocks'
+import { Route as AuthenticatedEosScorecardRouteImport } from './routes/_authenticated/eos.scorecard'
+import { Route as AuthenticatedExperimentsIndexRouteImport } from './routes/_authenticated/experiments.index'
+import { Route as AuthenticatedExperimentsLiveStatsRouteImport } from './routes/_authenticated/experiments.live-stats'
+import { Route as AuthenticatedExperimentsTvDashboardRouteImport } from './routes/_authenticated/experiments.tv-dashboard'
+import { Route as AuthenticatedExperimentsVirtualStagingRouteImport } from './routes/_authenticated/experiments.virtual-staging'
+import { Route as AuthenticatedListingsIndexRouteImport } from './routes/_authenticated/listings.index'
+import { Route as AuthenticatedListingsIdRouteImport } from './routes/_authenticated/listings.$id'
 import { Route as AuthenticatedEosL10IndexRouteImport } from './routes/_authenticated/eos.l10.index'
-import { Route as ApiPublicWebhooksInstantdecoRouteImport } from './routes/api/public/webhooks/instantdeco'
-import { Route as ApiPublicHooksScorecardRemindersRouteImport } from './routes/api/public/hooks/scorecard-reminders'
 import { Route as AuthenticatedEosL10IdRouteImport } from './routes/_authenticated/eos.l10.$id'
+import { Route as ApiPublicHooksScorecardRemindersRouteImport } from './routes/api/public/hooks/scorecard-reminders'
+import { Route as ApiPublicWebhooksInstantdecoRouteImport } from './routes/api/public/webhooks/instantdeco'
 
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RequestRoute = RequestRouteImport.update({
-  id: '/request',
-  path: '/request',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ClosingGiftRoute = ClosingGiftRouteImport.update({
-  id: '/closing-gift',
-  path: '/closing-gift',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AvailabilityRoute = AvailabilityRouteImport.update({
-  id: '/availability',
-  path: '/availability',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AgentsRoute = AgentsRouteImport.update({
-  id: '/agents',
-  path: '/agents',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgentToolboxRoute = AgentToolboxRouteImport.update({
@@ -85,63 +68,92 @@ const AgentToolboxRoute = AgentToolboxRouteImport.update({
   path: '/agent-toolbox',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AgentsRoute = AgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AvailabilityRoute = AvailabilityRouteImport.update({
+  id: '/availability',
+  path: '/availability',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClosingGiftRoute = ClosingGiftRouteImport.update({
+  id: '/closing-gift',
+  path: '/closing-gift',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RequestRoute = RequestRouteImport.update({
+  id: '/request',
+  path: '/request',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SellerNetProceedsRoute = SellerNetProceedsRouteImport.update({
   id: '/seller-net-proceeds',
   path: '/seller-net-proceeds',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedAdminNetSheetsRoute = AuthenticatedAdminNetSheetsRouteImport.update({
-  id: '/admin-net-sheets',
-  path: '/admin-net-sheets',
+const AuthenticatedAdminNetSheetsRoute =
+  AuthenticatedAdminNetSheetsRouteImport.update({
+    id: '/admin-net-sheets',
+    path: '/admin-net-sheets',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedArchiveRoute = AuthenticatedArchiveRouteImport.update({
+  id: '/archive',
+  path: '/archive',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AgentsIndexRoute = AgentsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AgentsRoute,
-} as any)
-const AuthenticatedVideosRoute = AuthenticatedVideosRouteImport.update({
-  id: '/videos',
-  path: '/videos',
+const AuthenticatedAuditLogRoute = AuthenticatedAuditLogRouteImport.update({
+  id: '/audit-log',
+  path: '/audit-log',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
+const AuthenticatedCalendarRoute = AuthenticatedCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedSignaturesRoute = AuthenticatedSignaturesRouteImport.update({
-  id: '/signatures',
-  path: '/signatures',
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedToolboxRoute = AuthenticatedToolboxRouteImport.update({
-  id: '/toolbox',
-  path: '/toolbox',
+const AuthenticatedDutyAgentsRoute = AuthenticatedDutyAgentsRouteImport.update({
+  id: '/duty-agents',
+  path: '/duty-agents',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
-  id: '/tasks',
-  path: '/tasks',
+const AuthenticatedDutyCalendarRoute =
+  AuthenticatedDutyCalendarRouteImport.update({
+    id: '/duty-calendar',
+    path: '/duty-calendar',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedExperimentsRoute =
+  AuthenticatedExperimentsRouteImport.update({
+    id: '/experiments',
+    path: '/experiments',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedInventoryRoute = AuthenticatedInventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedRequestsRoute = AuthenticatedRequestsRouteImport.update({
-  id: '/requests',
-  path: '/requests',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedProcessesRoute = AuthenticatedProcessesRouteImport.update({
-  id: '/processes',
-  path: '/processes',
+const AuthenticatedListingsRoute = AuthenticatedListingsRouteImport.update({
+  id: '/listings',
+  path: '/listings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedMyAvailabilityRoute =
@@ -150,64 +162,77 @@ const AuthenticatedMyAvailabilityRoute =
     path: '/my-availability',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedInventoryRoute = AuthenticatedInventoryRouteImport.update({
-  id: '/inventory',
-  path: '/inventory',
+const AuthenticatedProcessesRoute = AuthenticatedProcessesRouteImport.update({
+  id: '/processes',
+  path: '/processes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedExperimentsRoute =
-  AuthenticatedExperimentsRouteImport.update({
-    id: '/experiments',
-    path: '/experiments',
+const AuthenticatedRequestsRoute = AuthenticatedRequestsRouteImport.update({
+  id: '/requests',
+  path: '/requests',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSignaturesRoute = AuthenticatedSignaturesRouteImport.update({
+  id: '/signatures',
+  path: '/signatures',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedToolboxRoute = AuthenticatedToolboxRouteImport.update({
+  id: '/toolbox',
+  path: '/toolbox',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedVideosRoute = AuthenticatedVideosRouteImport.update({
+  id: '/videos',
+  path: '/videos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AgentsIndexRoute = AgentsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AgentsRoute,
+} as any)
+const AuthenticatedAdminAssistantRoute =
+  AuthenticatedAdminAssistantRouteImport.update({
+    id: '/admin/assistant',
+    path: '/admin/assistant',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedDutyCalendarRoute =
-  AuthenticatedDutyCalendarRouteImport.update({
-    id: '/duty-calendar',
-    path: '/duty-calendar',
+const AuthenticatedEosIssuesRoute = AuthenticatedEosIssuesRouteImport.update({
+  id: '/eos/issues',
+  path: '/eos/issues',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedEosL10Route = AuthenticatedEosL10RouteImport.update({
+  id: '/eos/l10',
+  path: '/eos/l10',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedEosRocksRoute = AuthenticatedEosRocksRouteImport.update({
+  id: '/eos/rocks',
+  path: '/eos/rocks',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedEosScorecardRoute =
+  AuthenticatedEosScorecardRouteImport.update({
+    id: '/eos/scorecard',
+    path: '/eos/scorecard',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedDutyAgentsRoute = AuthenticatedDutyAgentsRouteImport.update({
-  id: '/duty-agents',
-  path: '/duty-agents',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedCalendarRoute = AuthenticatedCalendarRouteImport.update({
-  id: '/calendar',
-  path: '/calendar',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedAuditLogRoute = AuthenticatedAuditLogRouteImport.update({
-  id: '/audit-log',
-  path: '/audit-log',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedArchiveRoute = AuthenticatedArchiveRouteImport.update({
-  id: '/archive',
-  path: '/archive',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedExperimentsIndexRoute =
   AuthenticatedExperimentsIndexRouteImport.update({
     id: '/',
     path: '/',
-    getParentRoute: () => AuthenticatedExperimentsRoute,
-  } as any)
-const AuthenticatedExperimentsVirtualStagingRoute =
-  AuthenticatedExperimentsVirtualStagingRouteImport.update({
-    id: '/virtual-staging',
-    path: '/virtual-staging',
-    getParentRoute: () => AuthenticatedExperimentsRoute,
-  } as any)
-const AuthenticatedExperimentsTvDashboardRoute =
-  AuthenticatedExperimentsTvDashboardRouteImport.update({
-    id: '/tv-dashboard',
-    path: '/tv-dashboard',
     getParentRoute: () => AuthenticatedExperimentsRoute,
   } as any)
 const AuthenticatedExperimentsLiveStatsRoute =
@@ -216,26 +241,28 @@ const AuthenticatedExperimentsLiveStatsRoute =
     path: '/live-stats',
     getParentRoute: () => AuthenticatedExperimentsRoute,
   } as any)
-const AuthenticatedEosScorecardRoute =
-  AuthenticatedEosScorecardRouteImport.update({
-    id: '/eos/scorecard',
-    path: '/eos/scorecard',
-    getParentRoute: () => AuthenticatedRouteRoute,
+const AuthenticatedExperimentsTvDashboardRoute =
+  AuthenticatedExperimentsTvDashboardRouteImport.update({
+    id: '/tv-dashboard',
+    path: '/tv-dashboard',
+    getParentRoute: () => AuthenticatedExperimentsRoute,
   } as any)
-const AuthenticatedEosRocksRoute = AuthenticatedEosRocksRouteImport.update({
-  id: '/eos/rocks',
-  path: '/eos/rocks',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedEosL10Route = AuthenticatedEosL10RouteImport.update({
-  id: '/eos/l10',
-  path: '/eos/l10',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedEosIssuesRoute = AuthenticatedEosIssuesRouteImport.update({
-  id: '/eos/issues',
-  path: '/eos/issues',
-  getParentRoute: () => AuthenticatedRouteRoute,
+const AuthenticatedExperimentsVirtualStagingRoute =
+  AuthenticatedExperimentsVirtualStagingRouteImport.update({
+    id: '/virtual-staging',
+    path: '/virtual-staging',
+    getParentRoute: () => AuthenticatedExperimentsRoute,
+  } as any)
+const AuthenticatedListingsIndexRoute =
+  AuthenticatedListingsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedListingsRoute,
+  } as any)
+const AuthenticatedListingsIdRoute = AuthenticatedListingsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedListingsRoute,
 } as any)
 const AuthenticatedEosL10IndexRoute =
   AuthenticatedEosL10IndexRouteImport.update({
@@ -243,23 +270,23 @@ const AuthenticatedEosL10IndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedEosL10Route,
   } as any)
-const ApiPublicWebhooksInstantdecoRoute =
-  ApiPublicWebhooksInstantdecoRouteImport.update({
-    id: '/api/public/webhooks/instantdeco',
-    path: '/api/public/webhooks/instantdeco',
-    getParentRoute: () => rootRouteImport,
-  } as any)
+const AuthenticatedEosL10IdRoute = AuthenticatedEosL10IdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedEosL10Route,
+} as any)
 const ApiPublicHooksScorecardRemindersRoute =
   ApiPublicHooksScorecardRemindersRouteImport.update({
     id: '/api/public/hooks/scorecard-reminders',
     path: '/api/public/hooks/scorecard-reminders',
     getParentRoute: () => rootRouteImport,
   } as any)
-const AuthenticatedEosL10IdRoute = AuthenticatedEosL10IdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AuthenticatedEosL10Route,
-} as any)
+const ApiPublicWebhooksInstantdecoRoute =
+  ApiPublicWebhooksInstantdecoRouteImport.update({
+    id: '/api/public/webhooks/instantdeco',
+    path: '/api/public/webhooks/instantdeco',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -270,6 +297,8 @@ export interface FileRoutesByFullPath {
   '/closing-gift': typeof ClosingGiftRoute
   '/request': typeof RequestRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/seller-net-proceeds': typeof SellerNetProceedsRoute
+  '/admin-net-sheets': typeof AuthenticatedAdminNetSheetsRoute
   '/archive': typeof AuthenticatedArchiveRoute
   '/audit-log': typeof AuthenticatedAuditLogRoute
   '/calendar': typeof AuthenticatedCalendarRoute
@@ -278,15 +307,17 @@ export interface FileRoutesByFullPath {
   '/duty-calendar': typeof AuthenticatedDutyCalendarRoute
   '/experiments': typeof AuthenticatedExperimentsRouteWithChildren
   '/inventory': typeof AuthenticatedInventoryRoute
+  '/listings': typeof AuthenticatedListingsRouteWithChildren
   '/my-availability': typeof AuthenticatedMyAvailabilityRoute
   '/processes': typeof AuthenticatedProcessesRoute
   '/requests': typeof AuthenticatedRequestsRoute
+  '/signatures': typeof AuthenticatedSignaturesRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/toolbox': typeof AuthenticatedToolboxRoute
   '/users': typeof AuthenticatedUsersRoute
-  '/signatures': typeof AuthenticatedSignaturesRoute
   '/videos': typeof AuthenticatedVideosRoute
   '/agents/': typeof AgentsIndexRoute
+  '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/eos/issues': typeof AuthenticatedEosIssuesRoute
   '/eos/l10': typeof AuthenticatedEosL10RouteWithChildren
   '/eos/rocks': typeof AuthenticatedEosRocksRoute
@@ -294,7 +325,9 @@ export interface FileRoutesByFullPath {
   '/experiments/live-stats': typeof AuthenticatedExperimentsLiveStatsRoute
   '/experiments/tv-dashboard': typeof AuthenticatedExperimentsTvDashboardRoute
   '/experiments/virtual-staging': typeof AuthenticatedExperimentsVirtualStagingRoute
+  '/listings/$id': typeof AuthenticatedListingsIdRoute
   '/experiments/': typeof AuthenticatedExperimentsIndexRoute
+  '/listings/': typeof AuthenticatedListingsIndexRoute
   '/eos/l10/$id': typeof AuthenticatedEosL10IdRoute
   '/api/public/hooks/scorecard-reminders': typeof ApiPublicHooksScorecardRemindersRoute
   '/api/public/webhooks/instantdeco': typeof ApiPublicWebhooksInstantdecoRoute
@@ -308,6 +341,8 @@ export interface FileRoutesByTo {
   '/closing-gift': typeof ClosingGiftRoute
   '/request': typeof RequestRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/seller-net-proceeds': typeof SellerNetProceedsRoute
+  '/admin-net-sheets': typeof AuthenticatedAdminNetSheetsRoute
   '/archive': typeof AuthenticatedArchiveRoute
   '/audit-log': typeof AuthenticatedAuditLogRoute
   '/calendar': typeof AuthenticatedCalendarRoute
@@ -318,19 +353,22 @@ export interface FileRoutesByTo {
   '/my-availability': typeof AuthenticatedMyAvailabilityRoute
   '/processes': typeof AuthenticatedProcessesRoute
   '/requests': typeof AuthenticatedRequestsRoute
+  '/signatures': typeof AuthenticatedSignaturesRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/toolbox': typeof AuthenticatedToolboxRoute
   '/users': typeof AuthenticatedUsersRoute
-  '/signatures': typeof AuthenticatedSignaturesRoute
   '/videos': typeof AuthenticatedVideosRoute
   '/agents': typeof AgentsIndexRoute
+  '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/eos/issues': typeof AuthenticatedEosIssuesRoute
   '/eos/rocks': typeof AuthenticatedEosRocksRoute
   '/eos/scorecard': typeof AuthenticatedEosScorecardRoute
   '/experiments/live-stats': typeof AuthenticatedExperimentsLiveStatsRoute
   '/experiments/tv-dashboard': typeof AuthenticatedExperimentsTvDashboardRoute
   '/experiments/virtual-staging': typeof AuthenticatedExperimentsVirtualStagingRoute
+  '/listings/$id': typeof AuthenticatedListingsIdRoute
   '/experiments': typeof AuthenticatedExperimentsIndexRoute
+  '/listings': typeof AuthenticatedListingsIndexRoute
   '/eos/l10/$id': typeof AuthenticatedEosL10IdRoute
   '/api/public/hooks/scorecard-reminders': typeof ApiPublicHooksScorecardRemindersRoute
   '/api/public/webhooks/instantdeco': typeof ApiPublicWebhooksInstantdecoRoute
@@ -347,6 +385,8 @@ export interface FileRoutesById {
   '/closing-gift': typeof ClosingGiftRoute
   '/request': typeof RequestRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/seller-net-proceeds': typeof SellerNetProceedsRoute
+  '/_authenticated/admin-net-sheets': typeof AuthenticatedAdminNetSheetsRoute
   '/_authenticated/archive': typeof AuthenticatedArchiveRoute
   '/_authenticated/audit-log': typeof AuthenticatedAuditLogRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
@@ -355,15 +395,17 @@ export interface FileRoutesById {
   '/_authenticated/duty-calendar': typeof AuthenticatedDutyCalendarRoute
   '/_authenticated/experiments': typeof AuthenticatedExperimentsRouteWithChildren
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
+  '/_authenticated/listings': typeof AuthenticatedListingsRouteWithChildren
   '/_authenticated/my-availability': typeof AuthenticatedMyAvailabilityRoute
   '/_authenticated/processes': typeof AuthenticatedProcessesRoute
   '/_authenticated/requests': typeof AuthenticatedRequestsRoute
+  '/_authenticated/signatures': typeof AuthenticatedSignaturesRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/toolbox': typeof AuthenticatedToolboxRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
-  '/_authenticated/signatures': typeof AuthenticatedSignaturesRoute
   '/_authenticated/videos': typeof AuthenticatedVideosRoute
   '/agents/': typeof AgentsIndexRoute
+  '/_authenticated/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/_authenticated/eos/issues': typeof AuthenticatedEosIssuesRoute
   '/_authenticated/eos/l10': typeof AuthenticatedEosL10RouteWithChildren
   '/_authenticated/eos/rocks': typeof AuthenticatedEosRocksRoute
@@ -371,7 +413,9 @@ export interface FileRoutesById {
   '/_authenticated/experiments/live-stats': typeof AuthenticatedExperimentsLiveStatsRoute
   '/_authenticated/experiments/tv-dashboard': typeof AuthenticatedExperimentsTvDashboardRoute
   '/_authenticated/experiments/virtual-staging': typeof AuthenticatedExperimentsVirtualStagingRoute
+  '/_authenticated/listings/$id': typeof AuthenticatedListingsIdRoute
   '/_authenticated/experiments/': typeof AuthenticatedExperimentsIndexRoute
+  '/_authenticated/listings/': typeof AuthenticatedListingsIndexRoute
   '/_authenticated/eos/l10/$id': typeof AuthenticatedEosL10IdRoute
   '/api/public/hooks/scorecard-reminders': typeof ApiPublicHooksScorecardRemindersRoute
   '/api/public/webhooks/instantdeco': typeof ApiPublicWebhooksInstantdecoRoute
@@ -388,6 +432,8 @@ export interface FileRouteTypes {
     | '/closing-gift'
     | '/request'
     | '/reset-password'
+    | '/seller-net-proceeds'
+    | '/admin-net-sheets'
     | '/archive'
     | '/audit-log'
     | '/calendar'
@@ -396,15 +442,17 @@ export interface FileRouteTypes {
     | '/duty-calendar'
     | '/experiments'
     | '/inventory'
+    | '/listings'
     | '/my-availability'
     | '/processes'
     | '/requests'
+    | '/signatures'
     | '/tasks'
     | '/toolbox'
     | '/users'
-    | '/signatures'
     | '/videos'
     | '/agents/'
+    | '/admin/assistant'
     | '/eos/issues'
     | '/eos/l10'
     | '/eos/rocks'
@@ -412,7 +460,9 @@ export interface FileRouteTypes {
     | '/experiments/live-stats'
     | '/experiments/tv-dashboard'
     | '/experiments/virtual-staging'
+    | '/listings/$id'
     | '/experiments/'
+    | '/listings/'
     | '/eos/l10/$id'
     | '/api/public/hooks/scorecard-reminders'
     | '/api/public/webhooks/instantdeco'
@@ -426,6 +476,8 @@ export interface FileRouteTypes {
     | '/closing-gift'
     | '/request'
     | '/reset-password'
+    | '/seller-net-proceeds'
+    | '/admin-net-sheets'
     | '/archive'
     | '/audit-log'
     | '/calendar'
@@ -436,19 +488,22 @@ export interface FileRouteTypes {
     | '/my-availability'
     | '/processes'
     | '/requests'
+    | '/signatures'
     | '/tasks'
     | '/toolbox'
     | '/users'
-    | '/signatures'
     | '/videos'
     | '/agents'
+    | '/admin/assistant'
     | '/eos/issues'
     | '/eos/rocks'
     | '/eos/scorecard'
     | '/experiments/live-stats'
     | '/experiments/tv-dashboard'
     | '/experiments/virtual-staging'
+    | '/listings/$id'
     | '/experiments'
+    | '/listings'
     | '/eos/l10/$id'
     | '/api/public/hooks/scorecard-reminders'
     | '/api/public/webhooks/instantdeco'
@@ -464,6 +519,8 @@ export interface FileRouteTypes {
     | '/closing-gift'
     | '/request'
     | '/reset-password'
+    | '/seller-net-proceeds'
+    | '/_authenticated/admin-net-sheets'
     | '/_authenticated/archive'
     | '/_authenticated/audit-log'
     | '/_authenticated/calendar'
@@ -472,14 +529,17 @@ export interface FileRouteTypes {
     | '/_authenticated/duty-calendar'
     | '/_authenticated/experiments'
     | '/_authenticated/inventory'
+    | '/_authenticated/listings'
     | '/_authenticated/my-availability'
     | '/_authenticated/processes'
     | '/_authenticated/requests'
+    | '/_authenticated/signatures'
     | '/_authenticated/tasks'
     | '/_authenticated/toolbox'
     | '/_authenticated/users'
     | '/_authenticated/videos'
     | '/agents/'
+    | '/_authenticated/admin/assistant'
     | '/_authenticated/eos/issues'
     | '/_authenticated/eos/l10'
     | '/_authenticated/eos/rocks'
@@ -487,7 +547,9 @@ export interface FileRouteTypes {
     | '/_authenticated/experiments/live-stats'
     | '/_authenticated/experiments/tv-dashboard'
     | '/_authenticated/experiments/virtual-staging'
+    | '/_authenticated/listings/$id'
     | '/_authenticated/experiments/'
+    | '/_authenticated/listings/'
     | '/_authenticated/eos/l10/$id'
     | '/api/public/hooks/scorecard-reminders'
     | '/api/public/webhooks/instantdeco'
@@ -504,59 +566,18 @@ export interface RootRouteChildren {
   ClosingGiftRoute: typeof ClosingGiftRoute
   RequestRoute: typeof RequestRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SellerNetProceedsRoute: typeof SellerNetProceedsRoute
   ApiPublicHooksScorecardRemindersRoute: typeof ApiPublicHooksScorecardRemindersRoute
   ApiPublicWebhooksInstantdecoRoute: typeof ApiPublicWebhooksInstantdecoRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/request': {
-      id: '/request'
-      path: '/request'
-      fullPath: '/request'
-      preLoaderRoute: typeof RequestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/closing-gift': {
-      id: '/closing-gift'
-      path: '/closing-gift'
-      fullPath: '/closing-gift'
-      preLoaderRoute: typeof ClosingGiftRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/availability': {
-      id: '/availability'
-      path: '/availability'
-      fullPath: '/availability'
-      preLoaderRoute: typeof AvailabilityRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/agents': {
-      id: '/agents'
-      path: '/agents'
-      fullPath: '/agents'
-      preLoaderRoute: typeof AgentsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/agent-toolbox': {
-      id: '/agent-toolbox'
-      path: '/agent-toolbox'
-      fullPath: '/agent-toolbox'
-      preLoaderRoute: typeof AgentToolboxRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -566,116 +587,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/agent-toolbox': {
+      id: '/agent-toolbox'
+      path: '/agent-toolbox'
+      fullPath: '/agent-toolbox'
+      preLoaderRoute: typeof AgentToolboxRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/agents/': {
-      id: '/agents/'
-      path: '/'
-      fullPath: '/agents/'
-      preLoaderRoute: typeof AgentsIndexRouteImport
-      parentRoute: typeof AgentsRoute
+    '/agents': {
+      id: '/agents'
+      path: '/agents'
+      fullPath: '/agents'
+      preLoaderRoute: typeof AgentsRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/videos': {
-      id: '/_authenticated/videos'
-      path: '/videos'
-      fullPath: '/videos'
-      preLoaderRoute: typeof AuthenticatedVideosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/users': {
-      id: '/_authenticated/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof AuthenticatedUsersRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/availability': {
+      id: '/availability'
+      path: '/availability'
+      fullPath: '/availability'
+      preLoaderRoute: typeof AvailabilityRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/toolbox': {
-      id: '/_authenticated/toolbox'
-      path: '/toolbox'
-      fullPath: '/toolbox'
-      preLoaderRoute: typeof AuthenticatedToolboxRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/closing-gift': {
+      id: '/closing-gift'
+      path: '/closing-gift'
+      fullPath: '/closing-gift'
+      preLoaderRoute: typeof ClosingGiftRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/tasks': {
-      id: '/_authenticated/tasks'
-      path: '/tasks'
-      fullPath: '/tasks'
-      preLoaderRoute: typeof AuthenticatedTasksRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/request': {
+      id: '/request'
+      path: '/request'
+      fullPath: '/request'
+      preLoaderRoute: typeof RequestRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/requests': {
-      id: '/_authenticated/requests'
-      path: '/requests'
-      fullPath: '/requests'
-      preLoaderRoute: typeof AuthenticatedRequestsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/processes': {
-      id: '/_authenticated/processes'
-      path: '/processes'
-      fullPath: '/processes'
-      preLoaderRoute: typeof AuthenticatedProcessesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/seller-net-proceeds': {
+      id: '/seller-net-proceeds'
+      path: '/seller-net-proceeds'
+      fullPath: '/seller-net-proceeds'
+      preLoaderRoute: typeof SellerNetProceedsRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/my-availability': {
-      id: '/_authenticated/my-availability'
-      path: '/my-availability'
-      fullPath: '/my-availability'
-      preLoaderRoute: typeof AuthenticatedMyAvailabilityRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/inventory': {
-      id: '/_authenticated/inventory'
-      path: '/inventory'
-      fullPath: '/inventory'
-      preLoaderRoute: typeof AuthenticatedInventoryRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/experiments': {
-      id: '/_authenticated/experiments'
-      path: '/experiments'
-      fullPath: '/experiments'
-      preLoaderRoute: typeof AuthenticatedExperimentsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/duty-calendar': {
-      id: '/_authenticated/duty-calendar'
-      path: '/duty-calendar'
-      fullPath: '/duty-calendar'
-      preLoaderRoute: typeof AuthenticatedDutyCalendarRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/duty-agents': {
-      id: '/_authenticated/duty-agents'
-      path: '/duty-agents'
-      fullPath: '/duty-agents'
-      preLoaderRoute: typeof AuthenticatedDutyAgentsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/calendar': {
-      id: '/_authenticated/calendar'
-      path: '/calendar'
-      fullPath: '/calendar'
-      preLoaderRoute: typeof AuthenticatedCalendarRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/audit-log': {
-      id: '/_authenticated/audit-log'
-      path: '/audit-log'
-      fullPath: '/audit-log'
-      preLoaderRoute: typeof AuthenticatedAuditLogRouteImport
+    '/_authenticated/admin-net-sheets': {
+      id: '/_authenticated/admin-net-sheets'
+      path: '/admin-net-sheets'
+      fullPath: '/admin-net-sheets'
+      preLoaderRoute: typeof AuthenticatedAdminNetSheetsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/archive': {
@@ -685,53 +657,130 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedArchiveRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/experiments/': {
-      id: '/_authenticated/experiments/'
+    '/_authenticated/audit-log': {
+      id: '/_authenticated/audit-log'
+      path: '/audit-log'
+      fullPath: '/audit-log'
+      preLoaderRoute: typeof AuthenticatedAuditLogRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/calendar': {
+      id: '/_authenticated/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof AuthenticatedCalendarRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/duty-agents': {
+      id: '/_authenticated/duty-agents'
+      path: '/duty-agents'
+      fullPath: '/duty-agents'
+      preLoaderRoute: typeof AuthenticatedDutyAgentsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/duty-calendar': {
+      id: '/_authenticated/duty-calendar'
+      path: '/duty-calendar'
+      fullPath: '/duty-calendar'
+      preLoaderRoute: typeof AuthenticatedDutyCalendarRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/experiments': {
+      id: '/_authenticated/experiments'
+      path: '/experiments'
+      fullPath: '/experiments'
+      preLoaderRoute: typeof AuthenticatedExperimentsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/inventory': {
+      id: '/_authenticated/inventory'
+      path: '/inventory'
+      fullPath: '/inventory'
+      preLoaderRoute: typeof AuthenticatedInventoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/listings': {
+      id: '/_authenticated/listings'
+      path: '/listings'
+      fullPath: '/listings'
+      preLoaderRoute: typeof AuthenticatedListingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/my-availability': {
+      id: '/_authenticated/my-availability'
+      path: '/my-availability'
+      fullPath: '/my-availability'
+      preLoaderRoute: typeof AuthenticatedMyAvailabilityRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/processes': {
+      id: '/_authenticated/processes'
+      path: '/processes'
+      fullPath: '/processes'
+      preLoaderRoute: typeof AuthenticatedProcessesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/requests': {
+      id: '/_authenticated/requests'
+      path: '/requests'
+      fullPath: '/requests'
+      preLoaderRoute: typeof AuthenticatedRequestsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/signatures': {
+      id: '/_authenticated/signatures'
+      path: '/signatures'
+      fullPath: '/signatures'
+      preLoaderRoute: typeof AuthenticatedSignaturesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tasks': {
+      id: '/_authenticated/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof AuthenticatedTasksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/toolbox': {
+      id: '/_authenticated/toolbox'
+      path: '/toolbox'
+      fullPath: '/toolbox'
+      preLoaderRoute: typeof AuthenticatedToolboxRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/users': {
+      id: '/_authenticated/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof AuthenticatedUsersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/videos': {
+      id: '/_authenticated/videos'
+      path: '/videos'
+      fullPath: '/videos'
+      preLoaderRoute: typeof AuthenticatedVideosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/agents/': {
+      id: '/agents/'
       path: '/'
-      fullPath: '/experiments/'
-      preLoaderRoute: typeof AuthenticatedExperimentsIndexRouteImport
-      parentRoute: typeof AuthenticatedExperimentsRoute
+      fullPath: '/agents/'
+      preLoaderRoute: typeof AgentsIndexRouteImport
+      parentRoute: typeof AgentsRoute
     }
-    '/_authenticated/experiments/virtual-staging': {
-      id: '/_authenticated/experiments/virtual-staging'
-      path: '/virtual-staging'
-      fullPath: '/experiments/virtual-staging'
-      preLoaderRoute: typeof AuthenticatedExperimentsVirtualStagingRouteImport
-      parentRoute: typeof AuthenticatedExperimentsRoute
-    }
-    '/_authenticated/experiments/tv-dashboard': {
-      id: '/_authenticated/experiments/tv-dashboard'
-      path: '/tv-dashboard'
-      fullPath: '/experiments/tv-dashboard'
-      preLoaderRoute: typeof AuthenticatedExperimentsTvDashboardRouteImport
-      parentRoute: typeof AuthenticatedExperimentsRoute
-    }
-    '/_authenticated/experiments/live-stats': {
-      id: '/_authenticated/experiments/live-stats'
-      path: '/live-stats'
-      fullPath: '/experiments/live-stats'
-      preLoaderRoute: typeof AuthenticatedExperimentsLiveStatsRouteImport
-      parentRoute: typeof AuthenticatedExperimentsRoute
-    }
-    '/_authenticated/eos/scorecard': {
-      id: '/_authenticated/eos/scorecard'
-      path: '/eos/scorecard'
-      fullPath: '/eos/scorecard'
-      preLoaderRoute: typeof AuthenticatedEosScorecardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/eos/rocks': {
-      id: '/_authenticated/eos/rocks'
-      path: '/eos/rocks'
-      fullPath: '/eos/rocks'
-      preLoaderRoute: typeof AuthenticatedEosRocksRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/eos/l10': {
-      id: '/_authenticated/eos/l10'
-      path: '/eos/l10'
-      fullPath: '/eos/l10'
-      preLoaderRoute: typeof AuthenticatedEosL10RouteImport
+    '/_authenticated/admin/assistant': {
+      id: '/_authenticated/admin/assistant'
+      path: '/admin/assistant'
+      fullPath: '/admin/assistant'
+      preLoaderRoute: typeof AuthenticatedAdminAssistantRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/eos/issues': {
@@ -741,6 +790,69 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEosIssuesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/eos/l10': {
+      id: '/_authenticated/eos/l10'
+      path: '/eos/l10'
+      fullPath: '/eos/l10'
+      preLoaderRoute: typeof AuthenticatedEosL10RouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/eos/rocks': {
+      id: '/_authenticated/eos/rocks'
+      path: '/eos/rocks'
+      fullPath: '/eos/rocks'
+      preLoaderRoute: typeof AuthenticatedEosRocksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/eos/scorecard': {
+      id: '/_authenticated/eos/scorecard'
+      path: '/eos/scorecard'
+      fullPath: '/eos/scorecard'
+      preLoaderRoute: typeof AuthenticatedEosScorecardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/experiments/': {
+      id: '/_authenticated/experiments/'
+      path: '/'
+      fullPath: '/experiments/'
+      preLoaderRoute: typeof AuthenticatedExperimentsIndexRouteImport
+      parentRoute: typeof AuthenticatedExperimentsRoute
+    }
+    '/_authenticated/experiments/live-stats': {
+      id: '/_authenticated/experiments/live-stats'
+      path: '/live-stats'
+      fullPath: '/experiments/live-stats'
+      preLoaderRoute: typeof AuthenticatedExperimentsLiveStatsRouteImport
+      parentRoute: typeof AuthenticatedExperimentsRoute
+    }
+    '/_authenticated/experiments/tv-dashboard': {
+      id: '/_authenticated/experiments/tv-dashboard'
+      path: '/tv-dashboard'
+      fullPath: '/experiments/tv-dashboard'
+      preLoaderRoute: typeof AuthenticatedExperimentsTvDashboardRouteImport
+      parentRoute: typeof AuthenticatedExperimentsRoute
+    }
+    '/_authenticated/experiments/virtual-staging': {
+      id: '/_authenticated/experiments/virtual-staging'
+      path: '/virtual-staging'
+      fullPath: '/experiments/virtual-staging'
+      preLoaderRoute: typeof AuthenticatedExperimentsVirtualStagingRouteImport
+      parentRoute: typeof AuthenticatedExperimentsRoute
+    }
+    '/_authenticated/listings/': {
+      id: '/_authenticated/listings/'
+      path: '/'
+      fullPath: '/listings/'
+      preLoaderRoute: typeof AuthenticatedListingsIndexRouteImport
+      parentRoute: typeof AuthenticatedListingsRoute
+    }
+    '/_authenticated/listings/$id': {
+      id: '/_authenticated/listings/$id'
+      path: '/$id'
+      fullPath: '/listings/$id'
+      preLoaderRoute: typeof AuthenticatedListingsIdRouteImport
+      parentRoute: typeof AuthenticatedListingsRoute
+    }
     '/_authenticated/eos/l10/': {
       id: '/_authenticated/eos/l10/'
       path: '/'
@@ -748,12 +860,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEosL10IndexRouteImport
       parentRoute: typeof AuthenticatedEosL10Route
     }
-    '/api/public/webhooks/instantdeco': {
-      id: '/api/public/webhooks/instantdeco'
-      path: '/api/public/webhooks/instantdeco'
-      fullPath: '/api/public/webhooks/instantdeco'
-      preLoaderRoute: typeof ApiPublicWebhooksInstantdecoRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authenticated/eos/l10/$id': {
+      id: '/_authenticated/eos/l10/$id'
+      path: '/$id'
+      fullPath: '/eos/l10/$id'
+      preLoaderRoute: typeof AuthenticatedEosL10IdRouteImport
+      parentRoute: typeof AuthenticatedEosL10Route
     }
     '/api/public/hooks/scorecard-reminders': {
       id: '/api/public/hooks/scorecard-reminders'
@@ -762,12 +874,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksScorecardRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/eos/l10/$id': {
-      id: '/_authenticated/eos/l10/$id'
-      path: '/$id'
-      fullPath: '/eos/l10/$id'
-      preLoaderRoute: typeof AuthenticatedEosL10IdRouteImport
-      parentRoute: typeof AuthenticatedEosL10Route
+    '/api/public/webhooks/instantdeco': {
+      id: '/api/public/webhooks/instantdeco'
+      path: '/api/public/webhooks/instantdeco'
+      fullPath: '/api/public/webhooks/instantdeco'
+      preLoaderRoute: typeof ApiPublicWebhooksInstantdecoRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -795,6 +907,21 @@ const AuthenticatedExperimentsRouteWithChildren =
     AuthenticatedExperimentsRouteChildren,
   )
 
+interface AuthenticatedListingsRouteChildren {
+  AuthenticatedListingsIdRoute: typeof AuthenticatedListingsIdRoute
+  AuthenticatedListingsIndexRoute: typeof AuthenticatedListingsIndexRoute
+}
+
+const AuthenticatedListingsRouteChildren: AuthenticatedListingsRouteChildren = {
+  AuthenticatedListingsIdRoute: AuthenticatedListingsIdRoute,
+  AuthenticatedListingsIndexRoute: AuthenticatedListingsIndexRoute,
+}
+
+const AuthenticatedListingsRouteWithChildren =
+  AuthenticatedListingsRoute._addFileChildren(
+    AuthenticatedListingsRouteChildren,
+  )
+
 interface AuthenticatedEosL10RouteChildren {
   AuthenticatedEosL10IdRoute: typeof AuthenticatedEosL10IdRoute
   AuthenticatedEosL10IndexRoute: typeof AuthenticatedEosL10IndexRoute
@@ -809,6 +936,7 @@ const AuthenticatedEosL10RouteWithChildren =
   AuthenticatedEosL10Route._addFileChildren(AuthenticatedEosL10RouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminNetSheetsRoute: typeof AuthenticatedAdminNetSheetsRoute
   AuthenticatedArchiveRoute: typeof AuthenticatedArchiveRoute
   AuthenticatedAuditLogRoute: typeof AuthenticatedAuditLogRoute
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
@@ -817,14 +945,16 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDutyCalendarRoute: typeof AuthenticatedDutyCalendarRoute
   AuthenticatedExperimentsRoute: typeof AuthenticatedExperimentsRouteWithChildren
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
+  AuthenticatedListingsRoute: typeof AuthenticatedListingsRouteWithChildren
   AuthenticatedMyAvailabilityRoute: typeof AuthenticatedMyAvailabilityRoute
   AuthenticatedProcessesRoute: typeof AuthenticatedProcessesRoute
   AuthenticatedRequestsRoute: typeof AuthenticatedRequestsRoute
+  AuthenticatedSignaturesRoute: typeof AuthenticatedSignaturesRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedToolboxRoute: typeof AuthenticatedToolboxRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
-  AuthenticatedSignaturesRoute: typeof AuthenticatedSignaturesRoute
   AuthenticatedVideosRoute: typeof AuthenticatedVideosRoute
+  AuthenticatedAdminAssistantRoute: typeof AuthenticatedAdminAssistantRoute
   AuthenticatedEosIssuesRoute: typeof AuthenticatedEosIssuesRoute
   AuthenticatedEosL10Route: typeof AuthenticatedEosL10RouteWithChildren
   AuthenticatedEosRocksRoute: typeof AuthenticatedEosRocksRoute
@@ -832,6 +962,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminNetSheetsRoute: AuthenticatedAdminNetSheetsRoute,
   AuthenticatedArchiveRoute: AuthenticatedArchiveRoute,
   AuthenticatedAuditLogRoute: AuthenticatedAuditLogRoute,
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
@@ -840,19 +971,20 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDutyCalendarRoute: AuthenticatedDutyCalendarRoute,
   AuthenticatedExperimentsRoute: AuthenticatedExperimentsRouteWithChildren,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
+  AuthenticatedListingsRoute: AuthenticatedListingsRouteWithChildren,
   AuthenticatedMyAvailabilityRoute: AuthenticatedMyAvailabilityRoute,
   AuthenticatedProcessesRoute: AuthenticatedProcessesRoute,
   AuthenticatedRequestsRoute: AuthenticatedRequestsRoute,
+  AuthenticatedSignaturesRoute: AuthenticatedSignaturesRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedToolboxRoute: AuthenticatedToolboxRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
-  AuthenticatedSignaturesRoute: AuthenticatedSignaturesRoute,
   AuthenticatedVideosRoute: AuthenticatedVideosRoute,
+  AuthenticatedAdminAssistantRoute: AuthenticatedAdminAssistantRoute,
   AuthenticatedEosIssuesRoute: AuthenticatedEosIssuesRoute,
   AuthenticatedEosL10Route: AuthenticatedEosL10RouteWithChildren,
   AuthenticatedEosRocksRoute: AuthenticatedEosRocksRoute,
   AuthenticatedEosScorecardRoute: AuthenticatedEosScorecardRoute,
-  AuthenticatedAdminNetSheetsRoute: AuthenticatedAdminNetSheetsRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -873,13 +1005,13 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AgentToolboxRoute: AgentToolboxRoute,
-  SellerNetProceedsRoute: SellerNetProceedsRoute,
   AgentsRoute: AgentsRouteWithChildren,
   AuthRoute: AuthRoute,
   AvailabilityRoute: AvailabilityRoute,
   ClosingGiftRoute: ClosingGiftRoute,
   RequestRoute: RequestRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SellerNetProceedsRoute: SellerNetProceedsRoute,
   ApiPublicHooksScorecardRemindersRoute: ApiPublicHooksScorecardRemindersRoute,
   ApiPublicWebhooksInstantdecoRoute: ApiPublicWebhooksInstantdecoRoute,
 }

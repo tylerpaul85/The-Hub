@@ -34,14 +34,14 @@ const STORAGE_KEY = "msreg-toolbox-token";
 
 const STATUS_LABEL: Record<string, string> = { active: "Active", coming_soon: "Coming Soon", sold: "Sold" };
 const STATUS_CLASS: Record<string, string> = {
-  active: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-  coming_soon: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-  sold: "bg-rose-500/15 text-rose-300 border-rose-500/30",
+  active: "bg-emerald-950/40 text-emerald-400 border-emerald-500/20 text-[10px] font-medium tracking-wide px-2 py-0.5",
+  coming_soon: "bg-amber-950/40 text-amber-400 border-amber-500/20 text-[10px] font-medium tracking-wide px-2 py-0.5",
+  sold: "bg-rose-950/40 text-rose-400 border-rose-500/20 text-[10px] font-medium tracking-wide px-2 py-0.5",
 };
 const OH_STATUS_LABEL: Record<string, string> = { upcoming: "Upcoming", past: "Past" };
 const OH_STATUS_CLASS: Record<string, string> = {
-  upcoming: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-  past: "bg-zinc-500/15 text-zinc-300 border-zinc-500/30",
+  upcoming: "bg-emerald-950/40 text-emerald-400 border-emerald-500/20 text-[10px] font-medium tracking-wide px-2 py-0.5",
+  past: "bg-zinc-900/60 text-zinc-400 border-zinc-700/30 text-[10px] font-medium tracking-wide px-2 py-0.5",
 };
 function fmtDateTime(iso: string | null) {
   if (!iso) return "";
@@ -87,28 +87,30 @@ function Gate({ onUnlock }: { onUnlock: (token: string) => void }) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 pt-[max(1rem,env(safe-area-inset-top))]">
-      <Card className="w-full max-w-sm p-6 space-y-5">
+    <div className="relative min-h-screen bg-background flex items-center justify-center px-4 pt-[max(1rem,env(safe-area-inset-top))] overflow-hidden before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top_right,oklch(0.20_0.08_85_/_0.08),transparent_45%)] after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_bottom_left,oklch(0.18_0.05_260_/_0.2),transparent_60%)]">
+      <Card className="w-full max-w-sm p-6 space-y-6 border border-border/80 bg-card/65 backdrop-blur-md shadow-2xl relative z-10">
         <div className="flex flex-col items-center text-center gap-3">
           <img src={logo} alt="MSREG" className="h-20 w-auto" />
           <div>
-            <h1 className="text-lg font-semibold">Agent Toolbox</h1>
-            <p className="text-xs text-muted-foreground mt-1">Matt Smith Real Estate Group</p>
+            <h1 className="text-lg font-semibold tracking-tight">Agent Toolbox</h1>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-gold/80 mt-1">Matt Smith Real Estate Group</p>
           </div>
         </div>
-        <form onSubmit={submit} className="space-y-3">
-          <label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-            <Lock className="h-3 w-3" /> Team access code
-          </label>
-          <Input
-            autoFocus
-            type="password"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="Enter code"
-            className="text-center text-base"
-          />
-          <Button type="submit" disabled={busy} className="w-full bg-gold text-navy hover:bg-gold/90">
+        <form onSubmit={submit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+              <Lock className="h-3 w-3" /> Team access code
+            </label>
+            <Input
+              autoFocus
+              type="password"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="Enter code"
+              className="text-center text-base h-11 focus-visible:ring-gold"
+            />
+          </div>
+          <Button type="submit" disabled={busy} className="w-full bg-gold text-navy hover:bg-gold/90 font-semibold h-11 transition-all">
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Unlock"}
           </Button>
         </form>
@@ -242,28 +244,28 @@ function ListingsList({ token, onOpen }: { token: string; onOpen: (id: string) =
           {q ? "No listings match your search." : "No listings available yet."}
         </Card>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {filtered.map((l) => (
             <button
               key={l.id}
               onClick={() => onOpen(l.id)}
-              className="text-left rounded-lg overflow-hidden border border-border bg-card hover:border-gold/60 active:scale-[0.99] transition"
+              className="group text-left rounded-lg overflow-hidden border border-border bg-card hover:border-gold/40 hover:bg-card/75 active:scale-[0.99] transition-all duration-300 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
             >
-              <div className="aspect-video bg-muted relative">
+              <div className="aspect-video bg-muted relative overflow-hidden">
                 {l.thumbnail ? (
-                  <img src={l.thumbnail} alt={l.address} className="w-full h-full object-cover" />
+                  <img src={l.thumbnail} alt={l.address} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground group-hover:scale-105 transition-transform duration-500">
                     <Home className="h-8 w-8" />
                   </div>
                 )}
-                <Badge className={cn("absolute top-2 left-2 border", STATUS_CLASS[l.status])}>
+                <Badge className={cn("absolute top-3 left-3 border shadow-sm z-10", STATUS_CLASS[l.status])}>
                   {STATUS_LABEL[l.status] ?? l.status}
                 </Badge>
               </div>
-              <div className="p-3">
-                <div className="font-medium text-sm truncate">{l.address}</div>
-                <div className="text-xs text-muted-foreground truncate">{l.agent_name || "—"}</div>
+              <div className="p-4">
+                <div className="font-semibold text-sm text-white group-hover:text-gold transition-colors duration-200 truncate">{l.address}</div>
+                <div className="text-xs text-muted-foreground truncate mt-1">{l.agent_name || "—"}</div>
               </div>
             </button>
           ))}

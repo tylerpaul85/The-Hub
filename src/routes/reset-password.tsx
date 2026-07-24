@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import logo from "@/assets/msreg-logo.png";
-import { ParticleConstellation } from "@/components/particle-constellation";
 
 export const Route = createFileRoute("/reset-password")({
   component: ResetPasswordPage,
@@ -85,8 +84,7 @@ function ResetPasswordPage() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-background px-4 overflow-hidden">
-      <ParticleConstellation />
+    <div className="relative min-h-screen flex items-center justify-center bg-background px-4 overflow-hidden before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top_right,oklch(0.20_0.08_85_/_0.08),transparent_45%)] after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_bottom_left,oklch(0.18_0.05_260_/_0.2),transparent_60%)]">
       <div className="relative z-10 w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
           <img src={logo} alt="Matt Smith Real Estate Group" className="h-32 w-auto mb-4" />

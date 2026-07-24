@@ -114,10 +114,10 @@ function SellerNetProceedsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0d1424] text-white flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
         <div className="text-center space-y-3">
-          <Calculator className="h-8 w-8 animate-bounce text-[#C9A84C] mx-auto" />
-          <p className="text-sm text-slate-300">Loading Seller Net Proceeds...</p>
+          <Calculator className="h-8 w-8 animate-bounce text-gold mx-auto" />
+          <p className="text-sm text-muted-foreground">Loading Seller Net Proceeds...</p>
         </div>
       </div>
     );
@@ -128,31 +128,31 @@ function SellerNetProceedsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Top Navy/Gold Agent Header */}
-      <header className="bg-[#1B2F5B] border-b border-[#C9A84C]/40 px-4 py-3 sm:px-6 shadow-md print:hidden">
+      <header className="bg-card border-b border-border px-4 py-3 sm:px-6 shadow-md print:hidden">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-            <Link to="/agents" className="flex items-center gap-2 text-xs font-semibold text-[#C9A84C] hover:underline">
+            <Link to="/agents" className="flex items-center gap-2 text-xs font-semibold text-gold hover:underline">
               <ArrowLeft className="h-4 w-4" /> Agent Hub
             </Link>
-            <div className="h-4 w-px bg-slate-600 hidden sm:block" />
+            <div className="h-4 w-px bg-border hidden sm:block" />
             <div className="flex items-center gap-2">
               <img src={logo} alt="MSREG Logo" className="h-7 w-auto" />
-              <span className="text-xs uppercase tracking-widest text-[#C9A84C] font-bold">Seller Net Proceeds</span>
+              <span className="text-xs uppercase tracking-widest text-gold font-bold">Seller Net Proceeds</span>
             </div>
           </div>
 
           <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-            <div className="text-xs text-slate-300">
+            <div className="text-xs text-muted-foreground">
               Agent: <span className="font-semibold text-white">{agent.full_name}</span>{" "}
-              <span className="text-slate-400">({agent.email})</span>
+              <span className="text-muted-foreground/80">({agent.email})</span>
             </div>
             <Button
               size="sm"
               variant="outline"
               onClick={signOutAgent}
-              className="text-xs border-[#C9A84C]/50 text-[#C9A84C] hover:bg-[#C9A84C] hover:text-[#1B2F5B] h-8"
+              className="text-xs border-gold/40 text-gold hover:bg-gold hover:text-navy h-8 transition-colors duration-200"
             >
               <LogOut className="h-3.5 w-3.5 mr-1" /> Sign Out
             </Button>
@@ -197,7 +197,7 @@ function SellerNetProceedsPage() {
 
 function AgentAuthView() {
   const { signUpAgent, signInAgent, resetAgentPassword } = useAgentAuth();
-  const [authTab, setAuthTab] = useState<"signin" | "signup" | "reset">("signin");
+  const [authTab, setAuthTab] = useState<"signin" | "signup" | "reset" >("signin");
   const [busy, setBusy] = useState(false);
 
   // Sign In Form State
@@ -248,30 +248,30 @@ function AgentAuthView() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d1424] text-white flex flex-col items-center justify-center p-4 pt-[max(2rem,env(safe-area-inset-top))]">
-      <div className="w-full max-w-md space-y-6">
+    <div className="relative min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4 pt-[max(2rem,env(safe-area-inset-top))] overflow-hidden before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top_right,oklch(0.20_0.08_85_/_0.08),transparent_45%)] after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_bottom_left,oklch(0.18_0.05_260_/_0.2),transparent_60%)]">
+      <div className="relative z-10 w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <Link to="/agents" className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#C9A84C] hover:underline mb-2">
+          <Link to="/agents" className="inline-flex items-center gap-1.5 text-xs font-semibold text-gold hover:underline mb-2">
             <ArrowLeft className="h-4 w-4" /> Back to Agent Hub
           </Link>
           <img src={logo} alt="Matt Smith Real Estate Group" className="h-20 w-auto mx-auto" />
-          <div className="text-[11px] uppercase tracking-[0.2em] text-[#C9A84C] font-bold">Agent Account Access</div>
-          <h1 className="text-2xl font-bold text-white">Seller Net Proceeds Tool</h1>
-          <p className="text-xs text-slate-400">Sign in or create your agent account to save and manage net sheets.</p>
+          <div className="text-[11px] uppercase tracking-[0.2em] text-gold font-semibold">Agent Account Access</div>
+          <h1 className="text-2xl font-semibold text-white">Seller Net Proceeds Tool</h1>
+          <p className="text-xs text-muted-foreground">Sign in or create your agent account to save and manage net sheets.</p>
         </div>
 
         {/* Required Email Domain Restriction Notice */}
-        <div className="rounded-xl border border-[#C9A84C]/40 bg-[#1B2F5B]/60 p-3.5 flex items-start gap-3 text-xs">
-          <AlertCircle className="h-5 w-5 text-[#C9A84C] shrink-0 mt-0.5" />
+        <div className="rounded-lg border border-gold/30 bg-gold/5 p-3.5 flex items-start gap-3 text-xs">
+          <AlertCircle className="h-5 w-5 text-gold shrink-0 mt-0.5" />
           <div>
-            <div className="font-semibold text-[#C9A84C]">Agent Domain Restriction</div>
-            <p className="text-slate-300 mt-0.5">
+            <div className="font-semibold text-gold">Agent Domain Restriction</div>
+            <p className="text-muted-foreground mt-0.5">
               Accounts are limited to <span className="font-bold text-white">@mattsmithrealestategroup.com</span> email addresses.
             </p>
           </div>
         </div>
 
-        <div className="bg-[#1B2F5B]/40 border border-slate-800 rounded-2xl p-5 shadow-2xl backdrop-blur-sm">
+        <div className="bg-card/75 border border-border/80 rounded-xl p-6 shadow-2xl backdrop-blur-md relative z-10">
           {authTab === "reset" ? (
             <form onSubmit={handleResetPassword} className="space-y-4">
               <h2 className="text-base font-semibold text-[#C9A84C]">Reset Agent Password</h2>
@@ -299,11 +299,11 @@ function AgentAuthView() {
             </form>
           ) : (
             <Tabs value={authTab} onValueChange={(v) => setAuthTab(v as any)}>
-              <TabsList className="grid grid-cols-2 bg-slate-900/80 mb-5 p-1">
-                <TabsTrigger value="signin" className="text-xs data-[state=active]:bg-[#C9A84C] data-[state=active]:text-[#1B2F5B] font-semibold">
+              <TabsList className="grid grid-cols-2 bg-background mb-5 p-1 border border-border rounded-lg">
+                <TabsTrigger value="signin" className="text-xs data-[state=active]:bg-gold data-[state=active]:text-navy font-semibold rounded-md transition-colors duration-200">
                   <LogIn className="h-3.5 w-3.5 mr-1.5" /> Sign In
                 </TabsTrigger>
-                <TabsTrigger value="signup" className="text-xs data-[state=active]:bg-[#C9A84C] data-[state=active]:text-[#1B2F5B] font-semibold">
+                <TabsTrigger value="signup" className="text-xs data-[state=active]:bg-gold data-[state=active]:text-navy font-semibold rounded-md transition-colors duration-200">
                   <UserPlus className="h-3.5 w-3.5 mr-1.5" /> Create Account
                 </TabsTrigger>
               </TabsList>
@@ -311,24 +311,24 @@ function AgentAuthView() {
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="signin-email" className="text-xs text-slate-300">Agent Email</Label>
+                    <Label htmlFor="signin-email" className="text-xs text-muted-foreground">Agent Email</Label>
                     <Input
                       id="signin-email"
                       type="email"
                       placeholder="name@mattsmithrealestategroup.com"
                       value={signInEmail}
                       onChange={(e) => setSignInEmail(e.target.value)}
-                      className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
+                      className="bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-gold"
                       required
                     />
                   </div>
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="signin-pass" className="text-xs text-slate-300">Password</Label>
+                      <Label htmlFor="signin-pass" className="text-xs text-muted-foreground">Password</Label>
                       <button
                         type="button"
                         onClick={() => setAuthTab("reset")}
-                        className="text-[11px] text-[#C9A84C] hover:underline"
+                        className="text-[11px] text-gold hover:underline cursor-pointer"
                       >
                         Forgot password?
                       </button>
@@ -339,12 +339,12 @@ function AgentAuthView() {
                       placeholder="••••••••"
                       value={signInPassword}
                       onChange={(e) => setSignInPassword(e.target.value)}
-                      className="bg-slate-900 border-slate-700 text-white"
+                      className="bg-background border-border text-foreground focus-visible:ring-gold"
                       required
                     />
                   </div>
 
-                  <Button type="submit" disabled={busy} className="w-full bg-[#C9A84C] text-[#1B2F5B] hover:bg-[#C9A84C]/90 font-bold text-xs py-2.5">
+                  <Button type="submit" disabled={busy} className="w-full bg-gold text-navy hover:bg-gold/90 font-semibold text-xs py-2.5 h-10 transition-colors duration-200">
                     {busy ? "Signing in..." : "Sign In to Agent Hub"}
                   </Button>
                 </form>
@@ -353,29 +353,29 @@ function AgentAuthView() {
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-3.5">
                   <div className="space-y-1">
-                    <Label htmlFor="signup-name" className="text-xs text-slate-300">Full Name</Label>
+                    <Label htmlFor="signup-name" className="text-xs text-muted-foreground">Full Name</Label>
                     <Input
                       id="signup-name"
                       placeholder="Jane Smith"
                       value={signUpName}
                       onChange={(e) => setSignUpName(e.target.value)}
-                      className="bg-slate-900 border-slate-700 text-white"
+                      className="bg-background border-border text-foreground focus-visible:ring-gold"
                       required
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="signup-phone" className="text-xs text-slate-300">Cell Phone (Optional)</Label>
+                    <Label htmlFor="signup-phone" className="text-xs text-muted-foreground">Cell Phone (Optional)</Label>
                     <Input
                       id="signup-phone"
                       placeholder="(573) 555-0199"
                       value={signUpPhone}
                       onChange={(e) => setSignUpPhone(e.target.value)}
-                      className="bg-slate-900 border-slate-700 text-white"
+                      className="bg-background border-border text-foreground focus-visible:ring-gold"
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="signup-email" className="text-xs text-slate-300">
-                      MSREG Email <span className="text-[#C9A84C] font-semibold">(@mattsmithrealestategroup.com)</span>
+                    <Label htmlFor="signup-email" className="text-xs text-muted-foreground">
+                      MSREG Email <span className="text-gold font-semibold">(@mattsmithrealestategroup.com)</span>
                     </Label>
                     <Input
                       id="signup-email"
@@ -383,25 +383,25 @@ function AgentAuthView() {
                       placeholder="name@mattsmithrealestategroup.com"
                       value={signUpEmail}
                       onChange={(e) => setSignUpEmail(e.target.value)}
-                      className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
+                      className="bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-gold"
                       required
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="signup-pass" className="text-xs text-slate-300">Create Password</Label>
+                    <Label htmlFor="signup-pass" className="text-xs text-muted-foreground">Create Password</Label>
                     <Input
                       id="signup-pass"
                       type="password"
                       placeholder="Minimum 6 characters"
                       value={signUpPassword}
                       onChange={(e) => setSignUpPassword(e.target.value)}
-                      className="bg-slate-900 border-slate-700 text-white"
+                      className="bg-background border-border text-foreground focus-visible:ring-gold"
                       minLength={6}
                       required
                     />
                   </div>
 
-                  <Button type="submit" disabled={busy} className="w-full bg-[#C9A84C] text-[#1B2F5B] hover:bg-[#C9A84C]/90 font-bold text-xs py-2.5 mt-2">
+                  <Button type="submit" disabled={busy} className="w-full bg-gold text-navy hover:bg-gold/90 font-semibold text-xs py-2.5 mt-2 h-10 transition-colors duration-200">
                     {busy ? "Creating Account..." : "Create Agent Account"}
                   </Button>
                 </form>
@@ -460,33 +460,33 @@ function DashboardView({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#1B2F5B]/40 border border-slate-800 rounded-2xl p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card border border-border rounded-xl p-4 sm:p-6 shadow-sm">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
-            <FileText className="h-6 w-6 text-[#C9A84C]" /> Saved Seller Net Sheets
+          <h1 className="text-xl sm:text-2xl font-semibold text-white flex items-center gap-2">
+            <FileText className="h-6 w-6 text-gold" /> Saved Seller Net Sheets
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Access and manage all saved estimated net proceeds worksheets tied to your agent account.
           </p>
         </div>
         <Button
           onClick={onOpenNew}
-          className="bg-[#C9A84C] text-[#1B2F5B] hover:bg-[#C9A84C]/90 font-bold text-xs py-2.5 px-4 shadow-lg shrink-0"
+          className="bg-gold text-navy hover:bg-gold/90 font-semibold text-xs py-2.5 px-4 shadow-md shrink-0 h-10 transition-colors duration-200"
         >
           <Plus className="h-4 w-4 mr-1.5" /> New Net Sheet
         </Button>
       </div>
 
       {isLoading ? (
-        <div className="text-center py-12 text-slate-400 text-sm">Loading saved sheets...</div>
+        <div className="text-center py-12 text-muted-foreground text-sm">Loading saved sheets...</div>
       ) : sheets.length === 0 ? (
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-8 text-center space-y-3">
-          <Calculator className="h-12 w-12 text-[#C9A84C]/40 mx-auto" />
+        <div className="bg-card/45 border border-border rounded-xl p-8 text-center space-y-4 shadow-sm">
+          <Calculator className="h-12 w-12 text-gold/30 mx-auto" />
           <h3 className="text-base font-semibold text-white">No saved net sheets yet</h3>
-          <p className="text-xs text-slate-400 max-w-md mx-auto">
+          <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
             Click "New Net Sheet" above to calculate seller net proceeds with up to 3 price scenarios and save it to your account.
           </p>
-          <Button onClick={onOpenNew} size="sm" className="bg-[#C9A84C] text-[#1B2F5B] hover:bg-[#C9A84C]/90 font-bold text-xs">
+          <Button onClick={onOpenNew} size="sm" className="bg-gold text-navy hover:bg-gold/90 font-semibold text-xs h-9 transition-colors">
             <Plus className="h-4 w-4 mr-1" /> Create First Net Sheet
           </Button>
         </div>
@@ -507,22 +507,22 @@ function DashboardView({
             return (
               <div
                 key={sheet.id}
-                className="bg-slate-900/80 border border-slate-800 hover:border-[#C9A84C]/40 rounded-xl p-4 space-y-3 transition-all shadow-md flex flex-col justify-between"
+                className="bg-card border border-border hover:border-gold/40 rounded-xl p-4 space-y-4 transition-all duration-300 shadow-sm flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-bold text-white text-sm leading-tight truncate">
+                    <h3 className="font-semibold text-white text-sm leading-tight truncate">
                       {sheet.property_address || "Untitled Property"}
                     </h3>
-                    <span className="text-[10px] font-mono bg-[#1B2F5B] text-[#C9A84C] px-2 py-0.5 rounded border border-[#C9A84C]/30 shrink-0">
+                    <span className="text-[10px] font-semibold bg-gold/10 text-gold px-2 py-0.5 rounded border border-gold/20 shrink-0">
                       {createdDate}
                     </span>
                   </div>
 
-                  <div className="mt-3 text-xs text-slate-300 space-y-1">
+                  <div className="mt-3 text-xs text-muted-foreground space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400">Scenarios ({data.num_scenarios}):</span>
-                      <span className="font-semibold text-[#C9A84C]">
+                      <span className="text-muted-foreground/80">Scenarios ({data.num_scenarios}):</span>
+                      <span className="font-semibold text-gold">
                         {formatCurrency(p1)}
                         {p2 !== null && ` / ${formatCurrency(p2)}`}
                         {p3 !== null && ` / ${formatCurrency(p3)}`}
@@ -531,12 +531,12 @@ function DashboardView({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800/80">
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => onEditSheet(sheet)}
-                    className="text-xs border-slate-700 text-slate-200 hover:bg-[#C9A84C] hover:text-[#1B2F5B]"
+                    className="text-xs border-border text-foreground hover:bg-gold hover:text-navy hover:border-gold transition-colors duration-200 h-8"
                   >
                     <Edit3 className="h-3.5 w-3.5 mr-1" /> Open / Edit
                   </Button>
@@ -544,7 +544,7 @@ function DashboardView({
                     size="sm"
                     variant="ghost"
                     onClick={() => setDeleteId(sheet.id)}
-                    className="text-xs text-rose-400 hover:bg-rose-950/40 hover:text-rose-300"
+                    className="text-xs text-rose-400 hover:bg-rose-950/30 hover:text-rose-300 h-8"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
@@ -743,23 +743,23 @@ function CalculatorView({
   return (
     <div className="space-y-6">
       {/* Top Action Controls Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900 border border-slate-800 p-3 sm:p-4 rounded-xl print:hidden">
-        <Button size="sm" variant="outline" onClick={onBackToDashboard} className="text-xs border-slate-700 text-slate-300">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-card border border-border p-3 sm:p-4 rounded-xl print:hidden">
+        <Button size="sm" variant="outline" onClick={onBackToDashboard} className="text-xs border-border text-foreground hover:bg-card">
           <ArrowLeft className="h-4 w-4 mr-1" /> Back to Saved Sheets
         </Button>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="outline" onClick={handleResetDefaults} className="text-xs border-slate-700 text-slate-300">
+          <Button size="sm" variant="outline" onClick={handleResetDefaults} className="text-xs border-border text-foreground hover:bg-card">
             <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset Defaults
           </Button>
-          <Button size="sm" variant="outline" onClick={handlePrintPdf} className="text-xs border-[#C9A84C]/50 text-[#C9A84C] hover:bg-[#C9A84C] hover:text-[#1B2F5B]">
+          <Button size="sm" variant="outline" onClick={handlePrintPdf} className="text-xs border-gold/40 text-gold hover:bg-gold hover:text-navy transition-colors duration-200">
             <Download className="h-3.5 w-3.5 mr-1" /> Download PDF / Print
           </Button>
           <Button
             size="sm"
             onClick={() => saveMutation.mutate()}
             disabled={saveMutation.isPending}
-            className="bg-[#C9A84C] text-[#1B2F5B] hover:bg-[#C9A84C]/90 font-bold text-xs"
+            className="bg-gold text-navy hover:bg-gold/90 font-semibold text-xs transition-colors h-9"
           >
             <Save className="h-3.5 w-3.5 mr-1" /> {saveMutation.isPending ? "Saving..." : "Save Sheet"}
           </Button>
@@ -767,30 +767,30 @@ function CalculatorView({
       </div>
 
       {/* Screenshot-Ready / Printable Worksheet Container */}
-      <div ref={printRef} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-8 space-y-6 print:bg-white print:text-black print:p-0 print:border-none print:shadow-none">
+      <div ref={printRef} className="bg-card border border-border rounded-xl p-4 sm:p-8 space-y-6 print:bg-white print:text-black print:p-0 print:border-none print:shadow-none">
         
         {/* Worksheet Header: Logos & Office Info */}
-        <div className="border-b border-[#C9A84C]/30 pb-6 space-y-4">
+        <div className="border-b border-gold/30 pb-6 space-y-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <img src={logo} alt="Matt Smith Real Estate Group" className="h-16 sm:h-20 w-auto" />
-              <div className="border-l border-slate-700 print:border-slate-300 pl-3">
-                <div className="text-xs uppercase tracking-widest text-[#C9A84C] font-extrabold">eXp Realty</div>
-                <div className="text-base sm:text-lg font-bold text-white print:text-black">SELLER ESTIMATED NET PROCEEDS</div>
+              <div className="border-l border-border print:border-slate-300 pl-3">
+                <div className="text-xs uppercase tracking-widest text-gold font-bold">eXp Realty</div>
+                <div className="text-base sm:text-lg font-semibold text-white print:text-black tracking-tight">SELLER ESTIMATED NET PROCEEDS</div>
               </div>
             </div>
 
             {/* Scenario Selection Toggle (Hidden in print) */}
-            <div className="flex items-center gap-2 bg-slate-950 print:hidden p-1.5 rounded-xl border border-slate-800">
-              <span className="text-xs text-slate-400 font-medium px-2">Scenarios:</span>
+            <div className="flex items-center gap-2 bg-background print:hidden p-1.5 rounded-lg border border-border">
+              <span className="text-xs text-muted-foreground font-medium px-2">Scenarios:</span>
               {([1, 2, 3] as const).map((n) => (
                 <button
                   key={n}
                   onClick={() => updateField("num_scenarios", n)}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
                     data.num_scenarios === n
-                      ? "bg-[#C9A84C] text-[#1B2F5B] shadow-sm"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-gold text-navy shadow-sm"
+                      : "text-muted-foreground hover:text-white"
                   }`}
                 >
                   {n} {n === 1 ? "Price" : "Prices"}
@@ -800,51 +800,51 @@ function CalculatorView({
           </div>
 
           {/* Agent Information Header Block */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-slate-950/60 print:bg-slate-50 border border-slate-800 print:border-slate-300 p-3 sm:p-4 rounded-xl text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-background print:bg-slate-50 border border-border print:border-slate-300 p-3 sm:p-4 rounded-xl text-xs">
             <div>
-              <label className="text-[10px] uppercase font-bold text-[#C9A84C]">Agent Name</label>
+              <label className="text-[10px] uppercase font-bold text-gold">Agent Name</label>
               <Input
                 value={data.agent_name}
                 onChange={(e) => updateField("agent_name", e.target.value)}
-                className="h-8 text-xs bg-slate-900 print:bg-white text-white print:text-black border-slate-700 print:border-slate-300 mt-1"
+                className="h-8 text-xs bg-card print:bg-white text-white print:text-black border-border print:border-slate-300 mt-1 focus-visible:ring-gold"
               />
             </div>
             <div>
-              <label className="text-[10px] uppercase font-bold text-[#C9A84C]">Cell Phone</label>
+              <label className="text-[10px] uppercase font-bold text-gold">Cell Phone</label>
               <Input
                 value={data.agent_cell}
                 onChange={(e) => updateField("agent_cell", e.target.value)}
-                className="h-8 text-xs bg-slate-900 print:bg-white text-white print:text-black border-slate-700 print:border-slate-300 mt-1"
+                className="h-8 text-xs bg-card print:bg-white text-white print:text-black border-border print:border-slate-300 mt-1 focus-visible:ring-gold"
               />
             </div>
             <div>
-              <label className="text-[10px] uppercase font-bold text-[#C9A84C]">Agent Email</label>
+              <label className="text-[10px] uppercase font-bold text-gold">Agent Email</label>
               <Input
                 value={data.agent_email}
                 onChange={(e) => updateField("agent_email", e.target.value)}
-                className="h-8 text-xs bg-slate-900 print:bg-white text-white print:text-black border-slate-700 print:border-slate-300 mt-1"
+                className="h-8 text-xs bg-card print:bg-white text-white print:text-black border-border print:border-slate-300 mt-1 focus-visible:ring-gold"
               />
             </div>
             <div>
-              <label className="text-[10px] uppercase font-bold text-[#C9A84C]">Office Location</label>
+              <label className="text-[10px] uppercase font-bold text-gold">Office Location</label>
               <Input
                 value={data.office_address}
                 onChange={(e) => updateField("office_address", e.target.value)}
-                className="h-8 text-xs bg-slate-900 print:bg-white text-white print:text-black border-slate-700 print:border-slate-300 mt-1"
+                className="h-8 text-xs bg-card print:bg-white text-white print:text-black border-border print:border-slate-300 mt-1 focus-visible:ring-gold"
               />
             </div>
           </div>
 
           {/* Property Address Input */}
-          <div className="bg-[#1B2F5B]/30 print:bg-[#1B2F5B]/10 border border-[#C9A84C]/40 p-3.5 rounded-xl space-y-1">
-            <label className="text-xs font-bold uppercase tracking-wider text-[#C9A84C] flex items-center gap-1.5">
+          <div className="bg-gold/5 print:bg-slate-100 border border-gold/20 p-3.5 rounded-xl space-y-1.5">
+            <label className="text-xs font-bold uppercase tracking-wider text-gold flex items-center gap-1.5">
               <MapPin className="h-4 w-4" /> Property Address <span className="text-rose-400">*</span>
             </label>
             <Input
               placeholder="e.g. 123 Main Street, Rolla, MO 65401"
               value={data.property_address}
               onChange={(e) => updateField("property_address", e.target.value)}
-              className="bg-slate-950 print:bg-white text-white print:text-black font-semibold border-slate-700 print:border-slate-300 placeholder:text-slate-600"
+              className="bg-background print:bg-white text-white print:text-black font-semibold border-border print:border-slate-300 placeholder:text-muted-foreground/50 focus-visible:ring-gold"
             />
           </div>
         </div>
@@ -853,53 +853,53 @@ function CalculatorView({
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
             <thead>
-              <tr className="border-b border-[#C9A84C]/40 bg-[#1B2F5B] text-white">
+              <tr className="border-b border-border bg-sidebar/80 text-white">
                 <th className="p-3 font-bold uppercase text-[11px] tracking-wider w-1/3">Line Item / Expense</th>
-                <th className="p-3 font-bold uppercase text-[11px] tracking-wider text-center border-l border-slate-700">
+                <th className="p-3 font-bold uppercase text-[11px] tracking-wider text-center border-l border-border">
                   Scenario 1
                 </th>
                 {data.num_scenarios >= 2 && (
-                  <th className="p-3 font-bold uppercase text-[11px] tracking-wider text-center border-l border-slate-700">
+                  <th className="p-3 font-bold uppercase text-[11px] tracking-wider text-center border-l border-border">
                     Scenario 2
                   </th>
                 )}
                 {data.num_scenarios >= 3 && (
-                  <th className="p-3 font-bold uppercase text-[11px] tracking-wider text-center border-l border-slate-700">
+                  <th className="p-3 font-bold uppercase text-[11px] tracking-wider text-center border-l border-border">
                     Scenario 3
                   </th>
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800 print:divide-slate-200">
+            <tbody className="divide-y divide-border print:divide-slate-200">
               
               {/* Sales Price Row */}
-              <tr className="bg-slate-950/60 print:bg-slate-100 font-bold">
+              <tr className="bg-background/40 print:bg-slate-100 font-bold">
                 <td className="p-2.5 text-white print:text-black">Sales Price</td>
-                <td className="p-2 border-l border-slate-800 print:border-slate-200">
+                <td className="p-2 border-l border-border print:border-slate-200">
                   <Input
                     type="number"
                     value={data.scenario1_price || ""}
                     onChange={(e) => updateField("scenario1_price", parseFloat(e.target.value) || 0)}
-                    className="h-8 font-bold text-center text-xs bg-slate-900 print:bg-white text-[#C9A84C] border-slate-700"
+                    className="h-8 font-bold text-center text-xs bg-card print:bg-white text-gold border-border focus-visible:ring-gold"
                   />
                 </td>
                 {data.num_scenarios >= 2 && (
-                  <td className="p-2 border-l border-slate-800 print:border-slate-200">
+                  <td className="p-2 border-l border-border print:border-slate-200">
                     <Input
                       type="number"
                       value={data.scenario2_price || ""}
                       onChange={(e) => updateField("scenario2_price", parseFloat(e.target.value) || 0)}
-                      className="h-8 font-bold text-center text-xs bg-slate-900 print:bg-white text-[#C9A84C] border-slate-700"
+                      className="h-8 font-bold text-center text-xs bg-card print:bg-white text-gold border-border focus-visible:ring-gold"
                     />
                   </td>
                 )}
                 {data.num_scenarios >= 3 && (
-                  <td className="p-2 border-l border-slate-800 print:border-slate-200">
+                  <td className="p-2 border-l border-border print:border-slate-200">
                     <Input
                       type="number"
                       value={data.scenario3_price || ""}
                       onChange={(e) => updateField("scenario3_price", parseFloat(e.target.value) || 0)}
-                      className="h-8 font-bold text-center text-xs bg-slate-900 print:bg-white text-[#C9A84C] border-slate-700"
+                      className="h-8 font-bold text-center text-xs bg-card print:bg-white text-gold border-border focus-visible:ring-gold"
                     />
                   </td>
                 )}
@@ -915,21 +915,21 @@ function CalculatorView({
                       step="0.1"
                       value={data.listing_comm_pct}
                       onChange={(e) => updateField("listing_comm_pct", parseFloat(e.target.value) || 0)}
-                      className="h-6 w-14 text-center text-[11px] bg-slate-950 print:bg-white border-slate-700 px-1"
+                      className="h-6 w-14 text-center text-[11px] bg-background print:bg-white border-border px-1 focus-visible:ring-gold"
                     />
                     <span className="text-slate-400">%</span>
                   </div>
                 </td>
-                <td className="p-2.5 text-center font-mono border-l border-slate-800 print:border-slate-200 text-slate-200 print:text-black">
+                <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
                   {formatCurrency(calc1.listingComm)}
                 </td>
                 {data.num_scenarios >= 2 && (
-                  <td className="p-2.5 text-center font-mono border-l border-slate-800 print:border-slate-200 text-slate-200 print:text-black">
+                  <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
                     {formatCurrency(calc2.listingComm)}
                   </td>
                 )}
                 {data.num_scenarios >= 3 && (
-                  <td className="p-2.5 text-center font-mono border-l border-slate-800 print:border-slate-200 text-slate-200 print:text-black">
+                  <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
                     {formatCurrency(calc3.listingComm)}
                   </td>
                 )}
@@ -945,21 +945,21 @@ function CalculatorView({
                       step="0.1"
                       value={data.selling_comm_pct}
                       onChange={(e) => updateField("selling_comm_pct", parseFloat(e.target.value) || 0)}
-                      className="h-6 w-14 text-center text-[11px] bg-slate-950 print:bg-white border-slate-700 px-1"
+                      className="h-6 w-14 text-center text-[11px] bg-background print:bg-white border-border px-1 focus-visible:ring-gold"
                     />
                     <span className="text-slate-400">%</span>
                   </div>
                 </td>
-                <td className="p-2.5 text-center font-mono border-l border-slate-800 print:border-slate-200 text-slate-200 print:text-black">
+                <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
                   {formatCurrency(calc1.sellingComm)}
                 </td>
                 {data.num_scenarios >= 2 && (
-                  <td className="p-2.5 text-center font-mono border-l border-slate-800 print:border-slate-200 text-slate-200 print:text-black">
+                  <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
                     {formatCurrency(calc2.sellingComm)}
                   </td>
                 )}
                 {data.num_scenarios >= 3 && (
-                  <td className="p-2.5 text-center font-mono border-l border-slate-800 print:border-slate-200 text-slate-200 print:text-black">
+                  <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
                     {formatCurrency(calc3.sellingComm)}
                   </td>
                 )}
@@ -981,18 +981,18 @@ function CalculatorView({
               <NumberRow label="Sellers Concessions (negotiable w/ buyer)" field="seller_concessions" data={data} updateField={updateField} />
 
               {/* TOTAL SELLING COSTS (BOLD) */}
-              <tr className="bg-[#1B2F5B]/50 print:bg-slate-200 font-bold border-t-2 border-[#C9A84C]/40 text-white print:text-black text-sm">
-                <td className="p-3 uppercase tracking-wider text-[#C9A84C] print:text-black">TOTAL SELLING COSTS</td>
-                <td className="p-3 text-center font-mono border-l border-slate-700 print:border-slate-300">
+              <tr className="bg-sidebar/50 print:bg-slate-200 font-bold border-t-2 border-gold/40 text-white print:text-black text-sm">
+                <td className="p-3 uppercase tracking-wider text-gold print:text-black">TOTAL SELLING COSTS</td>
+                <td className="p-3 text-center font-mono border-l border-border print:border-slate-300">
                   {formatCurrency(calc1.totalSellingCosts)}
                 </td>
                 {data.num_scenarios >= 2 && (
-                  <td className="p-3 text-center font-mono border-l border-slate-700 print:border-slate-300">
+                  <td className="p-3 text-center font-mono border-l border-border print:border-slate-300">
                     {formatCurrency(calc2.totalSellingCosts)}
                   </td>
                 )}
                 {data.num_scenarios >= 3 && (
-                  <td className="p-3 text-center font-mono border-l border-slate-700 print:border-slate-300">
+                  <td className="p-3 text-center font-mono border-l border-border print:border-slate-300">
                     {formatCurrency(calc3.totalSellingCosts)}
                   </td>
                 )}
@@ -1022,8 +1022,8 @@ function CalculatorView({
         </div>
 
         {/* Verbatim Disclaimer Footer */}
-        <div className="pt-4 border-t border-slate-800 print:border-slate-300">
-          <p className="text-[10px] text-slate-400 print:text-slate-600 font-mono text-center leading-relaxed max-w-4xl mx-auto">
+        <div className="pt-4 border-t border-border print:border-slate-300">
+          <p className="text-[10px] text-muted-foreground print:text-slate-600 font-mono text-center leading-relaxed max-w-4xl mx-auto">
             NOTE: THIS FORM IS INTENDED AS AN ESTIMATE ONLY. IT DOES NOT INCLUDE TAX PRORATION, ESCROW ADJUSTMENTS AND OTHER MISCELLANEOUS COSTS SOMETIMES ASSOCIATED WITH CLOSING. MATT SMITH REAL ESTATE GROUP/EXP REALTY ACCEPTS NO RESPONSIBILITY FOR THIS ESTIMATE.
           </p>
         </div>
@@ -1047,7 +1047,7 @@ function NumberRow({
   return (
     <tr>
       <td className="p-2.5 text-slate-300 print:text-slate-800">{label}</td>
-      <td className="p-2 border-l border-slate-800 print:border-slate-200" colSpan={data.num_scenarios}>
+      <td className="p-2 border-l border-border print:border-slate-200" colSpan={data.num_scenarios}>
         <div className="flex items-center justify-center gap-1 max-w-[200px] mx-auto">
           <span className="text-slate-500 text-xs">$</span>
           <Input
@@ -1055,7 +1055,7 @@ function NumberRow({
             value={val === 0 ? "" : val}
             onChange={(e) => updateField(field, parseFloat(e.target.value) || 0)}
             placeholder="0"
-            className="h-7 text-center text-xs bg-slate-950 print:bg-white text-white print:text-black border-slate-800 print:border-slate-300"
+            className="h-7 text-center text-xs bg-background print:bg-white text-white print:text-black border-border print:border-slate-300 focus-visible:ring-gold"
           />
         </div>
       </td>

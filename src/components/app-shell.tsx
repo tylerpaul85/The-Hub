@@ -54,9 +54,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen flex bg-background">
       <aside className="hidden md:flex w-60 flex-col bg-sidebar border-r border-sidebar-border">
-        <div className="px-4 py-5 border-b border-sidebar-border flex flex-col items-center gap-2">
-          <img src={logo} alt="Matt Smith Real Estate Group" className="h-20 w-auto" />
-          <div className="text-[10px] uppercase tracking-[0.18em] text-gold/80">Marketing Department</div>
+        <div className="px-5 py-5 border-b border-sidebar-border flex items-center gap-3">
+          <img src={logo} alt="Matt Smith Real Estate Group" className="h-10 w-auto shrink-0" />
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-white truncate">MSREG</p>
+            <p className="text-[9px] uppercase tracking-[0.15em] text-gold font-medium mt-0.5 truncate">Marketing Hub</p>
+          </div>
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
@@ -67,8 +70,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                  active ? "bg-gold/15 text-gold" : "text-sidebar-foreground hover:bg-sidebar-accent",
+                  "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
+                  active 
+                    ? "bg-gold/10 text-gold border-l-2 border-gold -ml-3 pl-2.5 rounded-r-md" 
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-white",
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -79,7 +84,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* EOS Section */}
           {!isClientCareOnly && (
             <>
-              <div className="pt-4 pb-1 px-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">EOS</div>
+              <div className="pt-5 pb-1.5 px-3 text-[9px] font-semibold uppercase tracking-[0.25em] text-muted-foreground/80">EOS Systems</div>
               {EOS_NAV.filter((n) => !n.adminOnly || isAdmin).map((item) => {
                 const active = pathname === item.to || pathname.startsWith(item.to + "/");
                 return (
@@ -87,8 +92,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                     key={item.to}
                     to={item.to}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                      active ? "bg-gold/15 text-gold" : "text-sidebar-foreground hover:bg-sidebar-accent",
+                      "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
+                      active 
+                        ? "bg-gold/10 text-gold border-l-2 border-gold -ml-3 pl-2.5 rounded-r-md" 
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-white",
                     )}
                   >
                     <item.icon className="h-4 w-4" />
@@ -102,7 +109,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* Client Care Section */}
           {(isAdmin || roles.includes("client_care")) && (
             <>
-              <div className="pt-4 pb-1 px-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Client Care</div>
+              <div className="pt-5 pb-1.5 px-3 text-[9px] font-semibold uppercase tracking-[0.25em] text-muted-foreground/80">Client Care</div>
               {CLIENT_CARE_NAV.map((item) => {
                 const active = pathname === item.to || pathname.startsWith(item.to + "/");
                 return (
@@ -110,8 +117,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                     key={item.to}
                     to={item.to}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                      active ? "bg-gold/15 text-gold" : "text-sidebar-foreground hover:bg-sidebar-accent",
+                      "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
+                      active 
+                        ? "bg-gold/10 text-gold border-l-2 border-gold -ml-3 pl-2.5 rounded-r-md" 
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-white",
                     )}
                   >
                     <item.icon className="h-4 w-4" />
@@ -125,7 +134,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* Admin Section */}
           {isAdmin && (
             <>
-              <div className="pt-4 pb-1 px-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Admin</div>
+              <div className="pt-5 pb-1.5 px-3 text-[9px] font-semibold uppercase tracking-[0.25em] text-muted-foreground/80">Admin Tools</div>
               {ADMIN_NAV.map((item) => {
                 const active = pathname === item.to || pathname.startsWith(item.to + "/");
                 return (
@@ -133,8 +142,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                     key={item.to}
                     to={item.to}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                      active ? "bg-gold/15 text-gold" : "text-sidebar-foreground hover:bg-sidebar-accent",
+                      "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
+                      active 
+                        ? "bg-gold/10 text-gold border-l-2 border-gold -ml-3 pl-2.5 rounded-r-md" 
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-white",
                     )}
                   >
                     <item.icon className="h-4 w-4" />
@@ -148,12 +159,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* Lab/Experiments Section */}
           {canSeeExperiments && (
             <>
-              <div className="pt-4 pb-1 px-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Lab</div>
+              <div className="pt-5 pb-1.5 px-3 text-[9px] font-semibold uppercase tracking-[0.25em] text-muted-foreground/80">Lab</div>
               <Link
                 to="/experiments"
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                  pathname.startsWith("/experiments") ? "bg-gold/15 text-gold" : "text-sidebar-foreground hover:bg-sidebar-accent",
+                  "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
+                  pathname.startsWith("/experiments") 
+                    ? "bg-gold/10 text-gold border-l-2 border-gold -ml-3 pl-2.5 rounded-r-md" 
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-white",
                 )}
               >
                 <FlaskConical className="h-4 w-4" />
@@ -163,12 +176,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           )}
         </nav>
 
-        <div className="p-3 border-t border-sidebar-border space-y-2">
-          <div className="px-2 text-xs">
-            <div className="text-sidebar-foreground truncate">{((user?.user_metadata as any)?.first_name || (user?.user_metadata as any)?.last_name) ? [(user?.user_metadata as any)?.first_name, (user?.user_metadata as any)?.last_name].filter(Boolean).join(" ") : user?.email}</div>
-            <div className="text-muted-foreground capitalize">{role ?? "loading..."}</div>
+        <div className="p-3 border-t border-sidebar-border space-y-2 bg-sidebar/50">
+          <div className="px-2 py-1 text-xs">
+            <div className="text-white font-medium truncate">{((user?.user_metadata as any)?.first_name || (user?.user_metadata as any)?.last_name) ? [(user?.user_metadata as any)?.first_name, (user?.user_metadata as any)?.last_name].filter(Boolean).join(" ") : user?.email}</div>
+            <div className="text-muted-foreground text-[10px] tracking-wider uppercase mt-0.5">{role ?? "loading..."}</div>
           </div>
-          <Button variant="ghost" size="sm" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent" onClick={signOut}>
+          <Button variant="ghost" size="sm" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-white" onClick={signOut}>
             <LogOut className="h-4 w-4 mr-2" /> Sign out
           </Button>
         </div>
