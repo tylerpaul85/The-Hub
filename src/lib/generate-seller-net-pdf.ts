@@ -31,6 +31,16 @@ export interface SheetDataForPdf {
   estimated_taxes_3?: number;
   miscellaneous: number;
   seller_concessions: number;
+  [key: string]: any;
+}
+
+function getFieldValue(data: SheetDataForPdf, fieldKey: string, scenarioIndex: 1 | 2 | 3): number {
+  const specificKey = `${fieldKey}_${scenarioIndex}`;
+  if (data[specificKey] !== undefined) {
+    return data[specificKey] as number;
+  }
+  const legacyKey = fieldKey as keyof SheetDataForPdf;
+  return (data[legacyKey] as number) || 0;
 }
 
 function formatMoney(amount: number): string {
@@ -67,29 +77,20 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
     const sellingComm = salesPrice * ((data.selling_comm_pct || 0) / 100);
     const totalComm = listingComm + sellingComm;
 
-    let scenarioTaxes = 0;
-    if (scenarioIndex === 1) {
-      scenarioTaxes = data.estimated_taxes_1 !== undefined ? data.estimated_taxes_1 : (data.estimated_taxes || 0);
-    } else if (scenarioIndex === 2) {
-      scenarioTaxes = data.estimated_taxes_2 !== undefined ? data.estimated_taxes_2 : (data.estimated_taxes || 0);
-    } else {
-      scenarioTaxes = data.estimated_taxes_3 !== undefined ? data.estimated_taxes_3 : (data.estimated_taxes || 0);
-    }
-
     const fixedCosts =
-      (data.mortgage_payoff_1 || 0) +
-      (data.mortgage_payoff_2 || 0) +
-      (data.closing_protection_letter || 0) +
-      (data.seller_title_closing_fee || 0) +
-      (data.title_search_fee || 0) +
-      (data.warranty_deed_fee || 0) +
-      (data.termite_letter || 0) +
-      (data.inspections || 0) +
-      (data.home_warranty || 0) +
-      (data.transaction_fee || 0) +
-      scenarioTaxes +
-      (data.miscellaneous || 0) +
-      (data.seller_concessions || 0);
+      getFieldValue(data, "mortgage_payoff_1", scenarioIndex) +
+      getFieldValue(data, "mortgage_payoff_2", scenarioIndex) +
+      getFieldValue(data, "closing_protection_letter", scenarioIndex) +
+      getFieldValue(data, "seller_title_closing_fee", scenarioIndex) +
+      getFieldValue(data, "title_search_fee", scenarioIndex) +
+      getFieldValue(data, "warranty_deed_fee", scenarioIndex) +
+      getFieldValue(data, "termite_letter", scenarioIndex) +
+      getFieldValue(data, "inspections", scenarioIndex) +
+      getFieldValue(data, "home_warranty", scenarioIndex) +
+      getFieldValue(data, "transaction_fee", scenarioIndex) +
+      getFieldValue(data, "estimated_taxes", scenarioIndex) +
+      getFieldValue(data, "miscellaneous", scenarioIndex) +
+      getFieldValue(data, "seller_concessions", scenarioIndex);
 
     const totalSellingCosts = totalComm + fixedCosts;
     const cashToSeller = salesPrice - totalSellingCosts;
@@ -207,34 +208,19 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
         </tr>
 
         <!-- Fixed Cost Items -->
-        ${renderPdfRow("Principal Mortgage Payoff", data.mortgage_payoff_1, numScenarios)}
-        ${renderPdfRow("Second Mortgage Payoff", data.mortgage_payoff_2, numScenarios)}
-        ${renderPdfRow("Closing Protection Letter", data.closing_protection_letter, numScenarios)}
-        ${renderPdfRow("Seller's Title Company Closing Fee", data.seller_title_closing_fee, numScenarios)}
-        ${renderPdfRow("Title Search Fee", data.title_search_fee, numScenarios)}
-        ${renderPdfRow("Warranty Deed Fee", data.warranty_deed_fee, numScenarios)}
-        ${renderPdfRow("Termite Letter", data.termite_letter, numScenarios)}
-        ${renderPdfRow("Well, Water, Septic, Lagoon Inspection", data.inspections, numScenarios)}
-        ${renderPdfRow("Home Warranty (negotiable w/ buyer)", data.home_warranty, numScenarios)}
-        ${renderPdfRow("Transaction Fee", data.transaction_fee, numScenarios)}
-        <tr style="border-bottom: 1px solid #f1f5f9;">
-          <td style="padding: 5px 10px; color: #475569;">Estimated Taxes</td>
-          <td style="padding: 5px 10px; text-align: right; border-left: 1px solid #f1f5f9; color: #475569;">
-            ${formatMoney(data.estimated_taxes_1 !== undefined ? data.estimated_taxes_1 : (data.estimated_taxes || 0))}
-          </td>
-          ${numScenarios >= 2 ? `
-            <td style="padding: 5px 10px; text-align: right; border-left: 1px solid #f1f5f9; color: #475569;">
-              ${formatMoney(data.estimated_taxes_2 !== undefined ? data.estimated_taxes_2 : (data.estimated_taxes || 0))}
-            </td>
-          ` : ""}
-          ${numScenarios >= 3 ? `
-            <td style="padding: 5px 10px; text-align: right; border-left: 1px solid #f1f5f9; color: #475569;">
-              ${formatMoney(data.estimated_taxes_3 !== undefined ? data.estimated_taxes_3 : (data.estimated_taxes || 0))}
-            </td>
-          ` : ""}
-        </tr>
-        ${renderPdfRow("Miscellaneous", data.miscellaneous, numScenarios)}
-        ${renderPdfRow("Sellers Concessions (negotiable w/ buyer)", data.seller_concessions, numScenarios)}
+        ${renderPdfRow("Principal Mortgage Payoff", "mortgage_payoff_1", data, numScenarios)}
+        ${renderPdfRow("Second Mortgage Payoff", "mortgage_payoff_2", data, numScenarios)}
+        ${renderPdfRow("Closing Protection Letter", "closing_protection_letter", data, numScenarios)}
+        ${renderPdfRow("Seller's Title Company Closing Fee", "seller_title_closing_fee", data, numScenarios)}
+        ${renderPdfRow("Title Search Fee", "title_search_fee", data, numScenarios)}
+        ${renderPdfRow("Warranty Deed Fee", "warranty_deed_fee", data, numScenarios)}
+        ${renderPdfRow("Termite Letter", "termite_letter", data, numScenarios)}
+        ${renderPdfRow("Well, Water, Septic, Lagoon Inspection", "inspections", data, numScenarios)}
+        ${renderPdfRow("Home Warranty (negotiable w/ buyer)", "home_warranty", data, numScenarios)}
+        ${renderPdfRow("Transaction Fee", "transaction_fee", data, numScenarios)}
+        ${renderPdfRow("Estimated Taxes", "estimated_taxes", data, numScenarios)}
+        ${renderPdfRow("Miscellaneous", "miscellaneous", data, numScenarios)}
+        ${renderPdfRow("Sellers Concessions (negotiable w/ buyer)", "seller_concessions", data, numScenarios)}
 
         <!-- TOTAL SELLING COSTS (BOLD) -->
         <tr style="font-weight: 700; background-color: #f1f5f9; border-top: 2px solid #cbd5e1; border-bottom: 2px solid #cbd5e1; font-size: 11px;">
@@ -305,14 +291,16 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
   }
 }
 
-function renderPdfRow(label: string, value: number, numScenarios: number): string {
-  const money = formatMoney(value || 0);
+function renderPdfRow(label: string, fieldKey: string, data: SheetDataForPdf, numScenarios: number): string {
+  const v1 = getFieldValue(data, fieldKey, 1);
+  const v2 = getFieldValue(data, fieldKey, 2);
+  const v3 = getFieldValue(data, fieldKey, 3);
   return `
     <tr style="border-bottom: 1px solid #f1f5f9;">
       <td style="padding: 5px 10px; color: #475569;">${label}</td>
-      <td style="padding: 5px 10px; text-align: right; border-left: 1px solid #f1f5f9; color: #475569;">${money}</td>
-      ${numScenarios >= 2 ? `<td style="padding: 5px 10px; text-align: right; border-left: 1px solid #f1f5f9; color: #475569;">${money}</td>` : ""}
-      ${numScenarios >= 3 ? `<td style="padding: 5px 10px; text-align: right; border-left: 1px solid #f1f5f9; color: #475569;">${money}</td>` : ""}
+      <td style="padding: 5px 10px; text-align: right; border-left: 1px solid #f1f5f9; color: #475569;">${formatMoney(v1)}</td>
+      ${numScenarios >= 2 ? `<td style="padding: 5px 10px; text-align: right; border-left: 1px solid #f1f5f9; color: #475569;">${formatMoney(v2)}</td>` : ""}
+      ${numScenarios >= 3 ? `<td style="padding: 5px 10px; text-align: right; border-left: 1px solid #f1f5f9; color: #475569;">${formatMoney(v3)}</td>` : ""}
     </tr>
   `;
 }

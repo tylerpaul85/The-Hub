@@ -71,6 +71,7 @@ interface SheetData {
   estimated_taxes_3?: number;
   miscellaneous: number;
   seller_concessions: number;
+  [key: string]: any;
 }
 
 const DEFAULT_SHEET_DATA: SheetData = {
@@ -103,6 +104,15 @@ const DEFAULT_SHEET_DATA: SheetData = {
   miscellaneous: 0,
   seller_concessions: 5000,
 };
+
+function getFieldValue(data: SheetData, fieldKey: string, scenarioIndex: 1 | 2 | 3): number {
+  const specificKey = `${fieldKey}_${scenarioIndex}`;
+  if (data[specificKey] !== undefined) {
+    return data[specificKey] as number;
+  }
+  const legacyKey = fieldKey as keyof SheetData;
+  return (data[legacyKey] as number) || 0;
+}
 
 function formatCurrency(amount: number): string {
   if (isNaN(amount)) return "$0";
@@ -606,14 +616,41 @@ function CalculatorView({
   const printRef = useRef<HTMLDivElement>(null);
 
   // Initialize sheet data
-  const [data, setData] = useState<SheetData>(() => ({
-    ...DEFAULT_SHEET_DATA,
-    agent_name: agent.full_name || "",
-    agent_cell: agent.phone || "",
-    agent_email: agent.email || "",
-    office_address: agent.office_location || "1043 Kingshighway, Rolla, MO 65401",
-    office_phone: agent.office_phone || "(573) 451-2020",
-  }));
+  const [data, setData] = useState<SheetData>(() => {
+    const base = {
+      ...DEFAULT_SHEET_DATA,
+      agent_name: agent.full_name || "",
+      agent_cell: agent.phone || "",
+      agent_email: agent.email || "",
+      office_address: agent.office_location || "1043 Kingshighway, Rolla, MO 65401",
+      office_phone: agent.office_phone || "(573) 451-2020",
+    };
+    
+    const scenarioKeys = [
+      "mortgage_payoff_1",
+      "mortgage_payoff_2",
+      "closing_protection_letter",
+      "seller_title_closing_fee",
+      "title_search_fee",
+      "warranty_deed_fee",
+      "termite_letter",
+      "inspections",
+      "home_warranty",
+      "transaction_fee",
+      "estimated_taxes",
+      "miscellaneous",
+      "seller_concessions",
+    ];
+
+    scenarioKeys.forEach((key) => {
+      const val = (base as any)[key] || 0;
+      (base as any)[`${key}_1`] = val;
+      (base as any)[`${key}_2`] = val;
+      (base as any)[`${key}_3`] = val;
+    });
+
+    return base;
+  });
 
   // Fetch sheet data if editing existing ID
   useEffect(() => {
@@ -629,7 +666,29 @@ function CalculatorView({
           return;
         }
         if (record.sheet_data) {
-          setData(record.sheet_data);
+          const loaded = { ...record.sheet_data };
+          const scenarioKeys = [
+            "mortgage_payoff_1",
+            "mortgage_payoff_2",
+            "closing_protection_letter",
+            "seller_title_closing_fee",
+            "title_search_fee",
+            "warranty_deed_fee",
+            "termite_letter",
+            "inspections",
+            "home_warranty",
+            "transaction_fee",
+            "estimated_taxes",
+            "miscellaneous",
+            "seller_concessions",
+          ];
+          scenarioKeys.forEach((key) => {
+            const val = loaded[key] || 0;
+            if (loaded[`${key}_1`] === undefined) loaded[`${key}_1`] = val;
+            if (loaded[`${key}_2`] === undefined) loaded[`${key}_2`] = val;
+            if (loaded[`${key}_3`] === undefined) loaded[`${key}_3`] = val;
+          });
+          setData(loaded);
         }
       });
   }, [editingSheetId]);
@@ -638,35 +697,36 @@ function CalculatorView({
     setData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const updateScenarioField = (fieldKey: string, scenarioIndex: 1 | 2 | 3, value: number) => {
+    setData((prev) => {
+      const next = { ...prev, [`${fieldKey}_${scenarioIndex}`]: value };
+      if (scenarioIndex === 1) {
+        next[fieldKey] = value; // keep legacy key in sync for backwards compatibility
+      }
+      return next;
+    });
+  };
+
   // Calculations logic
   const calculateScenario = (salesPrice: number, scenarioIndex: 1 | 2 | 3) => {
     const listingComm = salesPrice * ((data.listing_comm_pct || 0) / 100);
     const sellingComm = salesPrice * ((data.selling_comm_pct || 0) / 100);
     const totalComm = listingComm + sellingComm;
 
-    let scenarioTaxes = 0;
-    if (scenarioIndex === 1) {
-      scenarioTaxes = data.estimated_taxes_1 !== undefined ? data.estimated_taxes_1 : (data.estimated_taxes || 0);
-    } else if (scenarioIndex === 2) {
-      scenarioTaxes = data.estimated_taxes_2 !== undefined ? data.estimated_taxes_2 : (data.estimated_taxes || 0);
-    } else {
-      scenarioTaxes = data.estimated_taxes_3 !== undefined ? data.estimated_taxes_3 : (data.estimated_taxes || 0);
-    }
-
     const fixedCosts =
-      (data.mortgage_payoff_1 || 0) +
-      (data.mortgage_payoff_2 || 0) +
-      (data.closing_protection_letter || 0) +
-      (data.seller_title_closing_fee || 0) +
-      (data.title_search_fee || 0) +
-      (data.warranty_deed_fee || 0) +
-      (data.termite_letter || 0) +
-      (data.inspections || 0) +
-      (data.home_warranty || 0) +
-      (data.transaction_fee || 0) +
-      scenarioTaxes +
-      (data.miscellaneous || 0) +
-      (data.seller_concessions || 0);
+      getFieldValue(data, "mortgage_payoff_1", scenarioIndex) +
+      getFieldValue(data, "mortgage_payoff_2", scenarioIndex) +
+      getFieldValue(data, "closing_protection_letter", scenarioIndex) +
+      getFieldValue(data, "seller_title_closing_fee", scenarioIndex) +
+      getFieldValue(data, "title_search_fee", scenarioIndex) +
+      getFieldValue(data, "warranty_deed_fee", scenarioIndex) +
+      getFieldValue(data, "termite_letter", scenarioIndex) +
+      getFieldValue(data, "inspections", scenarioIndex) +
+      getFieldValue(data, "home_warranty", scenarioIndex) +
+      getFieldValue(data, "transaction_fee", scenarioIndex) +
+      getFieldValue(data, "estimated_taxes", scenarioIndex) +
+      getFieldValue(data, "miscellaneous", scenarioIndex) +
+      getFieldValue(data, "seller_concessions", scenarioIndex);
 
     const totalSellingCosts = totalComm + fixedCosts;
     const cashToSeller = salesPrice - totalSellingCosts;
@@ -744,14 +804,39 @@ function CalculatorView({
   };
 
   const handleResetDefaults = () => {
-    setData({
+    const base = {
       ...DEFAULT_SHEET_DATA,
       agent_name: agent.full_name || "",
       agent_cell: agent.phone || "",
       agent_email: agent.email || "",
       office_address: agent.office_location || "1043 Kingshighway, Rolla, MO 65401",
       office_phone: agent.office_phone || "(573) 451-2020",
+    };
+    
+    const scenarioKeys = [
+      "mortgage_payoff_1",
+      "mortgage_payoff_2",
+      "closing_protection_letter",
+      "seller_title_closing_fee",
+      "title_search_fee",
+      "warranty_deed_fee",
+      "termite_letter",
+      "inspections",
+      "home_warranty",
+      "transaction_fee",
+      "estimated_taxes",
+      "miscellaneous",
+      "seller_concessions",
+    ];
+
+    scenarioKeys.forEach((key) => {
+      const val = (base as any)[key] || 0;
+      (base as any)[`${key}_1`] = val;
+      (base as any)[`${key}_2`] = val;
+      (base as any)[`${key}_3`] = val;
     });
+
+    setData(base);
     toast.info("Calculator restored to defaults.");
   };
 
@@ -973,75 +1058,19 @@ function CalculatorView({
               </tr>
 
               {/* Fixed Expenses Rows */}
-              <NumberRow label="Principal Mortgage Payoff" field="mortgage_payoff_1" data={data} updateField={updateField} />
-              <NumberRow label="Second Mortgage Payoff" field="mortgage_payoff_2" data={data} updateField={updateField} />
-              <NumberRow label="Closing Protection Letter" field="closing_protection_letter" data={data} updateField={updateField} />
-              <NumberRow label="Seller's Title Company Closing Fee" field="seller_title_closing_fee" data={data} updateField={updateField} />
-              <NumberRow label="Title Search Fee" field="title_search_fee" data={data} updateField={updateField} />
-              <NumberRow label="Warranty Deed Fee" field="warranty_deed_fee" data={data} updateField={updateField} />
-              <NumberRow label="Termite Letter" field="termite_letter" data={data} updateField={updateField} />
-              <NumberRow label="Well, Water, Septic, Lagoon Inspection" field="inspections" data={data} updateField={updateField} />
-              <NumberRow label="Home Warranty (negotiable w/ buyer)" field="home_warranty" data={data} updateField={updateField} />
-              <NumberRow label="Transaction Fee" field="transaction_fee" data={data} updateField={updateField} />
-              {/* Estimated Taxes per Scenario */}
-              <tr>
-                <td className="p-2.5 text-slate-300 print:text-slate-800">Estimated Taxes</td>
-                <td className="p-2 border-l border-border print:border-slate-200">
-                  <div className="flex items-center justify-center gap-1 max-w-[200px] mx-auto">
-                    <span className="text-slate-500 text-xs">$</span>
-                    <Input
-                      type="number"
-                      value={(data.estimated_taxes_1 !== undefined ? data.estimated_taxes_1 : data.estimated_taxes) || ""}
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value) || 0;
-                        setData((prev) => ({
-                          ...prev,
-                          estimated_taxes_1: val,
-                          estimated_taxes: val, // legacy sync
-                        }));
-                      }}
-                      placeholder="0"
-                      className="h-7 text-center text-xs bg-background print:bg-white text-white print:text-black border-border print:border-slate-300 focus-visible:ring-gold"
-                    />
-                  </div>
-                </td>
-                {data.num_scenarios >= 2 && (
-                  <td className="p-2 border-l border-border print:border-slate-200">
-                    <div className="flex items-center justify-center gap-1 max-w-[200px] mx-auto">
-                      <span className="text-slate-500 text-xs">$</span>
-                      <Input
-                        type="number"
-                        value={(data.estimated_taxes_2 !== undefined ? data.estimated_taxes_2 : data.estimated_taxes) || ""}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value) || 0;
-                          updateField("estimated_taxes_2", val);
-                        }}
-                        placeholder="0"
-                        className="h-7 text-center text-xs bg-background print:bg-white text-white print:text-black border-border print:border-slate-300 focus-visible:ring-gold"
-                      />
-                    </div>
-                  </td>
-                )}
-                {data.num_scenarios >= 3 && (
-                  <td className="p-2 border-l border-border print:border-slate-200">
-                    <div className="flex items-center justify-center gap-1 max-w-[200px] mx-auto">
-                      <span className="text-slate-500 text-xs">$</span>
-                      <Input
-                        type="number"
-                        value={(data.estimated_taxes_3 !== undefined ? data.estimated_taxes_3 : data.estimated_taxes) || ""}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value) || 0;
-                          updateField("estimated_taxes_3", val);
-                        }}
-                        placeholder="0"
-                        className="h-7 text-center text-xs bg-background print:bg-white text-white print:text-black border-border print:border-slate-300 focus-visible:ring-gold"
-                      />
-                    </div>
-                  </td>
-                )}
-              </tr>
-              <NumberRow label="Miscellaneous" field="miscellaneous" data={data} updateField={updateField} />
-              <NumberRow label="Sellers Concessions (negotiable w/ buyer)" field="seller_concessions" data={data} updateField={updateField} />
+              <ScenarioNumberRow label="Principal Mortgage Payoff" fieldKey="mortgage_payoff_1" data={data} updateScenarioField={updateScenarioField} />
+              <ScenarioNumberRow label="Second Mortgage Payoff" fieldKey="mortgage_payoff_2" data={data} updateScenarioField={updateScenarioField} />
+              <ScenarioNumberRow label="Closing Protection Letter" fieldKey="closing_protection_letter" data={data} updateScenarioField={updateScenarioField} />
+              <ScenarioNumberRow label="Seller's Title Company Closing Fee" fieldKey="seller_title_closing_fee" data={data} updateScenarioField={updateScenarioField} />
+              <ScenarioNumberRow label="Title Search Fee" fieldKey="title_search_fee" data={data} updateScenarioField={updateScenarioField} />
+              <ScenarioNumberRow label="Warranty Deed Fee" fieldKey="warranty_deed_fee" data={data} updateScenarioField={updateScenarioField} />
+              <ScenarioNumberRow label="Termite Letter" fieldKey="termite_letter" data={data} updateScenarioField={updateScenarioField} />
+              <ScenarioNumberRow label="Well, Water, Septic, Lagoon Inspection" fieldKey="inspections" data={data} updateScenarioField={updateScenarioField} />
+              <ScenarioNumberRow label="Home Warranty (negotiable w/ buyer)" fieldKey="home_warranty" data={data} updateScenarioField={updateScenarioField} />
+              <ScenarioNumberRow label="Transaction Fee" fieldKey="transaction_fee" data={data} updateScenarioField={updateScenarioField} />
+              <ScenarioNumberRow label="Estimated Taxes" fieldKey="estimated_taxes" data={data} updateScenarioField={updateScenarioField} />
+              <ScenarioNumberRow label="Miscellaneous" fieldKey="miscellaneous" data={data} updateScenarioField={updateScenarioField} />
+              <ScenarioNumberRow label="Sellers Concessions (negotiable w/ buyer)" fieldKey="seller_concessions" data={data} updateScenarioField={updateScenarioField} />
 
               {/* TOTAL SELLING COSTS (BOLD) */}
               <tr className="bg-sidebar/50 print:bg-slate-200 font-bold border-t-2 border-gold/40 text-white print:text-black text-sm">
@@ -1095,33 +1124,60 @@ function CalculatorView({
   );
 }
 
-function NumberRow({
+function ScenarioNumberRow({
   label,
-  field,
+  fieldKey,
   data,
-  updateField,
+  updateScenarioField,
 }: {
   label: string;
-  field: keyof SheetData;
+  fieldKey: string;
   data: SheetData;
-  updateField: (field: keyof SheetData, value: any) => void;
+  updateScenarioField: (fieldKey: string, scenarioIndex: 1 | 2 | 3, value: number) => void;
 }) {
-  const val = (data[field] as number) || 0;
   return (
     <tr>
       <td className="p-2.5 text-slate-300 print:text-slate-800">{label}</td>
-      <td className="p-2 border-l border-border print:border-slate-200" colSpan={data.num_scenarios}>
+      <td className="p-2 border-l border-border print:border-slate-200">
         <div className="flex items-center justify-center gap-1 max-w-[200px] mx-auto">
           <span className="text-slate-500 text-xs">$</span>
           <Input
             type="number"
-            value={val === 0 ? "" : val}
-            onChange={(e) => updateField(field, parseFloat(e.target.value) || 0)}
+            value={getFieldValue(data, fieldKey, 1) || ""}
+            onChange={(e) => updateScenarioField(fieldKey, 1, parseFloat(e.target.value) || 0)}
             placeholder="0"
             className="h-7 text-center text-xs bg-background print:bg-white text-white print:text-black border-border print:border-slate-300 focus-visible:ring-gold"
           />
         </div>
       </td>
+      {data.num_scenarios >= 2 && (
+        <td className="p-2 border-l border-border print:border-slate-200">
+          <div className="flex items-center justify-center gap-1 max-w-[200px] mx-auto">
+            <span className="text-slate-500 text-xs">$</span>
+            <Input
+              type="number"
+              value={getFieldValue(data, fieldKey, 2) || ""}
+              onChange={(e) => updateScenarioField(fieldKey, 2, parseFloat(e.target.value) || 0)}
+              placeholder="0"
+              className="h-7 text-center text-xs bg-background print:bg-white text-white print:text-black border-border print:border-slate-300 focus-visible:ring-gold"
+            />
+          </div>
+        </td>
+      )}
+      {data.num_scenarios >= 3 && (
+        <td className="p-2 border-l border-border print:border-slate-200">
+          <div className="flex items-center justify-center gap-1 max-w-[200px] mx-auto">
+            <span className="text-slate-500 text-xs">$</span>
+            <Input
+              type="number"
+              value={getFieldValue(data, fieldKey, 3) || ""}
+              onChange={(e) => updateScenarioField(fieldKey, 3, parseFloat(e.target.value) || 0)}
+              placeholder="0"
+              className="h-7 text-center text-xs bg-background print:bg-white text-white print:text-black border-border print:border-slate-300 focus-visible:ring-gold"
+            />
+          </div>
+        </td>
+      )}
     </tr>
   );
 }
