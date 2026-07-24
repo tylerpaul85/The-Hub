@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { isImageUrl } from "@/lib/sanitize-filename";
 import { DownloadPhotosButton } from "@/components/download-photos-button";
+import { verifyToolboxCode } from "@/lib/toolbox-public.functions";
 import logo from "@/assets/msreg-logo.png";
 import {
   Search, Download, Copy, ExternalLink, ArrowLeft, X, Image as ImageIcon,
@@ -69,17 +71,15 @@ function PublicToolboxPage() {
 function Gate({ onUnlock }: { onUnlock: (token: string) => void }) {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const verifyCode = useServerFn(verifyToolboxCode);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim()) return;
     setBusy(true);
     try {
-      if (code.trim().toUpperCase() === "MSREG2026") {
-        onUnlock("valid-token");
-      } else {
-        throw new Error("Incorrect access code");
-      }
+      const result = await verifyCode({ data: { code: code.trim() } });
+      onUnlock(result.token);
     } catch (err: any) {
       toast.error(err?.message || "Could not verify code");
     }

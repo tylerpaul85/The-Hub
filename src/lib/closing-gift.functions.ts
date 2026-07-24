@@ -21,7 +21,9 @@ async function assertAdmin(supabase: any, userId: string) {
 }
 
 
-const SECURITY_CODE = "MSREG2026";
+function getSecurityCode(): string {
+  return (process.env.TOOLBOX_ACCESS_CODE || "MSREG2026").trim();
+}
 
 const shirtSchema = z.object({
   size: z.string().trim().min(1).max(10),
@@ -44,7 +46,7 @@ export type SubmitClosingGiftInput = z.infer<typeof submitSchema>;
 export const submitClosingGiftRequest = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => submitSchema.parse(data))
   .handler(async ({ data }) => {
-    if (data.security_code !== SECURITY_CODE) {
+    if (data.security_code.trim().toUpperCase() !== getSecurityCode().toUpperCase()) {
       throw new Error("Invalid security code");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -115,7 +117,7 @@ export const submitClosingGiftRequest = createServerFn({ method: "POST" })
 export const listClosingGiftInventory = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => z.object({ security_code: z.string() }).parse(data))
   .handler(async ({ data }) => {
-    if (data.security_code !== SECURITY_CODE) {
+    if (data.security_code.trim().toUpperCase() !== getSecurityCode().toUpperCase()) {
       throw new Error("Invalid security code");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

@@ -32,7 +32,13 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 
   const err = consumeLastCapturedError();
   console.error(err ?? new Error(`h3 swallowed SSR error: ${body}`));
-  return new Response(`Catastrophic SSR Error: ${err?.message || "HTTPError"}\nStack:\n${err?.stack || ""}\nBody: ${body}`, {
+
+  const isProd = typeof process !== "undefined" && process.env?.NODE_ENV === "production";
+  const responseBody = isProd
+    ? "An internal error occurred. Please try again later."
+    : `Catastrophic SSR Error: ${err?.message || "HTTPError"}\nStack:\n${err?.stack || ""}\nBody: ${body}`;
+
+  return new Response(responseBody, {
     status: 500,
     headers: { "content-type": "text/plain; charset=utf-8" },
   });
@@ -46,7 +52,13 @@ export default {
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error: any) {
       console.error(error);
-      return new Response(`Server Error: ${error?.message || error}\nStack:\n${error?.stack || ""}`, {
+
+      const isProd = typeof process !== "undefined" && process.env?.NODE_ENV === "production";
+      const responseBody = isProd
+        ? "An internal error occurred. Please try again later."
+        : `Server Error: ${error?.message || error}\nStack:\n${error?.stack || ""}`;
+
+      return new Response(responseBody, {
         status: 500,
         headers: { "content-type": "text/plain; charset=utf-8" },
       });

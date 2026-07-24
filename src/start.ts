@@ -13,7 +13,13 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
     }
     console.error(error);
     const errObj = error as any;
-    return new Response(`Request Error: ${errObj?.message || error}\nStack:\n${errObj?.stack || ""}`, {
+
+    const isProd = process.env.NODE_ENV === "production";
+    const body = isProd
+      ? "An internal error occurred. Please try again later."
+      : `Request Error: ${errObj?.message || error}\nStack:\n${errObj?.stack || ""}`;
+
+    return new Response(body, {
       status: 500,
       headers: { "content-type": "text/plain; charset=utf-8" },
     });
@@ -33,6 +39,7 @@ const securityHeadersMiddleware = createMiddleware().server(async ({ next }) => 
   if (isProd) {
     headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload";
     headers["X-Frame-Options"] = "DENY";
+    headers["X-Permitted-Cross-Domain-Policies"] = "none";
     headers["Content-Security-Policy"] =
       "default-src 'self'; " +
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.gpteng.co; " +
@@ -41,9 +48,11 @@ const securityHeadersMiddleware = createMiddleware().server(async ({ next }) => 
       "img-src 'self' data: blob: https:; " +
       "media-src 'self' blob: https:; " +
       "connect-src 'self' https: wss:; " +
+      "object-src 'none'; " +
       "frame-ancestors 'none'; " +
       "base-uri 'self'; " +
-      "form-action 'self';";
+      "form-action 'self'; " +
+      "upgrade-insecure-requests;";
   }
   try {
     setResponseHeaders(headers);

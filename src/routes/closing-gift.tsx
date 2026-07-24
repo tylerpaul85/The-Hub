@@ -10,9 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { verifyToolboxCode } from "@/lib/toolbox-public.functions";
 import logo from "@/assets/msreg-logo.png";
 
-const SECURITY_CODE = "MSREG2026";
 const SIZES = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"] as const;
 
 export const Route = createFileRoute("/closing-gift")({
@@ -91,12 +91,15 @@ function ClosingGiftRequestPage() {
     });
   }
 
-  function handleUnlock(e: React.FormEvent) {
+  const verifyCode = useServerFn(verifyToolboxCode);
+
+  async function handleUnlock(e: React.FormEvent) {
     e.preventDefault();
-    if (codeInput.trim().toUpperCase() === SECURITY_CODE) {
+    try {
+      await verifyCode({ data: { code: codeInput.trim() } });
       setUnlocked(true);
       setCodeError(null);
-    } else {
+    } catch {
       setCodeError("Incorrect code. Please try again.");
     }
   }
