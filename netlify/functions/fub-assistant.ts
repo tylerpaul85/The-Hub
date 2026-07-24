@@ -306,6 +306,20 @@ async function handleSearchPeople(input: any, apiKey: string) {
   };
 }
 
+// Excluded users configuration for agent performance reporting
+export const EXCLUDED_AGENT_REPORTING_NAMES = new Set(["matt smith"]);
+export const EXCLUDED_AGENT_REPORTING_USER_IDS = new Set<number>();
+
+export function isExcludedReportingUser(userId?: number | null, userName?: string | null): boolean {
+  if (userId && EXCLUDED_AGENT_REPORTING_USER_IDS.has(userId)) {
+    return true;
+  }
+  if (userName && EXCLUDED_AGENT_REPORTING_NAMES.has(userName.trim().toLowerCase())) {
+    return true;
+  }
+  return false;
+}
+
 // 2. get_agent_leaderboard
 async function handleGetAgentLeaderboard(input: any, apiKey: string) {
   const { stage, stale_days = 14, source } = input;
@@ -314,18 +328,27 @@ async function handleGetAgentLeaderboard(input: any, apiKey: string) {
   const { isoStr } = getCentralDateCutoff(daysVal);
   const cutoffTime = new Date(isoStr).getTime();
 
-  // 1. Fetch active agents
+  // 1. Fetch active agents and resolve Matt Smith's User ID dynamically
   const usersRes = await fubFetch("https://api.followupboss.com/v1/users?limit=100", apiKey);
   if (!usersRes.ok) throw new Error("Failed to fetch FUB agent list.");
   const usersData = await usersRes.json();
-  const agentsRoster = (usersData?.users ?? []).filter(
-    (u: any) => u.name && u.name.toLowerCase() !== "matt smith"
+  const allUsers: any[] = usersData?.users ?? [];
+
+  for (const u of allUsers) {
+    if (u.name && u.name.trim().toLowerCase() === "matt smith") {
+      EXCLUDED_AGENT_REPORTING_USER_IDS.add(u.id);
+    }
+  }
+
+  // Filter roster for reportable agents (permanently exclude Matt Smith)
+  const agentsRoster = allUsers.filter(
+    (u: any) => u.name && !isExcludedReportingUser(u.id, u.name)
   );
 
-  // 2. Fetch leads in scope
+  // 2. Fetch leads in scope (paginating up to 10 pages for accuracy)
   const peopleParams = new URLSearchParams();
   peopleParams.append("limit", "100");
-  peopleParams.append("fields", "id,assignedUserId,lastActivity,lastCommunication,lastSentEmail,lastSentText,lastOutgoingCall,contacted");
+  peopleParams.append("fields", "id,assignedUserId,assignedTo,lastActivity,lastCommunication,lastSentEmail,lastSentText,lastOutgoingCall,contacted");
   if (stage) peopleParams.append("stage", stage);
   if (source) peopleParams.append("source", source);
 
@@ -333,23 +356,36 @@ async function handleGetAgentLeaderboard(input: any, apiKey: string) {
     `https://api.followupboss.com/v1/people?${peopleParams.toString()}`,
     apiKey,
     "people",
-    3
+    10
   );
 
-  const leads = peopleRes.items;
+  // Deduplicate leads by FUB person ID
+  const uniqueLeadsMap = new Map<number, any>();
+  for (const item of peopleRes.items) {
+    if (item.id && !uniqueLeadsMap.has(item.id)) {
+      uniqueLeadsMap.set(item.id, item);
+    }
+  }
+  const uniqueLeads = Array.from(uniqueLeadsMap.values());
 
-  // Group leads by assignedUserId
+  // 3. Separate leads into Reportable Agent Leads vs Shared Pond / Owner Assigned
+  let reportableAgentLeadsCount = 0;
+  let sharedPondOwnerAssignedCount = 0;
+
   const leadsByAgent = new Map<number, any[]>();
-  for (const l of leads) {
+  for (const l of uniqueLeads) {
     const uid = l.assignedUserId;
-    if (uid) {
+    if (isExcludedReportingUser(uid, l.assignedTo)) {
+      sharedPondOwnerAssignedCount++;
+    } else if (uid) {
+      reportableAgentLeadsCount++;
       const list = leadsByAgent.get(uid) ?? [];
       list.push(l);
       leadsByAgent.set(uid, list);
     }
   }
 
-  // 3. Compute stats per agent
+  // 4. Compute stats per reportable agent (Matt Smith excluded from agent dataset)
   const agentRollups = agentsRoster.map((u: any) => {
     const agentLeads = leadsByAgent.get(u.id) ?? [];
     const totalInScope = agentLeads.length;
@@ -398,6 +434,8 @@ async function handleGetAgentLeaderboard(input: any, apiKey: string) {
   }).filter((a: any) => a.total_in_scope > 0)
     .sort((a: any, b: any) => b.stale_by_outbound_contact - a.stale_by_outbound_contact);
 
+  const isTruncated = peopleRes.truncated || peopleRes.total > uniqueLeads.length;
+
   return {
     report_type: "agent_leaderboard",
     generated_at: new Date().toISOString(),
@@ -406,9 +444,20 @@ async function handleGetAgentLeaderboard(input: any, apiKey: string) {
       cutoff: isoStr,
       basis: "lastActivity and lastOutboundContact reported separately",
     },
+    exclusion_note: "Matt Smith is excluded from agent performance reporting because owner-assigned pond leads do not represent individual agent follow-up activity.",
+    pond_summary: {
+      reportable_agent_leads: reportableAgentLeadsCount,
+      shared_pond_owner_assigned: sharedPondOwnerAssignedCount,
+      excluded_reporting_users: ["Matt Smith"],
+    },
     total_matching_leads: peopleRes.total,
-    records_reviewed: leads.length,
-    truncated: peopleRes.truncated,
+    records_reviewed: peopleRes.items.length,
+    unique_records_processed: uniqueLeads.length,
+    truncated: isTruncated,
+    is_incomplete: isTruncated,
+    warning_message: isTruncated
+      ? `⚠️ Partial Dataset Notice: Report reflects the first ${uniqueLeads.length} unique leads (of ${peopleRes.total} total matching CRM records). Rankings and team-wide percentages reflect this sample only.`
+      : undefined,
     agents: agentRollups,
   };
 }
@@ -752,6 +801,8 @@ export async function handler(event: any, context: any) {
   await getStages(fubApiKey);
 
   const systemPrompt = `You are an operational CRM reporting analyst for Matt Smith Real Estate Group (MSREG), operating in Rolla, St. Robert, and Lake of the Ozarks.
+
+AGENT REPORTING EXCLUSION: Matt Smith is the team owner and the default assigned user for shared pond leads. Never include Matt Smith in agent performance rankings, agent averages, agent percentages, or agent comparison tables. Do not remove his assigned leads from account-wide totals. When relevant, report them separately as Shared Pond / Owner Assigned. All exclusion calculations are performed by application code. Never attempt to restore, estimate, or recalculate Matt Smith’s agent row.
 
 DATA BOUNDARIES & AUTHORITATIVE DATA:
 - Report ONLY information explicitly contained in tool results.

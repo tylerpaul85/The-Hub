@@ -418,6 +418,7 @@ export const getLiveStats = createServerFn({ method: "POST" })
           name = userMap.get(u?.id) ?? u?.name ?? undefined;
         }
         if (!name) continue;
+        if (name.trim().toLowerCase().includes("matt smith")) continue;
         counts.set(name, (counts.get(name) ?? 0) + 1);
       }
       return Array.from(counts.entries())

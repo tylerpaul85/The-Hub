@@ -298,8 +298,13 @@ function RenderStructuredReport({ report }: { report: StructuredReportData }) {
               variant="outline"
               onClick={() => {
                 const headers = ["Agent Name", "Total Leads", "Stale (Outbound)", "Stale %", "Never Contacted"];
-                const rows = report.agents!.map((a) => [a.name, a.total_in_scope, a.stale_by_outbound_contact, `${a.pct_stale_by_outbound_contact}%`, a.never_contacted]);
-                downloadCSV("agent-leaderboard", headers, rows);
+                const dataRows = report.agents!.map((a) => [a.name, a.total_in_scope, a.stale_by_outbound_contact, `${a.pct_stale_by_outbound_contact}%`, a.never_contacted]);
+                const metaHeader = [
+                  ["NOTE: Matt Smith is excluded from agent performance reporting because owner-assigned pond leads do not represent individual agent follow-up activity."],
+                  [`Reportable Agent Leads: ${report.pond_summary?.reportable_agent_leads ?? 0}`, `Shared Pond / Owner Assigned: ${report.pond_summary?.shared_pond_owner_assigned ?? 0}`, `Excluded Users: Matt Smith`],
+                  []
+                ];
+                downloadCSV("agent-leaderboard", headers, [...metaHeader, ...dataRows] as any);
               }}
               className="h-7 px-2.5 text-xs flex items-center gap-1 hover:border-gold hover:text-gold"
             >
@@ -328,8 +333,36 @@ function RenderStructuredReport({ report }: { report: StructuredReportData }) {
         <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/30 flex items-center gap-2 text-xs text-amber-300">
           <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400" />
           <span>
-            <b>Partial Dataset Notice:</b> Report reflects first {report.records_reviewed ?? report.returned ?? "retrieved"} matching leads out of {report.total_matching_leads ?? report.total_matching ?? report.total_leads_in_scope ?? "total"} total matching records.
+            <b>Partial Dataset Notice:</b> Report reflects first {report.unique_records_processed ?? report.records_reviewed ?? report.returned ?? "retrieved"} unique matching leads out of {report.total_matching_leads ?? report.total_matching ?? report.total_leads_in_scope ?? "total"} total matching records. Rankings and team-wide percentages reflect this sample only.
           </span>
+        </div>
+      )}
+
+      {/* Exclusion Note Banner for Agent Reports */}
+      {report.report_type === "agent_leaderboard" && (
+        <div className="px-4 py-2.5 bg-blue-500/10 border-b border-blue-500/30 flex flex-wrap items-center justify-between text-xs text-blue-300 gap-2">
+          <span className="flex items-center gap-1.5 font-medium">
+            <Info className="h-4 w-4 shrink-0 text-blue-400" />
+            Matt Smith is excluded from agent performance reporting because owner-assigned pond leads do not represent individual agent follow-up activity.
+          </span>
+        </div>
+      )}
+
+      {/* Pond Summary Bar */}
+      {report.report_type === "agent_leaderboard" && report.pond_summary && (
+        <div className="p-3 bg-muted/15 border-b border-border/40 flex flex-wrap gap-6 text-xs">
+          <div>
+            <span className="text-muted-foreground font-medium">Reportable Agent Leads: </span>
+            <span className="font-bold text-foreground">{report.pond_summary.reportable_agent_leads}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground font-medium">Shared Pond / Owner Assigned: </span>
+            <span className="font-bold text-gold">{report.pond_summary.shared_pond_owner_assigned}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground font-medium">Excluded Reporting Users: </span>
+            <span className="font-semibold text-foreground">{report.pond_summary.excluded_reporting_users.join(", ")}</span>
+          </div>
         </div>
       )}
 
