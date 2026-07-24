@@ -27,7 +27,7 @@ function getCentralDateCutoff(daysAgo: number, nowOverride?: Date): { isoStr: st
   const min = String(chicagoTime.getMinutes()).padStart(2, "0");
   const ss = String(chicagoTime.getSeconds()).padStart(2, "0");
 
-  const fubStr = `${yyyy}-${mm}-${dd} ${hh}:${mm}:${ss}`;
+  const fubStr = `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
 
   // Corresponding UTC date
   const utcDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
@@ -81,8 +81,8 @@ async function getStages(apiKey: string): Promise<string[]> {
   return cachedStages || [];
 }
 
-// Optimized FUB fetch with rate-limiting backoff and retries
-async function fubFetch(url: string, apiKey: string, retries = 1): Promise<Response> {
+// Optimized FUB fetch with rate-limiting backoff, retries, and timeout
+async function fubFetch(url: string, apiKey: string, retries = 1, timeoutMs = 12000): Promise<Response> {
   const headers: Record<string, string> = {
     Authorization: `Basic ${Buffer.from(`${apiKey}:`).toString("base64")}`,
     Accept: "application/json",
@@ -92,28 +92,49 @@ async function fubFetch(url: string, apiKey: string, retries = 1): Promise<Respo
     headers["X-System-Key"] = systemKey;
   }
 
-  const res = await fetch(url, { headers });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-  const remaining = Number(res.headers.get("X-RateLimit-Remaining"));
-  const limitContext = res.headers.get("X-RateLimit-Context") || "unknown";
+  try {
+    const res = await fetch(url, { headers, signal: controller.signal });
+    clearTimeout(timer);
 
-  if (res.status === 429) {
-    const retryAfter = Number(res.headers.get("Retry-After")) || 2;
-    console.warn(`[FUB Rate Limit 429] Context: ${limitContext}. Retry-After: ${retryAfter}s.`);
-    if (retries > 0) {
-      await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000 + 500));
-      return fubFetch(url, apiKey, retries - 1);
-    } else {
-      throw new Error(`Follow Up Boss rate limit exceeded (429). Context: ${limitContext}.`);
+    const remaining = Number(res.headers.get("X-RateLimit-Remaining"));
+    const limitContext = res.headers.get("X-RateLimit-Context") || "unknown";
+
+    if (res.status === 401) {
+      throw new Error("Follow Up Boss API authentication failed (401). Please verify the server FUB_API_KEY environment configuration.");
     }
-  }
+    if (res.status === 403) {
+      throw new Error("Follow Up Boss API permission denied (403). The configured API key lacks permission to access this resource.");
+    }
+    if (res.status === 429) {
+      const retryAfter = Number(res.headers.get("Retry-After")) || 2;
+      console.warn(`[FUB Rate Limit 429] Context: ${limitContext}. Retry-After: ${retryAfter}s.`);
+      if (retries > 0) {
+        await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000 + 500));
+        return fubFetch(url, apiKey, retries - 1, timeoutMs);
+      } else {
+        throw new Error(`Follow Up Boss rate limit exceeded (429). Context: ${limitContext}. Please try again shortly.`);
+      }
+    }
+    if (res.status >= 500) {
+      throw new Error(`Follow Up Boss API server error (${res.status}). Service may be temporarily unavailable.`);
+    }
 
-  if (remaining < 20) {
-    console.log(`[FUB Rate Limit Low] Remaining: ${remaining}. Pausing for cooldown.`);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-  }
+    if (remaining && remaining < 20) {
+      console.log(`[FUB Rate Limit Low] Remaining: ${remaining}. Pausing for cooldown.`);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
 
-  return res;
+    return res;
+  } catch (err: any) {
+    clearTimeout(timer);
+    if (err.name === "AbortError") {
+      throw new Error(`Follow Up Boss API request timed out after ${timeoutMs / 1000}s.`);
+    }
+    throw err;
+  }
 }
 
 // Pagination with keyset (next) pointer, falling back to offset if next is absent
@@ -270,6 +291,8 @@ async function handleSearchPeople(input: any, apiKey: string) {
   });
 
   return {
+    report_type: "search_people",
+    generated_at: new Date().toISOString(),
     total_matching: totalMatching,
     returned: returnedCount,
     truncated: isTruncated,
@@ -299,7 +322,7 @@ async function handleGetAgentLeaderboard(input: any, apiKey: string) {
     (u: any) => u.name && u.name.toLowerCase() !== "matt smith"
   );
 
-  // 2. Fetch all leads in scope (with whitelisted fields)
+  // 2. Fetch leads in scope
   const peopleParams = new URLSearchParams();
   peopleParams.append("limit", "100");
   peopleParams.append("fields", "id,assignedUserId,lastActivity,lastCommunication,lastSentEmail,lastSentText,lastOutgoingCall,contacted");
@@ -370,15 +393,22 @@ async function handleGetAgentLeaderboard(input: any, apiKey: string) {
       pct_stale_by_activity: pctStaleActivity,
       pct_stale_by_outbound_contact: pctStaleOutbound,
       never_contacted: neverContacted,
+      denominator_context: `${staleByOutboundContact} of ${totalInScope} leads`,
     };
-  }).filter((a: any) => a.total_in_scope > 0);
+  }).filter((a: any) => a.total_in_scope > 0)
+    .sort((a: any, b: any) => b.stale_by_outbound_contact - a.stale_by_outbound_contact);
 
   return {
+    report_type: "agent_leaderboard",
+    generated_at: new Date().toISOString(),
     stale_definition: {
       days: daysVal,
       cutoff: isoStr,
       basis: "lastActivity and lastOutboundContact reported separately",
     },
+    total_matching_leads: peopleRes.total,
+    records_reviewed: leads.length,
+    truncated: peopleRes.truncated,
     agents: agentRollups,
   };
 }
@@ -446,14 +476,19 @@ async function handleGetPipelineSummary(input: any, apiKey: string) {
     stage: a.stageName,
     count: a.count,
     total_value: a.totalValue,
+    average_value: a.count > 0 ? Math.round(a.totalValue / a.count) : 0,
   }));
 
   const totalCount = breakdown.reduce((sum, item) => sum + item.count, 0);
   const totalValue = breakdown.reduce((sum, item) => sum + item.total_value, 0);
 
   return {
+    report_type: "pipeline_summary",
+    generated_at: new Date().toISOString(),
     total_deals_count: totalCount,
     total_deals_value: totalValue,
+    average_deal_value: totalCount > 0 ? Math.round(totalValue / totalCount) : 0,
+    truncated: dealsRes.truncated,
     stages_breakdown: breakdown,
     ...(include_deals ? { deals: matchingDeals } : {}),
   };
@@ -514,12 +549,18 @@ async function handleGetLeadSources(input: any, apiKey: string) {
       totalCount: data.total,
       staleCount: data.stale,
       stale_rate: staleRate,
+      denominator_context: `${data.stale} of ${data.total} leads`,
       stageBreakdown: data.stages,
     };
   }).sort((a, b) => b.totalCount - a.totalCount);
 
   return {
-    total_leads_in_scope: leads.length,
+    report_type: "lead_sources",
+    generated_at: new Date().toISOString(),
+    total_leads_in_scope: peopleRes.total,
+    records_reviewed: leads.length,
+    truncated: peopleRes.truncated,
+    stale_cutoff: isoStr,
     sources: sourcesList,
   };
 }
@@ -589,8 +630,17 @@ const TOOLS = [
 // ---------------- Netlify Handler ----------------
 
 export async function handler(event: any, context: any) {
+  const requestOrigin = event.headers.origin || event.headers.Origin || "";
+  const allowedOrigins = [
+    "https://calendar-hub-craft.lovable.app",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173"
+  ];
+  const allowOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0];
+
   const headers = {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": allowOrigin,
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Content-Type": "application/json",
@@ -701,33 +751,49 @@ export async function handler(event: any, context: any) {
   // Trigger stage caching at startup/request time
   await getStages(fubApiKey);
 
-  const systemPrompt = `You are a CRM analyst for Matt Smith Real Estate Group, a real estate team operating in Rolla, St. Robert, and Lake of the Ozarks.
+  const systemPrompt = `You are an operational CRM reporting analyst for Matt Smith Real Estate Group (MSREG), operating in Rolla, St. Robert, and Lake of the Ozarks.
 
-STAGES: This account uses custom stages that are TIME-TO-TRANSACTION bands, not intent scores:
+DATA BOUNDARIES & AUTHORITATIVE DATA:
+- Report ONLY information explicitly contained in tool results.
+- All counts, ratios, calculations, percentages, agent names, stages, sources, and totals provided by tools are authoritative.
+- NEVER invent, infer, or fabricate unsupported metrics including:
+  * Text response times or average call response times
+  * Lead conversion rates or closing percentages
+  * Contact attempt counts
+  * Lead totals or agent rankings not in tool results
+  * Historical trends or hourly comparisons
+  unless explicitly provided by a tool or deterministically calculated in application code.
+- NEVER recount large result sets or change rounding. Do NOT recalculate numbers provided by tools.
+
+UNSUPPORTED QUESTIONS:
+- If a user asks for data that cannot be calculated from current tools (such as actual message-by-message response times, text response rates, or hourly SLAs), respond clearly with:
+  "I cannot calculate actual text or call response times from current data because individual message-level timestamps are not available to this report."
+- Then offer the closest supported reports (e.g. leads with no outbound contact in 14 days, agent leaderboards by stale lead count, or never-contacted leads).
+
+TRUNCATION & DATA LIMITS:
+- When a tool result contains \`truncated: true\`, state clearly:
+  "⚠️ Note: This report reflects a partial dataset (showing first X matching records of Y total leads)."
+- Never present partial-dataset calculations as complete team totals without stating the dataset boundary.
+
+REPORTING STYLE:
+- Lead with the single most important operational finding.
+- Provide clean, compact Markdown tables for numbers.
+- Explain what the numbers mean operationally and identify follow-up opportunities.
+- Avoid generic motivational language or repeating the user's question.
+- Keep explanations professional, clear, and business-focused.
+
+STAGE DEFINITIONS (Time-to-Transaction Bands):
   Lead                    — not yet triaged
   A - Hot (0-3 months)    — expected to transact within 3 months
-  B - Warm (3-6 months)
-  C - Watch (6-12 months)
-  D - Cold (12+ months)   — expected to transact in 12+ months, NOT "uninterested"
-Stage names must match exactly, including spaces, hyphens, and parentheses.
+  B - Warm (3-6 months)   — expected to transact in 3-6 months
+  C - Watch (6-12 months) — expected to transact in 6-12 months
+  D - Cold (12+ months)   — expected to transact in 12+ months (NOT "uninterested")
 
-ACTIVITY VS CONTACT — this distinction matters more than any other:
-  last_activity          includes passive and automated events: saved searches, property views, IDX visits, lead-provider imports. A lead can show recent activity with zero human contact.
-  last_outbound_contact  the most recent agent-initiated call, text, or email. This is the real measure of whether someone was worked.
-When asked about leads "not contacted" or "not reached out to," use last_outbound_contact. When comparing against what the FUB UI displays, use last_activity. When the two disagree, report both and say so — the gap is usually the finding, not an error.
-
-DATA INTEGRITY:
-- If a tool returns truncated: true, the count is a FLOOR, not a total. Say so explicitly. Do not present a truncated count as an answer.
-- Always report total_matching, not the number of rows you received.
-- Counts without denominators are misleading. 3 stale out of 4 is a different finding than 3 out of 40. Always give the ratio.
-- If a tool errors or returns nothing, say so. Never infer that zero results means zero leads.
-- When asked for reporting or rollups, you must output a complete markdown table containing ALL agents returned by the tools. Do NOT truncate, summarize, or omit any agents unless explicitly requested.
-
-ANALYSIS:
-- Cite specific numbers and name the field they came from.
-- If the data does not support a conclusion, say so rather than speculating.
-- Distinguish "never contacted" from "contacted then dropped." The first is a process failure; the second is a judgment call.
-- When reporting stale leads, break out paid sources where possible — the cost of an ignored paid lead is a concrete number.`;
+ACTIVITY VS CONTACT DEFINITIONS:
+  last_activity          includes passive/automated events (saved searches, property views, IDX visits, imports). Never describe passive activity as agent follow-up.
+  last_outbound_contact  most recent human agent-initiated outbound call, text, or email.
+  never_contacted        leads with zero outbound contact recorded.
+  contacted_then_dropped leads with prior contact whose last outbound contact is older than the stale threshold.`;
 
   // Action A: Client-orchestrated Chat Proxy (Sends payload directly to Claude)
   if (action === "chat") {

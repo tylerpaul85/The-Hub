@@ -3,64 +3,110 @@ import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Bot, Send, Loader2, User, Sparkles, BarChart3, Users, HelpCircle, AlertCircle, Clock, Download } from "lucide-react";
+import {
+  Bot, Send, Loader2, User, Sparkles, BarChart3, Users, AlertCircle, Clock, Download,
+  Copy, Info, AlertTriangle, ShieldCheck, FileSpreadsheet
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/admin/assistant")({
   component: AdminAssistantPage,
-  head: () => ({ meta: [{ title: "AI CRM Analyst — MSREG Hub" }] }),
+  head: () => ({ meta: [{ title: "Follow Up Boss Reporting Assistant — MSREG Hub" }] }),
 });
+
+interface StructuredReportData {
+  report_type: "agent_leaderboard" | "pipeline_summary" | "lead_sources" | "search_people";
+  generated_at?: string;
+  total_matching?: number;
+  total_matching_leads?: number;
+  total_leads_in_scope?: number;
+  records_reviewed?: number;
+  returned?: number;
+  truncated?: boolean;
+  agents?: any[];
+  sources?: any[];
+  stages_breakdown?: any[];
+  total_deals_count?: number;
+  total_deals_value?: number;
+  average_deal_value?: number;
+  people?: any[];
+}
 
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  structuredReports?: StructuredReportData[];
+  isUnsupportedNotice?: boolean;
 }
 
 const SUGGESTIONS = [
   {
-    label: "Pipeline Summary",
-    prompt: "Show me a summary of our active deals in the pipeline, showing count and total value by stage.",
-    icon: BarChart3,
+    label: "Stale Leads Leaderboard",
+    prompt: "Which agents have the most stale leads?",
+    icon: Clock,
   },
   {
-    label: "Lead Sources",
-    prompt: "What are our top lead sources for leads created in the last 30 days? Break down by stage.",
+    label: "Never-Contacted Leads",
+    prompt: "Which leads have never been contacted?",
     icon: Users,
   },
   {
-    label: "Search Leads",
-    prompt: "Search for leads in the 'Lead' stage with source 'Zillow'.",
+    label: "Stale Lead Rates by Agent",
+    prompt: "Compare stale-lead rates by agent for leads with no outbound contact in 14 days.",
+    icon: BarChart3,
+  },
+  {
+    label: "Lead Source Stale Rates",
+    prompt: "Which lead sources have the highest stale rate for leads created in the last 30 days?",
     icon: Sparkles,
   },
   {
-    label: "Agent Response Times",
-    prompt: "Show me the average response times and response rates by agent on new leads created in the last 30 days.",
-    icon: Clock,
+    label: "Active Deal Pipeline",
+    prompt: "Show the current deal pipeline by stage.",
+    icon: BarChart3,
+  },
+  {
+    label: "Agents Needing Follow-up",
+    prompt: "Which agents have the most leads needing follow-up?",
+    icon: Users,
   },
 ];
 
-// Helper to export parsed markdown table data to CSV file
-function downloadCSV(headers: string[], rows: string[][]) {
+// Helper to export tabular data to CSV
+function downloadCSV(filename: string, headers: string[], rows: (string | number)[][]) {
   const csvContent = [
-    headers.map(h => `"${h.replace(/"/g, '""')}"`).join(","),
-    ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(","))
+    headers.map((h) => `"${String(h).replace(/"/g, '""')}"`).join(","),
+    ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")),
   ].join("\n");
 
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.setAttribute("href", url);
-  link.setAttribute("download", `crm-report-${new Date().toISOString().slice(0, 10)}.csv`);
+  link.setAttribute("download", `${filename}-${new Date().toISOString().slice(0, 10)}.csv`);
   link.style.visibility = "hidden";
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  toast.success(`Exported ${filename}.csv`);
 }
 
-// Inline Markdown Parser to render tables, headers, and bullet lists beautifully.
+// Copy text helper
+function copyToClipboard(text: string, label = "Report") {
+  navigator.clipboard.writeText(text);
+  toast.success(`${label} copied to clipboard`);
+}
+
+// Format currency
+function formatUSD(amount: number): string {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(amount);
+}
+
+// Markdown formatting helper
 function parseInline(text: string): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
   let currentText = text;
@@ -110,11 +156,11 @@ function parseMarkdown(text: string): React.ReactNode {
     block = block.trim();
     if (!block) return null;
 
-    // Table parsing
+    // Tables
     if (block.includes("|") && block.split("\n").length >= 2) {
       const lines = block.split("\n");
-      const rows = lines.map(line =>
-        line.split("|").map(cell => cell.trim()).filter((_, i, arr) => i > 0 && i < arr.length - 1)
+      const rows = lines.map((line) =>
+        line.split("|").map((cell) => cell.trim()).filter((_, i, arr) => i > 0 && i < arr.length - 1)
       );
 
       const hasSeparator = lines[1]?.includes("-") && lines[1]?.includes("|");
@@ -130,7 +176,7 @@ function parseMarkdown(text: string): React.ReactNode {
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => downloadCSV(headerRow, bodyRows)}
+                onClick={() => downloadCSV("crm-report", headerRow, bodyRows)}
                 className="h-7 px-2.5 py-1 text-xs flex items-center gap-1.5 hover:bg-gold/10 hover:text-gold border border-border/50 rounded-lg cursor-pointer transition-colors"
               >
                 <Download className="h-3.5 w-3.5" />
@@ -166,7 +212,7 @@ function parseMarkdown(text: string): React.ReactNode {
       }
     }
 
-    // Code block
+    // Code blocks
     if (block.startsWith("```")) {
       const lines = block.split("\n");
       const code = lines.slice(1, lines.length - (lines[lines.length - 1] === "```" ? 1 : 0)).join("\n");
@@ -177,7 +223,7 @@ function parseMarkdown(text: string): React.ReactNode {
       );
     }
 
-    // Bullet points / lists
+    // Lists
     if (block.startsWith("- ") || block.startsWith("* ") || /^\d+\.\s/.test(block)) {
       const items = block.split(/\n/);
       return (
@@ -190,7 +236,7 @@ function parseMarkdown(text: string): React.ReactNode {
       );
     }
 
-    // Header tags
+    // Headers
     if (block.startsWith("#")) {
       const match = block.match(/^(#{1,6})\s+(.*)$/);
       if (match) {
@@ -201,7 +247,7 @@ function parseMarkdown(text: string): React.ReactNode {
           level === 2 ? "text-xl font-bold tracking-tight mt-5 mb-2.5 text-foreground/90 border-b border-border/40 pb-1" :
           level === 3 ? "text-lg font-semibold tracking-tight mt-4 mb-2 text-gold" :
           "text-base font-semibold mt-3 mb-1 text-foreground/80";
-        const HeadingTag = `h${level}` as keyof JSX.IntrinsicElements;
+        const HeadingTag = `h${level}` as any;
         return (
           <HeadingTag key={idx} className={classNames}>
             {parseInline(headingText)}
@@ -219,30 +265,249 @@ function parseMarkdown(text: string): React.ReactNode {
   });
 }
 
-const LOADING_STATUSES = [
-  "Formulating plan with Claude...",
-  "Querying Follow Up Boss...",
-  "Formatting results table...",
-  "Reshaping CRM records...",
-  "Running agentic loop...",
-];
+// Component to render structured report tables directly in React
+function RenderStructuredReport({ report }: { report: StructuredReportData }) {
+  if (!report || !report.report_type) return null;
+
+  const generatedAt = report.generated_at ? new Date(report.generated_at).toLocaleTimeString() : null;
+
+  return (
+    <div className="my-4 border border-gold/30 rounded-2xl bg-card/80 overflow-hidden shadow-lg backdrop-blur-md">
+      {/* Report Header */}
+      <div className="flex flex-wrap justify-between items-center px-4 py-3 bg-muted/40 border-b border-border/60 gap-2">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="border-gold/50 bg-gold/10 text-gold font-bold text-xs uppercase px-2.5 py-0.5">
+            {report.report_type === "agent_leaderboard" && "Agent Follow-up Leaderboard"}
+            {report.report_type === "pipeline_summary" && "Active Deal Pipeline Summary"}
+            {report.report_type === "lead_sources" && "Lead Sources Performance Report"}
+            {report.report_type === "search_people" && "Lead Contact Search Results"}
+          </Badge>
+          <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+            Calculated Report (Authoritative Data)
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {generatedAt && (
+            <span className="text-[11px] text-muted-foreground">Generated at {generatedAt}</span>
+          )}
+          {report.report_type === "agent_leaderboard" && report.agents && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const headers = ["Agent Name", "Total Leads", "Stale (Outbound)", "Stale %", "Never Contacted"];
+                const rows = report.agents!.map((a) => [a.name, a.total_in_scope, a.stale_by_outbound_contact, `${a.pct_stale_by_outbound_contact}%`, a.never_contacted]);
+                downloadCSV("agent-leaderboard", headers, rows);
+              }}
+              className="h-7 px-2.5 text-xs flex items-center gap-1 hover:border-gold hover:text-gold"
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5" /> CSV
+            </Button>
+          )}
+          {report.report_type === "pipeline_summary" && report.stages_breakdown && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const headers = ["Pipeline", "Stage", "Deals Count", "Total Value", "Average Value"];
+                const rows = report.stages_breakdown!.map((s) => [s.pipeline, s.stage, s.count, formatUSD(s.total_value), formatUSD(s.average_value)]);
+                downloadCSV("pipeline-summary", headers, rows);
+              }}
+              className="h-7 px-2.5 text-xs flex items-center gap-1 hover:border-gold hover:text-gold"
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5" /> CSV
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Truncation warning banner if applicable */}
+      {report.truncated && (
+        <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/30 flex items-center gap-2 text-xs text-amber-300">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400" />
+          <span>
+            <b>Partial Dataset Notice:</b> Report reflects first {report.records_reviewed ?? report.returned ?? "retrieved"} matching leads out of {report.total_matching_leads ?? report.total_matching ?? report.total_leads_in_scope ?? "total"} total matching records.
+          </span>
+        </div>
+      )}
+
+      {/* Report 1: Agent Leaderboard */}
+      {report.report_type === "agent_leaderboard" && report.agents && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left border-collapse">
+            <thead>
+              <tr className="border-b border-border/60 bg-muted/20 text-xs font-bold uppercase text-muted-foreground">
+                <th className="p-3">Agent</th>
+                <th className="p-3 text-right">Leads in Scope</th>
+                <th className="p-3 text-right">Stale by Activity</th>
+                <th className="p-3 text-right">Stale by Outbound Contact</th>
+                <th className="p-3 text-right">Stale Rate %</th>
+                <th className="p-3 text-right">Never Contacted</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/30">
+              {report.agents.map((a: any, i: number) => (
+                <tr key={i} className="hover:bg-muted/10 transition-colors">
+                  <td className="p-3 font-semibold text-foreground">{a.name}</td>
+                  <td className="p-3 text-right">{a.total_in_scope}</td>
+                  <td className="p-3 text-right text-muted-foreground">{a.stale_by_activity}</td>
+                  <td className="p-3 text-right font-medium text-amber-400">{a.stale_by_outbound_contact}</td>
+                  <td className="p-3 text-right font-bold text-gold">
+                    {a.pct_stale_by_outbound_contact}%
+                    <span className="block text-[10px] text-muted-foreground font-normal">{a.denominator_context}</span>
+                  </td>
+                  <td className="p-3 text-right font-medium text-red-400">{a.never_contacted}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Report 2: Pipeline Summary */}
+      {report.report_type === "pipeline_summary" && report.stages_breakdown && (
+        <div>
+          <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-3 border-b border-border/40 bg-muted/10">
+            <div className="p-3 rounded-xl bg-card border border-border/60">
+              <div className="text-xs text-muted-foreground font-medium">Total Active Deals</div>
+              <div className="text-xl font-extrabold text-foreground mt-0.5">{report.total_deals_count}</div>
+            </div>
+            <div className="p-3 rounded-xl bg-card border border-border/60">
+              <div className="text-xs text-muted-foreground font-medium">Total Pipeline Value</div>
+              <div className="text-xl font-extrabold text-gold mt-0.5">{formatUSD(report.total_deals_value || 0)}</div>
+            </div>
+            <div className="p-3 rounded-xl bg-card border border-border/60">
+              <div className="text-xs text-muted-foreground font-medium">Average Deal Value</div>
+              <div className="text-xl font-extrabold text-foreground mt-0.5">{formatUSD(report.average_deal_value || 0)}</div>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left border-collapse">
+              <thead>
+                <tr className="border-b border-border/60 bg-muted/20 text-xs font-bold uppercase text-muted-foreground">
+                  <th className="p-3">Pipeline</th>
+                  <th className="p-3">Stage</th>
+                  <th className="p-3 text-right">Deal Count</th>
+                  <th className="p-3 text-right">Total Value</th>
+                  <th className="p-3 text-right">Average Value</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                {report.stages_breakdown.map((s: any, i: number) => (
+                  <tr key={i} className="hover:bg-muted/10 transition-colors">
+                    <td className="p-3 font-medium text-muted-foreground">{s.pipeline}</td>
+                    <td className="p-3 font-semibold text-foreground">{s.stage}</td>
+                    <td className="p-3 text-right font-bold">{s.count}</td>
+                    <td className="p-3 text-right font-semibold text-gold">{formatUSD(s.total_value)}</td>
+                    <td className="p-3 text-right text-muted-foreground">{formatUSD(s.average_value)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Report 3: Lead Sources */}
+      {report.report_type === "lead_sources" && report.sources && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left border-collapse">
+            <thead>
+              <tr className="border-b border-border/60 bg-muted/20 text-xs font-bold uppercase text-muted-foreground">
+                <th className="p-3">Marketing Source</th>
+                <th className="p-3 text-right">Leads Reviewed</th>
+                <th className="p-3 text-right">Stale Leads</th>
+                <th className="p-3 text-right">Stale Rate %</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/30">
+              {report.sources.map((src: any, i: number) => (
+                <tr key={i} className="hover:bg-muted/10 transition-colors">
+                  <td className="p-3 font-semibold text-foreground">{src.source}</td>
+                  <td className="p-3 text-right font-medium">{src.totalCount}</td>
+                  <td className="p-3 text-right text-amber-400 font-medium">{src.staleCount}</td>
+                  <td className="p-3 text-right font-bold text-gold">
+                    {src.stale_rate}%
+                    <span className="block text-[10px] text-muted-foreground font-normal">{src.denominator_context}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Report 4: Lead Search Results */}
+      {report.report_type === "search_people" && report.people && (
+        <div>
+          <div className="px-4 py-2 bg-muted/20 border-b border-border/40 text-xs text-muted-foreground flex justify-between">
+            <span>Showing {report.returned} of {report.total_matching} matching contacts</span>
+            {report.truncated && <span className="text-amber-400 font-medium">Truncated (max ceiling)</span>}
+          </div>
+          {report.people.length === 0 ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">
+              No contacts match the requested search criteria.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-border/60 bg-muted/20 text-xs font-bold uppercase text-muted-foreground">
+                    <th className="p-3">Lead Name</th>
+                    <th className="p-3">Assigned Agent</th>
+                    <th className="p-3">Stage</th>
+                    <th className="p-3">Source</th>
+                    <th className="p-3">Days Since Outbound</th>
+                    <th className="p-3">Contact Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/30">
+                  {report.people.map((p: any, i: number) => (
+                    <tr key={i} className="hover:bg-muted/10 transition-colors">
+                      <td className="p-3 font-semibold text-foreground">{p.name}</td>
+                      <td className="p-3 text-muted-foreground">{p.assigned_to}</td>
+                      <td className="p-3">
+                        <Badge variant="outline" className="text-[11px] font-normal">{p.stage}</Badge>
+                      </td>
+                      <td className="p-3 text-muted-foreground text-xs">{p.source}</td>
+                      <td className="p-3 text-xs font-medium">
+                        {p.days_since_outbound_contact !== null ? `${p.days_since_outbound_contact} days ago` : <span className="text-red-400">Never</span>}
+                      </td>
+                      <td className="p-3">
+                        {p.contacted ? (
+                          <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px]">Contacted</Badge>
+                        ) : (
+                          <Badge className="bg-red-500/10 text-red-400 border-red-500/30 text-[10px]">Uncontacted</Badge>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function AdminAssistantPage() {
   const { isAdmin, loading } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
-      content: "Hello! I am your AI CRM Analyst. I can query Follow Up Boss and help you analyze active pipelines, lead sources, and find specific contacts. Try clicking one of the shortcuts below to get started!",
+      content: "Welcome to the **Follow Up Boss Reporting Assistant**. I provide operational reports on active deal pipelines, lead sources, and team follow-up metrics. Click a shortcut below or ask a question to generate a report.",
     },
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingStatus, setLoadingStatus] = useState(LOADING_STATUSES[0]);
+  const [loadingStatus, setLoadingStatus] = useState("Understanding request...");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const loadingIntervalRef = useRef<number | null>(null);
 
-  // Auto scroll to bottom
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -250,26 +515,6 @@ function AdminAssistantPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]);
-
-  // Rotate loading messages during long-running tool loops
-  useEffect(() => {
-    if (isLoading) {
-      let step = 0;
-      loadingIntervalRef.current = window.setInterval(() => {
-        step = (step + 1) % LOADING_STATUSES.length;
-        setLoadingStatus(LOADING_STATUSES[step]);
-      }, 3500);
-    } else {
-      if (loadingIntervalRef.current) {
-        clearInterval(loadingIntervalRef.current);
-        loadingIntervalRef.current = null;
-      }
-      setLoadingStatus(LOADING_STATUSES[0]);
-    }
-    return () => {
-      if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current);
-    };
-  }, [isLoading]);
 
   if (loading) {
     return (
@@ -286,7 +531,7 @@ function AdminAssistantPage() {
         <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
         <h1 className="text-xl font-bold text-destructive mb-2">Access Denied</h1>
         <p className="text-muted-foreground text-sm">
-          This AI CRM Assistant route is restricted to administrators only. Please contact your administrator if you believe this is an error.
+          This Follow Up Boss Reporting Assistant route is restricted to administrators only.
         </p>
       </div>
     );
@@ -295,21 +540,37 @@ function AdminAssistantPage() {
   const handleSend = async (textToSend: string) => {
     if (!textToSend.trim() || isLoading) return;
 
-    const userMessage: ChatMessage = { role: "user", content: textToSend };
+    const userQuery = textToSend.trim();
+
+    // Unsupported question intercept for text response times
+    if (/response time|text response|reply time|how fast/i.test(userQuery) && !/stale|leaderboard|pipeline|source/i.test(userQuery)) {
+      setMessages((prev) => [
+        ...prev,
+        { role: "user", content: userQuery },
+        {
+          role: "assistant",
+          isUnsupportedNotice: true,
+          content: "⚠️ **Unsupported Metric Request**\n\nI cannot calculate actual text or call response times from current data because individual message-level timestamps are not available to this report.\n\n**Supported Reports Available Now:**\n- **Agent Stale Leads Leaderboard**: Show agents with leads having no outbound contact in 14+ days\n- **Uncontacted Leads Search**: Find new leads with zero outbound calls, texts, or emails\n- **Active Deal Pipeline**: Show active deal counts and value by stage\n- **Lead Sources Breakdown**: Compare lead stale rates across marketing sources",
+        },
+      ]);
+      setInputValue("");
+      return;
+    }
+
+    const userMessage: ChatMessage = { role: "user", content: userQuery };
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
     setInputValue("");
     setIsLoading(true);
+    setLoadingStatus("Understanding request...");
 
     try {
-      // 1. Get current supabase session JWT
       const sessionRes = await supabase.auth.getSession();
       const token = sessionRes.data.session?.access_token;
       if (!token) {
-        throw new Error("Supabase authentication session expired. Please sign in again.");
+        throw new Error("Supabase session expired. Please sign in again.");
       }
 
-      // Initialize the history array for the agentic loop
       let currentHistory: any[] = updatedMessages.map((m) => ({
         role: m.role,
         content: m.content,
@@ -317,13 +578,13 @@ function AdminAssistantPage() {
 
       let iterations = 0;
       let replyText = "";
+      const collectedReports: StructuredReportData[] = [];
       const maxIterations = 5;
 
       while (iterations < maxIterations) {
         iterations++;
-        setLoadingStatus(`Thinking (Iteration ${iterations}/${maxIterations})...`);
+        setLoadingStatus(iterations === 1 ? "Retrieving Follow Up Boss data..." : `Calculating report (Step ${iterations})...`);
 
-        // Post to chat proxy
         const chatResponse = await fetch("/.netlify/functions/fub-assistant", {
           method: "POST",
           headers: {
@@ -342,12 +603,11 @@ function AdminAssistantPage() {
           chatBody = await chatResponse.json();
         } else {
           const text = await chatResponse.text();
-          const cleanText = text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-          throw new Error(cleanText.slice(0, 180) || `Server responded with status ${chatResponse.status}`);
+          throw new Error(text.slice(0, 180) || `Server responded with status ${chatResponse.status}`);
         }
 
         if (!chatResponse.ok) {
-          throw new Error(chatBody?.error || `Chat error: Server responded with status ${chatResponse.status}`);
+          throw new Error(chatBody?.error || `Server responded with status ${chatResponse.status}`);
         }
 
         const result = chatBody.result;
@@ -355,22 +615,19 @@ function AdminAssistantPage() {
           throw new Error("Assistant response was empty.");
         }
 
-        // Add assistant's reply to local agent history
         currentHistory.push({
           role: "assistant",
           content: result.content,
         });
 
-        // Check if tool execution is required
         if (result.stop_reason !== "tool_use") {
           const textBlock = result.content.find((c: any) => c.type === "text");
           replyText = textBlock ? textBlock.text : "";
           break;
         }
 
-        // Execute tool calls in parallel from the browser
         const toolUses = result.content.filter((c: any) => c.type === "tool_use");
-        setLoadingStatus(`Executing ${toolUses.length} FUB tool calls...`);
+        setLoadingStatus("Calculating report metrics...");
 
         const toolResults = await Promise.all(
           toolUses.map(async (toolUse: any) => {
@@ -395,15 +652,19 @@ function AdminAssistantPage() {
               toolBody = await toolResponse.json();
             } else {
               const text = await toolResponse.text();
-              throw new Error(`Tool execution error: ${text.slice(0, 100)}`);
+              throw new Error(`Tool error: ${text.slice(0, 100)}`);
             }
 
             if (!toolResponse.ok) {
               return {
                 type: "tool_result",
                 tool_use_id: toolUseId,
-                content: JSON.stringify({ error: toolBody?.error || "Tool failed" }),
+                content: JSON.stringify({ error: toolBody?.error || "Tool execution failed" }),
               };
+            }
+
+            if (toolBody?.result && typeof toolBody.result === "object" && toolBody.result.report_type) {
+              collectedReports.push(toolBody.result as StructuredReportData);
             }
 
             return {
@@ -414,7 +675,8 @@ function AdminAssistantPage() {
           })
         );
 
-        // Append tool results back into local conversation history
+        setLoadingStatus("Preparing explanation...");
+
         currentHistory.push({
           role: "user",
           content: toolResults,
@@ -422,17 +684,24 @@ function AdminAssistantPage() {
       }
 
       if (replyText) {
-        setMessages((prev) => [...prev, { role: "assistant", content: replyText }]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: replyText,
+            structuredReports: collectedReports.length > 0 ? collectedReports : undefined,
+          },
+        ]);
       } else {
         throw new Error("Loop completed without generating an answer.");
       }
     } catch (err: any) {
-      toast.error(err.message || "Failed to contact CRM Assistant.");
+      toast.error(err.message || "Failed to generate report.");
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: `⚠️ **Error occurred:** ${err.message || "Unknown error connecting to FUB AI gateway."}`,
+          content: `⚠️ **Report Execution Notice:** ${err.message || "Unknown error connecting to Follow Up Boss reporting gateway."}`,
         },
       ]);
     } finally {
@@ -448,17 +717,29 @@ function AdminAssistantPage() {
 
   return (
     <div className="p-4 lg:p-8 max-w-5xl mx-auto h-[calc(100vh-theme(spacing.16))] flex flex-col">
-      <header className="mb-6 flex items-center gap-4 border-b border-border/40 pb-4">
-        <div className="bg-gradient-to-tr from-gold/35 to-amber-500/10 border border-gold/45 rounded-xl p-3 shadow-md shadow-gold/5">
-          <Bot className="h-6 w-6 text-gold" />
+      {/* Header */}
+      <header className="mb-4 flex flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-4">
+        <div className="flex items-center gap-3.5">
+          <div className="bg-gradient-to-tr from-gold/35 to-amber-500/10 border border-gold/45 rounded-xl p-3 shadow-md shadow-gold/5">
+            <Bot className="h-6 w-6 text-gold" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
+              Follow Up Boss Reporting Assistant
+            </h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Operational CRM reports, deal pipelines, lead sources, and team follow-up metrics.
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
-            AI CRM Analyst
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Analyze FUB lead pipelines, sources, and contacts securely via Claude.
-          </p>
+
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-400 text-xs px-2.5 py-1">
+            Authoritative Metrics
+          </Badge>
+          <Badge variant="outline" className="border-gold/40 bg-gold/10 text-gold text-xs px-2.5 py-1">
+            Live FUB API
+          </Badge>
         </div>
       </header>
 
@@ -475,15 +756,46 @@ function AdminAssistantPage() {
                       <Bot className="h-5 w-5 text-gold" />
                     </div>
                   )}
-                  <div
-                    className={`px-4 py-3 rounded-2xl max-w-[85%] text-sm leading-relaxed shadow-sm ${
-                      isAssistant
-                        ? "bg-card border border-border/80 rounded-tl-none text-foreground/90"
-                        : "bg-gold/10 border border-gold/25 text-foreground px-4 py-3 rounded-tr-none"
-                    }`}
-                  >
-                    {isAssistant ? parseMarkdown(message.content) : <p className="whitespace-pre-wrap">{message.content}</p>}
+
+                  <div className="max-w-[88%] space-y-3">
+                    {/* Render Structured Reports if present */}
+                    {isAssistant && message.structuredReports && message.structuredReports.map((report, rIdx) => (
+                      <RenderStructuredReport key={rIdx} report={report} />
+                    ))}
+
+                    {/* Message text block */}
+                    <div
+                      className={`px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
+                        isAssistant
+                          ? message.isUnsupportedNotice
+                            ? "bg-amber-500/10 border border-amber-500/30 text-amber-200 rounded-tl-none"
+                            : "bg-card border border-border/80 rounded-tl-none text-foreground/90"
+                          : "bg-gold/10 border border-gold/25 text-foreground px-4 py-3 rounded-tr-none"
+                      }`}
+                    >
+                      {isAssistant && message.structuredReports && message.structuredReports.length > 0 && (
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-gold mb-2 flex items-center gap-1.5">
+                          <Info className="h-3.5 w-3.5" /> AI Observations & Commentary
+                        </div>
+                      )}
+
+                      {isAssistant ? parseMarkdown(message.content) : <p className="whitespace-pre-wrap">{message.content}</p>}
+
+                      {isAssistant && !message.isUnsupportedNotice && (
+                        <div className="mt-3 pt-2 border-t border-border/40 flex justify-end">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => copyToClipboard(message.content, "Report commentary")}
+                            className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                          >
+                            <Copy className="h-3 w-3 mr-1" /> Copy
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
+
                   {!isAssistant && (
                     <div className="h-9 w-9 rounded-xl bg-muted border border-border/80 flex items-center justify-center shrink-0 shadow-sm mt-1">
                       <User className="h-5 w-5 text-muted-foreground" />
@@ -512,9 +824,9 @@ function AdminAssistantPage() {
         {messages.length === 1 && !isLoading && (
           <div className="px-6 py-4 border-t border-border/40 bg-muted/10">
             <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3">
-              Suggested Analyses
+              Supported Report Shortcuts
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
               {SUGGESTIONS.map((item, index) => {
                 const Icon = item.icon;
                 return (
@@ -523,12 +835,12 @@ function AdminAssistantPage() {
                     onClick={() => handleSend(item.prompt)}
                     className="flex items-center gap-3 p-3 text-left rounded-xl border border-border bg-card/60 hover:bg-gold/5 hover:border-gold/30 transition-all group active:scale-[0.99]"
                   >
-                    <div className="p-2 rounded-lg bg-muted group-hover:bg-gold/10 transition-colors">
+                    <div className="p-2 rounded-lg bg-muted group-hover:bg-gold/10 transition-colors shrink-0">
                       <Icon className="h-4 w-4 text-muted-foreground group-hover:text-gold" />
                     </div>
-                    <div>
-                      <div className="text-xs font-semibold text-foreground">{item.label}</div>
-                      <div className="text-[11px] text-muted-foreground truncate max-w-[280px]">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-semibold text-foreground truncate">{item.label}</div>
+                      <div className="text-[11px] text-muted-foreground truncate">
                         {item.prompt}
                       </div>
                     </div>
@@ -546,7 +858,7 @@ function AdminAssistantPage() {
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isLoading}
-            placeholder="Ask anything about pipeline value, sources, or active leads..."
+            placeholder="Ask for an agent leaderboard, deal pipeline, lead sources, or search contacts..."
             className="flex-1 bg-background/80 border-border/80 focus-visible:ring-gold focus-visible:border-gold/60 py-5 rounded-xl text-sm"
           />
           <Button

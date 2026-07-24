@@ -144,10 +144,11 @@ export const runApiDiagnostics = createServerFn({ method: "POST" })
       });
     } else {
       const basic = `Basic ${Buffer.from(`${fubKey}:`).toString("base64")}`;
+      const systemKey = process.env.FUB_SYSTEM_KEY ?? fubKey;
       const fubHeaders = {
         Authorization: basic,
         "X-System": "MSREG-Marketing-Dashboard",
-        "X-System-Key": fubKey,
+        "X-System-Key": systemKey,
         Accept: "application/json",
       };
 
