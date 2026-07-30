@@ -1179,14 +1179,12 @@ function ImportSection() {
             if (error) throw error;
             updated++;
           } else {
-            const { error } = await sb
-              .from("scorecard_weekly_entries")
-              .insert({
-                measurable_id: m.id,
-                week_start: v.weekStart,
-                actual_value: v.value,
-                submitted_by: user?.id ?? null,
-              });
+            const { error } = await sb.from("scorecard_weekly_entries").insert({
+              measurable_id: m.id,
+              week_start: v.weekStart,
+              actual_value: v.value,
+              submitted_by: user?.id ?? null,
+            });
             if (error) throw error;
             created++;
           }

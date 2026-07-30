@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 // Schema validations
 const IssueCreditSchema = z.object({
-  agentId: z.string().uuid(),
+  agentName: z.string().trim().min(1).max(255),
   amount: z.number().positive().max(10000),
   reason: z.string().trim().min(1).max(500),
 });
@@ -62,7 +62,7 @@ async function callShopify(endpoint: string, options: RequestInit = {}) {
 }
 
 /**
- * Get all swag credit entries, combined with agent details and creator emails.
+ * Get all swag credit entries combined with creator emails.
  */
 export const getSwagCredits = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -81,27 +81,20 @@ export const getSwagCredits = createServerFn({ method: "GET" })
       throw new Error(error?.message || "Failed to fetch swag credits.");
     }
 
-    const agentIds = Array.from(new Set(credits.map((c) => c.agent_id)));
     const creatorIds = Array.from(
       new Set(credits.map((c) => c.created_by).filter((id): id is string => !!id)),
     );
 
-    // Fetch related agents and creators
-    const [agentsRes, profilesRes] = await Promise.all([
-      agentIds.length > 0
-        ? supabaseAdmin.from("agent_accounts").select("id, email, full_name").in("id", agentIds)
-        : { data: [] },
+    // Fetch related creators
+    const profilesRes =
       creatorIds.length > 0
-        ? supabaseAdmin.from("profiles").select("id, email").in("id", creatorIds)
-        : { data: [] },
-    ]);
+        ? await supabaseAdmin.from("profiles").select("id, email").in("id", creatorIds)
+        : { data: [] };
 
-    const agentsMap = new Map((agentsRes.data ?? []).map((a) => [a.id, a]));
     const profilesMap = new Map((profilesRes.data ?? []).map((p) => [p.id, p]));
 
     return credits.map((c) => ({
       ...c,
-      agent: agentsMap.get(c.agent_id) || null,
       creator: c.created_by ? profilesMap.get(c.created_by) || null : null,
     }));
   });
@@ -144,7 +137,7 @@ export const issueSwagCredit = createServerFn({ method: "POST" })
     const { data: inserted, error: dbErr } = await supabaseAdmin
       .from("shopify_swag_credits")
       .insert({
-        agent_id: data.agentId,
+        agent_name: data.agentName,
         amount: data.amount,
         balance: data.amount,
         reason: data.reason,

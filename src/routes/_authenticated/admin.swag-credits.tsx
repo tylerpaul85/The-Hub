@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -45,7 +46,6 @@ import {
   Check,
   AlertTriangle,
   Search,
-  Filter,
   Ban,
   Calendar,
 } from "lucide-react";
@@ -64,15 +64,9 @@ export const Route = createFileRoute("/_authenticated/admin/swag-credits")({
   head: () => ({ meta: [{ title: "Swag Store Credits — MSREG Hub" }] }),
 });
 
-interface Agent {
-  id: string;
-  email: string;
-  full_name: string;
-}
-
 interface SwagCredit {
   id: string;
-  agent_id: string;
+  agent_name: string;
   amount: number;
   balance: number;
   reason: string;
@@ -82,7 +76,6 @@ interface SwagCredit {
   created_by: string | null;
   created_at: string;
   updated_at: string;
-  agent: Agent | null;
   creator: { id: string; email: string } | null;
 }
 
@@ -99,7 +92,9 @@ function AdminSwagCreditsPage() {
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
 
   // New Credit Form State
-  const [selectedAgentId, setSelectedAgentId] = useState("");
+  const [selectedAgentEmail, setSelectedAgentEmail] = useState("");
+  const [customAgentName, setCustomAgentName] = useState("");
+  const [useCustomName, setUseCustomName] = useState(false);
   const [creditAmount, setCreditAmount] = useState("");
   const [creditReason, setCreditReason] = useState("");
   const [createdCredit, setCreatedCredit] = useState<SwagCredit | null>(null);
@@ -119,16 +114,49 @@ function AdminSwagCreditsPage() {
     queryFn: () => checkConfig(),
   });
 
-  const { data: agents = [], isLoading: isAgentsLoading } = useQuery({
-    queryKey: ["agent-accounts-list"],
+  // Aggregated dropdown list combining signatures, profiles, and agent accounts
+  const { data: dropdownAgents = [], isLoading: isAgentsLoading } = useQuery({
+    queryKey: ["swag-agents-dropdown-list"],
     enabled: canAccess,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("agent_accounts")
-        .select("id, email, full_name")
-        .order("full_name");
-      if (error) throw error;
-      return data as Agent[];
+      const [sigsRes, profilesRes, accountsRes] = await Promise.all([
+        supabase.from("agent_signature_data").select("user_id, gmail_email"),
+        supabase.from("profiles").select("id, email, first_name, last_name"),
+        supabase.from("agent_accounts").select("id, email, full_name"),
+      ]);
+
+      const profMap = new Map(profilesRes.data?.map((p) => [p.id, p]) ?? []);
+      const combined = new Map<string, { name: string; email: string }>();
+
+      // 1. Add signature agents
+      (sigsRes.data ?? []).forEach((s: any) => {
+        const p = profMap.get(s.user_id);
+        const name = p ? [p.first_name, p.last_name].filter(Boolean).join(" ") : "";
+        const email = s.gmail_email || p?.email || "";
+        if (email) {
+          combined.set(email.toLowerCase(), { name: name || email, email });
+        }
+      });
+
+      // 2. Add agent accounts
+      (accountsRes.data ?? []).forEach((a: any) => {
+        if (a.email) {
+          combined.set(a.email.toLowerCase(), { name: a.full_name || a.email, email: a.email });
+        }
+      });
+
+      // 3. Add profiles
+      (profilesRes.data ?? []).forEach((p: any) => {
+        const name = [p.first_name, p.last_name].filter(Boolean).join(" ");
+        if (p.email) {
+          const key = p.email.toLowerCase();
+          if (!combined.has(key)) {
+            combined.set(key, { name: name || p.email, email: p.email });
+          }
+        }
+      });
+
+      return Array.from(combined.values()).sort((a, b) => a.name.localeCompare(b.name));
     },
   });
 
@@ -144,19 +172,19 @@ function AdminSwagCreditsPage() {
 
   // Mutations
   const issueMutation = useMutation({
-    mutationFn: async (payload: { agentId: string; amount: number; reason: string }) => {
+    mutationFn: async (payload: { agentName: string; amount: number; reason: string }) => {
       const res = await issueCredit({ data: payload });
       return res.credit as SwagCredit;
     },
     onSuccess: (newCredit) => {
       qc.invalidateQueries({ queryKey: ["swag-credits-list"] });
-      // Map agent details back for display in success modal
-      const agentObj = agents.find((a) => a.id === newCredit.agent_id) || null;
-      setCreatedCredit({ ...newCredit, agent: agentObj, creator: null });
+      setCreatedCredit(newCredit);
       setIsIssueOpen(false);
       setIsSuccessOpen(true);
       // Reset form
-      setSelectedAgentId("");
+      setSelectedAgentEmail("");
+      setCustomAgentName("");
+      setUseCustomName(false);
       setCreditAmount("");
       setCreditReason("");
       toast.success("Swag money credit issued successfully!");
@@ -198,8 +226,7 @@ function AdminSwagCreditsPage() {
       const matchesStatus = statusFilter === "all" || c.status === statusFilter;
       const matchesSearch =
         !searchTerm ||
-        c.agent?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.agent?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.agent_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.gift_card_code?.toLowerCase().includes(searchTerm.toLowerCase());
       return matchesStatus && matchesSearch;
@@ -208,8 +235,17 @@ function AdminSwagCreditsPage() {
 
   const handleIssueSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedAgentId) {
-      toast.error("Please select an agent.");
+
+    let agentNameToSend = "";
+    if (useCustomName) {
+      agentNameToSend = customAgentName.trim();
+    } else {
+      const matched = dropdownAgents.find((a) => a.email === selectedAgentEmail);
+      agentNameToSend = matched ? `${matched.name} (${matched.email})` : selectedAgentEmail;
+    }
+
+    if (!agentNameToSend) {
+      toast.error("Please provide an agent name or select one.");
       return;
     }
     const amountNum = parseFloat(creditAmount);
@@ -223,7 +259,7 @@ function AdminSwagCreditsPage() {
     }
 
     issueMutation.mutate({
-      agentId: selectedAgentId,
+      agentName: agentNameToSend,
       amount: amountNum,
       reason: creditReason.trim(),
     });
@@ -396,12 +432,7 @@ function AdminSwagCreditsPage() {
                       className="border-b border-sidebar-border/20 hover:bg-sidebar-accent/10"
                     >
                       <TableCell>
-                        <div className="font-medium text-white">
-                          {credit.agent?.full_name || "Unknown Agent"}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {credit.agent?.email || credit.agent_id}
-                        </div>
+                        <div className="font-medium text-white">{credit.agent_name}</div>
                       </TableCell>
                       <TableCell
                         className="max-w-xs truncate text-muted-foreground"
@@ -515,32 +546,71 @@ function AdminSwagCreditsPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleIssueSubmit} className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="agent-select" className="text-sm font-medium">
-                Select Agent
-              </Label>
-              <Select value={selectedAgentId} onValueChange={setSelectedAgentId}>
-                <SelectTrigger
-                  id="agent-select"
-                  className="bg-background border-sidebar-border focus:ring-gold"
+            {/* Input Selection Toggle */}
+            <div className="flex items-center justify-between p-2.5 rounded bg-background/50 border border-sidebar-border/30">
+              <div className="space-y-0.5">
+                <Label
+                  htmlFor="custom-name-toggle"
+                  className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
                 >
-                  <SelectValue
-                    placeholder={isAgentsLoading ? "Loading agents..." : "Choose an agent"}
-                  />
-                </SelectTrigger>
-                <SelectContent className="bg-sidebar border-sidebar-border max-h-60 overflow-y-auto">
-                  {agents.map((agent) => (
-                    <SelectItem
-                      key={agent.id}
-                      value={agent.id}
-                      className="text-white focus:bg-sidebar-accent"
-                    >
-                      {agent.full_name} ({agent.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  Custom Input Mode
+                </Label>
+                <div className="text-xs text-muted-foreground">
+                  Type a custom name/email instead of picking from list
+                </div>
+              </div>
+              <Switch
+                id="custom-name-toggle"
+                checked={useCustomName}
+                onCheckedChange={setUseCustomName}
+              />
             </div>
+
+            {useCustomName ? (
+              <div className="space-y-2">
+                <Label htmlFor="agent-name-input" className="text-sm font-medium">
+                  Agent Name or Email
+                </Label>
+                <Input
+                  id="agent-name-input"
+                  placeholder="e.g. John Doe (john@example.com)"
+                  value={customAgentName}
+                  onChange={(e) => setCustomAgentName(e.target.value)}
+                  className="bg-background border-sidebar-border focus-visible:ring-gold"
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="agent-select" className="text-sm font-medium">
+                  Select Agent
+                </Label>
+                <Select value={selectedAgentEmail} onValueChange={setSelectedAgentEmail}>
+                  <SelectTrigger
+                    id="agent-select"
+                    className="bg-background border-sidebar-border focus:ring-gold"
+                  >
+                    <SelectValue
+                      placeholder={
+                        isAgentsLoading
+                          ? "Loading agents..."
+                          : "Choose an agent from signatures/accounts"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent className="bg-sidebar border-sidebar-border max-h-60 overflow-y-auto">
+                    {dropdownAgents.map((agent) => (
+                      <SelectItem
+                        key={agent.email}
+                        value={agent.email}
+                        className="text-white focus:bg-sidebar-accent"
+                      >
+                        {agent.name} {agent.name !== agent.email && `(${agent.email})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="amount" className="text-sm font-medium">
@@ -607,7 +677,7 @@ function AdminSwagCreditsPage() {
           </DialogHeader>
           <div className="space-y-4 py-4 text-center">
             <p className="text-muted-foreground text-sm">
-              Copy this code now to send to **{createdCredit?.agent?.full_name}**.
+              Copy this code now to send to **{createdCredit?.agent_name}**.
             </p>
 
             <div className="bg-background border border-sidebar-border p-4 rounded-xl flex flex-col items-center gap-3">

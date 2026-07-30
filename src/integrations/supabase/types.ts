@@ -2232,7 +2232,7 @@ export type Database = {
       shopify_swag_credits: {
         Row: {
           id: string;
-          agent_id: string;
+          agent_name: string;
           amount: number;
           balance: number;
           reason: string;
@@ -2245,7 +2245,7 @@ export type Database = {
         };
         Insert: {
           id?: string;
-          agent_id: string;
+          agent_name: string;
           amount: number;
           balance: number;
           reason: string;
@@ -2258,7 +2258,7 @@ export type Database = {
         };
         Update: {
           id?: string;
-          agent_id?: string;
+          agent_name?: string;
           amount?: number;
           balance?: number;
           reason?: string;
@@ -2270,12 +2270,6 @@ export type Database = {
           updated_at?: string;
         };
         Relationships: [
-          {
-            foreignKeyName: "shopify_swag_credits_agent_id_fkey";
-            columns: ["agent_id"];
-            referencedRelation: "users";
-            referencedColumns: ["id"];
-          },
           {
             foreignKeyName: "shopify_swag_credits_created_by_fkey";
             columns: ["created_by"];

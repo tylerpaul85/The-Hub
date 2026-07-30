@@ -4,7 +4,7 @@
 
 CREATE TABLE IF NOT EXISTS public.shopify_swag_credits (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  agent_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  agent_name text NOT NULL, -- Flexible name or email of the agent
   amount numeric(10, 2) NOT NULL CHECK (amount > 0),
   balance numeric(10, 2) NOT NULL CHECK (balance >= 0),
   reason text NOT NULL,
@@ -27,7 +27,6 @@ DROP POLICY IF EXISTS "swag_credits_select_policy" ON public.shopify_swag_credit
 CREATE POLICY "swag_credits_select_policy" ON public.shopify_swag_credits
   FOR SELECT TO authenticated
   USING (
-    agent_id = auth.uid() OR
     public.has_role(auth.uid(), 'admin'::public.app_role) OR
     public.has_role(auth.uid(), 'marketing_coordinator'::public.app_role)
   );
@@ -64,6 +63,3 @@ CREATE POLICY "swag_credits_delete_policy" ON public.shopify_swag_credits
 DROP TRIGGER IF EXISTS shopify_swag_credits_updated_at ON public.shopify_swag_credits;
 CREATE TRIGGER shopify_swag_credits_updated_at BEFORE UPDATE ON public.shopify_swag_credits
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-
--- Indexes
-CREATE INDEX IF NOT EXISTS idx_shopify_swag_credits_agent_id ON public.shopify_swag_credits(agent_id);
