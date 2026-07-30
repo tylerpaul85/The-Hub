@@ -39,6 +39,7 @@ import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated/videos'
 import { Route as AgentsIndexRouteImport } from './routes/agents.index'
 import { Route as AuthenticatedAdminAssistantRouteImport } from './routes/_authenticated/admin.assistant'
+import { Route as AuthenticatedAdminSwagCreditsRouteImport } from './routes/_authenticated/admin.swag-credits'
 import { Route as AuthenticatedEosIssuesRouteImport } from './routes/_authenticated/eos.issues'
 import { Route as AuthenticatedEosL10RouteImport } from './routes/_authenticated/eos.l10'
 import { Route as AuthenticatedEosRocksRouteImport } from './routes/_authenticated/eos.rocks'
@@ -208,6 +209,12 @@ const AuthenticatedAdminAssistantRoute =
     path: '/admin/assistant',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminSwagCreditsRoute =
+  AuthenticatedAdminSwagCreditsRouteImport.update({
+    id: '/admin/swag-credits',
+    path: '/admin/swag-credits',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedEosIssuesRoute = AuthenticatedEosIssuesRouteImport.update({
   id: '/eos/issues',
   path: '/eos/issues',
@@ -318,6 +325,7 @@ export interface FileRoutesByFullPath {
   '/videos': typeof AuthenticatedVideosRoute
   '/agents/': typeof AgentsIndexRoute
   '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
+  '/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
   '/eos/issues': typeof AuthenticatedEosIssuesRoute
   '/eos/l10': typeof AuthenticatedEosL10RouteWithChildren
   '/eos/rocks': typeof AuthenticatedEosRocksRoute
@@ -360,6 +368,7 @@ export interface FileRoutesByTo {
   '/videos': typeof AuthenticatedVideosRoute
   '/agents': typeof AgentsIndexRoute
   '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
+  '/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
   '/eos/issues': typeof AuthenticatedEosIssuesRoute
   '/eos/rocks': typeof AuthenticatedEosRocksRoute
   '/eos/scorecard': typeof AuthenticatedEosScorecardRoute
@@ -406,6 +415,7 @@ export interface FileRoutesById {
   '/_authenticated/videos': typeof AuthenticatedVideosRoute
   '/agents/': typeof AgentsIndexRoute
   '/_authenticated/admin/assistant': typeof AuthenticatedAdminAssistantRoute
+  '/_authenticated/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
   '/_authenticated/eos/issues': typeof AuthenticatedEosIssuesRoute
   '/_authenticated/eos/l10': typeof AuthenticatedEosL10RouteWithChildren
   '/_authenticated/eos/rocks': typeof AuthenticatedEosRocksRoute
@@ -453,6 +463,7 @@ export interface FileRouteTypes {
     | '/videos'
     | '/agents/'
     | '/admin/assistant'
+    | '/admin/swag-credits'
     | '/eos/issues'
     | '/eos/l10'
     | '/eos/rocks'
@@ -495,6 +506,7 @@ export interface FileRouteTypes {
     | '/videos'
     | '/agents'
     | '/admin/assistant'
+    | '/admin/swag-credits'
     | '/eos/issues'
     | '/eos/rocks'
     | '/eos/scorecard'
@@ -540,6 +552,7 @@ export interface FileRouteTypes {
     | '/_authenticated/videos'
     | '/agents/'
     | '/_authenticated/admin/assistant'
+    | '/_authenticated/admin/swag-credits'
     | '/_authenticated/eos/issues'
     | '/_authenticated/eos/l10'
     | '/_authenticated/eos/rocks'
@@ -783,6 +796,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAssistantRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/swag-credits': {
+      id: '/_authenticated/admin/swag-credits'
+      path: '/admin/swag-credits'
+      fullPath: '/admin/swag-credits'
+      preLoaderRoute: typeof AuthenticatedAdminSwagCreditsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/eos/issues': {
       id: '/_authenticated/eos/issues'
       path: '/eos/issues'
@@ -955,6 +975,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
   AuthenticatedVideosRoute: typeof AuthenticatedVideosRoute
   AuthenticatedAdminAssistantRoute: typeof AuthenticatedAdminAssistantRoute
+  AuthenticatedAdminSwagCreditsRoute: typeof AuthenticatedAdminSwagCreditsRoute
   AuthenticatedEosIssuesRoute: typeof AuthenticatedEosIssuesRoute
   AuthenticatedEosL10Route: typeof AuthenticatedEosL10RouteWithChildren
   AuthenticatedEosRocksRoute: typeof AuthenticatedEosRocksRoute
@@ -981,6 +1002,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
   AuthenticatedVideosRoute: AuthenticatedVideosRoute,
   AuthenticatedAdminAssistantRoute: AuthenticatedAdminAssistantRoute,
+  AuthenticatedAdminSwagCreditsRoute: AuthenticatedAdminSwagCreditsRoute,
   AuthenticatedEosIssuesRoute: AuthenticatedEosIssuesRoute,
   AuthenticatedEosL10Route: AuthenticatedEosL10RouteWithChildren,
   AuthenticatedEosRocksRoute: AuthenticatedEosRocksRoute,

@@ -239,13 +239,9 @@ function Leaderboard({
                     >
                       {i + 1}
                     </div>
-                    <div className="truncate text-white font-semibold text-[1.6vw]">
-                      {r.name}
-                    </div>
+                    <div className="truncate text-white font-semibold text-[1.6vw]">{r.name}</div>
                   </div>
-                  <div className="tabular-nums font-bold text-[2vw] text-white">
-                    {r.count}
-                  </div>
+                  <div className="tabular-nums font-bold text-[2vw] text-white">{r.count}</div>
                 </div>
               </li>
             );
@@ -265,9 +261,7 @@ function PipelinePanel({ rows }: { rows: Array<{ stage: string; count: number }>
         <div className="text-[hsl(45_90%_60%)] uppercase tracking-[0.25em] font-semibold text-[1vw]">
           Pipeline · Deals by Stage
         </div>
-        <div className="tabular-nums text-white/70 text-[1.2vw]">
-          {total} total
-        </div>
+        <div className="tabular-nums text-white/70 text-[1.2vw]">{total} total</div>
       </div>
       {top.length === 0 ? (
         <div className="flex-1 flex items-center justify-center text-white/40 text-[1.4vw] text-center">
@@ -280,9 +274,7 @@ function PipelinePanel({ rows }: { rows: Array<{ stage: string; count: number }>
               key={r.stage}
               className="flex items-center justify-between px-[0.8vw] py-[0.6vw] rounded-md bg-white/[0.03]"
             >
-              <div className="truncate text-white font-semibold text-[1.4vw]">
-                {r.stage}
-              </div>
+              <div className="truncate text-white font-semibold text-[1.4vw]">{r.stage}</div>
               <div className="tabular-nums font-bold text-[1.8vw] text-[hsl(45_90%_65%)]">
                 {r.count}
               </div>

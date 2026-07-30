@@ -8,29 +8,68 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { format, addDays } from "date-fns";
 import {
-  Home, ArrowLeft, Pencil, Check, X, Loader2, Upload, Trash2,
-  Image as ImageIcon, CalendarClock, AlertTriangle, RefreshCw,
-  Archive, Download, Plus, Calendar, ExternalLink, Send, Video, Link as LinkIcon,
+  Home,
+  ArrowLeft,
+  Pencil,
+  Check,
+  X,
+  Loader2,
+  Upload,
+  Trash2,
+  Image as ImageIcon,
+  CalendarClock,
+  AlertTriangle,
+  RefreshCw,
+  Archive,
+  Download,
+  Plus,
+  Calendar,
+  ExternalLink,
+  Send,
+  Video,
+  Link as LinkIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  type Listing, type ListingGraphic, type ListingCopy, type ListingPost,
-  type ListingVideo, type ListingStatus, type PostType,
-  LISTING_STATUS_LABEL, LISTING_STATUS_CLASS,
-  POST_TYPE_LABEL, POST_TYPE_CLASS,
-  POST_STATUS_LABEL, POST_STATUS_CLASS,
-  calcDaysListed, formatPrice,
+  type Listing,
+  type ListingGraphic,
+  type ListingCopy,
+  type ListingPost,
+  type ListingVideo,
+  type ListingStatus,
+  type PostType,
+  LISTING_STATUS_LABEL,
+  LISTING_STATUS_CLASS,
+  POST_TYPE_LABEL,
+  POST_TYPE_CLASS,
+  POST_STATUS_LABEL,
+  POST_STATUS_CLASS,
+  calcDaysListed,
+  formatPrice,
 } from "@/lib/listings";
 import {
   updateListing,
@@ -87,11 +126,7 @@ function ListingDetailPage() {
   const { data: copyData } = useQuery({
     queryKey: ["listing-copy", id],
     queryFn: async () => {
-      const { data } = await sb
-        .from("listing_copy")
-        .select("*")
-        .eq("listing_id", id)
-        .single();
+      const { data } = await sb.from("listing_copy").select("*").eq("listing_id", id).single();
       return data as ListingCopy | null;
     },
   });
@@ -181,18 +216,29 @@ function ListingDetailPage() {
         <div className="flex-1 min-w-0">
           <h1 className="text-xl font-bold truncate">{listing.address}</h1>
           <div className="flex items-center gap-3 mt-1 flex-wrap">
-            <span className={cn("px-2 py-0.5 rounded text-xs font-medium border", LISTING_STATUS_CLASS[listing.status])}>
+            <span
+              className={cn(
+                "px-2 py-0.5 rounded text-xs font-medium border",
+                LISTING_STATUS_CLASS[listing.status],
+              )}
+            >
               {LISTING_STATUS_LABEL[listing.status]}
             </span>
             {listing.agent_name && (
               <span className="text-muted-foreground text-sm">{listing.agent_name}</span>
             )}
-            <span className="text-muted-foreground text-sm">{calcDaysListed(listing.list_date)} days on market</span>
+            <span className="text-muted-foreground text-sm">
+              {calcDaysListed(listing.list_date)} days on market
+            </span>
           </div>
         </div>
         {canManage && listing.status === "active" && (
           <div className="shrink-0">
-            <MarkUnderContractButton listingId={listing.id} userId={userId} onSuccess={invalidateAll} />
+            <MarkUnderContractButton
+              listingId={listing.id}
+              userId={userId}
+              onSuccess={invalidateAll}
+            />
           </div>
         )}
       </div>
@@ -252,14 +298,20 @@ function ListingDetailPage() {
 // ─── Mark Under Contract ──────────────────────────────────────────────────────
 
 function MarkUnderContractButton({
-  listingId, userId, onSuccess,
-}: { listingId: string; userId: string; onSuccess: () => void }) {
+  listingId,
+  userId,
+  onSuccess,
+}: {
+  listingId: string;
+  userId: string;
+  onSuccess: () => void;
+}) {
   const [confirm, setConfirm] = useState(false);
   const mut = useMutation({
     mutationFn: () => markUnderContract(sb, userId, listingId),
     onSuccess: (result) => {
       toast.success(
-        `${result.cancelledCount} future repost${result.cancelledCount !== 1 ? "s" : ""} cancelled. A task has been created for the content coordinator.`
+        `${result.cancelledCount} future repost${result.cancelledCount !== 1 ? "s" : ""} cancelled. A task has been created for the content coordinator.`,
       );
       setConfirm(false);
       onSuccess();
@@ -291,12 +343,15 @@ function MarkUnderContractButton({
               </li>
               <li className="flex items-center gap-2">
                 <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                Create a to-do task for the content coordinator to send the Under Contract graphic to the agent
+                Create a to-do task for the content coordinator to send the Under Contract graphic
+                to the agent
               </li>
             </ul>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirm(false)} disabled={mut.isPending}>Cancel</Button>
+            <Button variant="outline" onClick={() => setConfirm(false)} disabled={mut.isPending}>
+              Cancel
+            </Button>
             <Button
               className="bg-amber-500 hover:bg-amber-600 text-white"
               onClick={() => mut.mutate()}
@@ -315,8 +370,14 @@ function MarkUnderContractButton({
 // ─── Listing Info Section ─────────────────────────────────────────────────────
 
 function ListingInfoSection({
-  listing, canManage, onSaved,
-}: { listing: Listing; canManage: boolean; onSaved: () => void }) {
+  listing,
+  canManage,
+  onSaved,
+}: {
+  listing: Listing;
+  canManage: boolean;
+  onSaved: () => void;
+}) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
     address: listing.address,
@@ -363,18 +424,36 @@ function ListingInfoSection({
         <Home className="h-4 w-4 text-gold" />
         <h2 className="font-semibold">Listing Info</h2>
         {canManage && !editing && (
-          <Button variant="ghost" size="sm" className="ml-auto gap-1.5" onClick={() => setEditing(true)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto gap-1.5"
+            onClick={() => setEditing(true)}
+          >
             <Pencil className="h-3.5 w-3.5" /> Edit
           </Button>
         )}
         {editing && (
           <div className="ml-auto flex gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={mut.isPending}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditing(false)}
+              disabled={mut.isPending}
+            >
               <X className="h-3.5 w-3.5" />
             </Button>
-            <Button size="sm" onClick={() => mut.mutate()} disabled={mut.isPending}
-              className="bg-gold hover:bg-gold/90 text-navy font-semibold">
-              {mut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+            <Button
+              size="sm"
+              onClick={() => mut.mutate()}
+              disabled={mut.isPending}
+              className="bg-gold hover:bg-gold/90 text-navy font-semibold"
+            >
+              {mut.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Check className="h-3.5 w-3.5" />
+              )}
               Save
             </Button>
           </div>
@@ -397,24 +476,42 @@ function ListingInfoSection({
           </div>
           <div className="grid gap-1.5">
             <Label>List Price</Label>
-            <Input type="number" value={form.list_price} onChange={(e) => set("list_price", e.target.value)} />
+            <Input
+              type="number"
+              value={form.list_price}
+              onChange={(e) => set("list_price", e.target.value)}
+            />
           </div>
           <div className="grid gap-1.5">
             <Label>List Date</Label>
-            <Input type="date" value={form.list_date} onChange={(e) => set("list_date", e.target.value)} />
+            <Input
+              type="date"
+              value={form.list_date}
+              onChange={(e) => set("list_date", e.target.value)}
+            />
           </div>
           <div className="grid gap-1.5">
             <Label>Post Date</Label>
-            <Input type="date" value={form.post_date} onChange={(e) => set("post_date", e.target.value)} />
+            <Input
+              type="date"
+              value={form.post_date}
+              onChange={(e) => set("post_date", e.target.value)}
+            />
           </div>
           <div className="grid gap-1.5">
             <Label>Post Time</Label>
-            <Input type="time" value={form.post_time} onChange={(e) => set("post_time", e.target.value)} />
+            <Input
+              type="time"
+              value={form.post_time}
+              onChange={(e) => set("post_time", e.target.value)}
+            />
           </div>
           <div className="grid gap-1.5">
             <Label>Status</Label>
             <Select value={form.status} onValueChange={(v) => set("status", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="under_contract">Under Contract</SelectItem>
@@ -424,7 +521,9 @@ function ListingInfoSection({
           <div className="grid gap-1.5">
             <Label>Marketing Brand / Destination</Label>
             <Select value={form.brand} onValueChange={(v) => set("brand", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="PP">PP</SelectItem>
                 <SelectItem value="LOZ">LOZ</SelectItem>
@@ -463,7 +562,10 @@ function ListingInfoSection({
           <InfoField label="Agent" value={listing.agent_name ?? "—"} />
           <InfoField label="MLS #" value={listing.mls_id ?? "—"} mono />
           <InfoField label="List Price" value={formatPrice(listing.list_price)} />
-          <InfoField label="List Date" value={format(new Date(listing.list_date + "T00:00:00"), "MMMM d, yyyy")} />
+          <InfoField
+            label="List Date"
+            value={format(new Date(listing.list_date + "T00:00:00"), "MMMM d, yyyy")}
+          />
           <InfoField label="Days on Market" value={`${calcDaysListed(listing.list_date)} days`} />
           {listing.post_date && (
             <InfoField
@@ -488,7 +590,9 @@ function ListingInfoSection({
           )}
           {listing.website_link && (
             <div className="space-y-0.5">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">MSREG Website Link</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                MSREG Website Link
+              </p>
               <a
                 href={listing.website_link}
                 target="_blank"
@@ -506,7 +610,17 @@ function ListingInfoSection({
   );
 }
 
-function InfoField({ label, value, className, mono }: { label: string; value: string; className?: string; mono?: boolean }) {
+function InfoField({
+  label,
+  value,
+  className,
+  mono,
+}: {
+  label: string;
+  value: string;
+  className?: string;
+  mono?: boolean;
+}) {
   return (
     <div className={cn("space-y-0.5", className)}>
       <p className="text-xs text-muted-foreground uppercase tracking-wider">{label}</p>
@@ -518,7 +632,16 @@ function InfoField({ label, value, className, mono }: { label: string; value: st
 // ─── Graphics & Copy Section ──────────────────────────────────────────────────
 
 function GraphicsCopySection({
-  listingId, userId, graphics, copyText, setCopyText, canManage, canvaLink, onGraphicsChanged, onCopyChanged, onCanvaLinkSaved,
+  listingId,
+  userId,
+  graphics,
+  copyText,
+  setCopyText,
+  canManage,
+  canvaLink,
+  onGraphicsChanged,
+  onCopyChanged,
+  onCanvaLinkSaved,
 }: {
   listingId: string;
   userId: string;
@@ -544,11 +667,17 @@ function GraphicsCopySection({
       for (const file of Array.from(files)) {
         const ext = file.name.split(".").pop() ?? "jpg";
         const path = `listings/${listingId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error: upErr } = await sb.storage.from(BUCKET).upload(path, file, { upsert: false, cacheControl: "3600" });
+        const { error: upErr } = await sb.storage
+          .from(BUCKET)
+          .upload(path, file, { upsert: false, cacheControl: "3600" });
         if (upErr) throw upErr;
-        const { data: urlData } = await sb.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 24 * 365);
+        const { data: urlData } = await sb.storage
+          .from(BUCKET)
+          .createSignedUrl(path, 60 * 60 * 24 * 365);
         const url = urlData?.signedUrl as string;
-        await sb.from("listing_graphics").insert({ listing_id: listingId, image_url: url, label: file.name });
+        await sb
+          .from("listing_graphics")
+          .insert({ listing_id: listingId, image_url: url, label: file.name });
       }
       toast.success(`${files.length} graphic${files.length > 1 ? "s" : ""} uploaded`);
       onGraphicsChanged();
@@ -604,10 +733,16 @@ function GraphicsCopySection({
         <div className="rounded-lg border border-gold/30 bg-gold/5 p-3">
           <div className="flex items-center gap-2 mb-2">
             <ExternalLink className="h-3.5 w-3.5 text-gold" />
-            <Label className="text-gold text-xs font-semibold uppercase tracking-wide">Canva Design Link</Label>
+            <Label className="text-gold text-xs font-semibold uppercase tracking-wide">
+              Canva Design Link
+            </Label>
             {canvaLink && (
-              <a href={canvaLink} target="_blank" rel="noopener noreferrer"
-                className="ml-auto text-xs text-gold hover:underline flex items-center gap-1">
+              <a
+                href={canvaLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-auto text-xs text-gold hover:underline flex items-center gap-1"
+              >
                 Open <ExternalLink className="h-3 w-3" />
               </a>
             )}
@@ -621,9 +756,17 @@ function GraphicsCopySection({
               readOnly={!canManage}
             />
             {canManage && (
-              <Button size="sm" className="h-8 bg-gold hover:bg-gold/90 text-navy font-semibold shrink-0"
-                onClick={handleSaveCanva} disabled={canvaSaving}>
-                {canvaSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+              <Button
+                size="sm"
+                className="h-8 bg-gold hover:bg-gold/90 text-navy font-semibold shrink-0"
+                onClick={handleSaveCanva}
+                disabled={canvaSaving}
+              >
+                {canvaSaving ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Check className="h-3.5 w-3.5" />
+                )}
               </Button>
             )}
           </div>
@@ -637,14 +780,29 @@ function GraphicsCopySection({
           <div className="flex items-center justify-between mb-2">
             <Label>Listing Graphics</Label>
             {canManage && (
-              <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
-                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                ) : (
+                  <Upload className="h-3.5 w-3.5 mr-1.5" />
+                )}
                 Upload
               </Button>
             )}
           </div>
-          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
-            onChange={(e) => handleUpload(e.target.files)} />
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => handleUpload(e.target.files)}
+          />
 
           {graphics.length === 0 ? (
             canManage ? (
@@ -658,17 +816,28 @@ function GraphicsCopySection({
                 <p className="text-xs text-muted-foreground/60 mt-1">PNG, JPG, WEBP supported</p>
               </button>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-6">No graphics uploaded yet.</p>
+              <p className="text-sm text-muted-foreground text-center py-6">
+                No graphics uploaded yet.
+              </p>
             )
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {graphics.map((g) => (
-                <div key={g.id} className="group relative aspect-square rounded-lg overflow-hidden border border-border bg-muted">
-                  <img src={g.image_url} alt={g.label ?? "listing graphic"} className="w-full h-full object-cover" />
+                <div
+                  key={g.id}
+                  className="group relative aspect-square rounded-lg overflow-hidden border border-border bg-muted"
+                >
+                  <img
+                    src={g.image_url}
+                    alt={g.label ?? "listing graphic"}
+                    className="w-full h-full object-cover"
+                  />
                   {canManage && (
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <button onClick={() => deleteGraphic(g)}
-                        className="p-1.5 bg-rose-500/80 rounded-md text-white hover:bg-rose-500">
+                      <button
+                        onClick={() => deleteGraphic(g)}
+                        className="p-1.5 bg-rose-500/80 rounded-md text-white hover:bg-rose-500"
+                      >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -690,7 +859,11 @@ function GraphicsCopySection({
             <Label>Social Media Copy</Label>
             {canManage && (
               <Button variant="outline" size="sm" onClick={handleSaveCopy} disabled={copySaving}>
-                {copySaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
+                {copySaving ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                ) : (
+                  <Check className="h-3.5 w-3.5 mr-1" />
+                )}
                 Save Copy
               </Button>
             )}
@@ -712,7 +885,11 @@ function GraphicsCopySection({
 // ─── Listing Videos Section ───────────────────────────────────────────────────
 
 function VideosSection({
-  listingId, userId, videos, canManage, onChanged,
+  listingId,
+  userId,
+  videos,
+  canManage,
+  onChanged,
 }: {
   listingId: string;
   userId: string;
@@ -763,7 +940,9 @@ function VideosSection({
       <div className="flex items-center gap-2 p-4 border-b border-border">
         <Video className="h-4 w-4 text-gold" />
         <h2 className="font-semibold">Listing Videos</h2>
-        <span className="ml-auto text-xs text-muted-foreground">Google Drive, YouTube, or any video URL</span>
+        <span className="ml-auto text-xs text-muted-foreground">
+          Google Drive, YouTube, or any video URL
+        </span>
       </div>
 
       <div className="p-4 space-y-3">
@@ -771,7 +950,10 @@ function VideosSection({
         {videos.length > 0 && (
           <div className="space-y-2">
             {videos.map((v) => (
-              <div key={v.id} className="flex items-center gap-3 rounded-lg border border-border bg-card/50 px-3 py-2.5">
+              <div
+                key={v.id}
+                className="flex items-center gap-3 rounded-lg border border-border bg-card/50 px-3 py-2.5"
+              >
                 <Video className="h-4 w-4 text-muted-foreground shrink-0" />
                 <div className="flex-1 min-w-0">
                   {v.label && <p className="text-xs font-medium truncate">{v.label}</p>}
@@ -786,8 +968,12 @@ function VideosSection({
                   </a>
                 </div>
                 {canManage && (
-                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0"
-                    onClick={() => removeVideo(v.id)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0"
+                    onClick={() => removeVideo(v.id)}
+                  >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 )}
@@ -821,7 +1007,11 @@ function VideosSection({
                 disabled={!url.trim() || adding}
                 className="bg-gold hover:bg-gold/90 text-navy font-semibold shrink-0"
               >
-                {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                {adding ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
               </Button>
             </div>
           </div>
@@ -838,22 +1028,34 @@ function VideosSection({
 // ─── Posts Section ────────────────────────────────────────────────────────────
 
 function PostsSection({
-  listing, userId, posts, graphics, canManage, onChanged,
+  listing,
+  userId,
+  posts,
+  graphics,
+  canManage,
+  onChanged,
 }: {
-  listing: Listing; userId: string; posts: ListingPost[];
-  graphics: ListingGraphic[]; canManage: boolean; onChanged: () => void;
+  listing: Listing;
+  userId: string;
+  posts: ListingPost[];
+  graphics: ListingGraphic[];
+  canManage: boolean;
+  onChanged: () => void;
 }) {
   const [manualOpen, setManualOpen] = useState(false);
   const [autoOpen, setAutoOpen] = useState(false);
 
   const cancelPost = useMutation({
     mutationFn: (post: ListingPost) => cancelListingPost(sb, post.id, post.calendar_entry_id),
-    onSuccess: () => { toast.success("Post cancelled"); onChanged(); },
+    onSuccess: () => {
+      toast.success("Post cancelled");
+      onChanged();
+    },
     onError: (e: any) => toast.error(e.message),
   });
 
   const existingRepostTypes = new Set(
-    posts.filter((p) => p.post_type.startsWith("repost")).map((p) => p.post_type)
+    posts.filter((p) => p.post_type.startsWith("repost")).map((p) => p.post_type),
   );
 
   return (
@@ -896,19 +1098,30 @@ function PostsSection({
                     {format(new Date(post.scheduled_date + "T00:00:00"), "MMM d, yyyy")}
                   </TableCell>
                   <TableCell>
-                    <span className={cn("px-2 py-0.5 rounded text-[10px] font-medium border", POST_TYPE_CLASS[post.post_type])}>
+                    <span
+                      className={cn(
+                        "px-2 py-0.5 rounded text-[10px] font-medium border",
+                        POST_TYPE_CLASS[post.post_type],
+                      )}
+                    >
                       {POST_TYPE_LABEL[post.post_type]}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className={cn("px-2 py-0.5 rounded text-[10px] font-medium border", POST_STATUS_CLASS[post.status])}>
+                    <span
+                      className={cn(
+                        "px-2 py-0.5 rounded text-[10px] font-medium border",
+                        POST_STATUS_CLASS[post.status],
+                      )}
+                    >
                       {POST_STATUS_LABEL[post.status]}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
                     {canManage && post.status === "scheduled" && (
                       <Button
-                        variant="ghost" size="sm"
+                        variant="ghost"
+                        size="sm"
                         className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
                         onClick={() => cancelPost.mutate(post)}
                         disabled={cancelPost.isPending}
@@ -927,14 +1140,26 @@ function PostsSection({
       {canManage && (
         <>
           <ManualPostModal
-            open={manualOpen} listing={listing} userId={userId} graphics={graphics}
+            open={manualOpen}
+            listing={listing}
+            userId={userId}
+            graphics={graphics}
             onClose={() => setManualOpen(false)}
-            onSuccess={() => { setManualOpen(false); onChanged(); }}
+            onSuccess={() => {
+              setManualOpen(false);
+              onChanged();
+            }}
           />
           <AutoScheduleModal
-            open={autoOpen} listing={listing} userId={userId} existingTypes={existingRepostTypes}
+            open={autoOpen}
+            listing={listing}
+            userId={userId}
+            existingTypes={existingRepostTypes}
             onClose={() => setAutoOpen(false)}
-            onSuccess={() => { setAutoOpen(false); onChanged(); }}
+            onSuccess={() => {
+              setAutoOpen(false);
+              onChanged();
+            }}
           />
         </>
       )}
@@ -944,19 +1169,38 @@ function PostsSection({
 
 // ─── Manual Post Modal ────────────────────────────────────────────────────────
 
-function ManualPostModal({ open, listing, userId, graphics, onClose, onSuccess }: {
-  open: boolean; listing: Listing; userId: string; graphics: ListingGraphic[];
-  onClose: () => void; onSuccess: () => void;
+function ManualPostModal({
+  open,
+  listing,
+  userId,
+  graphics,
+  onClose,
+  onSuccess,
+}: {
+  open: boolean;
+  listing: Listing;
+  userId: string;
+  graphics: ListingGraphic[];
+  onClose: () => void;
+  onSuccess: () => void;
 }) {
-  const [form, setForm] = useState({ date: new Date().toISOString().slice(0, 10), graphicUrl: "", copy: "" });
+  const [form, setForm] = useState({
+    date: new Date().toISOString().slice(0, 10),
+    graphicUrl: "",
+    copy: "",
+  });
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const mut = useMutation({
-    mutationFn: () => scheduleManualPost(sb, userId, {
-      listing_id: listing.id, address: listing.address,
-      scheduled_date: form.date, graphic_url: form.graphicUrl || null,
-      copy: form.copy || null, canva_link: listing.canva_link,
-    }),
+    mutationFn: () =>
+      scheduleManualPost(sb, userId, {
+        listing_id: listing.id,
+        address: listing.address,
+        scheduled_date: form.date,
+        graphic_url: form.graphicUrl || null,
+        copy: form.copy || null,
+        canva_link: listing.canva_link,
+      }),
     onSuccess: () => {
       toast.success("Post scheduled and added to Content Calendar");
       setForm({ date: new Date().toISOString().slice(0, 10), graphicUrl: "", copy: "" });
@@ -975,35 +1219,59 @@ function ManualPostModal({ open, listing, userId, graphics, onClose, onSuccess }
         </DialogHeader>
         <div className="grid gap-4 py-2">
           <div className="grid gap-1.5">
-            <Label>Post Date <span className="text-destructive">*</span></Label>
+            <Label>
+              Post Date <span className="text-destructive">*</span>
+            </Label>
             <Input type="date" value={form.date} onChange={(e) => set("date", e.target.value)} />
           </div>
           {graphics.length > 0 && (
             <div className="grid gap-1.5">
-              <Label>Select Graphic <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Label>
+                Select Graphic <span className="text-muted-foreground text-xs">(optional)</span>
+              </Label>
               <Select value={form.graphicUrl} onValueChange={(v) => set("graphicUrl", v)}>
-                <SelectTrigger><SelectValue placeholder="Choose uploaded graphic…" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose uploaded graphic…" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">No graphic</SelectItem>
                   {graphics.map((g) => (
-                    <SelectItem key={g.id} value={g.image_url}>{g.label ?? g.image_url.split("/").pop()}</SelectItem>
+                    <SelectItem key={g.id} value={g.image_url}>
+                      {g.label ?? g.image_url.split("/").pop()}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               {form.graphicUrl && (
-                <img src={form.graphicUrl} alt="preview" className="w-32 h-32 object-cover rounded-md border border-border" />
+                <img
+                  src={form.graphicUrl}
+                  alt="preview"
+                  className="w-32 h-32 object-cover rounded-md border border-border"
+                />
               )}
             </div>
           )}
           <div className="grid gap-1.5">
-            <Label>Copy <span className="text-muted-foreground text-xs">(optional)</span></Label>
-            <Textarea rows={3} placeholder="Social media caption…" value={form.copy} onChange={(e) => set("copy", e.target.value)} />
+            <Label>
+              Copy <span className="text-muted-foreground text-xs">(optional)</span>
+            </Label>
+            <Textarea
+              rows={3}
+              placeholder="Social media caption…"
+              value={form.copy}
+              onChange={(e) => set("copy", e.target.value)}
+            />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={mut.isPending}>Cancel</Button>
-          <Button onClick={() => mut.mutate()} disabled={mut.isPending || !form.date}
-            className="bg-gold hover:bg-gold/90 text-navy font-semibold">
+          <Button variant="outline" onClick={onClose} disabled={mut.isPending}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => mut.mutate()}
+            disabled={mut.isPending || !form.date}
+            className="bg-gold hover:bg-gold/90 text-navy font-semibold"
+          >
             {mut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Schedule Post
           </Button>
@@ -1015,20 +1283,39 @@ function ManualPostModal({ open, listing, userId, graphics, onClose, onSuccess }
 
 // ─── Auto-Schedule Reposts Modal ──────────────────────────────────────────────
 
-function AutoScheduleModal({ open, listing, userId, existingTypes, onClose, onSuccess }: {
-  open: boolean; listing: Listing; userId: string; existingTypes: Set<string>;
-  onClose: () => void; onSuccess: () => void;
+function AutoScheduleModal({
+  open,
+  listing,
+  userId,
+  existingTypes,
+  onClose,
+  onSuccess,
+}: {
+  open: boolean;
+  listing: Listing;
+  userId: string;
+  existingTypes: Set<string>;
+  onClose: () => void;
+  onSuccess: () => void;
 }) {
   const mut = useMutation({
-    mutationFn: () => autoScheduleReposts(
-      sb, userId, listing.id, listing.address,
-      listing.post_date ?? listing.list_date,
-      listing.post_time?.slice(0, 5) ?? "09:00",
-      listing.canva_link, null
-    ),
+    mutationFn: () =>
+      autoScheduleReposts(
+        sb,
+        userId,
+        listing.id,
+        listing.address,
+        listing.post_date ?? listing.list_date,
+        listing.post_time?.slice(0, 5) ?? "09:00",
+        listing.canva_link,
+        null,
+      ),
     onSuccess: (result) => {
       if (result.created === 0) toast.info("All 60/90/120-day reposts are already scheduled.");
-      else toast.success(`${result.created} repost${result.created !== 1 ? "s" : ""} scheduled in Content Calendar.`);
+      else
+        toast.success(
+          `${result.created} repost${result.created !== 1 ? "s" : ""} scheduled in Content Calendar.`,
+        );
       onSuccess();
     },
     onError: (e: any) => toast.error(e.message),
@@ -1053,22 +1340,32 @@ function AutoScheduleModal({ open, listing, userId, existingTypes, onClose, onSu
         </DialogHeader>
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Creates 60, 90, and 120-day repost entries in the Content Calendar calculated from the listing's post date ({baseDate}). Existing entries are skipped.
+            Creates 60, 90, and 120-day repost entries in the Content Calendar calculated from the
+            listing's post date ({baseDate}). Existing entries are skipped.
           </p>
           <div className="space-y-2">
             {entries.map((e) => (
-              <div key={e.type} className={cn(
-                "flex items-center justify-between rounded-lg border p-3",
-                e.exists ? "border-border bg-muted/40 opacity-60" : "border-gold/30 bg-gold/5"
-              )}>
+              <div
+                key={e.type}
+                className={cn(
+                  "flex items-center justify-between rounded-lg border p-3",
+                  e.exists ? "border-border bg-muted/40 opacity-60" : "border-gold/30 bg-gold/5",
+                )}
+              >
                 <div>
                   <p className="text-sm font-medium">{POST_TYPE_LABEL[e.type]}</p>
-                  <p className="text-xs text-muted-foreground">{e.date} @ {listing.post_time?.slice(0, 5) ?? "09:00"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {e.date} @ {listing.post_time?.slice(0, 5) ?? "09:00"}
+                  </p>
                 </div>
-                <span className={cn(
-                  "text-[10px] px-2 py-0.5 rounded border font-medium",
-                  e.exists ? "bg-muted text-muted-foreground border-border" : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-                )}>
+                <span
+                  className={cn(
+                    "text-[10px] px-2 py-0.5 rounded border font-medium",
+                    e.exists
+                      ? "bg-muted text-muted-foreground border-border"
+                      : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+                  )}
+                >
                   {e.exists ? "Already scheduled" : "Will create"}
                 </span>
               </div>
@@ -1076,11 +1373,18 @@ function AutoScheduleModal({ open, listing, userId, existingTypes, onClose, onSu
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={mut.isPending}>Cancel</Button>
-          <Button onClick={() => mut.mutate()} disabled={mut.isPending || newCount === 0}
-            className="bg-gold hover:bg-gold/90 text-navy font-semibold">
+          <Button variant="outline" onClick={onClose} disabled={mut.isPending}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => mut.mutate()}
+            disabled={mut.isPending || newCount === 0}
+            className="bg-gold hover:bg-gold/90 text-navy font-semibold"
+          >
             {mut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            {newCount === 0 ? "All scheduled" : `Schedule ${newCount} Post${newCount !== 1 ? "s" : ""}`}
+            {newCount === 0
+              ? "All scheduled"
+              : `Schedule ${newCount} Post${newCount !== 1 ? "s" : ""}`}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1091,11 +1395,21 @@ function AutoScheduleModal({ open, listing, userId, existingTypes, onClose, onSu
 // ─── Actions Section ──────────────────────────────────────────────────────────
 
 function ActionsSection({
-  listing, userId, graphics, videos, copyText, onArchived, onGraphicsRefresh,
+  listing,
+  userId,
+  graphics,
+  videos,
+  copyText,
+  onArchived,
+  onGraphicsRefresh,
 }: {
-  listing: Listing; userId: string; graphics: ListingGraphic[];
-  videos: ListingVideo[]; copyText: string;
-  onArchived: () => void; onGraphicsRefresh: () => void;
+  listing: Listing;
+  userId: string;
+  graphics: ListingGraphic[];
+  videos: ListingVideo[];
+  copyText: string;
+  onArchived: () => void;
+  onGraphicsRefresh: () => void;
 }) {
   const [archiveConfirm, setArchiveConfirm] = useState(false);
   const [pushConfirm, setPushConfirm] = useState(false);
@@ -1123,7 +1437,10 @@ function ActionsSection({
         website_link: listing.website_link || null,
       }),
     onSuccess: () => {
-      toast.success("Listing pushed to Agent Toolbox! Graphics, videos, and copy are now available for agents.", { duration: 5000 });
+      toast.success(
+        "Listing pushed to Agent Toolbox! Graphics, videos, and copy are now available for agents.",
+        { duration: 5000 },
+      );
       setPushConfirm(false);
       qc.invalidateQueries({ queryKey: ["listing-copy", listing.id] });
     },
@@ -1131,7 +1448,10 @@ function ActionsSection({
   });
 
   const downloadAll = async () => {
-    if (graphics.length === 0) { toast.error("No graphics to download"); return; }
+    if (graphics.length === 0) {
+      toast.error("No graphics to download");
+      return;
+    }
     try {
       const { default: JSZip } = await import("jszip");
       const zip = new JSZip();
@@ -1145,8 +1465,11 @@ function ActionsSection({
       const content = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(content);
       const a = document.createElement("a");
-      a.href = url; a.download = "listing-graphics.zip";
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      a.href = url;
+      a.download = "listing-graphics.zip";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       toast.success(`Downloaded ${graphics.length} graphic${graphics.length !== 1 ? "s" : ""}`);
     } catch (e: any) {
@@ -1167,7 +1490,9 @@ function ActionsSection({
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm text-gold">Push to Agent Toolbox</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Sends all {graphics.length} graphic{graphics.length !== 1 ? "s" : ""}, {videos.length} video{videos.length !== 1 ? "s" : ""}, and social copy to the Agent Marketing Toolbox so agents can access and download them.
+              Sends all {graphics.length} graphic{graphics.length !== 1 ? "s" : ""}, {videos.length}{" "}
+              video{videos.length !== 1 ? "s" : ""}, and social copy to the Agent Marketing Toolbox
+              so agents can access and download them.
             </p>
           </div>
           <Button
@@ -1218,7 +1543,8 @@ function ActionsSection({
               {videos.length > 0 && (
                 <li className="flex items-center gap-2">
                   <Check className="h-3.5 w-3.5 text-gold shrink-0" />
-                  {videos.length} video{videos.length !== 1 ? "s" : ""} linked in Google Drive section
+                  {videos.length} video{videos.length !== 1 ? "s" : ""} linked in Google Drive
+                  section
                 </li>
               )}
               {copyText && (
@@ -1228,16 +1554,29 @@ function ActionsSection({
                 </li>
               )}
             </ul>
-            <p className="text-xs mt-2">Agents will be able to access, copy, and download these directly from the Agent Toolbox.</p>
+            <p className="text-xs mt-2">
+              Agents will be able to access, copy, and download these directly from the Agent
+              Toolbox.
+            </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPushConfirm(false)} disabled={pushMut.isPending}>Cancel</Button>
+            <Button
+              variant="outline"
+              onClick={() => setPushConfirm(false)}
+              disabled={pushMut.isPending}
+            >
+              Cancel
+            </Button>
             <Button
               className="bg-gold hover:bg-gold/90 text-navy font-semibold"
               onClick={() => pushMut.mutate()}
               disabled={pushMut.isPending}
             >
-              {pushMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+              {pushMut.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Send className="h-4 w-4 mr-2" />
+              )}
               Push to Toolbox
             </Button>
           </DialogFooter>
@@ -1247,12 +1586,20 @@ function ActionsSection({
       {/* Archive confirm */}
       <Dialog open={archiveConfirm} onOpenChange={setArchiveConfirm}>
         <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader><DialogTitle>Archive this listing?</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Archive this listing?</DialogTitle>
+          </DialogHeader>
           <p className="text-sm text-muted-foreground">
             The listing will be hidden from the main list. This does not delete any data.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setArchiveConfirm(false)} disabled={archiveMut.isPending}>Cancel</Button>
+            <Button
+              variant="outline"
+              onClick={() => setArchiveConfirm(false)}
+              disabled={archiveMut.isPending}
+            >
+              Cancel
+            </Button>
             <Button
               className="bg-rose-500 hover:bg-rose-600 text-white"
               onClick={() => archiveMut.mutate()}

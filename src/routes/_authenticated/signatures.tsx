@@ -98,12 +98,17 @@ interface TeamConfig {
 function sigCompleteness(agent: AgentSig): { complete: boolean; missing: string[] } {
   const s = agent.sig;
   const missing: string[] = [];
-  
+
   const title = s?.title;
   const mobilePhone = s?.mobile_phone;
   const headshotUrl = s?.headshot_url || agent.headshot_url;
   const gmailEmail = s?.gmail_email || agent.email;
-  const hasOffice = s ? ((s.show_office_rolla ?? true) || s.show_office_strobert || s.show_office_osage || !!s.office1_addr) : true;
+  const hasOffice = s
+    ? (s.show_office_rolla ?? true) ||
+      s.show_office_strobert ||
+      s.show_office_osage ||
+      !!s.office1_addr
+    : true;
 
   if (!title) missing.push("Title");
   if (!mobilePhone) missing.push("Mobile phone");
@@ -335,10 +340,15 @@ const DEFAULT_SIGNATURE_TEMPLATE = `<!-- HTML EMAIL SIGNATURE TEMPLATE -->
 
 function buildSignatureHtml(agent: AgentSig, team: TeamConfig): string {
   const s = agent.sig;
-  
-  const rollaAddr = s?.office_rolla_addr || team.office_rolla_addr || "1043 Kingshighway, Rolla, MO 65401";
-  const strobertAddr = s?.office_strobert_addr || team.office_strobert_addr || "157 Saint Robert Blvd, St. Robert, MO 65584";
-  const osageAddr = s?.office_osage_addr || team.office_osage_addr || "456 Shore Dr, Osage Beach, MO 65065";
+
+  const rollaAddr =
+    s?.office_rolla_addr || team.office_rolla_addr || "1043 Kingshighway, Rolla, MO 65401";
+  const strobertAddr =
+    s?.office_strobert_addr ||
+    team.office_strobert_addr ||
+    "157 Saint Robert Blvd, St. Robert, MO 65584";
+  const osageAddr =
+    s?.office_osage_addr || team.office_osage_addr || "456 Shore Dr, Osage Beach, MO 65065";
 
   const showRolla = s?.show_office_rolla ?? true;
   const showStRobert = s?.show_office_strobert ?? false;
@@ -348,8 +358,10 @@ function buildSignatureHtml(agent: AgentSig, team: TeamConfig): string {
   if (showRolla && rollaAddr) activeOffices.push({ label: "Rolla", addr: rollaAddr });
   if (showStRobert && strobertAddr) activeOffices.push({ label: "St. Robert", addr: strobertAddr });
   if (showOsage && osageAddr) activeOffices.push({ label: "Osage Beach", addr: osageAddr });
-  if (s?.office1_addr) activeOffices.push({ label: s.office1_label || "Primary Office", addr: s.office1_addr });
-  if (s?.office2_addr) activeOffices.push({ label: s.office2_label || "Second Office", addr: s.office2_addr });
+  if (s?.office1_addr)
+    activeOffices.push({ label: s.office1_label || "Primary Office", addr: s.office1_addr });
+  if (s?.office2_addr)
+    activeOffices.push({ label: s.office2_label || "Second Office", addr: s.office2_addr });
 
   const o1 = activeOffices[0];
   const o2 = activeOffices[1];
@@ -387,7 +399,6 @@ function buildSignatureHtml(agent: AgentSig, team: TeamConfig): string {
   const template = team.html_template || DEFAULT_SIGNATURE_TEMPLATE;
   return compileTemplate(template, data);
 }
-
 
 // ----------------------------------------------------------------
 // Signature Preview Component
@@ -517,42 +528,45 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
     return buildSignatureHtml(synth, team);
   }, [agent, team, form]);
 
-  const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !agent) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      toast.error("Please upload a JPG, PNG, or WebP image.");
-      return;
-    }
-    if (file.size > 8 * 1024 * 1024) {
-      toast.error("Image must be under 8 MB.");
-      return;
-    }
-    setUploading(true);
-    try {
-      const reader = new FileReader();
-      const base64 = await new Promise<string>((res, rej) => {
-        reader.onload = () => res(reader.result as string);
-        reader.onerror = rej;
-        reader.readAsDataURL(file);
-      });
-      const result = await uploadFn({
-        data: {
-          toolbox_agent_id: agent.id,
-          filename: file.name,
-          base64,
-          mime_type: file.type as any,
-        },
-      });
-      setForm((f) => ({ ...f, headshot_url: result.url }));
-      toast.success("Headshot uploaded");
-    } catch (err: any) {
-      toast.error(err.message ?? "Upload failed");
-    } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
-    }
-  }, [agent, uploadFn]);
+  const handleUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file || !agent) return;
+      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+        toast.error("Please upload a JPG, PNG, or WebP image.");
+        return;
+      }
+      if (file.size > 8 * 1024 * 1024) {
+        toast.error("Image must be under 8 MB.");
+        return;
+      }
+      setUploading(true);
+      try {
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((res, rej) => {
+          reader.onload = () => res(reader.result as string);
+          reader.onerror = rej;
+          reader.readAsDataURL(file);
+        });
+        const result = await uploadFn({
+          data: {
+            toolbox_agent_id: agent.id,
+            filename: file.name,
+            base64,
+            mime_type: file.type as any,
+          },
+        });
+        setForm((f) => ({ ...f, headshot_url: result.url }));
+        toast.success("Headshot uploaded");
+      } catch (err: any) {
+        toast.error(err.message ?? "Upload failed");
+      } finally {
+        setUploading(false);
+        if (fileRef.current) fileRef.current.value = "";
+      }
+    },
+    [agent, uploadFn],
+  );
 
   const handleSave = async () => {
     if (!agent) return;
@@ -597,7 +611,7 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
     label: string,
     key: keyof typeof form,
     placeholder?: string,
-    type = "text"
+    type = "text",
   ) => (
     <div className="space-y-1.5">
       <Label htmlFor={id} className="text-xs text-muted-foreground uppercase tracking-wide">
@@ -618,8 +632,16 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
   const fullName = agent.name || agent.email || "Unknown Agent";
 
   return (
-    <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto flex flex-col gap-0 p-0">
+    <Sheet
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) onClose();
+      }}
+    >
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-2xl overflow-y-auto flex flex-col gap-0 p-0"
+      >
         {/* Header */}
         <SheetHeader className="px-6 py-5 border-b border-border shrink-0 bg-sidebar/40">
           <SheetTitle className="flex items-center gap-3">
@@ -643,7 +665,7 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
                 "flex-1 py-3 text-sm font-medium capitalize transition-colors",
                 activeTab === tab
                   ? "text-gold border-b-2 border-gold bg-gold/5"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               {tab === "edit" ? "Edit Details" : "Preview"}
@@ -662,7 +684,13 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {field("title", "Title / Role", "title", "REALTOR®, Team Lead, etc.")}
-                  {field("gmail_email", "Gmail Address", "gmail_email", "agent@mattsmithrealestategroup.com", "email")}
+                  {field(
+                    "gmail_email",
+                    "Gmail Address",
+                    "gmail_email",
+                    "agent@mattsmithrealestategroup.com",
+                    "email",
+                  )}
                   {field("mobile_phone", "Mobile Phone", "mobile_phone", "(573) 555-0100")}
                   {field("office_phone", "Office Phone", "office_phone", "(573) 555-0200")}
                 </div>
@@ -709,12 +737,18 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
                         onClick={() => fileRef.current?.click()}
                       >
                         {uploading ? (
-                          <><Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> Uploading…</>
+                          <>
+                            <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> Uploading…
+                          </>
                         ) : (
-                          <><Upload className="h-3 w-3 mr-1.5" /> Upload from file</>
+                          <>
+                            <Upload className="h-3 w-3 mr-1.5" /> Upload from file
+                          </>
                         )}
                       </Button>
-                      <span className="text-[10px] text-muted-foreground">JPG, PNG, WebP · max 8 MB</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        JPG, PNG, WebP · max 8 MB
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -728,17 +762,23 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
                 <div className="space-y-3">
                   {/* Team Location Checkboxes */}
                   <div className="space-y-3 bg-sidebar/30 p-4 rounded-xl border border-border">
-                    <p className="text-xs font-semibold text-foreground">Select Team Offices for Signature</p>
+                    <p className="text-xs font-semibold text-foreground">
+                      Select Team Offices for Signature
+                    </p>
                     <label className="flex items-start gap-3 text-xs cursor-pointer">
                       <Checkbox
                         checked={form.show_office_rolla}
-                        onCheckedChange={(c) => setForm((prev) => ({ ...prev, show_office_rolla: !!c }))}
+                        onCheckedChange={(c) =>
+                          setForm((prev) => ({ ...prev, show_office_rolla: !!c }))
+                        }
                         className="mt-0.5"
                       />
                       <div>
                         <span className="font-semibold text-foreground">Rolla Office</span>
                         <p className="text-[11px] text-muted-foreground">
-                          {form.office_rolla_addr || team?.office_rolla_addr || "1043 Kingshighway, Rolla, MO 65401"}
+                          {form.office_rolla_addr ||
+                            team?.office_rolla_addr ||
+                            "1043 Kingshighway, Rolla, MO 65401"}
                         </p>
                       </div>
                     </label>
@@ -746,13 +786,17 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
                     <label className="flex items-start gap-3 text-xs cursor-pointer">
                       <Checkbox
                         checked={form.show_office_strobert}
-                        onCheckedChange={(c) => setForm((prev) => ({ ...prev, show_office_strobert: !!c }))}
+                        onCheckedChange={(c) =>
+                          setForm((prev) => ({ ...prev, show_office_strobert: !!c }))
+                        }
                         className="mt-0.5"
                       />
                       <div>
                         <span className="font-semibold text-foreground">St. Robert Office</span>
                         <p className="text-[11px] text-muted-foreground">
-                          {form.office_strobert_addr || team?.office_strobert_addr || "157 Saint Robert Blvd, St. Robert, MO 65584"}
+                          {form.office_strobert_addr ||
+                            team?.office_strobert_addr ||
+                            "157 Saint Robert Blvd, St. Robert, MO 65584"}
                         </p>
                       </div>
                     </label>
@@ -760,13 +804,17 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
                     <label className="flex items-start gap-3 text-xs cursor-pointer">
                       <Checkbox
                         checked={form.show_office_osage}
-                        onCheckedChange={(c) => setForm((prev) => ({ ...prev, show_office_osage: !!c }))}
+                        onCheckedChange={(c) =>
+                          setForm((prev) => ({ ...prev, show_office_osage: !!c }))
+                        }
                         className="mt-0.5"
                       />
                       <div>
                         <span className="font-semibold text-foreground">Osage Beach Office</span>
                         <p className="text-[11px] text-muted-foreground">
-                          {form.office_osage_addr || team?.office_osage_addr || "456 Shore Dr, Osage Beach, MO 65065"}
+                          {form.office_osage_addr ||
+                            team?.office_osage_addr ||
+                            "456 Shore Dr, Osage Beach, MO 65065"}
                         </p>
                       </div>
                     </label>
@@ -918,9 +966,24 @@ function TeamConfigSection({ onChanged }: { onChanged: () => void }) {
                   Team Office Location Addresses
                 </p>
                 <div className="space-y-3">
-                  {f("off_rolla", "Rolla Office Address", "office_rolla_addr", "1043 Kingshighway, Rolla, MO 65401")}
-                  {f("off_strob", "St. Robert Office Address", "office_strobert_addr", "157 Saint Robert Blvd, St. Robert, MO 65584")}
-                  {f("off_osage", "Osage Beach Office Address", "office_osage_addr", "456 Shore Dr, Osage Beach, MO 65065")}
+                  {f(
+                    "off_rolla",
+                    "Rolla Office Address",
+                    "office_rolla_addr",
+                    "1043 Kingshighway, Rolla, MO 65401",
+                  )}
+                  {f(
+                    "off_strob",
+                    "St. Robert Office Address",
+                    "office_strobert_addr",
+                    "157 Saint Robert Blvd, St. Robert, MO 65584",
+                  )}
+                  {f(
+                    "off_osage",
+                    "Osage Beach Office Address",
+                    "office_osage_addr",
+                    "456 Shore Dr, Osage Beach, MO 65065",
+                  )}
                 </div>
               </div>
               {/* Accolade */}
@@ -963,7 +1026,10 @@ function TeamConfigSection({ onChanged }: { onChanged: () => void }) {
               </div>
               {/* HTML Template Editor */}
               <div className="space-y-1.5">
-                <Label htmlFor="html_template" className="text-xs text-muted-foreground uppercase tracking-wide">
+                <Label
+                  htmlFor="html_template"
+                  className="text-xs text-muted-foreground uppercase tracking-wide"
+                >
                   HTML Email Template (Base Template)
                 </Label>
                 <Textarea
@@ -996,9 +1062,14 @@ function TeamConfigSection({ onChanged }: { onChanged: () => void }) {
                   <p className="text-[9px] text-muted-foreground mt-2 leading-relaxed">
                     Supports basic Handlebars-style conditionals:
                     <br />
-                    <code className="bg-muted px-1 py-0.5 rounded text-foreground">{"{{#if mobile_phone}} ... {{/if}}"}</code> or
+                    <code className="bg-muted px-1 py-0.5 rounded text-foreground">
+                      {"{{#if mobile_phone}} ... {{/if}}"}
+                    </code>{" "}
+                    or
                     <br />
-                    <code className="bg-muted px-1 py-0.5 rounded text-foreground">{"{{#if headshot_url}} ... {{else}} ... {{/if}}"}</code>
+                    <code className="bg-muted px-1 py-0.5 rounded text-foreground">
+                      {"{{#if headshot_url}} ... {{else}} ... {{/if}}"}
+                    </code>
                   </p>
                 </div>
               </div>
@@ -1007,7 +1078,11 @@ function TeamConfigSection({ onChanged }: { onChanged: () => void }) {
                 onClick={handleSave}
                 disabled={saving}
               >
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                {saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
                 Save Team Settings
               </Button>
             </>
@@ -1033,7 +1108,11 @@ function SignaturesPage() {
 
   const [pushingAll, setPushingAll] = useState(false);
 
-  const { data: roster = [], isLoading: rosterLoading, error: rosterError } = useQuery({
+  const {
+    data: roster = [],
+    isLoading: rosterLoading,
+    error: rosterError,
+  } = useQuery({
     queryKey: ["signature-roster"],
     enabled: canAccess,
     queryFn: () => getRosterFn({ data: undefined }),
@@ -1057,14 +1136,21 @@ function SignaturesPage() {
     setPushingAll(true);
 
     const BATCH_SIZE = 5;
-    const allResults: Array<{ id: string; name: string; status: "success" | "error"; error?: string }> = [];
+    const allResults: Array<{
+      id: string;
+      name: string;
+      status: "success" | "error";
+      error?: string;
+    }> = [];
 
     try {
       for (let i = 0; i < activeAgents.length; i += BATCH_SIZE) {
         const batch = activeAgents.slice(i, i + BATCH_SIZE);
         const ids = batch.map((a) => a.id);
         const currentCount = Math.min(i + BATCH_SIZE, activeAgents.length);
-        toast.loading(`Pushing signatures: ${currentCount} / ${activeAgents.length}...`, { id: "push-all" });
+        toast.loading(`Pushing signatures: ${currentCount} / ${activeAgents.length}...`, {
+          id: "push-all",
+        });
 
         const results = await pushFn({
           data: { toolbox_agent_ids: ids },
@@ -1075,9 +1161,13 @@ function SignaturesPage() {
 
       const errors = allResults.filter((r) => r.status === "error");
       if (errors.length > 0) {
-        toast.error(`Pushed with ${errors.length} error(s). Check roster for details.`, { id: "push-all" });
+        toast.error(`Pushed with ${errors.length} error(s). Check roster for details.`, {
+          id: "push-all",
+        });
       } else {
-        toast.success(`Successfully pushed all ${activeAgents.length} signatures to Gmail!`, { id: "push-all" });
+        toast.success(`Successfully pushed all ${activeAgents.length} signatures to Gmail!`, {
+          id: "push-all",
+        });
       }
       qc.invalidateQueries({ queryKey: ["signature-roster"] });
     } catch (err: any) {
@@ -1145,15 +1235,21 @@ function SignaturesPage() {
           <div className="mt-5 grid grid-cols-3 gap-3 max-w-md">
             <div className="rounded-lg border border-border bg-card p-3 text-center">
               <div className="text-2xl font-bold text-gold">{total}</div>
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">Agents</div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">
+                Agents
+              </div>
             </div>
             <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-center">
               <div className="text-2xl font-bold text-emerald-400">{complete}</div>
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">Complete</div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">
+                Complete
+              </div>
             </div>
             <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-center">
               <div className="text-2xl font-bold text-amber-400">{total - complete}</div>
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">Need Attention</div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">
+                Need Attention
+              </div>
             </div>
           </div>
         )}
@@ -1163,8 +1259,12 @@ function SignaturesPage() {
       <div className="mb-6 p-4 rounded-xl border border-gold/30 bg-gold/5 flex items-start gap-3">
         <Info className="h-4 w-4 text-gold mt-0.5 shrink-0" />
         <div className="text-sm text-gold/90">
-          <span className="font-semibold">Gmail Push Setup:</span>{" "}
-          Make sure your Google Workspace Service Account JSON key is added as the <code className="bg-navy px-1.5 py-0.5 rounded font-mono text-xs text-gold">GOOGLE_SA_KEY_JSON</code> environment variable in Netlify.
+          <span className="font-semibold">Gmail Push Setup:</span> Make sure your Google Workspace
+          Service Account JSON key is added as the{" "}
+          <code className="bg-navy px-1.5 py-0.5 rounded font-mono text-xs text-gold">
+            GOOGLE_SA_KEY_JSON
+          </code>{" "}
+          environment variable in Netlify.
         </div>
       </div>
 
@@ -1194,7 +1294,9 @@ function SignaturesPage() {
         ) : rosterError ? (
           <div className="p-8 text-center text-sm">
             <div className="text-rose-400 font-medium mb-1">Failed to load roster</div>
-            <div className="text-muted-foreground text-xs font-mono">{(rosterError as any)?.message ?? String(rosterError)}</div>
+            <div className="text-muted-foreground text-xs font-mono">
+              {(rosterError as any)?.message ?? String(rosterError)}
+            </div>
           </div>
         ) : total === 0 ? (
           <div className="p-8 text-center text-muted-foreground text-sm">No agents found.</div>
@@ -1207,7 +1309,10 @@ function SignaturesPage() {
               const pushStatus = agent.sig?.last_push_status;
 
               return (
-                <div key={agent.id} className="p-4 flex flex-wrap items-center gap-3 hover:bg-sidebar/30 transition-colors">
+                <div
+                  key={agent.id}
+                  className="p-4 flex flex-wrap items-center gap-3 hover:bg-sidebar/30 transition-colors"
+                >
                   {/* Avatar */}
                   <div className="h-9 w-9 rounded-full bg-gold/10 border border-gold/20 text-gold flex items-center justify-center text-sm font-semibold shrink-0">
                     {(agent.name?.[0] ?? agent.email?.[0] ?? "?").toUpperCase()}
@@ -1221,7 +1326,9 @@ function SignaturesPage() {
 
                   {/* Gmail target */}
                   <div className="min-w-[180px] hidden md:block">
-                    <div className="text-xs text-muted-foreground uppercase tracking-wide">Gmail Target</div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide">
+                      Gmail Target
+                    </div>
                     <div className="text-xs mt-0.5 font-mono text-foreground/80 truncate max-w-[180px]">
                       {agent.sig?.gmail_email ?? (
                         <span className="text-muted-foreground italic">not set</span>
@@ -1241,7 +1348,9 @@ function SignaturesPage() {
 
                   {/* Last push */}
                   <div className="min-w-[130px] hidden lg:block">
-                    <div className="text-xs text-muted-foreground uppercase tracking-wide">Last Push</div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide">
+                      Last Push
+                    </div>
                     <div className="flex items-center gap-1 mt-0.5">
                       {pushStatus === "success" && (
                         <CheckCircle className="h-3 w-3 text-emerald-400 shrink-0" />

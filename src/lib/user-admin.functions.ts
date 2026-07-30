@@ -8,7 +8,14 @@ const InviteSchema = z.object({
   email: z.string().email().max(255),
   firstName: z.string().trim().min(1).max(100),
   lastName: z.string().trim().min(1).max(100),
-  role: z.enum(["admin", "marketing_coordinator", "video_editor", "videographer", "contributor", "client_care"]),
+  role: z.enum([
+    "admin",
+    "marketing_coordinator",
+    "video_editor",
+    "videographer",
+    "contributor",
+    "client_care",
+  ]),
   redirectTo: z.string().url().max(500),
 });
 
@@ -59,8 +66,14 @@ export const removeUser = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Null out audit-log references first so nothing blocks the cascade.
-    await supabaseAdmin.from("security_audit_log").update({ actor_user_id: null }).eq("actor_user_id", data.userId);
-    await supabaseAdmin.from("security_audit_log").update({ target_user_id: null }).eq("target_user_id", data.userId);
+    await supabaseAdmin
+      .from("security_audit_log")
+      .update({ actor_user_id: null })
+      .eq("actor_user_id", data.userId);
+    await supabaseAdmin
+      .from("security_audit_log")
+      .update({ target_user_id: null })
+      .eq("target_user_id", data.userId);
 
     // Remove app-level rows that don't have a FK to auth.users (won't cascade).
     await supabaseAdmin.from("notifications").delete().eq("user_id", data.userId);

@@ -9,7 +9,15 @@ export const Route = createFileRoute("/_authenticated")({
   component: AuthLayout,
 });
 
-const CLIENT_CARE_ALLOWED_PREFIXES = ["/dashboard", "/tasks", "/requests", "/inventory", "/closing-gift", "/my-availability", "/duty-calendar"];
+const CLIENT_CARE_ALLOWED_PREFIXES = [
+  "/dashboard",
+  "/tasks",
+  "/requests",
+  "/inventory",
+  "/closing-gift",
+  "/my-availability",
+  "/duty-calendar",
+];
 
 function AuthLayout() {
   const { user, loading, roles } = useAuth();
@@ -54,4 +62,3 @@ function AuthLayout() {
     </ContentDetailProvider>
   );
 }
-

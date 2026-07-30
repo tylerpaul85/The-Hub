@@ -7,9 +7,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Users, Plus, Pencil, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -58,7 +77,11 @@ function DutyAgentsPage() {
   const remove = useServerFn(deleteDutyAgent);
   const bulk = useServerFn(bulkImportDutyAgents);
 
-  const agentsQ = useQuery({ queryKey: ["duty-agents"], queryFn: () => list(), enabled: isAllowed });
+  const agentsQ = useQuery({
+    queryKey: ["duty-agents"],
+    queryFn: () => list(),
+    enabled: isAllowed,
+  });
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
@@ -145,7 +168,9 @@ function DutyAgentsPage() {
   const bulkMut = useMutation({
     mutationFn: () => bulk({ data: { rows: parsedRows.rows } }),
     onSuccess: (res: any) => {
-      toast.success(`Imported ${res.inserted} agent${res.inserted === 1 ? "" : "s"}${res.skipped ? ` (${res.skipped} skipped)` : ""}`);
+      toast.success(
+        `Imported ${res.inserted} agent${res.inserted === 1 ? "" : "s"}${res.skipped ? ` (${res.skipped} skipped)` : ""}`,
+      );
       setBulkOpen(false);
       setBulkText("");
       qc.invalidateQueries({ queryKey: ["duty-agents"] });
@@ -156,7 +181,8 @@ function DutyAgentsPage() {
   const rows = useMemo(() => {
     const list = (agentsQ.data ?? []).filter((a: any) => filter === "all" || a.status === filter);
     list.sort((a: any, b: any) => {
-      if (sortBy === "office") return a.office.localeCompare(b.office) || a.name.localeCompare(b.name);
+      if (sortBy === "office")
+        return a.office.localeCompare(b.office) || a.name.localeCompare(b.name);
       return a.name.localeCompare(b.name);
     });
     return list;
@@ -164,7 +190,8 @@ function DutyAgentsPage() {
 
   const counts = useMemo(() => {
     const out: Record<string, number> = { rolla: 0, str: 0, loz: 0 };
-    for (const a of agentsQ.data ?? []) if (a.status === "active") out[a.office] = (out[a.office] ?? 0) + 1;
+    for (const a of agentsQ.data ?? [])
+      if (a.status === "active") out[a.office] = (out[a.office] ?? 0) + 1;
     return out;
   }, [agentsQ.data]);
 
@@ -179,7 +206,8 @@ function DutyAgentsPage() {
             Duty Agents
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Rolla: {counts.rolla} agents · St. Robert: {counts.str} agents · LOZ: {counts.loz} agents
+            Rolla: {counts.rolla} agents · St. Robert: {counts.str} agents · LOZ: {counts.loz}{" "}
+            agents
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -195,7 +223,9 @@ function DutyAgentsPage() {
       <div className="flex items-center gap-3 mb-3">
         <div className="text-sm text-muted-foreground">Sort:</div>
         <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="office">Office</SelectItem>
             <SelectItem value="name">Name</SelectItem>
@@ -203,7 +233,9 @@ function DutyAgentsPage() {
         </Select>
         <div className="text-sm text-muted-foreground ml-2">Status:</div>
         <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All</SelectItem>
             <SelectItem value="active">Active</SelectItem>
@@ -224,16 +256,27 @@ function DutyAgentsPage() {
           </TableHeader>
           <TableBody>
             {agentsQ.isLoading ? (
-              <TableRow><TableCell colSpan={4} className="text-muted-foreground">Loading…</TableCell></TableRow>
+              <TableRow>
+                <TableCell colSpan={4} className="text-muted-foreground">
+                  Loading…
+                </TableCell>
+              </TableRow>
             ) : rows.length === 0 ? (
-              <TableRow><TableCell colSpan={4} className="text-muted-foreground">No agents yet.</TableCell></TableRow>
+              <TableRow>
+                <TableCell colSpan={4} className="text-muted-foreground">
+                  No agents yet.
+                </TableCell>
+              </TableRow>
             ) : (
               rows.map((a: any) => (
                 <TableRow key={a.id}>
                   <TableCell className="font-medium">{a.name}</TableCell>
                   <TableCell>{officeLabel(a.office)}</TableCell>
                   <TableCell>
-                    <Badge variant={a.status === "active" ? "default" : "secondary"} className={a.status === "active" ? "bg-gold/20 text-gold border-gold/30" : ""}>
+                    <Badge
+                      variant={a.status === "active" ? "default" : "secondary"}
+                      className={a.status === "active" ? "bg-gold/20 text-gold border-gold/30" : ""}
+                    >
                       {a.status}
                     </Badge>
                   </TableCell>
@@ -277,16 +320,24 @@ function DutyAgentsPage() {
             <div>
               <Label>Office</Label>
               <Select value={office} onValueChange={(v) => setOffice(v as any)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {OFFICES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                  {OFFICES.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label>Status</Label>
               <Select value={status} onValueChange={(v) => setStatus(v as any)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
@@ -295,7 +346,9 @@ function DutyAgentsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
             <Button
               className="bg-gold text-navy hover:bg-gold/90"
               disabled={!name.trim() || saveMut.isPending}
@@ -315,27 +368,35 @@ function DutyAgentsPage() {
           </DialogHeader>
           <div className="space-y-3">
             <div className="text-xs text-muted-foreground">
-              Paste one agent per line as <code className="text-gold">Name, Office</code>. Office must be
-              Rolla, St. Robert, or Lake. Existing names in the same office are skipped.
+              Paste one agent per line as <code className="text-gold">Name, Office</code>. Office
+              must be Rolla, St. Robert, or Lake. Existing names in the same office are skipped.
             </div>
             <Textarea
               value={bulkText}
               onChange={(e) => setBulkText(e.target.value)}
-              placeholder={"Shawn McArthur, St. Robert\nJoseph Bahr, St. Robert\nTasha McBride, Rolla"}
+              placeholder={
+                "Shawn McArthur, St. Robert\nJoseph Bahr, St. Robert\nTasha McBride, Rolla"
+              }
               className="min-h-[200px] font-mono text-sm"
             />
             <div className="text-xs text-muted-foreground">
               {parsedRows.rows.length} valid row{parsedRows.rows.length === 1 ? "" : "s"} ready
               {parsedRows.errors.length > 0 && (
                 <div className="text-destructive mt-1">
-                  {parsedRows.errors.slice(0, 5).map((er, i) => <div key={i}>{er}</div>)}
-                  {parsedRows.errors.length > 5 && <div>…and {parsedRows.errors.length - 5} more</div>}
+                  {parsedRows.errors.slice(0, 5).map((er, i) => (
+                    <div key={i}>{er}</div>
+                  ))}
+                  {parsedRows.errors.length > 5 && (
+                    <div>…and {parsedRows.errors.length - 5} more</div>
+                  )}
                 </div>
               )}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBulkOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setBulkOpen(false)}>
+              Cancel
+            </Button>
             <Button
               className="bg-gold text-navy hover:bg-gold/90"
               disabled={parsedRows.rows.length === 0 || bulkMut.isPending}

@@ -23,7 +23,13 @@ function isStandalone() {
 function isAgentSurface() {
   if (typeof window === "undefined") return false;
   const p = window.location.pathname;
-  return p.startsWith("/agents") || p === "/request" || p.startsWith("/request/") || p === "/agent-toolbox" || p.startsWith("/agent-toolbox/");
+  return (
+    p.startsWith("/agents") ||
+    p === "/request" ||
+    p.startsWith("/request/") ||
+    p === "/agent-toolbox" ||
+    p.startsWith("/agent-toolbox/")
+  );
 }
 
 export function IosInstallPrompt() {

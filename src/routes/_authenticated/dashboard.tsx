@@ -26,7 +26,10 @@ function Dashboard() {
   const { data: items = [] } = useQuery({
     queryKey: ["content-items", "all"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from("content_items").select("*").order("scheduled_at", { ascending: true });
+      const { data, error } = await (supabase as any)
+        .from("content_items")
+        .select("*")
+        .order("scheduled_at", { ascending: true });
       if (error) throw error;
       return (data ?? []) as ContentItem[];
     },
@@ -43,7 +46,9 @@ function Dashboard() {
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
       <header className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Welcome back, {((user?.user_metadata as any)?.first_name) || user?.email}.</p>
+        <p className="text-muted-foreground mt-1">
+          Welcome back, {(user?.user_metadata as any)?.first_name || user?.email}.
+        </p>
       </header>
 
       <div className="mb-6">
@@ -56,7 +61,6 @@ function Dashboard() {
         </div>
       )}
 
-
       <div className="grid lg:grid-cols-2 gap-6 mb-6">
         <MyRocksWidget />
         <MyTasksWidget />
@@ -66,13 +70,19 @@ function Dashboard() {
         <div className="flex items-center gap-2 p-5 border-b border-border">
           <ListTodo className="h-5 w-5 text-gold" />
           <h2 className="font-semibold">My Action Items</h2>
-          <span className="ml-auto text-xs text-muted-foreground">{actionItems.length} requiring attention</span>
+          <span className="ml-auto text-xs text-muted-foreground">
+            {actionItems.length} requiring attention
+          </span>
         </div>
         <div className="divide-y divide-border">
           {actionItems.length === 0 && (
-            <div className="p-10 text-center text-muted-foreground text-sm">Nothing needs your attention right now. 🎉</div>
+            <div className="p-10 text-center text-muted-foreground text-sm">
+              Nothing needs your attention right now. 🎉
+            </div>
           )}
-          {actionItems.map((item) => <Row key={item.id} item={item} onOpen={() => detail.open(item.id)} />)}
+          {actionItems.map((item) => (
+            <Row key={item.id} item={item} onOpen={() => detail.open(item.id)} />
+          ))}
         </div>
       </section>
 
@@ -84,9 +94,13 @@ function Dashboard() {
         </div>
         <div className="divide-y divide-border">
           {approved.length === 0 && (
-            <div className="p-10 text-center text-muted-foreground text-sm">No approved content waiting.</div>
+            <div className="p-10 text-center text-muted-foreground text-sm">
+              No approved content waiting.
+            </div>
           )}
-          {approved.map((item) => <Row key={item.id} item={item} onOpen={() => detail.open(item.id)} />)}
+          {approved.map((item) => (
+            <Row key={item.id} item={item} onOpen={() => detail.open(item.id)} />
+          ))}
         </div>
       </section>
     </div>
@@ -99,14 +113,21 @@ function Row({ item, onOpen }: { item: ContentItem; onOpen: () => void }) {
       <div className="flex-1 min-w-0">
         <div className="font-medium truncate flex items-center gap-2">
           {item.title}
-          <span className={cn("text-[10px] px-2 py-0.5 rounded border", STATUS_CLASS[item.status as Status])}>
+          <span
+            className={cn(
+              "text-[10px] px-2 py-0.5 rounded border",
+              STATUS_CLASS[item.status as Status],
+            )}
+          >
             {STATUS_LABEL[item.status as Status]}
           </span>
         </div>
         <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
           <span>{format(new Date(item.scheduled_at), "MMM d, yyyy · h:mm a")}</span>
           {item.platforms.map((p) => (
-            <span key={p} className="px-1.5 py-0.5 bg-muted rounded text-[10px]">{p}</span>
+            <span key={p} className="px-1.5 py-0.5 bg-muted rounded text-[10px]">
+              {p}
+            </span>
           ))}
         </div>
       </div>

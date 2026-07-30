@@ -2,8 +2,26 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  Calculator, LogIn, UserPlus, LogOut, Save, Download, RotateCcw, Plus, Trash2, Edit3, ArrowLeft,
-  Check, Lock, Building, Phone, Mail, MapPin, DollarSign, AlertCircle, FileText
+  Calculator,
+  LogIn,
+  UserPlus,
+  LogOut,
+  Save,
+  Download,
+  RotateCcw,
+  Plus,
+  Trash2,
+  Edit3,
+  ArrowLeft,
+  Check,
+  Lock,
+  Building,
+  Phone,
+  Mail,
+  MapPin,
+  DollarSign,
+  AlertCircle,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +31,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { generateSellerNetPdf } from "@/lib/generate-seller-net-pdf";
 
 export const Route = createFileRoute("/seller-net-proceeds")({
@@ -149,13 +174,18 @@ function SellerNetProceedsPage() {
       <header className="bg-card border-b border-border px-4 py-3 sm:px-6 shadow-md print:hidden">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-            <Link to="/agents" className="flex items-center gap-2 text-xs font-semibold text-gold hover:underline">
+            <Link
+              to="/agents"
+              className="flex items-center gap-2 text-xs font-semibold text-gold hover:underline"
+            >
               <ArrowLeft className="h-4 w-4" /> Agent Hub
             </Link>
             <div className="h-4 w-px bg-border hidden sm:block" />
             <div className="flex items-center gap-2">
               <img src={logo} alt="MSREG Logo" className="h-7 w-auto" />
-              <span className="text-xs uppercase tracking-widest text-gold font-bold">Seller Net Proceeds</span>
+              <span className="text-xs uppercase tracking-widest text-gold font-bold">
+                Seller Net Proceeds
+              </span>
             </div>
           </div>
 
@@ -206,14 +236,13 @@ function SellerNetProceedsPage() {
   );
 }
 
-
 /* -------------------------------------------------------------------------- */
 /*                            AGENT AUTH VIEW                                 */
 /* -------------------------------------------------------------------------- */
 
 function AgentAuthView() {
   const { signUpAgent, signInAgent, resetAgentPassword } = useAgentAuth();
-  const [authTab, setAuthTab] = useState<"signin" | "signup" | "reset" >("signin");
+  const [authTab, setAuthTab] = useState<"signin" | "signup" | "reset">("signin");
   const [busy, setBusy] = useState(false);
 
   // Sign In Form State
@@ -267,13 +296,20 @@ function AgentAuthView() {
     <div className="relative min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4 pt-[max(2rem,env(safe-area-inset-top))] overflow-hidden before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top_right,oklch(0.20_0.08_85_/_0.08),transparent_45%)] after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_bottom_left,oklch(0.18_0.05_260_/_0.2),transparent_60%)]">
       <div className="relative z-10 w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <Link to="/agents" className="inline-flex items-center gap-1.5 text-xs font-semibold text-gold hover:underline mb-2">
+          <Link
+            to="/agents"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gold hover:underline mb-2"
+          >
             <ArrowLeft className="h-4 w-4" /> Back to Agent Hub
           </Link>
           <img src={logo} alt="Matt Smith Real Estate Group" className="h-20 w-auto mx-auto" />
-          <div className="text-[11px] uppercase tracking-[0.2em] text-gold font-semibold">Agent Account Access</div>
+          <div className="text-[11px] uppercase tracking-[0.2em] text-gold font-semibold">
+            Agent Account Access
+          </div>
           <h1 className="text-2xl font-semibold text-white">Seller Net Proceeds Tool</h1>
-          <p className="text-xs text-muted-foreground">Sign in or create your agent account to save and manage net sheets.</p>
+          <p className="text-xs text-muted-foreground">
+            Sign in or create your agent account to save and manage net sheets.
+          </p>
         </div>
 
         {/* Required Email Domain Restriction Notice */}
@@ -282,7 +318,9 @@ function AgentAuthView() {
           <div>
             <div className="font-semibold text-gold">Agent Domain Restriction</div>
             <p className="text-muted-foreground mt-0.5">
-              Accounts are limited to <span className="font-bold text-white">@mattsmithrealestategroup.com</span> email addresses.
+              Accounts are limited to{" "}
+              <span className="font-bold text-white">@mattsmithrealestategroup.com</span> email
+              addresses.
             </p>
           </div>
         </div>
@@ -291,9 +329,14 @@ function AgentAuthView() {
           {authTab === "reset" ? (
             <form onSubmit={handleResetPassword} className="space-y-4">
               <h2 className="text-base font-semibold text-[#C9A84C]">Reset Agent Password</h2>
-              <p className="text-xs text-slate-300">Enter your @mattsmithrealestategroup.com email address to receive password reset instructions.</p>
+              <p className="text-xs text-slate-300">
+                Enter your @mattsmithrealestategroup.com email address to receive password reset
+                instructions.
+              </p>
               <div className="space-y-1.5">
-                <Label htmlFor="reset-email" className="text-xs text-slate-300">Agent Email</Label>
+                <Label htmlFor="reset-email" className="text-xs text-slate-300">
+                  Agent Email
+                </Label>
                 <Input
                   id="reset-email"
                   type="email"
@@ -305,10 +348,19 @@ function AgentAuthView() {
                 />
               </div>
               <div className="flex items-center gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => setAuthTab("signin")} className="flex-1 text-xs border-slate-700 text-slate-300">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setAuthTab("signin")}
+                  className="flex-1 text-xs border-slate-700 text-slate-300"
+                >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={busy} className="flex-1 bg-[#C9A84C] text-[#1B2F5B] hover:bg-[#C9A84C]/90 font-bold text-xs">
+                <Button
+                  type="submit"
+                  disabled={busy}
+                  className="flex-1 bg-[#C9A84C] text-[#1B2F5B] hover:bg-[#C9A84C]/90 font-bold text-xs"
+                >
                   {busy ? "Sending..." : "Send Reset Email"}
                 </Button>
               </div>
@@ -316,10 +368,16 @@ function AgentAuthView() {
           ) : (
             <Tabs value={authTab} onValueChange={(v) => setAuthTab(v as any)}>
               <TabsList className="grid grid-cols-2 bg-background mb-5 p-1 border border-border rounded-lg">
-                <TabsTrigger value="signin" className="text-xs data-[state=active]:bg-gold data-[state=active]:text-navy font-semibold rounded-md transition-colors duration-200">
+                <TabsTrigger
+                  value="signin"
+                  className="text-xs data-[state=active]:bg-gold data-[state=active]:text-navy font-semibold rounded-md transition-colors duration-200"
+                >
                   <LogIn className="h-3.5 w-3.5 mr-1.5" /> Sign In
                 </TabsTrigger>
-                <TabsTrigger value="signup" className="text-xs data-[state=active]:bg-gold data-[state=active]:text-navy font-semibold rounded-md transition-colors duration-200">
+                <TabsTrigger
+                  value="signup"
+                  className="text-xs data-[state=active]:bg-gold data-[state=active]:text-navy font-semibold rounded-md transition-colors duration-200"
+                >
                   <UserPlus className="h-3.5 w-3.5 mr-1.5" /> Create Account
                 </TabsTrigger>
               </TabsList>
@@ -327,7 +385,9 @@ function AgentAuthView() {
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="signin-email" className="text-xs text-muted-foreground">Agent Email</Label>
+                    <Label htmlFor="signin-email" className="text-xs text-muted-foreground">
+                      Agent Email
+                    </Label>
                     <Input
                       id="signin-email"
                       type="email"
@@ -340,7 +400,9 @@ function AgentAuthView() {
                   </div>
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="signin-pass" className="text-xs text-muted-foreground">Password</Label>
+                      <Label htmlFor="signin-pass" className="text-xs text-muted-foreground">
+                        Password
+                      </Label>
                       <button
                         type="button"
                         onClick={() => setAuthTab("reset")}
@@ -360,7 +422,11 @@ function AgentAuthView() {
                     />
                   </div>
 
-                  <Button type="submit" disabled={busy} className="w-full bg-gold text-navy hover:bg-gold/90 font-semibold text-xs py-2.5 h-10 transition-colors duration-200">
+                  <Button
+                    type="submit"
+                    disabled={busy}
+                    className="w-full bg-gold text-navy hover:bg-gold/90 font-semibold text-xs py-2.5 h-10 transition-colors duration-200"
+                  >
                     {busy ? "Signing in..." : "Sign In to Agent Hub"}
                   </Button>
                 </form>
@@ -369,7 +435,9 @@ function AgentAuthView() {
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-3.5">
                   <div className="space-y-1">
-                    <Label htmlFor="signup-name" className="text-xs text-muted-foreground">Full Name</Label>
+                    <Label htmlFor="signup-name" className="text-xs text-muted-foreground">
+                      Full Name
+                    </Label>
                     <Input
                       id="signup-name"
                       placeholder="Jane Smith"
@@ -380,7 +448,9 @@ function AgentAuthView() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="signup-phone" className="text-xs text-muted-foreground">Cell Phone (Optional)</Label>
+                    <Label htmlFor="signup-phone" className="text-xs text-muted-foreground">
+                      Cell Phone (Optional)
+                    </Label>
                     <Input
                       id="signup-phone"
                       placeholder="(573) 555-0199"
@@ -391,7 +461,10 @@ function AgentAuthView() {
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="signup-email" className="text-xs text-muted-foreground">
-                      MSREG Email <span className="text-gold font-semibold">(@mattsmithrealestategroup.com)</span>
+                      MSREG Email{" "}
+                      <span className="text-gold font-semibold">
+                        (@mattsmithrealestategroup.com)
+                      </span>
                     </Label>
                     <Input
                       id="signup-email"
@@ -404,7 +477,9 @@ function AgentAuthView() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="signup-pass" className="text-xs text-muted-foreground">Create Password</Label>
+                    <Label htmlFor="signup-pass" className="text-xs text-muted-foreground">
+                      Create Password
+                    </Label>
                     <Input
                       id="signup-pass"
                       type="password"
@@ -417,7 +492,11 @@ function AgentAuthView() {
                     />
                   </div>
 
-                  <Button type="submit" disabled={busy} className="w-full bg-gold text-navy hover:bg-gold/90 font-semibold text-xs py-2.5 mt-2 h-10 transition-colors duration-200">
+                  <Button
+                    type="submit"
+                    disabled={busy}
+                    className="w-full bg-gold text-navy hover:bg-gold/90 font-semibold text-xs py-2.5 mt-2 h-10 transition-colors duration-200"
+                  >
                     {busy ? "Creating Account..." : "Create Agent Account"}
                   </Button>
                 </form>
@@ -429,7 +508,6 @@ function AgentAuthView() {
     </div>
   );
 }
-
 
 /* -------------------------------------------------------------------------- */
 /*                           DASHBOARD VIEW                                   */
@@ -482,7 +560,8 @@ function DashboardView({
             <FileText className="h-6 w-6 text-gold" /> Saved Seller Net Sheets
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Access and manage all saved estimated net proceeds worksheets tied to your agent account.
+            Access and manage all saved estimated net proceeds worksheets tied to your agent
+            account.
           </p>
         </div>
         <Button
@@ -494,15 +573,22 @@ function DashboardView({
       </div>
 
       {isLoading ? (
-        <div className="text-center py-12 text-muted-foreground text-sm">Loading saved sheets...</div>
+        <div className="text-center py-12 text-muted-foreground text-sm">
+          Loading saved sheets...
+        </div>
       ) : sheets.length === 0 ? (
         <div className="bg-card/45 border border-border rounded-xl p-8 text-center space-y-4 shadow-sm">
           <Calculator className="h-12 w-12 text-gold/30 mx-auto" />
           <h3 className="text-base font-semibold text-white">No saved net sheets yet</h3>
           <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
-            Click "New Net Sheet" above to calculate seller net proceeds with up to 3 price scenarios and save it to your account.
+            Click "New Net Sheet" above to calculate seller net proceeds with up to 3 price
+            scenarios and save it to your account.
           </p>
-          <Button onClick={onOpenNew} size="sm" className="bg-gold text-navy hover:bg-gold/90 font-semibold text-xs h-9 transition-colors">
+          <Button
+            onClick={onOpenNew}
+            size="sm"
+            className="bg-gold text-navy hover:bg-gold/90 font-semibold text-xs h-9 transition-colors"
+          >
             <Plus className="h-4 w-4 mr-1" /> Create First Net Sheet
           </Button>
         </div>
@@ -537,7 +623,9 @@ function DashboardView({
 
                   <div className="mt-3 text-xs text-muted-foreground space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground/80">Scenarios ({data.num_scenarios}):</span>
+                      <span className="text-muted-foreground/80">
+                        Scenarios ({data.num_scenarios}):
+                      </span>
                       <span className="font-semibold text-gold">
                         {formatCurrency(p1)}
                         {p2 !== null && ` / ${formatCurrency(p2)}`}
@@ -577,11 +665,16 @@ function DashboardView({
           <DialogHeader>
             <DialogTitle>Delete Seller Net Sheet?</DialogTitle>
             <DialogDescription className="text-slate-400 text-xs">
-              This action cannot be undone. This sheet will be permanently removed from your agent account.
+              This action cannot be undone. This sheet will be permanently removed from your agent
+              account.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDeleteId(null)} className="text-xs border-slate-700 text-slate-300">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteId(null)}
+              className="text-xs border-slate-700 text-slate-300"
+            >
               Cancel
             </Button>
             <Button
@@ -597,7 +690,6 @@ function DashboardView({
     </div>
   );
 }
-
 
 /* -------------------------------------------------------------------------- */
 /*                          CALCULATOR VIEW                                   */
@@ -625,7 +717,7 @@ function CalculatorView({
       office_address: agent.office_location || "1043 Kingshighway, Rolla, MO 65401",
       office_phone: agent.office_phone || "(573) 451-2020",
     };
-    
+
     const scenarioKeys = [
       "mortgage_payoff_1",
       "mortgage_payoff_2",
@@ -774,9 +866,7 @@ function CalculatorView({
           .eq("id", editingSheetId);
         if (error) throw error;
       } else {
-        const { error } = await (supabase as any)
-          .from("seller_net_sheets")
-          .insert(payload);
+        const { error } = await (supabase as any).from("seller_net_sheets").insert(payload);
         if (error) throw error;
       }
     },
@@ -812,7 +902,7 @@ function CalculatorView({
       office_address: agent.office_location || "1043 Kingshighway, Rolla, MO 65401",
       office_phone: agent.office_phone || "(573) 451-2020",
     };
-    
+
     const scenarioKeys = [
       "mortgage_payoff_1",
       "mortgage_payoff_2",
@@ -844,15 +934,30 @@ function CalculatorView({
     <div className="space-y-6">
       {/* Top Action Controls Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-card border border-border p-3 sm:p-4 rounded-xl print:hidden">
-        <Button size="sm" variant="outline" onClick={onBackToDashboard} className="text-xs border-border text-foreground hover:bg-card">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onBackToDashboard}
+          className="text-xs border-border text-foreground hover:bg-card"
+        >
           <ArrowLeft className="h-4 w-4 mr-1" /> Back to Saved Sheets
         </Button>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="outline" onClick={handleResetDefaults} className="text-xs border-border text-foreground hover:bg-card">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleResetDefaults}
+            className="text-xs border-border text-foreground hover:bg-card"
+          >
             <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset Defaults
           </Button>
-          <Button size="sm" variant="outline" onClick={handlePrintPdf} className="text-xs border-gold/40 text-gold hover:bg-gold hover:text-navy transition-colors duration-200">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handlePrintPdf}
+            className="text-xs border-gold/40 text-gold hover:bg-gold hover:text-navy transition-colors duration-200"
+          >
             <Download className="h-3.5 w-3.5 mr-1" /> Download PDF / Print
           </Button>
           <Button
@@ -861,22 +966,29 @@ function CalculatorView({
             disabled={saveMutation.isPending}
             className="bg-gold text-navy hover:bg-gold/90 font-semibold text-xs transition-colors h-9"
           >
-            <Save className="h-3.5 w-3.5 mr-1" /> {saveMutation.isPending ? "Saving..." : "Save Sheet"}
+            <Save className="h-3.5 w-3.5 mr-1" />{" "}
+            {saveMutation.isPending ? "Saving..." : "Save Sheet"}
           </Button>
         </div>
       </div>
 
       {/* Screenshot-Ready / Printable Worksheet Container */}
-      <div ref={printRef} className="bg-card border border-border rounded-xl p-4 sm:p-8 space-y-6 print:bg-white print:text-black print:p-0 print:border-none print:shadow-none">
-        
+      <div
+        ref={printRef}
+        className="bg-card border border-border rounded-xl p-4 sm:p-8 space-y-6 print:bg-white print:text-black print:p-0 print:border-none print:shadow-none"
+      >
         {/* Worksheet Header: Logos & Office Info */}
         <div className="border-b border-gold/30 pb-6 space-y-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <img src={logo} alt="Matt Smith Real Estate Group" className="h-16 sm:h-20 w-auto" />
               <div className="border-l border-border print:border-slate-300 pl-3">
-                <div className="text-xs uppercase tracking-widest text-gold font-bold">eXp Realty</div>
-                <div className="text-base sm:text-lg font-semibold text-white print:text-black tracking-tight">SELLER ESTIMATED NET PROCEEDS</div>
+                <div className="text-xs uppercase tracking-widest text-gold font-bold">
+                  eXp Realty
+                </div>
+                <div className="text-base sm:text-lg font-semibold text-white print:text-black tracking-tight">
+                  SELLER ESTIMATED NET PROCEEDS
+                </div>
               </div>
             </div>
 
@@ -930,7 +1042,8 @@ function CalculatorView({
           {/* Property Address Input */}
           <div className="bg-gold/5 print:bg-slate-100 border border-gold/20 p-3.5 rounded-xl space-y-1.5">
             <label className="text-xs font-bold uppercase tracking-wider text-gold flex items-center gap-1.5">
-              <MapPin className="h-4 w-4" /> Property Address <span className="text-rose-400">*</span>
+              <MapPin className="h-4 w-4" /> Property Address{" "}
+              <span className="text-rose-400">*</span>
             </label>
             <Input
               placeholder="e.g. 123 Main Street, Rolla, MO 65401"
@@ -946,7 +1059,9 @@ function CalculatorView({
           <table className="w-full text-xs text-left border-collapse">
             <thead>
               <tr className="border-b border-border bg-sidebar/80 text-white">
-                <th className="p-3 font-bold uppercase text-[11px] tracking-wider w-1/3">Line Item / Expense</th>
+                <th className="p-3 font-bold uppercase text-[11px] tracking-wider w-1/3">
+                  Line Item / Expense
+                </th>
                 <th className="p-3 font-bold uppercase text-[11px] tracking-wider text-center border-l border-border">
                   Scenario 1
                 </th>
@@ -963,7 +1078,6 @@ function CalculatorView({
               </tr>
             </thead>
             <tbody className="divide-y divide-border print:divide-slate-200">
-              
               {/* Sales Price Row */}
               <tr className="bg-background/40 print:bg-slate-100 font-bold">
                 <td className="p-2.5 text-white print:text-black">Sales Price</td>
@@ -971,7 +1085,9 @@ function CalculatorView({
                   <Input
                     type="number"
                     value={data.scenario1_price || ""}
-                    onChange={(e) => updateField("scenario1_price", parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      updateField("scenario1_price", parseFloat(e.target.value) || 0)
+                    }
                     className="h-8 font-bold text-center text-xs bg-card print:bg-white text-gold border-border focus-visible:ring-gold"
                   />
                 </td>
@@ -980,7 +1096,9 @@ function CalculatorView({
                     <Input
                       type="number"
                       value={data.scenario2_price || ""}
-                      onChange={(e) => updateField("scenario2_price", parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        updateField("scenario2_price", parseFloat(e.target.value) || 0)
+                      }
                       className="h-8 font-bold text-center text-xs bg-card print:bg-white text-gold border-border focus-visible:ring-gold"
                     />
                   </td>
@@ -990,7 +1108,9 @@ function CalculatorView({
                     <Input
                       type="number"
                       value={data.scenario3_price || ""}
-                      onChange={(e) => updateField("scenario3_price", parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        updateField("scenario3_price", parseFloat(e.target.value) || 0)
+                      }
                       className="h-8 font-bold text-center text-xs bg-card print:bg-white text-gold border-border focus-visible:ring-gold"
                     />
                   </td>
@@ -1006,7 +1126,9 @@ function CalculatorView({
                       type="number"
                       step="0.1"
                       value={data.listing_comm_pct}
-                      onChange={(e) => updateField("listing_comm_pct", parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        updateField("listing_comm_pct", parseFloat(e.target.value) || 0)
+                      }
                       className="h-6 w-14 text-center text-[11px] bg-background print:bg-white border-border px-1 focus-visible:ring-gold"
                     />
                     <span className="text-slate-400">%</span>
@@ -1036,7 +1158,9 @@ function CalculatorView({
                       type="number"
                       step="0.1"
                       value={data.selling_comm_pct}
-                      onChange={(e) => updateField("selling_comm_pct", parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        updateField("selling_comm_pct", parseFloat(e.target.value) || 0)
+                      }
                       className="h-6 w-14 text-center text-[11px] bg-background print:bg-white border-border px-1 focus-visible:ring-gold"
                     />
                     <span className="text-slate-400">%</span>
@@ -1058,23 +1182,90 @@ function CalculatorView({
               </tr>
 
               {/* Fixed Expenses Rows */}
-              <ScenarioNumberRow label="Principal Mortgage Payoff" fieldKey="mortgage_payoff_1" data={data} updateScenarioField={updateScenarioField} />
-              <ScenarioNumberRow label="Second Mortgage Payoff" fieldKey="mortgage_payoff_2" data={data} updateScenarioField={updateScenarioField} />
-              <ScenarioNumberRow label="Closing Protection Letter" fieldKey="closing_protection_letter" data={data} updateScenarioField={updateScenarioField} />
-              <ScenarioNumberRow label="Seller's Title Company Closing Fee" fieldKey="seller_title_closing_fee" data={data} updateScenarioField={updateScenarioField} />
-              <ScenarioNumberRow label="Title Search Fee" fieldKey="title_search_fee" data={data} updateScenarioField={updateScenarioField} />
-              <ScenarioNumberRow label="Warranty Deed Fee" fieldKey="warranty_deed_fee" data={data} updateScenarioField={updateScenarioField} />
-              <ScenarioNumberRow label="Termite Letter" fieldKey="termite_letter" data={data} updateScenarioField={updateScenarioField} />
-              <ScenarioNumberRow label="Well, Water, Septic, Lagoon Inspection" fieldKey="inspections" data={data} updateScenarioField={updateScenarioField} />
-              <ScenarioNumberRow label="Home Warranty (negotiable w/ buyer)" fieldKey="home_warranty" data={data} updateScenarioField={updateScenarioField} />
-              <ScenarioNumberRow label="Transaction Fee" fieldKey="transaction_fee" data={data} updateScenarioField={updateScenarioField} />
-              <ScenarioNumberRow label="Estimated Taxes" fieldKey="estimated_taxes" data={data} updateScenarioField={updateScenarioField} />
-              <ScenarioNumberRow label="Miscellaneous" fieldKey="miscellaneous" data={data} updateScenarioField={updateScenarioField} />
-              <ScenarioNumberRow label="Sellers Concessions (negotiable w/ buyer)" fieldKey="seller_concessions" data={data} updateScenarioField={updateScenarioField} />
+              <ScenarioNumberRow
+                label="Principal Mortgage Payoff"
+                fieldKey="mortgage_payoff_1"
+                data={data}
+                updateScenarioField={updateScenarioField}
+              />
+              <ScenarioNumberRow
+                label="Second Mortgage Payoff"
+                fieldKey="mortgage_payoff_2"
+                data={data}
+                updateScenarioField={updateScenarioField}
+              />
+              <ScenarioNumberRow
+                label="Closing Protection Letter"
+                fieldKey="closing_protection_letter"
+                data={data}
+                updateScenarioField={updateScenarioField}
+              />
+              <ScenarioNumberRow
+                label="Seller's Title Company Closing Fee"
+                fieldKey="seller_title_closing_fee"
+                data={data}
+                updateScenarioField={updateScenarioField}
+              />
+              <ScenarioNumberRow
+                label="Title Search Fee"
+                fieldKey="title_search_fee"
+                data={data}
+                updateScenarioField={updateScenarioField}
+              />
+              <ScenarioNumberRow
+                label="Warranty Deed Fee"
+                fieldKey="warranty_deed_fee"
+                data={data}
+                updateScenarioField={updateScenarioField}
+              />
+              <ScenarioNumberRow
+                label="Termite Letter"
+                fieldKey="termite_letter"
+                data={data}
+                updateScenarioField={updateScenarioField}
+              />
+              <ScenarioNumberRow
+                label="Well, Water, Septic, Lagoon Inspection"
+                fieldKey="inspections"
+                data={data}
+                updateScenarioField={updateScenarioField}
+              />
+              <ScenarioNumberRow
+                label="Home Warranty (negotiable w/ buyer)"
+                fieldKey="home_warranty"
+                data={data}
+                updateScenarioField={updateScenarioField}
+              />
+              <ScenarioNumberRow
+                label="Transaction Fee"
+                fieldKey="transaction_fee"
+                data={data}
+                updateScenarioField={updateScenarioField}
+              />
+              <ScenarioNumberRow
+                label="Estimated Taxes"
+                fieldKey="estimated_taxes"
+                data={data}
+                updateScenarioField={updateScenarioField}
+              />
+              <ScenarioNumberRow
+                label="Miscellaneous"
+                fieldKey="miscellaneous"
+                data={data}
+                updateScenarioField={updateScenarioField}
+              />
+              <ScenarioNumberRow
+                label="Sellers Concessions (negotiable w/ buyer)"
+                fieldKey="seller_concessions"
+                data={data}
+                updateScenarioField={updateScenarioField}
+              />
 
               {/* TOTAL SELLING COSTS (BOLD) */}
               <tr className="bg-sidebar/50 print:bg-slate-200 font-bold border-t-2 border-gold/40 text-white print:text-black text-sm">
-                <td className="p-3 uppercase tracking-wider text-gold print:text-black">TOTAL SELLING COSTS</td>
+                <td className="p-3 uppercase tracking-wider text-gold print:text-black">
+                  TOTAL SELLING COSTS
+                </td>
                 <td className="p-3 text-center font-mono border-l border-border print:border-slate-300">
                   {formatCurrency(calc1.totalSellingCosts)}
                 </td>
@@ -1116,7 +1307,9 @@ function CalculatorView({
         {/* Verbatim Disclaimer Footer */}
         <div className="pt-4 border-t border-border print:border-slate-300">
           <p className="text-[10px] text-muted-foreground print:text-slate-600 font-mono text-center leading-relaxed max-w-4xl mx-auto">
-            NOTE: THIS FORM IS INTENDED AS AN ESTIMATE ONLY. IT DOES NOT INCLUDE TAX PRORATION, ESCROW ADJUSTMENTS AND OTHER MISCELLANEOUS COSTS SOMETIMES ASSOCIATED WITH CLOSING. MATT SMITH REAL ESTATE GROUP/EXP REALTY ACCEPTS NO RESPONSIBILITY FOR THIS ESTIMATE.
+            NOTE: THIS FORM IS INTENDED AS AN ESTIMATE ONLY. IT DOES NOT INCLUDE TAX PRORATION,
+            ESCROW ADJUSTMENTS AND OTHER MISCELLANEOUS COSTS SOMETIMES ASSOCIATED WITH CLOSING. MATT
+            SMITH REAL ESTATE GROUP/EXP REALTY ACCEPTS NO RESPONSIBILITY FOR THIS ESTIMATE.
           </p>
         </div>
       </div>

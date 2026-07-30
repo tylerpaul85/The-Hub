@@ -49,7 +49,8 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
         setAgent(data as AgentAccount);
       } else if (u.email && isValidAgentEmail(u.email)) {
         // Auto-provision agent_accounts profile if missing for valid agent domain
-        const rawName = (u.user_metadata as any)?.full_name || u.email.split("@")[0].replace(".", " ");
+        const rawName =
+          (u.user_metadata as any)?.full_name || u.email.split("@")[0].replace(".", " ");
         const fullName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
         const newProfile = {
           id: u.id,
@@ -100,7 +101,9 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
@@ -210,7 +213,8 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
     }
 
     const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
-      redirectTo: typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined,
+      redirectTo:
+        typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined,
     });
 
     if (error) {

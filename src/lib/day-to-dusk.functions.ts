@@ -79,10 +79,7 @@ export const convertDayToDusk = createServerFn({ method: "POST" })
         /* non-JSON ok if 200 */
       }
       const requestId =
-        parsed?.request_id ??
-        parsed?.response?.request_id ??
-        parsed?.data?.request_id ??
-        null;
+        parsed?.request_id ?? parsed?.response?.request_id ?? parsed?.data?.request_id ?? null;
 
       const { data: updated, error: updErr } = await supabase
         .from("staging_jobs")

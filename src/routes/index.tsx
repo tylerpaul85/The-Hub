@@ -56,19 +56,26 @@ function RootSplash() {
           <img src={logo} alt="Matt Smith Real Estate Group Logo" className="h-16 w-auto" />
           <div className="h-8 w-px bg-border hidden sm:block" />
           <div className="hidden sm:block">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-gold">Matt Smith</p>
-            <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-muted-foreground">Real Estate Group</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-gold">
+              Matt Smith
+            </p>
+            <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+              Real Estate Group
+            </p>
           </div>
         </div>
 
         <div className="my-12 md:my-auto max-w-lg space-y-6">
-          <p className="text-xs uppercase tracking-[0.3em] font-semibold text-gold/90">Marketing & Operations Portal</p>
+          <p className="text-xs uppercase tracking-[0.3em] font-semibold text-gold/90">
+            Marketing & Operations Portal
+          </p>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tight leading-tight text-white">
             The tools to guide <br />
             <span className="font-semibold text-gold">your clients home.</span>
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-            Welcome to the internal digital workspace. Access listing materials, campaign pipelines, and estimated net proceeds tools to deliver unmatched real estate service.
+            Welcome to the internal digital workspace. Access listing materials, campaign pipelines,
+            and estimated net proceeds tools to deliver unmatched real estate service.
           </p>
         </div>
 
@@ -81,8 +88,12 @@ function RootSplash() {
       <div className="md:col-span-5 flex flex-col justify-center p-8 sm:p-12 md:p-16 relative z-10">
         <div className="max-w-md w-full mx-auto space-y-8">
           <div>
-            <h2 className="text-xl font-medium tracking-tight text-white">Choose Your Destination</h2>
-            <p className="text-xs text-muted-foreground mt-1">Select a portal below to sign in or access materials.</p>
+            <h2 className="text-xl font-medium tracking-tight text-white">
+              Choose Your Destination
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Select a portal below to sign in or access materials.
+            </p>
           </div>
 
           <div className="space-y-4">
@@ -96,10 +107,13 @@ function RootSplash() {
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-white flex items-center gap-1.5 group-hover:text-gold transition-colors duration-200">
                   Agent Hub
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-gold/10 text-gold font-normal">Public Access</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-gold/10 text-gold font-normal">
+                    Public Access
+                  </span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  Submit marketing requests, pull listing graphics, templates, and closing gift inventory.
+                  Submit marketing requests, pull listing graphics, templates, and closing gift
+                  inventory.
                 </div>
               </div>
             </Link>
@@ -114,10 +128,13 @@ function RootSplash() {
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-white flex items-center gap-1.5 group-hover:text-white transition-colors duration-200">
                   Team Sign In
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-normal">Internal</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-normal">
+                    Internal
+                  </span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  Access the administrative L10 dashboard, project track logs, sign out availability, and listings database.
+                  Access the administrative L10 dashboard, project track logs, sign out
+                  availability, and listings database.
                 </div>
               </div>
             </Link>

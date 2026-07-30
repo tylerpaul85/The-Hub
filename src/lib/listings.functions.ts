@@ -18,7 +18,7 @@ async function createCoordinatorTask(
   sb: any,
   userId: string,
   title: string,
-  description: string
+  description: string,
 ): Promise<void> {
   await sb.from("tasks").insert({
     title,
@@ -39,7 +39,7 @@ async function createCalendarEntry(
   notes: string | null = null,
   canvaLink: string | null = null,
   websiteLink: string | null = null,
-  brand: string | null = "MSREG ALL"
+  brand: string | null = "MSREG ALL",
 ): Promise<string | null> {
   const { data, error } = await sb
     .from("content_items")
@@ -62,7 +62,7 @@ async function createCalendarEntry(
     return null;
   }
   return data?.id ?? null;
-}/**
+} /**
  * Creates 60/90/120-day repost entries for a listing.
  * baseDate: the post_date (when listing went live), time: HH:MM string.
  * Note: 60/90/120-day reposts are automatically scheduled at 5:00 AM.
@@ -72,18 +72,18 @@ async function createRepostEntries(
   userId: string,
   listingId: string,
   address: string,
-  baseDate: string,   // post_date (YYYY-MM-DD)
-  postTime: string,   // HH:MM or HH:MM:SS
+  baseDate: string, // post_date (YYYY-MM-DD)
+  postTime: string, // HH:MM or HH:MM:SS
   canvaLink: string | null,
   websiteLink: string | null,
   brand: string | null,
-  socialCopy: string | null
+  socialCopy: string | null,
 ): Promise<void> {
   const base = new Date(baseDate + "T00:00:00");
   for (const { days, type } of REPOST_OFFSETS) {
     const scheduledDate = format(addDays(base, days), "yyyy-MM-dd");
     const timePart = "05:00";
-    
+
     // Parse to local date object first, then call toISOString to guarantee correct offset formatting
     const localDateTimeStr = `${scheduledDate}T${timePart}:00`;
     const scheduledAt = new Date(localDateTimeStr).toISOString();
@@ -95,11 +95,14 @@ async function createRepostEntries(
     ].filter(Boolean);
 
     const calId = await createCalendarEntry(
-      sb, userId, calTitle, scheduledAt,
+      sb,
+      userId,
+      calTitle,
+      scheduledAt,
       notesParts.join("\n\n"),
       canvaLink,
       websiteLink,
-      brand
+      brand,
     );
 
     await sb.from("listing_posts").insert({
@@ -189,13 +192,13 @@ export async function createListing(
     mls_id?: string | null;
     list_price?: number | null;
     list_date: string;
-    post_date: string;       // When the listing goes live / initial post date
-    post_time?: string;      // HH:MM
+    post_date: string; // When the listing goes live / initial post date
+    post_time?: string; // HH:MM
     status?: ListingStatus;
     canva_link?: string | null;
     website_link?: string | null;
     brand?: string | null;
-  }
+  },
 ): Promise<{ id: string }> {
   const postTime = input.post_time ?? "09:00";
   const selectedBrand = input.brand || "MSREG ALL";
@@ -224,13 +227,14 @@ export async function createListing(
 
   // Initial "Just Listed" calendar entry (draft status)
   const calId = await createCalendarEntry(
-    sb, userId,
+    sb,
+    userId,
     `[Listing] ${row.address} — Just Listed`,
     scheduledAt,
     `Initial Just Listed post for ${row.address}`,
     input.canva_link ?? null,
     input.website_link ?? null,
-    selectedBrand
+    selectedBrand,
   );
 
   // Add the live day post to listing_posts
@@ -246,12 +250,16 @@ export async function createListing(
 
   // 60/90/120 reposts calculated from post_date
   await createRepostEntries(
-    sb, userId, row.id, row.address,
-    input.post_date, postTime,
+    sb,
+    userId,
+    row.id,
+    row.address,
+    input.post_date,
+    postTime,
     input.canva_link ?? null,
     input.website_link ?? null,
     selectedBrand,
-    null
+    null,
   );
 
   return { id: row.id };
@@ -262,7 +270,7 @@ export async function createListing(
 export async function bulkImportListings(
   sb: any,
   userId: string,
-  listings: ParsedListing[]
+  listings: ParsedListing[],
 ): Promise<{ imported: number; skipped: number }> {
   const { data: existing } = await sb
     .from("listings")
@@ -270,9 +278,9 @@ export async function bulkImportListings(
     .eq("archived", false);
 
   const existingSet = new Set(
-    (existing ?? []).map((r: any) =>
-      `${r.address.toLowerCase()}|${(r.agent_name ?? "").toLowerCase()}`
-    )
+    (existing ?? []).map(
+      (r: any) => `${r.address.toLowerCase()}|${(r.agent_name ?? "").toLowerCase()}`,
+    ),
   );
 
   let imported = 0;
@@ -280,7 +288,10 @@ export async function bulkImportListings(
 
   for (const item of listings) {
     const key = `${item.address.toLowerCase()}|${(item.agent_name ?? "").toLowerCase()}`;
-    if (existingSet.has(key)) { skipped++; continue; }
+    if (existingSet.has(key)) {
+      skipped++;
+      continue;
+    }
 
     const { data: row, error } = await sb
       .from("listings")
@@ -290,7 +301,7 @@ export async function bulkImportListings(
         mls_id: item.mls_id ?? null,
         list_price: item.list_price ?? null,
         list_date: item.list_date,
-        post_date: item.list_date,   // default post_date = list_date for bulk imports
+        post_date: item.list_date, // default post_date = list_date for bulk imports
         post_time: "09:00:00",
         status: item.status,
         canva_link: null,
@@ -300,7 +311,11 @@ export async function bulkImportListings(
       .select()
       .single();
 
-    if (error) { console.error("[bulkImport] row error:", error.message); skipped++; continue; }
+    if (error) {
+      console.error("[bulkImport] row error:", error.message);
+      skipped++;
+      continue;
+    }
 
     existingSet.add(key);
 
@@ -309,11 +324,14 @@ export async function bulkImportListings(
     const scheduledAt = new Date(localDateTimeStr).toISOString();
 
     const calId = await createCalendarEntry(
-      sb, userId,
+      sb,
+      userId,
       `[Listing] ${row.address} — Just Listed`,
       scheduledAt,
       `Initial Just Listed post for ${row.address} (Bulk Imported)`,
-      null, null, "MSREG ALL"
+      null,
+      null,
+      "MSREG ALL",
     );
 
     await sb.from("listing_posts").insert({
@@ -326,7 +344,18 @@ export async function bulkImportListings(
       status: "scheduled",
     });
 
-    await createRepostEntries(sb, userId, row.id, row.address, item.list_date, "09:00", null, null, "MSREG ALL", null);
+    await createRepostEntries(
+      sb,
+      userId,
+      row.id,
+      row.address,
+      item.list_date,
+      "09:00",
+      null,
+      null,
+      "MSREG ALL",
+      null,
+    );
     imported++;
   }
 
@@ -350,7 +379,7 @@ export async function updateListing(
     canva_link: string | null;
     website_link: string | null;
     brand: string | null;
-  }>
+  }>,
 ): Promise<void> {
   const { error } = await sb
     .from("listings")
@@ -368,7 +397,7 @@ export async function updateListing(
 export async function markUnderContract(
   sb: any,
   userId: string,
-  listingId: string
+  listingId: string,
 ): Promise<{ agentName: string | null; cancelledCount: number }> {
   const { data: listing, error: fetchErr } = await sb
     .from("listings")
@@ -398,16 +427,20 @@ export async function markUnderContract(
     await sb
       .from("listing_posts")
       .update({ status: "cancelled" })
-      .in("id", futurePosts.map((p: any) => p.id));
+      .in(
+        "id",
+        futurePosts.map((p: any) => p.id),
+      );
     cancelledCount = futurePosts.length;
   }
 
   // Create a task for content coordinator instead of a calendar entry
   const agentLine = listing.agent_name ? ` — Agent: ${listing.agent_name}` : "";
   await createCoordinatorTask(
-    sb, userId,
+    sb,
+    userId,
     `Under Contract — ${listing.address}`,
-    `This listing is now under contract.${agentLine}\n\nSend the Under Contract graphic to the agent and post to social media.`
+    `This listing is now under contract.${agentLine}\n\nSend the Under Contract graphic to the agent and post to social media.`,
   );
 
   return { agentName: listing.agent_name, cancelledCount };
@@ -437,22 +470,25 @@ export async function scheduleManualPost(
     canva_link?: string | null;
     website_link?: string | null;
     brand?: string | null;
-  }
+  },
 ): Promise<void> {
   const calTitle = `[Listing] ${input.address} — Manual Post`;
   const scheduledAt = new Date(`${input.scheduled_date}T09:00:00`).toISOString();
-  
+
   const notesParts = [
     `Manual post for ${input.address}`,
-    input.copy ? `Copy:\n${input.copy}` : null
+    input.copy ? `Copy:\n${input.copy}` : null,
   ].filter(Boolean);
 
   const calId = await createCalendarEntry(
-    sb, userId, calTitle, scheduledAt,
+    sb,
+    userId,
+    calTitle,
+    scheduledAt,
     notesParts.join("\n\n"),
     input.canva_link ?? null,
     input.website_link ?? null,
-    input.brand || "MSREG ALL"
+    input.brand || "MSREG ALL",
   );
   const { error } = await sb.from("listing_posts").insert({
     listing_id: input.listing_id,
@@ -478,7 +514,7 @@ export async function autoScheduleReposts(
   canvaLink: string | null,
   websiteLink: string | null,
   brand: string | null,
-  socialCopy: string | null
+  socialCopy: string | null,
 ): Promise<{ created: number; alreadyScheduled: number }> {
   const { data: existing } = await sb
     .from("listing_posts")
@@ -504,11 +540,14 @@ export async function autoScheduleReposts(
     ].filter(Boolean);
 
     const calId = await createCalendarEntry(
-      sb, userId, calTitle, scheduledAt,
+      sb,
+      userId,
+      calTitle,
+      scheduledAt,
       notesParts.join("\n\n"),
       canvaLink,
       websiteLink,
-      brand
+      brand,
     );
     await sb.from("listing_posts").insert({
       listing_id: listingId,
@@ -529,7 +568,7 @@ export async function autoScheduleReposts(
 export async function cancelListingPost(
   sb: any,
   postId: string,
-  calendarEntryId: string | null
+  calendarEntryId: string | null,
 ): Promise<void> {
   if (calendarEntryId) {
     await sb.from("content_items").delete().eq("id", calendarEntryId);
@@ -542,7 +581,7 @@ export async function cancelListingPost(
 export async function saveListingCopy(
   sb: any,
   listingId: string,
-  socialMediaCopy: string
+  socialMediaCopy: string,
 ): Promise<void> {
   const { data: existing } = await sb
     .from("listing_copy")
@@ -578,7 +617,7 @@ export async function pushToToolbox(
     videos: { drive_url: string; label: string | null }[];
     social_copy: string | null;
     website_link: string | null;
-  }
+  },
 ): Promise<{ toolboxListingId: string }> {
   // Automatically save copy to listing_copy database table first so it doesn't get lost
   if (input.social_copy) {
@@ -594,8 +633,10 @@ export async function pushToToolbox(
       status: "active",
       description: [
         input.social_copy,
-        input.website_link ? `Listing Website Link: ${input.website_link}` : null
-      ].filter(Boolean).join("\n\n"),
+        input.website_link ? `Listing Website Link: ${input.website_link}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
       created_by: userId,
     })
     .select("id")

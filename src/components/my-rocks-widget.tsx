@@ -38,18 +38,29 @@ export function MyRocksWidget() {
         {rocks.length === 0 && (
           <div className="p-10 text-center text-muted-foreground text-sm">
             No rocks assigned to you this quarter.{" "}
-            <Link to="/eos/rocks" className="text-gold underline">View all rocks</Link>
+            <Link to="/eos/rocks" className="text-gold underline">
+              View all rocks
+            </Link>
           </div>
         )}
         {rocks.map((r) => (
-          <Link key={r.id} to="/eos/rocks" className="p-4 flex items-center gap-3 hover:bg-accent/30">
+          <Link
+            key={r.id}
+            to="/eos/rocks"
+            className="p-4 flex items-center gap-3 hover:bg-accent/30"
+          >
             <div className="flex-1 min-w-0">
               <div className="font-medium truncate">{r.title}</div>
               {r.due_date && (
                 <div className="text-xs text-muted-foreground mt-0.5">Due {r.due_date}</div>
               )}
             </div>
-            <span className={cn("text-[10px] px-2 py-0.5 rounded border whitespace-nowrap", ROCK_STATUS_CLASS[r.status])}>
+            <span
+              className={cn(
+                "text-[10px] px-2 py-0.5 rounded border whitespace-nowrap",
+                ROCK_STATUS_CLASS[r.status],
+              )}
+            >
               {ROCK_STATUS_LABEL[r.status]}
             </span>
           </Link>

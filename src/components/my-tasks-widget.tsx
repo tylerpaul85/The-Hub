@@ -60,8 +60,19 @@ export function MyTasksWidget() {
   });
 
   const items: Item[] = [
-    ...tasks.map((t: any) => ({ kind: "task" as const, id: t.id, title: t.title, due_date: t.due_date, status: t.status })),
-    ...todos.map((t: any) => ({ kind: "todo" as const, id: t.id, title: t.title, due_date: t.due_date })),
+    ...tasks.map((t: any) => ({
+      kind: "task" as const,
+      id: t.id,
+      title: t.title,
+      due_date: t.due_date,
+      status: t.status,
+    })),
+    ...todos.map((t: any) => ({
+      kind: "todo" as const,
+      id: t.id,
+      title: t.title,
+      due_date: t.due_date,
+    })),
   ].sort((a, b) => {
     if (!a.due_date) return 1;
     if (!b.due_date) return -1;
@@ -89,8 +100,14 @@ export function MyTasksWidget() {
                 <Checkbox checked={false} onCheckedChange={() => toggleTodo.mutate(t.id)} />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm truncate">{t.title}</div>
-                  <div className={cn("text-xs mt-0.5", overdue ? "text-destructive" : "text-muted-foreground")}>
-                    {t.due_date ? `Due ${t.due_date}${overdue ? " · overdue" : ""}` : "No due date"} · L10 to-do
+                  <div
+                    className={cn(
+                      "text-xs mt-0.5",
+                      overdue ? "text-destructive" : "text-muted-foreground",
+                    )}
+                  >
+                    {t.due_date ? `Due ${t.due_date}${overdue ? " · overdue" : ""}` : "No due date"}{" "}
+                    · L10 to-do
                   </div>
                 </div>
               </div>
@@ -105,8 +122,14 @@ export function MyTasksWidget() {
             >
               <div className="flex-1 min-w-0">
                 <div className="text-sm truncate">{t.title}</div>
-                <div className={cn("text-xs mt-0.5", overdue ? "text-destructive" : "text-muted-foreground")}>
-                  {t.due_date ? `Due ${t.due_date}${overdue ? " · overdue" : ""}` : "No due date"} · {(t.status ?? "").replace("_", " ")}
+                <div
+                  className={cn(
+                    "text-xs mt-0.5",
+                    overdue ? "text-destructive" : "text-muted-foreground",
+                  )}
+                >
+                  {t.due_date ? `Due ${t.due_date}${overdue ? " · overdue" : ""}` : "No due date"} ·{" "}
+                  {(t.status ?? "").replace("_", " ")}
                 </div>
               </div>
             </Link>

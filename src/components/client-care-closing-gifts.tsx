@@ -37,7 +37,9 @@ export function ClientCareClosingGifts() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("marketing_requests")
-        .select("id,agent_name,agent_email,status,created_at,closing_gift,closing_gift_completed_at")
+        .select(
+          "id,agent_name,agent_email,status,created_at,closing_gift,closing_gift_completed_at",
+        )
         .not("closing_gift", "is", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -121,7 +123,11 @@ export function ClientCareClosingGifts() {
             </button>
           </div>
           <Link to="/requests">
-            <Button size="sm" variant="outline" className="border-gold/40 text-gold hover:bg-gold/10">
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-gold/40 text-gold hover:bg-gold/10"
+            >
               View all <ExternalLink className="h-3 w-3 ml-1.5" />
             </Button>
           </Link>
@@ -129,9 +135,7 @@ export function ClientCareClosingGifts() {
       </div>
 
       <div className="divide-y divide-border">
-        {isLoading && (
-          <div className="p-6 text-center text-sm text-muted-foreground">Loading…</div>
-        )}
+        {isLoading && <div className="p-6 text-center text-sm text-muted-foreground">Loading…</div>}
         {!isLoading && list.length === 0 && (
           <div className="p-8 text-center text-sm text-muted-foreground">
             {view === "active"
@@ -157,12 +161,16 @@ export function ClientCareClosingGifts() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <div className="font-semibold text-foreground">{r.agent_name}</div>
-                    <span className={cn(
-                      "text-[10px] px-2 py-0.5 rounded border uppercase tracking-wide font-medium",
-                      isCompleted && "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-                      !isCompleted && isPending && "bg-gold/20 text-gold border-gold/40",
-                      !isCompleted && r.status === "approved" && "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-                    )}>
+                    <span
+                      className={cn(
+                        "text-[10px] px-2 py-0.5 rounded border uppercase tracking-wide font-medium",
+                        isCompleted && "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+                        !isCompleted && isPending && "bg-gold/20 text-gold border-gold/40",
+                        !isCompleted &&
+                          r.status === "approved" &&
+                          "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+                      )}
+                    >
                       {isCompleted ? "Completed" : isPending ? "New / Pending" : r.status}
                     </span>
                   </div>
@@ -180,9 +188,7 @@ export function ClientCareClosingGifts() {
                 </Detail>
                 <Detail label="Office">{cg.office_location ?? "—"}</Detail>
                 <Detail label="Shirts">{cg.shirt_count ?? 0}</Detail>
-                <Detail label="Sizes">
-                  {sizes.length ? sizes.join(", ") : "—"}
-                </Detail>
+                <Detail label="Sizes">{sizes.length ? sizes.join(", ") : "—"}</Detail>
               </div>
               <div className="mt-3 flex justify-end">
                 {isCompleted ? (

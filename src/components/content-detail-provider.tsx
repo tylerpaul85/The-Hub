@@ -1,7 +1,10 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { ContentItemDetail } from "@/components/content-item-detail";
 
-interface Ctx { open: (id: string) => void; close: () => void; }
+interface Ctx {
+  open: (id: string) => void;
+  close: () => void;
+}
 const C = createContext<Ctx | undefined>(undefined);
 
 export function ContentDetailProvider({ children }: { children: ReactNode }) {
@@ -10,7 +13,11 @@ export function ContentDetailProvider({ children }: { children: ReactNode }) {
     <C.Provider value={{ open: setOpenId, close: () => setOpenId(null) }}>
       {children}
       {openId && (
-        <ContentItemDetail itemId={openId} open={true} onOpenChange={(o: boolean) => !o && setOpenId(null)} />
+        <ContentItemDetail
+          itemId={openId}
+          open={true}
+          onOpenChange={(o: boolean) => !o && setOpenId(null)}
+        />
       )}
     </C.Provider>
   );

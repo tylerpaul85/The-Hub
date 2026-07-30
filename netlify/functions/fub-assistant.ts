@@ -7,15 +7,20 @@ let lastStagesFetchTime = 0;
 // Log warning at startup if FUB_SYSTEM_KEY is missing
 const systemKey = process.env.FUB_SYSTEM_KEY;
 if (!systemKey) {
-  console.warn("[Startup Warning] FUB_SYSTEM_KEY is not configured in the environment. Follow Up Boss API global rate limits will be halved (125 vs 250 per 10s window).");
+  console.warn(
+    "[Startup Warning] FUB_SYSTEM_KEY is not configured in the environment. Follow Up Boss API global rate limits will be halved (125 vs 250 per 10s window).",
+  );
 }
 
 // ---------------- Helper Utilities ----------------
 
 // Timezone-aware date math helper: computes days ago in America/Chicago
-function getCentralDateCutoff(daysAgo: number, nowOverride?: Date): { isoStr: string; fubStr: string } {
+function getCentralDateCutoff(
+  daysAgo: number,
+  nowOverride?: Date,
+): { isoStr: string; fubStr: string } {
   const now = nowOverride || new Date();
-  
+
   // Calculate date in America/Chicago timezone
   const chicagoTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Chicago" }));
   chicagoTime.setDate(chicagoTime.getDate() - daysAgo);
@@ -41,21 +46,23 @@ function getDaysSinceCentral(dateStr: string | null): number | null {
   if (!dateStr) return null;
   const now = new Date();
   const target = new Date(dateStr);
-  
+
   const nowChicago = new Date(now.toLocaleString("en-US", { timeZone: "America/Chicago" }));
   const targetChicago = new Date(target.toLocaleString("en-US", { timeZone: "America/Chicago" }));
 
   nowChicago.setHours(0, 0, 0, 0);
   targetChicago.setHours(0, 0, 0, 0);
 
-  const diffDays = Math.floor((nowChicago.getTime() - targetChicago.getTime()) / (1000 * 60 * 60 * 24));
+  const diffDays = Math.floor(
+    (nowChicago.getTime() - targetChicago.getTime()) / (1000 * 60 * 60 * 24),
+  );
   return diffDays >= 0 ? diffDays : 0;
 }
 
 // Dynamic stage caching helper
 async function getStages(apiKey: string): Promise<string[]> {
   const now = Date.now();
-  if (cachedStages && (now - lastStagesFetchTime < 60 * 60 * 1000)) {
+  if (cachedStages && now - lastStagesFetchTime < 60 * 60 * 1000) {
     return cachedStages;
   }
 
@@ -70,7 +77,7 @@ async function getStages(apiKey: string): Promise<string[]> {
     }
     const res = await fetch("https://api.followupboss.com/v1/stages?limit=100", { headers });
     if (res.ok) {
-      const data = await res.json() as any;
+      const data = (await res.json()) as any;
       cachedStages = (data?.stages ?? []).map((s: any) => s.name);
       lastStagesFetchTime = now;
       return cachedStages || [];
@@ -82,7 +89,12 @@ async function getStages(apiKey: string): Promise<string[]> {
 }
 
 // Optimized FUB fetch with rate-limiting backoff, retries, and timeout
-async function fubFetch(url: string, apiKey: string, retries = 1, timeoutMs = 12000): Promise<Response> {
+async function fubFetch(
+  url: string,
+  apiKey: string,
+  retries = 1,
+  timeoutMs = 12000,
+): Promise<Response> {
   const headers: Record<string, string> = {
     Authorization: `Basic ${Buffer.from(`${apiKey}:`).toString("base64")}`,
     Accept: "application/json",
@@ -103,10 +115,14 @@ async function fubFetch(url: string, apiKey: string, retries = 1, timeoutMs = 12
     const limitContext = res.headers.get("X-RateLimit-Context") || "unknown";
 
     if (res.status === 401) {
-      throw new Error("Follow Up Boss API authentication failed (401). Please verify the server FUB_API_KEY environment configuration.");
+      throw new Error(
+        "Follow Up Boss API authentication failed (401). Please verify the server FUB_API_KEY environment configuration.",
+      );
     }
     if (res.status === 403) {
-      throw new Error("Follow Up Boss API permission denied (403). The configured API key lacks permission to access this resource.");
+      throw new Error(
+        "Follow Up Boss API permission denied (403). The configured API key lacks permission to access this resource.",
+      );
     }
     if (res.status === 429) {
       const retryAfter = Number(res.headers.get("Retry-After")) || 2;
@@ -115,11 +131,15 @@ async function fubFetch(url: string, apiKey: string, retries = 1, timeoutMs = 12
         await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000 + 500));
         return fubFetch(url, apiKey, retries - 1, timeoutMs);
       } else {
-        throw new Error(`Follow Up Boss rate limit exceeded (429). Context: ${limitContext}. Please try again shortly.`);
+        throw new Error(
+          `Follow Up Boss rate limit exceeded (429). Context: ${limitContext}. Please try again shortly.`,
+        );
       }
     }
     if (res.status >= 500) {
-      throw new Error(`Follow Up Boss API server error (${res.status}). Service may be temporarily unavailable.`);
+      throw new Error(
+        `Follow Up Boss API server error (${res.status}). Service may be temporarily unavailable.`,
+      );
     }
 
     if (remaining && remaining < 20) {
@@ -142,7 +162,7 @@ async function fubPaginate(
   baseUrl: string,
   apiKey: string,
   collectionKey: string,
-  maxPages = 5
+  maxPages = 5,
 ): Promise<{ items: any[]; total: number; truncated: boolean }> {
   const out: any[] = [];
   let nextUrl = baseUrl;
@@ -162,7 +182,7 @@ async function fubPaginate(
       throw new Error(`FUB API error GET ${url} (${res.status}): ${errText}`);
     }
 
-    const data = await res.json() as any;
+    const data = (await res.json()) as any;
     if (!data) break;
 
     const items = data[collectionKey] ?? [];
@@ -182,7 +202,7 @@ async function fubPaginate(
 
     // Offset fallback
     if (!nextUrlCandidate && items.length === 100 && total > out.length) {
-      const currentOffset = data?._metadata?.offset ?? ((pagesFetched - 1) * 100);
+      const currentOffset = data?._metadata?.offset ?? (pagesFetched - 1) * 100;
       const nextOffset = currentOffset + 100;
       const baseWithoutOffset = baseUrl.replace(/[&?]offset=\d+/, "");
       const newSep = baseWithoutOffset.includes("?") ? "&" : "?";
@@ -226,7 +246,10 @@ async function handleSearchPeople(input: any, apiKey: string) {
   const queryParams = new URLSearchParams();
   queryParams.append("limit", "100");
   queryParams.append("sort", sort);
-  queryParams.append("fields", "id,name,firstName,lastName,created,createdVia,stage,source,assignedUserId,assignedTo,lastActivity,lastCommunication,lastSentEmail,lastSentText,lastOutgoingCall,contacted,price,tags");
+  queryParams.append(
+    "fields",
+    "id,name,firstName,lastName,created,createdVia,stage,source,assignedUserId,assignedTo,lastActivity,lastCommunication,lastSentEmail,lastSentText,lastOutgoingCall,contacted,price,tags",
+  );
 
   if (stage) queryParams.append("stage", stage);
   if (source) queryParams.append("source", source);
@@ -242,7 +265,7 @@ async function handleSearchPeople(input: any, apiKey: string) {
     `https://api.followupboss.com/v1/people?${queryParams.toString()}`,
     apiKey,
     "people",
-    maxPages
+    maxPages,
   );
 
   let people = fubRes.items;
@@ -270,7 +293,8 @@ async function handleSearchPeople(input: any, apiKey: string) {
     const outboundTimes = [p.lastSentEmail, p.lastSentText, p.lastOutgoingCall]
       .filter(Boolean)
       .map((t) => new Date(t).getTime());
-    const lastOutbound = outboundTimes.length > 0 ? new Date(Math.max(...outboundTimes)).toISOString() : null;
+    const lastOutbound =
+      outboundTimes.length > 0 ? new Date(Math.max(...outboundTimes)).toISOString() : null;
 
     return {
       id: p.id,
@@ -342,13 +366,16 @@ async function handleGetAgentLeaderboard(input: any, apiKey: string) {
 
   // Filter roster for reportable agents (permanently exclude Matt Smith)
   const agentsRoster = allUsers.filter(
-    (u: any) => u.name && !isExcludedReportingUser(u.id, u.name)
+    (u: any) => u.name && !isExcludedReportingUser(u.id, u.name),
   );
 
   // 2. Fetch leads in scope (paginating up to 10 pages for accuracy)
   const peopleParams = new URLSearchParams();
   peopleParams.append("limit", "100");
-  peopleParams.append("fields", "id,assignedUserId,assignedTo,lastActivity,lastCommunication,lastSentEmail,lastSentText,lastOutgoingCall,contacted");
+  peopleParams.append(
+    "fields",
+    "id,assignedUserId,assignedTo,lastActivity,lastCommunication,lastSentEmail,lastSentText,lastOutgoingCall,contacted",
+  );
   if (stage) peopleParams.append("stage", stage);
   if (source) peopleParams.append("source", source);
 
@@ -356,7 +383,7 @@ async function handleGetAgentLeaderboard(input: any, apiKey: string) {
     `https://api.followupboss.com/v1/people?${peopleParams.toString()}`,
     apiKey,
     "people",
-    10
+    10,
   );
 
   // Deduplicate leads by FUB person ID
@@ -386,52 +413,56 @@ async function handleGetAgentLeaderboard(input: any, apiKey: string) {
   }
 
   // 4. Compute stats per reportable agent (Matt Smith excluded from agent dataset)
-  const agentRollups = agentsRoster.map((u: any) => {
-    const agentLeads = leadsByAgent.get(u.id) ?? [];
-    const totalInScope = agentLeads.length;
+  const agentRollups = agentsRoster
+    .map((u: any) => {
+      const agentLeads = leadsByAgent.get(u.id) ?? [];
+      const totalInScope = agentLeads.length;
 
-    let staleByActivity = 0;
-    let staleByOutboundContact = 0;
-    let neverContacted = 0;
+      let staleByActivity = 0;
+      let staleByOutboundContact = 0;
+      let neverContacted = 0;
 
-    for (const l of agentLeads) {
-      // Stale by activity
-      const activityTime = l.lastActivity ? new Date(l.lastActivity).getTime() : 0;
-      if (activityTime === 0 || activityTime < cutoffTime) {
-        staleByActivity += 1;
+      for (const l of agentLeads) {
+        // Stale by activity
+        const activityTime = l.lastActivity ? new Date(l.lastActivity).getTime() : 0;
+        if (activityTime === 0 || activityTime < cutoffTime) {
+          staleByActivity += 1;
+        }
+
+        // Outbound contact timestamps
+        const outboundTimes = [l.lastSentEmail, l.lastSentText, l.lastOutgoingCall]
+          .filter(Boolean)
+          .map((t) => new Date(t).getTime());
+        const maxOutbound = outboundTimes.length > 0 ? Math.max(...outboundTimes) : 0;
+
+        if (maxOutbound === 0 || maxOutbound < cutoffTime) {
+          staleByOutboundContact += 1;
+        }
+
+        // Never contacted
+        if (maxOutbound === 0 || !l.contacted) {
+          neverContacted += 1;
+        }
       }
 
-      // Outbound contact timestamps
-      const outboundTimes = [l.lastSentEmail, l.lastSentText, l.lastOutgoingCall]
-        .filter(Boolean)
-        .map((t) => new Date(t).getTime());
-      const maxOutbound = outboundTimes.length > 0 ? Math.max(...outboundTimes) : 0;
+      const pctStaleActivity =
+        totalInScope > 0 ? Number(((staleByActivity / totalInScope) * 100).toFixed(1)) : 0;
+      const pctStaleOutbound =
+        totalInScope > 0 ? Number(((staleByOutboundContact / totalInScope) * 100).toFixed(1)) : 0;
 
-      if (maxOutbound === 0 || maxOutbound < cutoffTime) {
-        staleByOutboundContact += 1;
-      }
-
-      // Never contacted
-      if (maxOutbound === 0 || !l.contacted) {
-        neverContacted += 1;
-      }
-    }
-
-    const pctStaleActivity = totalInScope > 0 ? Number(((staleByActivity / totalInScope) * 100).toFixed(1)) : 0;
-    const pctStaleOutbound = totalInScope > 0 ? Number(((staleByOutboundContact / totalInScope) * 100).toFixed(1)) : 0;
-
-    return {
-      user_id: u.id,
-      name: u.name,
-      total_in_scope: totalInScope,
-      stale_by_activity: staleByActivity,
-      stale_by_outbound_contact: staleByOutboundContact,
-      pct_stale_by_activity: pctStaleActivity,
-      pct_stale_by_outbound_contact: pctStaleOutbound,
-      never_contacted: neverContacted,
-      denominator_context: `${staleByOutboundContact} of ${totalInScope} leads`,
-    };
-  }).filter((a: any) => a.total_in_scope > 0)
+      return {
+        user_id: u.id,
+        name: u.name,
+        total_in_scope: totalInScope,
+        stale_by_activity: staleByActivity,
+        stale_by_outbound_contact: staleByOutboundContact,
+        pct_stale_by_activity: pctStaleActivity,
+        pct_stale_by_outbound_contact: pctStaleOutbound,
+        never_contacted: neverContacted,
+        denominator_context: `${staleByOutboundContact} of ${totalInScope} leads`,
+      };
+    })
+    .filter((a: any) => a.total_in_scope > 0)
     .sort((a: any, b: any) => b.stale_by_outbound_contact - a.stale_by_outbound_contact);
 
   const isTruncated = peopleRes.truncated || peopleRes.total > uniqueLeads.length;
@@ -444,7 +475,8 @@ async function handleGetAgentLeaderboard(input: any, apiKey: string) {
       cutoff: isoStr,
       basis: "lastActivity and lastOutboundContact reported separately",
     },
-    exclusion_note: "Matt Smith is excluded from agent performance reporting because owner-assigned pond leads do not represent individual agent follow-up activity.",
+    exclusion_note:
+      "Matt Smith is excluded from agent performance reporting because owner-assigned pond leads do not represent individual agent follow-up activity.",
     pond_summary: {
       reportable_agent_leads: reportableAgentLeadsCount,
       shared_pond_owner_assigned: sharedPondOwnerAssignedCount,
@@ -485,7 +517,10 @@ async function handleGetPipelineSummary(input: any, apiKey: string) {
     stageMap.set(s.id, { name: s.name, pipelineId: s.pipelineId });
   }
 
-  const aggregation: Record<string, { stageName: string; pipelineName: string; count: number; totalValue: number }> = {};
+  const aggregation: Record<
+    string,
+    { stageName: string; pipelineName: string; count: number; totalValue: number }
+  > = {};
   const matchingDeals: any[] = [];
 
   for (const d of dealsRes.items) {
@@ -548,7 +583,9 @@ async function handleGetLeadSources(input: any, apiKey: string) {
   const { created_after, created_before, stage } = input;
 
   if (!created_after || !created_before) {
-    throw new Error("Parameters created_after and created_before are required for get_lead_sources.");
+    throw new Error(
+      "Parameters created_after and created_before are required for get_lead_sources.",
+    );
   }
 
   // Calculate cutoff for stale definition (14 days ago)
@@ -558,13 +595,16 @@ async function handleGetLeadSources(input: any, apiKey: string) {
   const queryParams = new URLSearchParams();
   queryParams.append("createdAfter", created_after);
   queryParams.append("createdBefore", created_before);
-  queryParams.append("fields", "id,source,stage,lastActivity,lastSentEmail,lastSentText,lastOutgoingCall");
+  queryParams.append(
+    "fields",
+    "id,source,stage,lastActivity,lastSentEmail,lastSentText,lastOutgoingCall",
+  );
 
   const peopleRes = await fubPaginate(
     `https://api.followupboss.com/v1/people?${queryParams.toString()}`,
     apiKey,
     "people",
-    3
+    3,
   );
 
   let leads = peopleRes.items;
@@ -572,7 +612,10 @@ async function handleGetLeadSources(input: any, apiKey: string) {
     leads = leads.filter((l) => l.stage && l.stage.toLowerCase() === stage.toLowerCase());
   }
 
-  const sourceAggregation: Record<string, { total: number; stale: number; stages: Record<string, number> }> = {};
+  const sourceAggregation: Record<
+    string,
+    { total: number; stale: number; stages: Record<string, number> }
+  > = {};
 
   for (const l of leads) {
     const src = l.source || "Unknown";
@@ -591,17 +634,19 @@ async function handleGetLeadSources(input: any, apiKey: string) {
     }
   }
 
-  const sourcesList = Object.entries(sourceAggregation).map(([source, data]) => {
-    const staleRate = data.total > 0 ? Number(((data.stale / data.total) * 100).toFixed(1)) : 0;
-    return {
-      source,
-      totalCount: data.total,
-      staleCount: data.stale,
-      stale_rate: staleRate,
-      denominator_context: `${data.stale} of ${data.total} leads`,
-      stageBreakdown: data.stages,
-    };
-  }).sort((a, b) => b.totalCount - a.totalCount);
+  const sourcesList = Object.entries(sourceAggregation)
+    .map(([source, data]) => {
+      const staleRate = data.total > 0 ? Number(((data.stale / data.total) * 100).toFixed(1)) : 0;
+      return {
+        source,
+        totalCount: data.total,
+        staleCount: data.stale,
+        stale_rate: staleRate,
+        denominator_context: `${data.stale} of ${data.total} leads`,
+        stageBreakdown: data.stages,
+      };
+    })
+    .sort((a, b) => b.totalCount - a.totalCount);
 
   return {
     report_type: "lead_sources",
@@ -618,57 +663,87 @@ async function handleGetLeadSources(input: any, apiKey: string) {
 const TOOLS = [
   {
     name: "search_people",
-    description: "Search and retrieve a list of contacts/leads from Follow Up Boss. Allows sorting, filtering, and paging with a hard ceiling of 500 records. Evaluates outbound contacts and passive activity metrics.",
+    description:
+      "Search and retrieve a list of contacts/leads from Follow Up Boss. Allows sorting, filtering, and paging with a hard ceiling of 500 records. Evaluates outbound contacts and passive activity metrics.",
     input_schema: {
       type: "object",
       properties: {
-        stage: { type: "string", description: "Exact stage name (e.g. Lead, A - Hot (0-3 months), D - Cold (12+ months))" },
+        stage: {
+          type: "string",
+          description: "Exact stage name (e.g. Lead, A - Hot (0-3 months), D - Cold (12+ months))",
+        },
         source: { type: "string", description: "Filter leads by marketing source" },
         assigned_user_id: { type: "integer", description: "Agent ID filter" },
         assigned_to: { type: "string", description: "Agent name filter" },
-        last_activity_before: { type: "string", description: "ISO date format (YYYY-MM-DD HH:MM:SS) to match leads who had no activity since this cutoff" },
+        last_activity_before: {
+          type: "string",
+          description:
+            "ISO date format (YYYY-MM-DD HH:MM:SS) to match leads who had no activity since this cutoff",
+        },
         last_activity_after: { type: "string", description: "ISO date format" },
-        last_communication_before: { type: "string", description: "Filter client-side for leads whose last communication is older than this timestamp" },
+        last_communication_before: {
+          type: "string",
+          description:
+            "Filter client-side for leads whose last communication is older than this timestamp",
+        },
         contacted: { type: "boolean", description: "Match contacted status" },
         tags: { type: "string", description: "Comma-separated tag list (OR matches)" },
         include_trash: { type: "boolean", description: "Whether to include trash (default false)" },
-        sort: { type: "string", description: "Sort field (e.g. -lastActivity, -created). Defaults to -lastActivity." },
+        sort: {
+          type: "string",
+          description: "Sort field (e.g. -lastActivity, -created). Defaults to -lastActivity.",
+        },
         limit: { type: "integer", description: "Maximum records to return (default 100, max 500)" },
       },
     },
   },
   {
     name: "get_agent_leaderboard",
-    description: "Get per-agent totals and ratios of stale and never-contacted leads in central time timezone. Scopes list and computes percentages dynamically.",
+    description:
+      "Get per-agent totals and ratios of stale and never-contacted leads in central time timezone. Scopes list and computes percentages dynamically.",
     input_schema: {
       type: "object",
       properties: {
         stage: { type: "string", description: "Optional exact stage filter" },
-        stale_days: { type: "integer", description: "Cutoff window for stale classification (default 14 days)" },
+        stale_days: {
+          type: "integer",
+          description: "Cutoff window for stale classification (default 14 days)",
+        },
         source: { type: "string", description: "Optional marketing source filter" },
       },
     },
   },
   {
     name: "get_pipeline_summary",
-    description: "Get deal counts and values aggregated by pipeline and stage. Returns totals and breakdowns without full row list by default.",
+    description:
+      "Get deal counts and values aggregated by pipeline and stage. Returns totals and breakdowns without full row list by default.",
     input_schema: {
       type: "object",
       properties: {
         pipeline_id: { type: "string", description: "Optional numeric pipeline filter" },
-        assigned_user_id: { type: "integer", description: "Filter deals assigned to specific agent" },
+        assigned_user_id: {
+          type: "integer",
+          description: "Filter deals assigned to specific agent",
+        },
         include_deals: { type: "boolean", description: "Return deal records list (default false)" },
       },
     },
   },
   {
     name: "get_lead_sources",
-    description: "Break down leads created within a date range by marketing source, reporting total count, stale counts, stale percentages, and stages distribution.",
+    description:
+      "Break down leads created within a date range by marketing source, reporting total count, stale counts, stale percentages, and stages distribution.",
     input_schema: {
       type: "object",
       properties: {
-        created_after: { type: "string", description: "ISO-8601 UTC date (e.g. 2026-07-01T00:00:00Z)" },
-        created_before: { type: "string", description: "ISO-8601 UTC date (e.g. 2026-07-16T23:59:59Z)" },
+        created_after: {
+          type: "string",
+          description: "ISO-8601 UTC date (e.g. 2026-07-01T00:00:00Z)",
+        },
+        created_before: {
+          type: "string",
+          description: "ISO-8601 UTC date (e.g. 2026-07-16T23:59:59Z)",
+        },
         stage: { type: "string", description: "Optional stage filter" },
       },
       required: ["created_after", "created_before"],
@@ -684,7 +759,7 @@ export async function handler(event: any, context: any) {
     "https://calendar-hub-craft.lovable.app",
     "http://localhost:5173",
     "http://localhost:3000",
-    "http://127.0.0.1:5173"
+    "http://127.0.0.1:5173",
   ];
   const allowOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0];
 
@@ -711,7 +786,8 @@ export async function handler(event: any, context: any) {
   const fubApiKey = process.env.FUB_API_KEY || process.env.FUB;
   const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const supabasePublishableKey =
+    process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
   if (!fubApiKey) {
     return {
@@ -751,7 +827,10 @@ export async function handler(event: any, context: any) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser(token);
   if (authError || !user) {
     return {
       statusCode: 401,
@@ -991,7 +1070,7 @@ ACTIVITY VS CONTACT DEFINITIONS:
       }
 
       const toolUses = result.content.filter((c: any) => c.type === "tool_use");
-      
+
       const toolResults = await Promise.all(
         toolUses.map(async (toolUse: any) => {
           const { name, input, id: toolUseId } = toolUse;
@@ -1024,7 +1103,7 @@ ACTIVITY VS CONTACT DEFINITIONS:
             tool_use_id: toolUseId,
             content: JSON.stringify(toolResultData),
           };
-        })
+        }),
       );
 
       const toolResultsContent = toolResults;

@@ -38,7 +38,9 @@ function ResetPasswordPage() {
     }
 
     // 2. Use supabase.auth.onAuthStateChange and check for the PASSWORD_RECOVERY event
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
         setReady(true);
       } else if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
@@ -67,7 +69,7 @@ function ResetPasswordPage() {
     if (password !== confirm) {
       return toast.error("Passwords don't match.");
     }
-    
+
     setSaving(true);
     const { error } = await supabase.auth.updateUser({ password });
 
@@ -78,7 +80,7 @@ function ResetPasswordPage() {
 
     await supabase.auth.signOut();
     setSaving(false);
-    
+
     toast.success("Password reset successful. Please sign in with your new password.");
     navigate({ to: "/auth" });
   };
@@ -95,40 +97,40 @@ function ResetPasswordPage() {
         <div className="bg-card border border-border rounded-xl p-6 shadow-xl">
           <h2 className="text-lg font-bold mb-1">Choose a password</h2>
           <p className="text-sm text-muted-foreground mb-5">
-            {ready 
-              ? "Choose a secure password for your account." 
+            {ready
+              ? "Choose a secure password for your account."
               : "Verifying recovery session link…"}
           </p>
 
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
               <Label htmlFor="pw">New password</Label>
-              <Input 
-                id="pw" 
-                type="password" 
-                value={password} 
+              <Input
+                id="pw"
+                type="password"
+                value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1.5" 
-                required 
-                minLength={8} 
-                disabled={!ready} 
+                className="mt-1.5"
+                required
+                minLength={8}
+                disabled={!ready}
               />
             </div>
             <div>
               <Label htmlFor="pw2">Confirm password</Label>
-              <Input 
-                id="pw2" 
-                type="password" 
-                value={confirm} 
+              <Input
+                id="pw2"
+                type="password"
+                value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
-                className="mt-1.5" 
-                required 
-                minLength={8} 
-                disabled={!ready} 
+                className="mt-1.5"
+                required
+                minLength={8}
+                disabled={!ready}
               />
             </div>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={!ready || saving}
               className="w-full bg-gold text-gold-foreground hover:bg-gold/90 cursor-pointer"
             >

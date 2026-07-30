@@ -1,10 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const ALLOWED_EMAILS = [
-  "tyler.p@mattsmithrealestategroup.com",
-  "tylerpaul85@gmail.com",
-];
+const ALLOWED_EMAILS = ["tyler.p@mattsmithrealestategroup.com", "tylerpaul85@gmail.com"];
 
 function assertAllowed(claims: any) {
   const email = String(claims?.email ?? "").toLowerCase();
@@ -64,7 +61,10 @@ async function probe(
 
     const note = looksLikeHtml
       ? "Response is HTML, not JSON — this URL is hitting a website page, not an API endpoint. The base URL / path is wrong."
-      : opts?.checkSisuStatus && sisuStatusCode !== undefined && sisuStatusCode !== null && sisuStatusCode !== 0
+      : opts?.checkSisuStatus &&
+          sisuStatusCode !== undefined &&
+          sisuStatusCode !== null &&
+          sisuStatusCode !== 0
         ? `Sisu reported failure: status_code=${sisuStatusCode} (0 = success, negative = failure). HTTP status alone is misleading — always check body.status_code.`
         : undefined;
 
@@ -153,10 +153,16 @@ export const runApiDiagnostics = createServerFn({ method: "POST" })
       };
 
       const today = new Date();
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+      const startOfDay = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate(),
+      ).toISOString();
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
 
-      results.fub.push(await probe("Identity / account", "https://api.followupboss.com/v1/identity", fubHeaders));
+      results.fub.push(
+        await probe("Identity / account", "https://api.followupboss.com/v1/identity", fubHeaders),
+      );
       results.fub.push(
         await probe(
           "Calls logged today",
@@ -172,7 +178,11 @@ export const runApiDiagnostics = createServerFn({ method: "POST" })
         ),
       );
       results.fub.push(
-        await probe("Deals (first page)", "https://api.followupboss.com/v1/deals?limit=10", fubHeaders),
+        await probe(
+          "Deals (first page)",
+          "https://api.followupboss.com/v1/deals?limit=10",
+          fubHeaders,
+        ),
       );
       results.fub.push(
         await probe("Deal stages", "https://api.followupboss.com/v1/stages?limit=100", fubHeaders),
@@ -221,10 +231,22 @@ export const runApiDiagnostics = createServerFn({ method: "POST" })
         sisuCalls.push({ label: "Leaderboard Month (override)", path: subst(monthOverride) });
       } else {
         sisuCalls.push(
-          { label: "Leaderboard Month — query params", path: `/v1/leaderboard/month?year=${year}&month=${month}${teamQs}` },
-          { label: "Leaderboard Month — path segments", path: `/v1/leaderboard/month/${year}/${month}${teamId ? `?team_id=${encodeURIComponent(teamId)}` : ""}` },
-          { label: "Leaderboard Monthly (singular)", path: `/v1/leaderboard/monthly?year=${year}&month=${month}${teamQs}` },
-          { label: "Leaderboard ?type=month", path: `/v1/leaderboard?type=month&year=${year}&month=${month}${teamQs}` },
+          {
+            label: "Leaderboard Month — query params",
+            path: `/v1/leaderboard/month?year=${year}&month=${month}${teamQs}`,
+          },
+          {
+            label: "Leaderboard Month — path segments",
+            path: `/v1/leaderboard/month/${year}/${month}${teamId ? `?team_id=${encodeURIComponent(teamId)}` : ""}`,
+          },
+          {
+            label: "Leaderboard Monthly (singular)",
+            path: `/v1/leaderboard/monthly?year=${year}&month=${month}${teamQs}`,
+          },
+          {
+            label: "Leaderboard ?type=month",
+            path: `/v1/leaderboard?type=month&year=${year}&month=${month}${teamQs}`,
+          },
         );
       }
 
@@ -232,10 +254,22 @@ export const runApiDiagnostics = createServerFn({ method: "POST" })
         sisuCalls.push({ label: "Leaderboard Year (override)", path: subst(yearOverride) });
       } else {
         sisuCalls.push(
-          { label: "Leaderboard Year — query params", path: `/v1/leaderboard/year?year=${year}${teamQs}` },
-          { label: "Leaderboard Year — path segment", path: `/v1/leaderboard/year/${year}${teamId ? `?team_id=${encodeURIComponent(teamId)}` : ""}` },
-          { label: "Leaderboard Yearly (singular)", path: `/v1/leaderboard/yearly?year=${year}${teamQs}` },
-          { label: "Leaderboard ?type=year", path: `/v1/leaderboard?type=year&year=${year}${teamQs}` },
+          {
+            label: "Leaderboard Year — query params",
+            path: `/v1/leaderboard/year?year=${year}${teamQs}`,
+          },
+          {
+            label: "Leaderboard Year — path segment",
+            path: `/v1/leaderboard/year/${year}${teamId ? `?team_id=${encodeURIComponent(teamId)}` : ""}`,
+          },
+          {
+            label: "Leaderboard Yearly (singular)",
+            path: `/v1/leaderboard/yearly?year=${year}${teamQs}`,
+          },
+          {
+            label: "Leaderboard ?type=year",
+            path: `/v1/leaderboard?type=year&year=${year}${teamQs}`,
+          },
         );
       }
 
@@ -249,8 +283,7 @@ export const runApiDiagnostics = createServerFn({ method: "POST" })
         SISU_TEAM_ID: teamId || "(not set)",
         SISU_LEADERBOARD_MONTH_PATH: monthOverride || "(not set — using built-in variants)",
         SISU_LEADERBOARD_YEAR_PATH: yearOverride || "(not set — using built-in variants)",
-        note:
-          "Set these env vars to lock in the correct path once confirmed from Sisu's API Reference. Use tokens {year}, {month}, {team} in path templates.",
+        note: "Set these env vars to lock in the correct path once confirmed from Sisu's API Reference. Use tokens {year}, {month}, {team} in path templates.",
       };
 
       for (const { label, path } of sisuCalls) {
@@ -260,7 +293,6 @@ export const runApiDiagnostics = createServerFn({ method: "POST" })
         );
       }
     }
-
 
     return results;
   });
@@ -375,9 +407,7 @@ export const getLiveStats = createServerFn({ method: "POST" })
     const users: FubUser[] = usersR.data?.users ?? [];
     for (const u of users) {
       const name =
-        u.name ||
-        [u.firstName, u.lastName].filter(Boolean).join(" ").trim() ||
-        `User #${u.id}`;
+        u.name || [u.firstName, u.lastName].filter(Boolean).join(" ").trim() || `User #${u.id}`;
       userMap.set(u.id, name);
     }
 
@@ -436,4 +466,3 @@ export const getLiveStats = createServerFn({ method: "POST" })
       errors,
     };
   });
-

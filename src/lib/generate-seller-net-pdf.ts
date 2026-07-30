@@ -67,7 +67,8 @@ async function getBase64ImageFromUrl(url: string): Promise<string> {
   }
 }
 
-const BLACK_LOGO_URL = "https://jxymjhmbaqstmrttjdib.supabase.co/storage/v1/object/public/signature-headshots/Blue%20Minimalist%20Circle%20Framed%20Instagram%20Profile%20Picture%20(4).png";
+const BLACK_LOGO_URL =
+  "https://jxymjhmbaqstmrttjdib.supabase.co/storage/v1/object/public/signature-headshots/Blue%20Minimalist%20Circle%20Framed%20Instagram%20Profile%20Picture%20(4).png";
 
 export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void> {
   const numScenarios = data.num_scenarios || 1;
@@ -279,9 +280,7 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
 
     pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, Math.min(pdfHeight, 792));
 
-    const cleanAddress = (data.property_address || "Property")
-      .trim()
-      .replace(/[^a-zA-Z0-9]/g, "_");
+    const cleanAddress = (data.property_address || "Property").trim().replace(/[^a-zA-Z0-9]/g, "_");
 
     pdf.save(`Seller Net Sheet - ${cleanAddress}.pdf`);
   } finally {
@@ -291,7 +290,12 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
   }
 }
 
-function renderPdfRow(label: string, fieldKey: string, data: SheetDataForPdf, numScenarios: number): string {
+function renderPdfRow(
+  label: string,
+  fieldKey: string,
+  data: SheetDataForPdf,
+  numScenarios: number,
+): string {
   const v1 = getFieldValue(data, fieldKey, 1);
   const v2 = getFieldValue(data, fieldKey, 2);
   const v3 = getFieldValue(data, fieldKey, 3);

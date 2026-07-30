@@ -13,9 +13,7 @@ function ExperimentsIndex() {
         <FlaskConical className="h-6 w-6 text-gold" />
         <div>
           <h1 className="text-2xl font-semibold">Experiments</h1>
-          <p className="text-sm text-muted-foreground">
-            Hidden lab. Restricted access.
-          </p>
+          <p className="text-sm text-muted-foreground">Hidden lab. Restricted access.</p>
         </div>
       </div>
 
@@ -40,8 +38,8 @@ function ExperimentsIndex() {
               <div>
                 <div className="font-semibold">Live Stats TV Dashboard</div>
                 <div className="text-sm text-muted-foreground mt-1">
-                  Fullscreen, auto-refreshing Follow Up Boss stats for the office TV.
-                  Open this on the TV device and press Fullscreen.
+                  Fullscreen, auto-refreshing Follow Up Boss stats for the office TV. Open this on
+                  the TV device and press Fullscreen.
                 </div>
               </div>
             </div>
@@ -54,8 +52,8 @@ function ExperimentsIndex() {
               <div>
                 <div className="font-semibold">API Diagnostics</div>
                 <div className="text-sm text-muted-foreground mt-1">
-                  Raw probes against Follow Up Boss + Sisu endpoints. For debugging
-                  connections only.
+                  Raw probes against Follow Up Boss + Sisu endpoints. For debugging connections
+                  only.
                 </div>
               </div>
             </div>
@@ -68,15 +66,14 @@ function ExperimentsIndex() {
               <div>
                 <div className="font-semibold">Virtual Staging Tool</div>
                 <div className="text-sm text-muted-foreground mt-1">
-                  Upload an empty room photo, choose a style, and get AI-staged versions.
-                  Admin / marketing only.
+                  Upload an empty room photo, choose a style, and get AI-staged versions. Admin /
+                  marketing only.
                 </div>
               </div>
             </div>
           </Card>
         </Link>
       </div>
-
     </div>
   );
 }

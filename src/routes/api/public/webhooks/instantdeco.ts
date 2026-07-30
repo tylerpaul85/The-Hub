@@ -25,8 +25,7 @@ function pickString(obj: AnyRecord | undefined, ...keys: string[]): string | und
   return undefined;
 }
 
-const isHttpUrl = (v: unknown): v is string =>
-  typeof v === "string" && /^https?:\/\//i.test(v);
+const isHttpUrl = (v: unknown): v is string => typeof v === "string" && /^https?:\/\//i.test(v);
 
 function collectImageUrls(payload: AnyRecord): string[] {
   const urls: string[] = [];
@@ -35,14 +34,7 @@ function collectImageUrls(payload: AnyRecord): string[] {
     if (isHttpUrl(val)) {
       urls.push(val);
     } else if (val && typeof val === "object") {
-      const u = pickString(
-        val as AnyRecord,
-        "url",
-        "image_url",
-        "output_url",
-        "output",
-        "src",
-      );
+      const u = pickString(val as AnyRecord, "url", "image_url", "output_url", "output", "src");
       if (u && isHttpUrl(u)) urls.push(u);
     }
   };
@@ -73,9 +65,7 @@ function collectImageUrls(payload: AnyRecord): string[] {
   }
 
   // Nested single keys
-  for (const nest of [payload.response, payload.data] as Array<
-    AnyRecord | undefined
-  >) {
+  for (const nest of [payload.response, payload.data] as Array<AnyRecord | undefined>) {
     if (!nest || typeof nest !== "object") continue;
     for (const k of singleKeys) {
       const v = nest[k];
@@ -163,16 +153,13 @@ export const Route = createFileRoute("/api/public/webhooks/instantdeco")({
         }
 
         try {
-          const { supabaseAdmin } = await import(
-            "@/integrations/supabase/client.server"
-          );
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-          const lookup = supabaseAdmin
-            .from("staging_jobs")
-            .select("id, status");
-          const { data: job, error: findErr } = await (requestId
-            ? lookup.eq("instantdeco_request_id", requestId)
-            : lookup.eq("id", queryJobId!)
+          const lookup = supabaseAdmin.from("staging_jobs").select("id, status");
+          const { data: job, error: findErr } = await (
+            requestId
+              ? lookup.eq("instantdeco_request_id", requestId)
+              : lookup.eq("id", queryJobId!)
           ).maybeSingle();
 
           if (findErr) {
@@ -192,17 +179,10 @@ export const Route = createFileRoute("/api/public/webhooks/instantdeco")({
             "done",
             "ok",
           ]);
-          const failureStatuses = new Set([
-            "error",
-            "failed",
-            "failure",
-            "fail",
-          ]);
+          const failureStatuses = new Set(["error", "failed", "failure", "fail"]);
 
           const isExplicitSuccess = successStatuses.has(status);
-          const isFailure =
-            failureStatuses.has(status) ||
-            (!!errorMessage && !isExplicitSuccess);
+          const isFailure = failureStatuses.has(status) || (!!errorMessage && !isExplicitSuccess);
 
           if (isFailure || (!isExplicitSuccess && urls.length === 0)) {
             const msg =
@@ -218,10 +198,7 @@ export const Route = createFileRoute("/api/public/webhooks/instantdeco")({
               })
               .eq("id", job.id);
             if (updErr) {
-              console.error(
-                "[instantdeco-webhook] error-update failed",
-                updErr.message,
-              );
+              console.error("[instantdeco-webhook] error-update failed", updErr.message);
             }
             return new Response("ok", { status: 200 });
           }
@@ -249,8 +226,7 @@ export const Route = createFileRoute("/api/public/webhooks/instantdeco")({
       },
 
       // Some providers send a GET to verify the URL is reachable.
-      GET: async () =>
-        new Response("InstantDecoAI webhook is live", { status: 200 }),
+      GET: async () => new Response("InstantDecoAI webhook is live", { status: 200 }),
     },
   },
 });

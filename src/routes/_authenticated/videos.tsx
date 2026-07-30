@@ -1,17 +1,45 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { DndContext, useDraggable, useDroppable, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import {
+  DndContext,
+  useDraggable,
+  useDroppable,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { PRIORITIES, PRIORITY_BORDER, PRIORITY_LABEL, VIDEO_STAGES, VIDEO_STAGE_LABEL, type VideoStage, type Priority } from "@/lib/content";
+import {
+  PRIORITIES,
+  PRIORITY_BORDER,
+  PRIORITY_LABEL,
+  VIDEO_STAGES,
+  VIDEO_STAGE_LABEL,
+  type VideoStage,
+  type Priority,
+} from "@/lib/content";
 import { ChatThread } from "@/components/chat-thread";
 import { Plus, AlertTriangle, Calendar, Send, Link2 } from "lucide-react";
 import { toast } from "sonner";
@@ -52,7 +80,12 @@ const BRAND_STYLES: Record<Brand, string> = {
 
 function BrandBadge({ brand }: { brand: Brand }) {
   return (
-    <span className={cn("inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded border", BRAND_STYLES[brand])}>
+    <span
+      className={cn(
+        "inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded border",
+        BRAND_STYLES[brand],
+      )}
+    >
       {brand}
     </span>
   );
@@ -74,7 +107,10 @@ function VideosPage() {
   const { data: videos = [] } = useQuery({
     queryKey: ["videos"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from("videos").select("*").order("created_at", { ascending: false });
+      const { data, error } = await (supabase as any)
+        .from("videos")
+        .select("*")
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Video[];
     },
@@ -141,7 +177,9 @@ function VideosPage() {
       <header className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Video Pipeline</h1>
-          <p className="text-sm text-muted-foreground">Drag cards across stages. Push ready videos to the calendar.</p>
+          <p className="text-sm text-muted-foreground">
+            Drag cards across stages. Push ready videos to the calendar.
+          </p>
         </div>
       </header>
 
@@ -150,7 +188,9 @@ function VideosPage() {
         <div className="flex items-center gap-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">Brand</Label>
           <Select value={brandFilter} onValueChange={(v) => setBrandFilter(v as any)}>
-            <SelectTrigger className="h-8 w-36"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-8 w-36">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All brands</SelectItem>
               <SelectItem value="MSREG">MSREG only</SelectItem>
@@ -169,9 +209,13 @@ function VideosPage() {
         </label>
         <div className="h-6 w-px bg-border" />
         <div className="flex items-center gap-2">
-          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Live date</Label>
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            Live date
+          </Label>
           <Select value={dueWithin} onValueChange={(v) => setDueWithin(v as any)}>
-            <SelectTrigger className="h-8 w-40"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-8 w-40">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Any date</SelectItem>
               <SelectItem value="overdue">Overdue</SelectItem>
@@ -181,7 +225,9 @@ function VideosPage() {
             </SelectContent>
           </Select>
           <Select value={dateSort} onValueChange={(v) => setDateSort(v as any)}>
-            <SelectTrigger className="h-8 w-40"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-8 w-40">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="soonest">Soonest first</SelectItem>
               <SelectItem value="latest">Latest first</SelectItem>
@@ -199,11 +245,18 @@ function VideosPage() {
               <h2 className="text-lg font-semibold">Horizontal Video</h2>
               <span className="text-xs text-muted-foreground">({horizontal.length})</span>
             </div>
-            <Button size="sm" onClick={() => setCreatingType("horizontal")} className="bg-gold text-gold-foreground hover:bg-gold/90">
+            <Button
+              size="sm"
+              onClick={() => setCreatingType("horizontal")}
+              className="bg-gold text-gold-foreground hover:bg-gold/90"
+            >
               <Plus className="h-4 w-4 mr-1" /> New Video
             </Button>
           </div>
-          <DndContext sensors={sensors} onDragEnd={makeDragHandler(VIDEO_STAGES as unknown as VideoStage[])}>
+          <DndContext
+            sensors={sensors}
+            onDragEnd={makeDragHandler(VIDEO_STAGES as unknown as VideoStage[])}
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               {VIDEO_STAGES.map((s) => (
                 <StageColumn
@@ -227,7 +280,11 @@ function VideosPage() {
               <h2 className="text-lg font-semibold">Short-Form Reels</h2>
               <span className="text-xs text-muted-foreground">({reels.length})</span>
             </div>
-            <Button size="sm" onClick={() => setCreatingType("reel")} className="bg-gold text-gold-foreground hover:bg-gold/90">
+            <Button
+              size="sm"
+              onClick={() => setCreatingType("reel")}
+              className="bg-gold text-gold-foreground hover:bg-gold/90"
+            >
               <Plus className="h-4 w-4 mr-1" /> New Reel
             </Button>
           </div>
@@ -254,7 +311,12 @@ function VideosPage() {
           video={editing}
           defaultType={creatingType ?? "horizontal"}
           open={!!editing || !!creatingType}
-          onOpenChange={(o) => { if (!o) { setEditing(null); setCreatingType(null); } }}
+          onOpenChange={(o) => {
+            if (!o) {
+              setEditing(null);
+              setCreatingType(null);
+            }
+          }}
           currentUserId={user?.id ?? null}
         />
       )}
@@ -262,22 +324,43 @@ function VideosPage() {
   );
 }
 
-function StageColumn({ scope, stage, videos, onOpen, isReel }: {
-  scope: "horizontal" | "reel"; stage: VideoStage; videos: Video[]; onOpen: (v: Video) => void; isReel?: boolean;
+function StageColumn({
+  scope,
+  stage,
+  videos,
+  onOpen,
+  isReel,
+}: {
+  scope: "horizontal" | "reel";
+  stage: VideoStage;
+  videos: Video[];
+  onOpen: (v: Video) => void;
+  isReel?: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `stage|${scope}|${stage}` });
   return (
-    <div ref={setNodeRef} className={cn(
-      "bg-card border border-border rounded-xl p-3 min-h-[240px] flex flex-col",
-      isOver && "ring-1 ring-gold/60 bg-gold/5",
-    )}>
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "bg-card border border-border rounded-xl p-3 min-h-[240px] flex flex-col",
+        isOver && "ring-1 ring-gold/60 bg-gold/5",
+      )}
+    >
       <div className="flex items-center justify-between mb-3 px-1">
         <h3 className="font-semibold text-sm">{VIDEO_STAGE_LABEL[stage]}</h3>
-        <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">{videos.length}</span>
+        <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+          {videos.length}
+        </span>
       </div>
       <div className="space-y-2 flex-1">
-        {videos.map((v) => <VideoCard key={v.id} video={v} onOpen={() => onOpen(v)} isReel={isReel} />)}
-        {videos.length === 0 && <div className="text-xs text-muted-foreground text-center py-6">Drop {isReel ? "reels" : "videos"} here</div>}
+        {videos.map((v) => (
+          <VideoCard key={v.id} video={v} onOpen={() => onOpen(v)} isReel={isReel} />
+        ))}
+        {videos.length === 0 && (
+          <div className="text-xs text-muted-foreground text-center py-6">
+            Drop {isReel ? "reels" : "videos"} here
+          </div>
+        )}
       </div>
     </div>
   );
@@ -288,15 +371,50 @@ function urgencyFor(video: Video) {
   if (!live) return { level: "none" as const, card: "", badge: "", label: "" };
   const diff = new Date(live).getTime() - Date.now();
   const day = 86400000;
-  if (diff < 0) return { level: "overdue" as const, card: "border-destructive/70 bg-destructive/10", badge: "bg-destructive/20 text-destructive border-destructive/40", label: "Overdue" };
-  if (diff <= 2 * day) return { level: "urgent" as const, card: "border-destructive/60 bg-destructive/5", badge: "bg-destructive/15 text-destructive border-destructive/40", label: "Due ≤2d" };
-  if (diff <= 7 * day) return { level: "soon" as const, card: "border-amber-500/60 bg-amber-500/5", badge: "bg-amber-500/15 text-amber-500 border-amber-500/40", label: "Due ≤7d" };
-  return { level: "ok" as const, card: "border-emerald-500/40", badge: "bg-emerald-500/10 text-emerald-500 border-emerald-500/30", label: "On track" };
+  if (diff < 0)
+    return {
+      level: "overdue" as const,
+      card: "border-destructive/70 bg-destructive/10",
+      badge: "bg-destructive/20 text-destructive border-destructive/40",
+      label: "Overdue",
+    };
+  if (diff <= 2 * day)
+    return {
+      level: "urgent" as const,
+      card: "border-destructive/60 bg-destructive/5",
+      badge: "bg-destructive/15 text-destructive border-destructive/40",
+      label: "Due ≤2d",
+    };
+  if (diff <= 7 * day)
+    return {
+      level: "soon" as const,
+      card: "border-amber-500/60 bg-amber-500/5",
+      badge: "bg-amber-500/15 text-amber-500 border-amber-500/40",
+      label: "Due ≤7d",
+    };
+  return {
+    level: "ok" as const,
+    card: "border-emerald-500/40",
+    badge: "bg-emerald-500/10 text-emerald-500 border-emerald-500/30",
+    label: "On track",
+  };
 }
 
-function VideoCard({ video, onOpen, isReel }: { video: Video; onOpen: () => void; isReel?: boolean }) {
-  const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({ id: video.id });
-  const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 } : undefined;
+function VideoCard({
+  video,
+  onOpen,
+  isReel,
+}: {
+  video: Video;
+  onOpen: () => void;
+  isReel?: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({
+    id: video.id,
+  });
+  const style = transform
+    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
+    : undefined;
   const urgency = urgencyFor(video);
   const liveDate = video.publish_at ?? video.estimated_publish_date;
   return (
@@ -328,7 +446,12 @@ function VideoCard({ video, onOpen, isReel }: { video: Video; onOpen: () => void
             {urgency.level === "overdue" && <AlertTriangle className="h-3 w-3 text-destructive" />}
             <Calendar className="h-3 w-3" /> {format(new Date(liveDate), "MMM d, yyyy")}
             {urgency.level !== "none" && urgency.level !== "ok" && (
-              <span className={cn("inline-flex items-center text-[9px] font-semibold px-1.5 py-0.5 rounded border", urgency.badge)}>
+              <span
+                className={cn(
+                  "inline-flex items-center text-[9px] font-semibold px-1.5 py-0.5 rounded border",
+                  urgency.badge,
+                )}
+              >
                 {urgency.label}
               </span>
             )}
@@ -353,7 +476,8 @@ function VideoFormDialog({ video, defaultType, open, onOpenChange, currentUserId
   const qc = useQueryClient();
   const [pushOpen, setPushOpen] = useState(false);
   const initialType: VideoType = video?.video_type ?? defaultType;
-  const initialStage: VideoStage = video?.stage ?? (initialType === "reel" ? "ready_to_edit" : "idea");
+  const initialStage: VideoStage =
+    video?.stage ?? (initialType === "reel" ? "ready_to_edit" : "idea");
   const toLocalInput = (iso: string | null) => {
     if (!iso) return "";
     const d = new Date(iso);
@@ -388,11 +512,11 @@ function VideoFormDialog({ video, defaultType, open, onOpenChange, currentUserId
       const payload: any = {
         title: form.title.trim(),
         drive_link: form.drive_link || null,
-        estimated_publish_date: isReel ? null : (form.estimated_publish_date || null),
+        estimated_publish_date: isReel ? null : form.estimated_publish_date || null,
         publish_at: publishIso,
-        filmed_by: isReel ? null : (form.filmed_by || null),
-        edited_by: isReel ? null : (form.edited_by || null),
-        duration: isReel ? null : (form.duration || null),
+        filmed_by: isReel ? null : form.filmed_by || null,
+        edited_by: isReel ? null : form.edited_by || null,
+        duration: isReel ? null : form.duration || null,
         campaign_tag: form.campaign_tag || null,
         priority: form.priority,
         stage: form.stage,
@@ -406,8 +530,11 @@ function VideoFormDialog({ video, defaultType, open, onOpenChange, currentUserId
         const { error } = await (supabase as any).from("videos").update(payload).eq("id", video.id);
         if (error) throw error;
       } else {
-        const { data, error } = await (supabase as any).from("videos")
-          .insert({ ...payload, created_by: currentUserId }).select("id").single();
+        const { data, error } = await (supabase as any)
+          .from("videos")
+          .insert({ ...payload, created_by: currentUserId })
+          .select("id")
+          .single();
         if (error) throw error;
         videoId = data?.id ?? null;
       }
@@ -425,28 +552,42 @@ function VideoFormDialog({ video, defaultType, open, onOpenChange, currentUserId
           created_by: currentUserId,
         };
         if (linkedId) {
-          const { error: upErr } = await (supabase as any).from("content_items")
+          const { error: upErr } = await (supabase as any)
+            .from("content_items")
             .update({
               title: contentPayload.title,
               link: contentPayload.link,
               priority: contentPayload.priority,
               brand: contentPayload.brand,
               scheduled_at: contentPayload.scheduled_at,
-            }).eq("id", linkedId);
+            })
+            .eq("id", linkedId);
           // If row was deleted, fall back to insert
           if (upErr) {
-            const { data: ins, error: insErr } = await (supabase as any).from("content_items")
-              .insert(contentPayload).select("id").single();
+            const { data: ins, error: insErr } = await (supabase as any)
+              .from("content_items")
+              .insert(contentPayload)
+              .select("id")
+              .single();
             if (insErr) throw insErr;
             linkedId = ins?.id ?? null;
-            await (supabase as any).from("videos").update({ linked_content_item_id: linkedId }).eq("id", videoId);
+            await (supabase as any)
+              .from("videos")
+              .update({ linked_content_item_id: linkedId })
+              .eq("id", videoId);
           }
         } else {
-          const { data: ins, error: insErr } = await (supabase as any).from("content_items")
-            .insert(contentPayload).select("id").single();
+          const { data: ins, error: insErr } = await (supabase as any)
+            .from("content_items")
+            .insert(contentPayload)
+            .select("id")
+            .single();
           if (insErr) throw insErr;
           linkedId = ins?.id ?? null;
-          await (supabase as any).from("videos").update({ linked_content_item_id: linkedId }).eq("id", videoId);
+          await (supabase as any)
+            .from("videos")
+            .update({ linked_content_item_id: linkedId })
+            .eq("id", videoId);
         }
       }
     },
@@ -454,9 +595,11 @@ function VideoFormDialog({ video, defaultType, open, onOpenChange, currentUserId
       qc.invalidateQueries({ queryKey: ["videos"] });
       qc.invalidateQueries({ queryKey: ["content-items"] });
       qc.invalidateQueries({ queryKey: ["content-items-list"] });
-      toast.success(form.stage === "ready_to_post" && form.publish_at
-        ? "Saved — mirrored to calendar"
-        : "Saved");
+      toast.success(
+        form.stage === "ready_to_post" && form.publish_at
+          ? "Saved — mirrored to calendar"
+          : "Saved",
+      );
       onOpenChange(false);
     },
     onError: (e: any) => toast.error(e.message ?? "Save failed"),
@@ -476,157 +619,257 @@ function VideoFormDialog({ video, defaultType, open, onOpenChange, currentUserId
 
   return (
     <>
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {video ? "Edit" : "New"} {isReel ? "Reel" : "Video"}
-            <Badge variant="outline" className={cn("text-[10px]", BRAND_STYLES[form.brand])}>{form.brand}</Badge>
-          </DialogTitle>
-        </DialogHeader>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {video ? "Edit" : "New"} {isReel ? "Reel" : "Video"}
+              <Badge variant="outline" className={cn("text-[10px]", BRAND_STYLES[form.brand])}>
+                {form.brand}
+              </Badge>
+            </DialogTitle>
+          </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Type</Label>
-              <Select
-                value={form.video_type}
-                onValueChange={(v) => {
-                  const t = v as VideoType;
-                  setForm((f) => ({
-                    ...f,
-                    video_type: t,
-                    stage: t === "reel" && !REEL_STAGES.includes(f.stage) ? "ready_to_edit" : f.stage,
-                  }));
-                }}
-              >
-                <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="horizontal">Horizontal Video</SelectItem>
-                  <SelectItem value="reel">Short-Form Reel</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Type</Label>
+                <Select
+                  value={form.video_type}
+                  onValueChange={(v) => {
+                    const t = v as VideoType;
+                    setForm((f) => ({
+                      ...f,
+                      video_type: t,
+                      stage:
+                        t === "reel" && !REEL_STAGES.includes(f.stage) ? "ready_to_edit" : f.stage,
+                    }));
+                  }}
+                >
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="horizontal">Horizontal Video</SelectItem>
+                    <SelectItem value="reel">Short-Form Reel</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Brand</Label>
+                <Select
+                  value={form.brand}
+                  onValueChange={(v) => setForm({ ...form, brand: v as Brand })}
+                >
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MSREG">MSREG</SelectItem>
+                    <SelectItem value="AON">AON (All Or Nothing)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div>
-              <Label>Brand</Label>
-              <Select value={form.brand} onValueChange={(v) => setForm({ ...form, brand: v as Brand })}>
-                <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="MSREG">MSREG</SelectItem>
-                  <SelectItem value="AON">AON (All Or Nothing)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div>
-            <Label>Title *</Label>
-            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="mt-1.5" />
-          </div>
-          <div>
-            <Label>{isReel ? "Source / Drive Link" : "Google Drive Link"}</Label>
-            <Input value={form.drive_link} onChange={(e) => setForm({ ...form, drive_link: e.target.value })}
-              placeholder={isReel ? "Zoom recording, raw footage, etc." : "https://drive.google.com/..."} className="mt-1.5" />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            {!isReel && (
-              <>
-                <div>
-                  <Label>Estimated Publish Date</Label>
-                  <Input type="date" value={form.estimated_publish_date} onChange={(e) => setForm({ ...form, estimated_publish_date: e.target.value })} className="mt-1.5" />
-                </div>
-                <div>
-                  <Label>Duration</Label>
-                  <Input value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} placeholder="e.g. 1:30" className="mt-1.5" />
-                </div>
-                <div>
-                  <Label>Filmed by</Label>
-                  <Input value={form.filmed_by} onChange={(e) => setForm({ ...form, filmed_by: e.target.value })} className="mt-1.5" />
-                </div>
-                <div>
-                  <Label>Editor</Label>
-                  <Input value={form.edited_by} onChange={(e) => setForm({ ...form, edited_by: e.target.value })} className="mt-1.5" />
-                </div>
-              </>
-            )}
-            <div>
-              <Label>{isReel ? "Brand Tag / Campaign" : "Listing / Campaign Tag"}</Label>
-              <Input value={form.campaign_tag} onChange={(e) => setForm({ ...form, campaign_tag: e.target.value })} className="mt-1.5" />
+              <Label>Title *</Label>
+              <Input
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                className="mt-1.5"
+              />
             </div>
             <div>
-              <Label>Priority</Label>
-              <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v as Priority })}>
-                <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
-                <SelectContent>{PRIORITIES.map((p) => <SelectItem key={p} value={p} className="capitalize">{p}</SelectItem>)}</SelectContent>
-              </Select>
+              <Label>{isReel ? "Source / Drive Link" : "Google Drive Link"}</Label>
+              <Input
+                value={form.drive_link}
+                onChange={(e) => setForm({ ...form, drive_link: e.target.value })}
+                placeholder={
+                  isReel ? "Zoom recording, raw footage, etc." : "https://drive.google.com/..."
+                }
+                className="mt-1.5"
+              />
             </div>
-            <div className="col-span-2">
-              <Label>Stage</Label>
-              <Select value={form.stage} onValueChange={(v) => setForm({ ...form, stage: v as VideoStage })}>
-                <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
-                <SelectContent>{stageOptions.map((s) => <SelectItem key={s} value={s}>{VIDEO_STAGE_LABEL[s]}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            {isReadyToPost && (
-              <div className="col-span-2 rounded-md border border-gold/30 bg-gold/5 p-3">
-                <Label className="text-xs flex items-center gap-1.5 text-gold"><Calendar className="h-3.5 w-3.5" /> Publish date &amp; time</Label>
+            <div className="grid grid-cols-2 gap-4">
+              {!isReel && (
+                <>
+                  <div>
+                    <Label>Estimated Publish Date</Label>
+                    <Input
+                      type="date"
+                      value={form.estimated_publish_date}
+                      onChange={(e) => setForm({ ...form, estimated_publish_date: e.target.value })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label>Duration</Label>
+                    <Input
+                      value={form.duration}
+                      onChange={(e) => setForm({ ...form, duration: e.target.value })}
+                      placeholder="e.g. 1:30"
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label>Filmed by</Label>
+                    <Input
+                      value={form.filmed_by}
+                      onChange={(e) => setForm({ ...form, filmed_by: e.target.value })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label>Editor</Label>
+                    <Input
+                      value={form.edited_by}
+                      onChange={(e) => setForm({ ...form, edited_by: e.target.value })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                </>
+              )}
+              <div>
+                <Label>{isReel ? "Brand Tag / Campaign" : "Listing / Campaign Tag"}</Label>
                 <Input
-                  type="datetime-local"
-                  value={form.publish_at}
-                  step={900}
-                  onChange={(e) => setForm({ ...form, publish_at: e.target.value })}
+                  value={form.campaign_tag}
+                  onChange={(e) => setForm({ ...form, campaign_tag: e.target.value })}
                   className="mt-1.5"
                 />
-                <p className="text-[11px] text-muted-foreground mt-1.5">
-                  {video?.linked_content_item_id
-                    ? "Saving will update the linked calendar item."
-                    : form.publish_at
-                      ? "Saving will automatically create a matching content calendar item."
-                      : "Add a date & time to auto-create a calendar item."}
-                </p>
               </div>
-            )}
+              <div>
+                <Label>Priority</Label>
+                <Select
+                  value={form.priority}
+                  onValueChange={(v) => setForm({ ...form, priority: v as Priority })}
+                >
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRIORITIES.map((p) => (
+                      <SelectItem key={p} value={p} className="capitalize">
+                        {p}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2">
+                <Label>Stage</Label>
+                <Select
+                  value={form.stage}
+                  onValueChange={(v) => setForm({ ...form, stage: v as VideoStage })}
+                >
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {stageOptions.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {VIDEO_STAGE_LABEL[s]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {isReadyToPost && (
+                <div className="col-span-2 rounded-md border border-gold/30 bg-gold/5 p-3">
+                  <Label className="text-xs flex items-center gap-1.5 text-gold">
+                    <Calendar className="h-3.5 w-3.5" /> Publish date &amp; time
+                  </Label>
+                  <Input
+                    type="datetime-local"
+                    value={form.publish_at}
+                    step={900}
+                    onChange={(e) => setForm({ ...form, publish_at: e.target.value })}
+                    className="mt-1.5"
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1.5">
+                    {video?.linked_content_item_id
+                      ? "Saving will update the linked calendar item."
+                      : form.publish_at
+                        ? "Saving will automatically create a matching content calendar item."
+                        : "Add a date & time to auto-create a calendar item."}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="flex items-center justify-between sm:justify-between gap-2">
+              <div>
+                {video && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive"
+                    onClick={() => {
+                      if (confirm("Delete this video?")) del.mutate();
+                    }}
+                  >
+                    Delete
+                  </Button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                {video && form.stage === "ready_to_post" && (
+                  <Button onClick={() => setPushOpen(true)} variant="outline">
+                    <Send className="h-4 w-4 mr-1.5" /> Push to Calendar
+                  </Button>
+                )}
+                <Button variant="ghost" onClick={() => onOpenChange(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => save.mutate()}
+                  disabled={save.isPending || !form.title.trim()}
+                  className="bg-gold text-gold-foreground hover:bg-gold/90"
+                >
+                  {save.isPending ? "Saving…" : "Save"}
+                </Button>
+              </div>
+            </DialogFooter>
+
+            {video && <ChatThread parentId={video.id} kind="video" />}
           </div>
+        </DialogContent>
+      </Dialog>
 
-          <DialogFooter className="flex items-center justify-between sm:justify-between gap-2">
-            <div>
-              {video && (
-                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => { if (confirm("Delete this video?")) del.mutate(); }}>
-                  Delete
-                </Button>
-              )}
-            </div>
-            <div className="flex gap-2">
-              {video && form.stage === "ready_to_post" && (
-                <Button onClick={() => setPushOpen(true)} variant="outline">
-                  <Send className="h-4 w-4 mr-1.5" /> Push to Calendar
-                </Button>
-              )}
-              <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button onClick={() => save.mutate()} disabled={save.isPending || !form.title.trim()} className="bg-gold text-gold-foreground hover:bg-gold/90">
-                {save.isPending ? "Saving…" : "Save"}
-              </Button>
-            </div>
-          </DialogFooter>
-
-          {video && <ChatThread parentId={video.id} kind="video" />}
-        </div>
-      </DialogContent>
-    </Dialog>
-
-    {video && pushOpen && (
-      <PushToCalendarDialog video={{ ...video, ...form }} open={pushOpen} onOpenChange={setPushOpen}
-        onPushed={() => { setPushOpen(false); onOpenChange(false); }} currentUserId={currentUserId} />
-    )}
+      {video && pushOpen && (
+        <PushToCalendarDialog
+          video={{ ...video, ...form }}
+          open={pushOpen}
+          onOpenChange={setPushOpen}
+          onPushed={() => {
+            setPushOpen(false);
+            onOpenChange(false);
+          }}
+          currentUserId={currentUserId}
+        />
+      )}
     </>
   );
 }
 
-function PushToCalendarDialog({ video, open, onOpenChange, onPushed, currentUserId }: {
-  video: Video; open: boolean; onOpenChange: (o: boolean) => void; onPushed: () => void; currentUserId: string | null;
+function PushToCalendarDialog({
+  video,
+  open,
+  onOpenChange,
+  onPushed,
+  currentUserId,
+}: {
+  video: Video;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onPushed: () => void;
+  currentUserId: string | null;
 }) {
   const qc = useQueryClient();
-  const now = new Date(); now.setMinutes(Math.round(now.getMinutes() / 15) * 15, 0, 0);
-  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  const now = new Date();
+  now.setMinutes(Math.round(now.getMinutes() / 15) * 15, 0, 0);
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 16);
   const [when, setWhen] = useState(local);
 
   const push = useMutation({
@@ -658,15 +901,31 @@ function PushToCalendarDialog({ video, open, onOpenChange, onPushed, currentUser
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
-        <DialogHeader><DialogTitle>Push to Calendar</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Push to Calendar</DialogTitle>
+        </DialogHeader>
         <div>
           <Label>Schedule date &amp; time</Label>
-          <Input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} step={900} className="mt-1.5" />
-          <p className="text-[11px] text-muted-foreground mt-1.5">Will snap to 15-minute increment.</p>
+          <Input
+            type="datetime-local"
+            value={when}
+            onChange={(e) => setWhen(e.target.value)}
+            step={900}
+            className="mt-1.5"
+          />
+          <p className="text-[11px] text-muted-foreground mt-1.5">
+            Will snap to 15-minute increment.
+          </p>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => push.mutate()} disabled={push.isPending} className="bg-gold text-gold-foreground hover:bg-gold/90">
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => push.mutate()}
+            disabled={push.isPending}
+            className="bg-gold text-gold-foreground hover:bg-gold/90"
+          >
             {push.isPending ? "Pushing…" : "Push to Calendar"}
           </Button>
         </DialogFooter>

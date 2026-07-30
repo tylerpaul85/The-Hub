@@ -12,10 +12,7 @@ const INTENSITY_PROMPTS: Record<string, string> = {
 };
 
 function buildPrompt(intensity: string): string {
-  return (
-    INTENSITY_PROMPTS[intensity?.toLowerCase()] ??
-    INTENSITY_PROMPTS.medium
-  );
+  return INTENSITY_PROMPTS[intensity?.toLowerCase()] ?? INTENSITY_PROMPTS.medium;
 }
 
 const inputSchema = z.object({

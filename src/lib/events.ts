@@ -18,7 +18,7 @@ export const EVENT_TYPE_CLASS: Record<EventType, string> = {
   "Homebuyer Seminar": "bg-amber-500/15 text-amber-400 border-amber-500/30",
   "Community Sponsorship": "bg-teal-500/15 text-teal-400 border-teal-500/30",
   "Holiday Party": "bg-rose-500/15 text-rose-400 border-rose-500/30",
-  "Other": "bg-muted text-muted-foreground border-border",
+  Other: "bg-muted text-muted-foreground border-border",
 };
 
 export const NEEDS_LISTING: EventType[] = ["Open House", "Broker Tour"];

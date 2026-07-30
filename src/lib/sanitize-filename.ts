@@ -6,16 +6,20 @@ export function sanitizeFilename(name: string): string {
   const dot = trimmed.lastIndexOf(".");
   const rawBase = dot > 0 ? trimmed.slice(0, dot) : trimmed;
   const rawExt = dot > 0 ? trimmed.slice(dot + 1) : "";
-  const base = rawBase
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/['"`’]+/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/[^A-Za-z0-9._-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^[-.]+|[-.]+$/g, "")
-    .slice(0, 80) || "file";
-  const ext = rawExt.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 10);
+  const base =
+    rawBase
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/['"`’]+/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/[^A-Za-z0-9._-]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^[-.]+|[-.]+$/g, "")
+      .slice(0, 80) || "file";
+  const ext = rawExt
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")
+    .slice(0, 10);
   return ext ? `${base}.${ext}` : base;
 }
 

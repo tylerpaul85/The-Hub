@@ -94,12 +94,11 @@ export const stageRoom = createServerFn({ method: "POST" })
         throw new Error(`InstantDecoAI ${resp.status}: ${text.slice(0, 500)}`);
       }
       let parsed: any = {};
-      try { parsed = JSON.parse(text); } catch {}
+      try {
+        parsed = JSON.parse(text);
+      } catch {}
       requestId =
-        parsed?.request_id ??
-        parsed?.response?.request_id ??
-        parsed?.data?.request_id ??
-        null;
+        parsed?.request_id ?? parsed?.response?.request_id ?? parsed?.data?.request_id ?? null;
       console.log("[stage-room] extracted request_id", { job_id, requestId });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

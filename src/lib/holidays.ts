@@ -21,7 +21,9 @@ const lastWeekdayOfMonth = (year: number, month: number, weekday: number) => {
 };
 
 const sameDay = (a: Date, b: Date) =>
-  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
 
 // Fixed-date holidays: month (0-11), day, name, type
 const FIXED: Array<{ m: number; d: number; name: string; type: HolidayType }> = [
@@ -68,32 +70,43 @@ export function getHolidaysForDate(date: Date): Holiday[] {
 
   // Floating federal
   // MLK Day — 3rd Monday of January
-  if (sameDay(date, nthWeekdayOfMonth(y, 0, 1, 3))) out.push({ name: "Martin Luther King Jr. Day", type: "federal" });
+  if (sameDay(date, nthWeekdayOfMonth(y, 0, 1, 3)))
+    out.push({ name: "Martin Luther King Jr. Day", type: "federal" });
   // Presidents Day — 3rd Monday of February
-  if (sameDay(date, nthWeekdayOfMonth(y, 1, 1, 3))) out.push({ name: "Presidents Day", type: "federal" });
+  if (sameDay(date, nthWeekdayOfMonth(y, 1, 1, 3)))
+    out.push({ name: "Presidents Day", type: "federal" });
   // Memorial Day — last Monday of May
-  if (sameDay(date, lastWeekdayOfMonth(y, 4, 1))) out.push({ name: "Memorial Day", type: "federal" });
+  if (sameDay(date, lastWeekdayOfMonth(y, 4, 1)))
+    out.push({ name: "Memorial Day", type: "federal" });
   // Labor Day — 1st Monday of September
-  if (sameDay(date, nthWeekdayOfMonth(y, 8, 1, 1))) out.push({ name: "Labor Day", type: "federal" });
+  if (sameDay(date, nthWeekdayOfMonth(y, 8, 1, 1)))
+    out.push({ name: "Labor Day", type: "federal" });
   // Columbus Day — 2nd Monday of October
-  if (sameDay(date, nthWeekdayOfMonth(y, 9, 1, 2))) out.push({ name: "Columbus Day", type: "federal" });
+  if (sameDay(date, nthWeekdayOfMonth(y, 9, 1, 2)))
+    out.push({ name: "Columbus Day", type: "federal" });
   // Thanksgiving — 4th Thursday of November
-  if (sameDay(date, nthWeekdayOfMonth(y, 10, 4, 4))) out.push({ name: "Thanksgiving Day", type: "federal" });
+  if (sameDay(date, nthWeekdayOfMonth(y, 10, 4, 4)))
+    out.push({ name: "Thanksgiving Day", type: "federal" });
 
   // Floating social / real estate
   // Mother's Day — 2nd Sunday of May
-  if (sameDay(date, nthWeekdayOfMonth(y, 4, 0, 2))) out.push({ name: "Mother's Day", type: "social" });
+  if (sameDay(date, nthWeekdayOfMonth(y, 4, 0, 2)))
+    out.push({ name: "Mother's Day", type: "social" });
   // Father's Day — 3rd Sunday of June
-  if (sameDay(date, nthWeekdayOfMonth(y, 5, 0, 3))) out.push({ name: "Father's Day", type: "social" });
+  if (sameDay(date, nthWeekdayOfMonth(y, 5, 0, 3)))
+    out.push({ name: "Father's Day", type: "social" });
   // Small Business Saturday — Saturday after Thanksgiving
   const thx = nthWeekdayOfMonth(y, 10, 4, 4);
-  const sbs = new Date(thx); sbs.setDate(thx.getDate() + 2);
+  const sbs = new Date(thx);
+  sbs.setDate(thx.getDate() + 2);
   if (sameDay(date, sbs)) out.push({ name: "Small Business Saturday", type: "social" });
   // Black Friday
-  const bf = new Date(thx); bf.setDate(thx.getDate() + 1);
+  const bf = new Date(thx);
+  bf.setDate(thx.getDate() + 1);
   if (sameDay(date, bf)) out.push({ name: "Black Friday", type: "social" });
   // National Open House Day — 1st Saturday of May (NAR observance)
-  if (sameDay(date, nthWeekdayOfMonth(y, 4, 6, 1))) out.push({ name: "National Open House Day", type: "realestate" });
+  if (sameDay(date, nthWeekdayOfMonth(y, 4, 6, 1)))
+    out.push({ name: "National Open House Day", type: "realestate" });
 
   return out;
 }

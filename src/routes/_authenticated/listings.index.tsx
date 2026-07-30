@@ -8,25 +8,51 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
-  Home, Plus, Upload, ArrowUpDown, ArrowUp, ArrowDown,
-  AlertTriangle, Loader2, ChevronRight, ExternalLink, Link as LinkIcon,
+  Home,
+  Plus,
+  Upload,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  AlertTriangle,
+  Loader2,
+  ChevronRight,
+  ExternalLink,
+  Link as LinkIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  type Listing, type ListingStatus,
-  LISTING_STATUS_LABEL, LISTING_STATUS_CLASS,
-  calcDaysListed, formatPrice, parseCsvListings,
+  type Listing,
+  type ListingStatus,
+  LISTING_STATUS_LABEL,
+  LISTING_STATUS_CLASS,
+  calcDaysListed,
+  formatPrice,
+  parseCsvListings,
 } from "@/lib/listings";
 import { createListing, bulkImportListings } from "@/lib/listings.functions";
 
@@ -76,7 +102,7 @@ function ListingsPage() {
         (l) =>
           l.address.toLowerCase().includes(q) ||
           (l.agent_name ?? "").toLowerCase().includes(q) ||
-          (l.mls_id ?? "").toLowerCase().includes(q)
+          (l.mls_id ?? "").toLowerCase().includes(q),
       );
     }
     rows = [...rows].sort((a, b) => {
@@ -95,22 +121,30 @@ function ListingsPage() {
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else { setSortKey(key); setSortDir("desc"); }
+    else {
+      setSortKey(key);
+      setSortDir("desc");
+    }
   }
 
   const SortIcon = ({ k }: { k: SortKey }) => {
     if (sortKey !== k) return <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />;
-    return sortDir === "asc"
-      ? <ArrowUp className="h-3.5 w-3.5 text-gold" />
-      : <ArrowDown className="h-3.5 w-3.5 text-gold" />;
+    return sortDir === "asc" ? (
+      <ArrowUp className="h-3.5 w-3.5 text-gold" />
+    ) : (
+      <ArrowDown className="h-3.5 w-3.5 text-gold" />
+    );
   };
 
-  const counts = useMemo(() => ({
-    all: listings.length,
-    active: listings.filter((l) => l.status === "active").length,
-    under_contract: listings.filter((l) => l.status === "under_contract").length,
-    sold: listings.filter((l) => l.status === "sold").length,
-  }), [listings]);
+  const counts = useMemo(
+    () => ({
+      all: listings.length,
+      active: listings.filter((l) => l.status === "active").length,
+      under_contract: listings.filter((l) => l.status === "under_contract").length,
+      sold: listings.filter((l) => l.status === "sold").length,
+    }),
+    [listings],
+  );
 
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
@@ -154,7 +188,7 @@ function ListingsPage() {
                 "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
                 statusFilter === s
                   ? "bg-gold/20 text-gold"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               {s === "all" ? "All" : LISTING_STATUS_LABEL[s as ListingStatus]}
@@ -217,7 +251,10 @@ function ListingsPage() {
             </TableHeader>
             <TableBody>
               {filtered.map((listing) => (
-                <TableRow key={listing.id} className="border-border hover:bg-accent/20 transition-colors">
+                <TableRow
+                  key={listing.id}
+                  className="border-border hover:bg-accent/20 transition-colors"
+                >
                   <TableCell className="font-medium max-w-[220px]">
                     <Link
                       to="/listings/$id"
@@ -233,14 +270,14 @@ function ListingsPage() {
                   <TableCell className="text-muted-foreground font-mono text-xs">
                     {listing.mls_id ?? "—"}
                   </TableCell>
-                  <TableCell className="font-medium">
-                    {formatPrice(listing.list_price)}
-                  </TableCell>
+                  <TableCell className="font-medium">{formatPrice(listing.list_price)}</TableCell>
                   <TableCell>
-                    <span className={cn(
-                      "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border",
-                      LISTING_STATUS_CLASS[listing.status]
-                    )}>
+                    <span
+                      className={cn(
+                        "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border",
+                        LISTING_STATUS_CLASS[listing.status],
+                      )}
+                    >
                       {LISTING_STATUS_LABEL[listing.status]}
                     </span>
                   </TableCell>
@@ -294,8 +331,16 @@ function ListingsPage() {
 // ─── New Listing Modal ────────────────────────────────────────────────────────
 
 function NewListingModal({
-  open, userId, onClose, onSuccess,
-}: { open: boolean; userId: string; onClose: () => void; onSuccess: () => void }) {
+  open,
+  userId,
+  onClose,
+  onSuccess,
+}: {
+  open: boolean;
+  userId: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
   const today = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState({
     address: "",
@@ -333,9 +378,17 @@ function NewListingModal({
     onSuccess: () => {
       toast.success("Listing created! Just Listed + 60/90/120-day reposts scheduled.");
       setForm({
-        address: "", agent_name: "", mls_id: "", list_price: "",
-        list_date: today, post_date: today, post_time: "09:00",
-        status: "active", canva_link: "", website_link: "", brand: "MSREG ALL",
+        address: "",
+        agent_name: "",
+        mls_id: "",
+        list_price: "",
+        list_date: today,
+        post_date: today,
+        post_time: "09:00",
+        status: "active",
+        canva_link: "",
+        website_link: "",
+        brand: "MSREG ALL",
       });
       onSuccess();
     },
@@ -356,7 +409,9 @@ function NewListingModal({
         <div className="grid gap-4 py-2">
           {/* Address */}
           <div className="grid gap-1.5">
-            <Label htmlFor="nl-address">Address <span className="text-destructive">*</span></Label>
+            <Label htmlFor="nl-address">
+              Address <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="nl-address"
               placeholder="123 Main St, Rolla, MO 65401"
@@ -379,7 +434,9 @@ function NewListingModal({
           {/* MLS + Price */}
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
-              <Label htmlFor="nl-mls">MLS # <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Label htmlFor="nl-mls">
+                MLS # <span className="text-muted-foreground text-xs">(optional)</span>
+              </Label>
               <Input
                 id="nl-mls"
                 placeholder="12345"
@@ -402,7 +459,9 @@ function NewListingModal({
           {/* List date + Status */}
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
-              <Label htmlFor="nl-list-date">List Date <span className="text-destructive">*</span></Label>
+              <Label htmlFor="nl-list-date">
+                List Date <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="nl-list-date"
                 type="date"
@@ -413,7 +472,9 @@ function NewListingModal({
             <div className="grid gap-1.5">
               <Label>Status</Label>
               <Select value={form.status} onValueChange={(v) => set("status", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="under_contract">Under Contract</SelectItem>
@@ -426,7 +487,9 @@ function NewListingModal({
           <div className="grid gap-1.5">
             <Label>Marketing Brand / Destination</Label>
             <Select value={form.brand} onValueChange={(v) => set("brand", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="PP">PP</SelectItem>
                 <SelectItem value="LOZ">LOZ</SelectItem>
@@ -443,12 +506,15 @@ function NewListingModal({
             <div>
               <p className="text-xs font-semibold text-gold mb-0.5">📅 Listing Post Schedule</p>
               <p className="text-xs text-muted-foreground">
-                When is this listing going live on social? The Just Listed, 60, 90, and 120-day reposts are all scheduled from this date and time.
+                When is this listing going live on social? The Just Listed, 60, 90, and 120-day
+                reposts are all scheduled from this date and time.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-1.5">
-                <Label htmlFor="nl-post-date">Post Date <span className="text-destructive">*</span></Label>
+                <Label htmlFor="nl-post-date">
+                  Post Date <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="nl-post-date"
                   type="date"
@@ -474,7 +540,12 @@ function NewListingModal({
                   return (
                     <div key={d}>
                       <span className="text-gold/80 font-medium">{d}-day repost:</span>{" "}
-                      {dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} @ {form.post_time || "09:00"}
+                      {dt.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}{" "}
+                      @ {form.post_time || "09:00"}
                     </div>
                   );
                 })}
@@ -518,13 +589,16 @@ function NewListingModal({
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Will be auto-filled into all scheduled Content Calendar entries and pushed to the Agent Toolbox.
+              Will be auto-filled into all scheduled Content Calendar entries and pushed to the
+              Agent Toolbox.
             </p>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={mut.isPending}>Cancel</Button>
+          <Button variant="outline" onClick={onClose} disabled={mut.isPending}>
+            Cancel
+          </Button>
           <Button
             onClick={() => mut.mutate()}
             disabled={mut.isPending}
@@ -546,8 +620,16 @@ const CSV_EXAMPLE = `Address,Agent,MLS #,Price,List Date,Status
 456 Oak Ave STR,Nicole Shaffer,12346,300000,2026-06-15,Active`;
 
 function BulkImportModal({
-  open, userId, onClose, onSuccess,
-}: { open: boolean; userId: string; onClose: () => void; onSuccess: () => void }) {
+  open,
+  userId,
+  onClose,
+  onSuccess,
+}: {
+  open: boolean;
+  userId: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
   const [csv, setCsv] = useState("");
   const [parseErrors, setParseErrors] = useState<{ row: number; message: string }[]>([]);
   const [preview, setPreview] = useState<any[]>([]);
@@ -567,7 +649,7 @@ function BulkImportModal({
     mutationFn: () => bulkImportListings(sb, userId, preview),
     onSuccess: (result) => {
       toast.success(
-        `Imported ${result.imported} listing${result.imported !== 1 ? "s" : ""}${result.skipped > 0 ? `. Skipped ${result.skipped} duplicate${result.skipped !== 1 ? "s" : ""}.` : "."} Repost posts auto-scheduled.`
+        `Imported ${result.imported} listing${result.imported !== 1 ? "s" : ""}${result.skipped > 0 ? `. Skipped ${result.skipped} duplicate${result.skipped !== 1 ? "s" : ""}.` : "."} Repost posts auto-scheduled.`,
       );
       handleClose();
       onSuccess();
@@ -598,7 +680,8 @@ function BulkImportModal({
               <div>
                 <Label>Paste CSV Data</Label>
                 <p className="text-xs text-muted-foreground mb-2 mt-0.5">
-                  Include a header row or paste raw data. Columns: Address, Agent, MLS #, Price, List Date, Status
+                  Include a header row or paste raw data. Columns: Address, Agent, MLS #, Price,
+                  List Date, Status
                 </p>
                 <Textarea
                   rows={10}
@@ -610,7 +693,9 @@ function BulkImportModal({
               </div>
               <div className="rounded-lg border border-gold/20 bg-gold/5 p-3">
                 <p className="text-xs font-semibold text-gold mb-1.5">Example format:</p>
-                <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap">{CSV_EXAMPLE}</pre>
+                <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap">
+                  {CSV_EXAMPLE}
+                </pre>
               </div>
               {parseErrors.length > 0 && (
                 <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 space-y-1">
@@ -621,13 +706,17 @@ function BulkImportModal({
                     </p>
                   ))}
                   {parseErrors.length > 5 && (
-                    <p className="text-xs text-muted-foreground">…and {parseErrors.length - 5} more errors</p>
+                    <p className="text-xs text-muted-foreground">
+                      …and {parseErrors.length - 5} more errors
+                    </p>
                   )}
                 </div>
               )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={handleClose}>Cancel</Button>
+              <Button variant="outline" onClick={handleClose}>
+                Cancel
+              </Button>
               <Button
                 onClick={parseAndPreview}
                 disabled={!csv.trim()}
@@ -642,7 +731,8 @@ function BulkImportModal({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium">
-                  Preview — {preview.length} listing{preview.length !== 1 ? "s" : ""} ready to import
+                  Preview — {preview.length} listing{preview.length !== 1 ? "s" : ""} ready to
+                  import
                 </p>
                 <Button variant="ghost" size="sm" onClick={() => setStage("input")}>
                   ← Edit CSV
@@ -651,10 +741,13 @@ function BulkImportModal({
               {parseErrors.length > 0 && (
                 <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
                   <p className="text-xs text-amber-400 font-medium mb-1">
-                    {parseErrors.length} row{parseErrors.length !== 1 ? "s" : ""} had errors and will be skipped:
+                    {parseErrors.length} row{parseErrors.length !== 1 ? "s" : ""} had errors and
+                    will be skipped:
                   </p>
                   {parseErrors.slice(0, 3).map((e, i) => (
-                    <p key={i} className="text-xs text-amber-300/80">Row {e.row}: {e.message}</p>
+                    <p key={i} className="text-xs text-amber-300/80">
+                      Row {e.row}: {e.message}
+                    </p>
                   ))}
                 </div>
               )}
@@ -679,7 +772,12 @@ function BulkImportModal({
                         <TableCell className="py-2">{formatPrice(row.list_price)}</TableCell>
                         <TableCell className="py-2">{row.list_date}</TableCell>
                         <TableCell className="py-2">
-                          <span className={cn("px-1.5 py-0.5 rounded border text-[10px]", LISTING_STATUS_CLASS[row.status as ListingStatus])}>
+                          <span
+                            className={cn(
+                              "px-1.5 py-0.5 rounded border text-[10px]",
+                              LISTING_STATUS_CLASS[row.status as ListingStatus],
+                            )}
+                          >
                             {LISTING_STATUS_LABEL[row.status as ListingStatus]}
                           </span>
                         </TableCell>
@@ -689,11 +787,14 @@ function BulkImportModal({
                 </Table>
               </div>
               <p className="text-xs text-muted-foreground">
-                Each listing will automatically have 60, 90, and 120-day repost posts scheduled in the Content Calendar.
+                Each listing will automatically have 60, 90, and 120-day repost posts scheduled in
+                the Content Calendar.
               </p>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={handleClose} disabled={mut.isPending}>Cancel</Button>
+              <Button variant="outline" onClick={handleClose} disabled={mut.isPending}>
+                Cancel
+              </Button>
               <Button
                 onClick={() => mut.mutate()}
                 disabled={mut.isPending || preview.length === 0}

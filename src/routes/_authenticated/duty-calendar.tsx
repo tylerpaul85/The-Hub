@@ -5,9 +5,30 @@ import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, ChevronLeft, ChevronRight, Sparkles, Plus, Trash2, Download, AlertTriangle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  Plus,
+  Trash2,
+  Download,
+  AlertTriangle,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   getDutyCalendar,
@@ -29,8 +50,18 @@ const OFFICES = [
 ] as const;
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH_NAMES = [
-  "January","February","March","April","May","June",
-  "July","August","September","October","November","December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 function monthLabel(y: number, m: number) {
@@ -52,7 +83,11 @@ function DutyCalendarPage() {
   const [office, setOffice] = useState<"rolla" | "str" | "loz">("rolla");
   const [editDay, setEditDay] = useState<number | null>(null);
   const [editAgent, setEditAgent] = useState<string>("none");
-  const [suggestions, setSuggestions] = useState<Array<{ day: number; agent_id: string | null; agent_name: string }> | null>(null);
+  const [suggestions, setSuggestions] = useState<Array<{
+    day: number;
+    agent_id: string | null;
+    agent_name: string;
+  }> | null>(null);
 
   const qc = useQueryClient();
   const getCal = useServerFn(getDutyCalendar);
@@ -69,10 +104,16 @@ function DutyCalendarPage() {
   });
 
   const prevMonth = () => {
-    if (month === 1) { setMonth(12); setYear(year - 1); } else setMonth(month - 1);
+    if (month === 1) {
+      setMonth(12);
+      setYear(year - 1);
+    } else setMonth(month - 1);
   };
   const nextMonth = () => {
-    if (month === 12) { setMonth(1); setYear(year + 1); } else setMonth(month + 1);
+    if (month === 12) {
+      setMonth(1);
+      setYear(year + 1);
+    } else setMonth(month + 1);
   };
 
   const assignMut = useMutation({
@@ -109,7 +150,8 @@ function DutyCalendarPage() {
   const createNextMonth = () => {
     const ny = month === 12 ? year + 1 : year;
     const nm = month === 12 ? 1 : month + 1;
-    setYear(ny); setMonth(nm);
+    setYear(ny);
+    setMonth(nm);
     toast.info(`Switched to ${monthLabel(ny, nm)} — assign agents or click Analyze`);
   };
 
@@ -234,7 +276,12 @@ function DutyCalendarPage() {
           <p className="text-sm text-muted-foreground mt-1">Assign duty days per office.</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Button size="sm" variant="outline" onClick={() => analyzeMut.mutate()} disabled={analyzeMut.isPending}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => analyzeMut.mutate()}
+            disabled={analyzeMut.isPending}
+          >
             <Sparkles className="h-4 w-4 mr-1 text-gold" />
             {analyzeMut.isPending ? "Analyzing…" : "Analyze"}
           </Button>
@@ -248,7 +295,8 @@ function DutyCalendarPage() {
             size="sm"
             variant="ghost"
             onClick={() => {
-              if (confirm("Clear all duty assignments for this month and office?")) deleteMonthMut.mutate();
+              if (confirm("Clear all duty assignments for this month and office?"))
+                deleteMonthMut.mutate();
             }}
           >
             <Trash2 className="h-4 w-4 mr-1 text-destructive" /> Clear Month
@@ -257,30 +305,46 @@ function DutyCalendarPage() {
       </div>
 
       <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <Button size="icon" variant="outline" onClick={prevMonth}><ChevronLeft className="h-4 w-4" /></Button>
+        <Button size="icon" variant="outline" onClick={prevMonth}>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
         <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
-          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-36">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             {MONTH_NAMES.map((m, i) => (
-              <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>
+              <SelectItem key={m} value={String(i + 1)}>
+                {m}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
-          <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-24">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             {Array.from({ length: 6 }, (_, i) => today.getFullYear() - 1 + i).map((y) => (
-              <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+              <SelectItem key={y} value={String(y)}>
+                {y}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Button size="icon" variant="outline" onClick={nextMonth}><ChevronRight className="h-4 w-4" /></Button>
+        <Button size="icon" variant="outline" onClick={nextMonth}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
       </div>
 
       <Tabs value={office} onValueChange={(v) => setOffice(v as any)}>
         <TabsList className="bg-navy border border-gold/20">
           {OFFICES.map((o) => (
-            <TabsTrigger key={o.value} value={o.value} className="data-[state=active]:bg-gold data-[state=active]:text-navy">
+            <TabsTrigger
+              key={o.value}
+              value={o.value}
+              className="data-[state=active]:bg-gold data-[state=active]:text-navy"
+            >
               {o.label}
             </TabsTrigger>
           ))}
@@ -292,14 +356,20 @@ function DutyCalendarPage() {
         <div>
           <div className="grid grid-cols-7 gap-1 mb-1">
             {WEEKDAYS.map((w) => (
-              <div key={w} className="text-center text-xs font-semibold text-gold uppercase tracking-wider py-2 bg-navy/70 rounded">
+              <div
+                key={w}
+                className="text-center text-xs font-semibold text-gold uppercase tracking-wider py-2 bg-navy/70 rounded"
+              >
                 {w}
               </div>
             ))}
           </div>
           <div className="grid grid-cols-7 gap-1">
             {Array.from({ length: leadingBlanks }).map((_, i) => (
-              <div key={`b${i}`} className="min-h-[92px] rounded border border-border/40 bg-card/30" />
+              <div
+                key={`b${i}`}
+                className="min-h-[92px] rounded border border-border/40 bg-card/30"
+              />
             ))}
             {grid.map((cell: any) => {
               const isOoo = !!cell.agent_id && (cell.ooo_agent_ids ?? []).includes(cell.agent_id);
@@ -313,7 +383,9 @@ function DutyCalendarPage() {
                   className={`rounded border ${isOoo ? "border-destructive/60" : "border-gold/20"} bg-card hover:bg-gold/5 p-2 text-left transition-colors min-h-[92px] flex flex-col`}
                 >
                   <div className="text-xs text-muted-foreground">{cell.day}</div>
-                  <div className={`mt-auto text-center text-sm font-medium leading-tight ${cell.agent_name ? "text-gold" : "text-muted-foreground/60"} ${isOoo ? "line-through opacity-70" : ""}`}>
+                  <div
+                    className={`mt-auto text-center text-sm font-medium leading-tight ${cell.agent_name ? "text-gold" : "text-muted-foreground/60"} ${isOoo ? "line-through opacity-70" : ""}`}
+                  >
                     {cell.agent_name ?? "—"}
                   </div>
                   {isOoo && (
@@ -330,15 +402,22 @@ function DutyCalendarPage() {
         {/* Right sidebar — distribution */}
         <aside className="rounded-lg border border-gold/30 bg-card overflow-hidden h-fit">
           <div className="bg-navy/70 border-b border-gold/30 px-4 py-2">
-            <div className="text-xs uppercase tracking-wider text-gold font-semibold">Distribution</div>
-            <div className="text-[11px] text-muted-foreground">{officeName} · {monthLabel(year, month)}</div>
+            <div className="text-xs uppercase tracking-wider text-gold font-semibold">
+              Distribution
+            </div>
+            <div className="text-[11px] text-muted-foreground">
+              {officeName} · {monthLabel(year, month)}
+            </div>
           </div>
           <div className="max-h-[520px] overflow-y-auto">
             {distribution.length === 0 ? (
               <div className="px-4 py-6 text-sm text-muted-foreground">No active agents.</div>
             ) : (
               distribution.map((d) => (
-                <div key={d.id} className="flex items-center justify-between px-4 py-2 border-b border-border/40 last:border-0 text-sm">
+                <div
+                  key={d.id}
+                  className="flex items-center justify-between px-4 py-2 border-b border-border/40 last:border-0 text-sm"
+                >
                   <span className="truncate">{d.name}</span>
                   <span className="text-gold font-semibold tabular-nums">{d.days}</span>
                 </div>
@@ -352,26 +431,40 @@ function DutyCalendarPage() {
               <div className="text-xs uppercase tracking-wider text-gold font-semibold flex items-center gap-1.5">
                 <AlertTriangle className="h-3.5 w-3.5" /> Time Off Requests
               </div>
-              <div className="text-[11px] text-muted-foreground">{officeName} · {monthLabel(year, month)}</div>
+              <div className="text-[11px] text-muted-foreground">
+                {officeName} · {monthLabel(year, month)}
+              </div>
             </div>
             <div className="max-h-[320px] overflow-y-auto">
               {((calQ.data as any)?.ooo_ranges ?? []).length === 0 ? (
-                <div className="px-4 py-6 text-sm text-muted-foreground">No time off this month.</div>
+                <div className="px-4 py-6 text-sm text-muted-foreground">
+                  No time off this month.
+                </div>
               ) : (
                 ((calQ.data as any)?.ooo_ranges ?? []).map((o: any, idx: number) => {
                   const fmt = (s: string) => {
                     const [, m, d] = s.split("-").map(Number);
                     return `${m}/${d}`;
                   };
-                  const range = o.date_start === o.date_end ? fmt(o.date_start) : `${fmt(o.date_start)} – ${fmt(o.date_end)}`;
+                  const range =
+                    o.date_start === o.date_end
+                      ? fmt(o.date_start)
+                      : `${fmt(o.date_start)} – ${fmt(o.date_end)}`;
                   return (
-                    <div key={idx} className="px-4 py-2 border-b border-border/40 last:border-0 text-sm">
+                    <div
+                      key={idx}
+                      className="px-4 py-2 border-b border-border/40 last:border-0 text-sm"
+                    >
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate font-medium">{o.agent_name}</span>
-                        <span className="text-gold tabular-nums text-xs whitespace-nowrap">{range}</span>
+                        <span className="text-gold tabular-nums text-xs whitespace-nowrap">
+                          {range}
+                        </span>
                       </div>
                       {o.reason && (
-                        <div className="text-[11px] text-muted-foreground capitalize mt-0.5">{o.reason}</div>
+                        <div className="text-[11px] text-muted-foreground capitalize mt-0.5">
+                          {o.reason}
+                        </div>
                       )}
                     </div>
                   );
@@ -386,11 +479,15 @@ function DutyCalendarPage() {
       <Dialog open={editDay !== null} onOpenChange={(o) => !o && setEditDay(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Assign Duty — {monthLabel(year, month)} {editDay}</DialogTitle>
+            <DialogTitle>
+              Assign Duty — {monthLabel(year, month)} {editDay}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <Select value={editAgent} onValueChange={setEditAgent}>
-              <SelectTrigger><SelectValue placeholder="Select agent" /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue placeholder="Select agent" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Unassigned</SelectItem>
                 {agents.map((a) => {
@@ -399,7 +496,8 @@ function DutyCalendarPage() {
                   const inactive = a.status !== "active";
                   return (
                     <SelectItem key={a.id} value={a.id} disabled={isOoo || inactive}>
-                      {a.name}{isOoo ? " — Out of Office" : inactive ? " — inactive" : ""}
+                      {a.name}
+                      {isOoo ? " — Out of Office" : inactive ? " — inactive" : ""}
                     </SelectItem>
                   );
                 })}
@@ -407,11 +505,16 @@ function DutyCalendarPage() {
             </Select>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDay(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setEditDay(null)}>
+              Cancel
+            </Button>
             <Button
               className="bg-gold text-navy hover:bg-gold/90"
               onClick={() =>
-                assignMut.mutate({ day: editDay!, agent_id: editAgent === "none" ? null : editAgent })
+                assignMut.mutate({
+                  day: editDay!,
+                  agent_id: editAgent === "none" ? null : editAgent,
+                })
               }
               disabled={assignMut.isPending}
             >
@@ -437,11 +540,15 @@ function DutyCalendarPage() {
               </div>
             ))}
             {(suggestions ?? []).length === 0 && (
-              <div className="px-3 py-6 text-sm text-muted-foreground">No suggestions returned.</div>
+              <div className="px-3 py-6 text-sm text-muted-foreground">
+                No suggestions returned.
+              </div>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSuggestions(null)}>Reject</Button>
+            <Button variant="outline" onClick={() => setSuggestions(null)}>
+              Reject
+            </Button>
             <Button
               className="bg-gold text-navy hover:bg-gold/90"
               onClick={() =>

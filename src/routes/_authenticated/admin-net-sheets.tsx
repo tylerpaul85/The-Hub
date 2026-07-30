@@ -71,9 +71,7 @@ function AdminNetSheetsPage() {
 
   if (!isAdmin) {
     return (
-      <div className="p-6 text-center text-muted-foreground">
-        Access restricted. Admins only.
-      </div>
+      <div className="p-6 text-center text-muted-foreground">Access restricted. Admins only.</div>
     );
   }
 
@@ -107,7 +105,9 @@ function AdminNetSheetsPage() {
           <FileText className="h-10 w-10 text-muted-foreground mx-auto" />
           <div className="font-semibold text-sm">No seller net sheets found</div>
           <p className="text-xs text-muted-foreground">
-            {search ? "No sheets match your search query." : "No agents have created saved net sheets yet."}
+            {search
+              ? "No sheets match your search query."
+              : "No agents have created saved net sheets yet."}
           </p>
         </div>
       ) : (
@@ -145,9 +145,7 @@ function AdminNetSheetsPage() {
                       <td className="p-3 font-semibold text-foreground">
                         {sheet.property_address || "Untitled Property"}
                       </td>
-                      <td className="p-3 text-muted-foreground font-mono">
-                        {dateStr}
-                      </td>
+                      <td className="p-3 text-muted-foreground font-mono">{dateStr}</td>
                       <td className="p-3 font-mono text-[#C9A84C] font-semibold">
                         {formatCurrency(p1)}
                         {p2 !== null && ` / ${formatCurrency(p2)}`}
@@ -199,9 +197,7 @@ function AdminNetSheetsPage() {
             </DialogTitle>
           </DialogHeader>
 
-          {selectedSheet && (
-            <ReadOnlySheetViewer sheet={selectedSheet} />
-          )}
+          {selectedSheet && <ReadOnlySheetViewer sheet={selectedSheet} />}
         </DialogContent>
       </Dialog>
     </div>
@@ -283,78 +279,154 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
           <thead className="bg-[#1B2F5B] text-white">
             <tr>
               <th className="p-3 font-bold uppercase text-[10px]">Expense Item</th>
-              <th className="p-3 font-bold uppercase text-[10px] text-center border-l border-slate-700">Scenario 1</th>
-              {num >= 2 && <th className="p-3 font-bold uppercase text-[10px] text-center border-l border-slate-700">Scenario 2</th>}
-              {num >= 3 && <th className="p-3 font-bold uppercase text-[10px] text-center border-l border-slate-700">Scenario 3</th>}
+              <th className="p-3 font-bold uppercase text-[10px] text-center border-l border-slate-700">
+                Scenario 1
+              </th>
+              {num >= 2 && (
+                <th className="p-3 font-bold uppercase text-[10px] text-center border-l border-slate-700">
+                  Scenario 2
+                </th>
+              )}
+              {num >= 3 && (
+                <th className="p-3 font-bold uppercase text-[10px] text-center border-l border-slate-700">
+                  Scenario 3
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800 bg-slate-950">
             <tr className="font-bold bg-slate-900">
               <td className="p-2.5 text-white">Sales Price</td>
-              <td className="p-2.5 text-center font-mono text-[#C9A84C] border-l border-slate-800">{formatCurrency(c1.salesPrice)}</td>
-              {num >= 2 && <td className="p-2.5 text-center font-mono text-[#C9A84C] border-l border-slate-800">{formatCurrency(c2.salesPrice)}</td>}
-              {num >= 3 && <td className="p-2.5 text-center font-mono text-[#C9A84C] border-l border-slate-800">{formatCurrency(c3.salesPrice)}</td>}
+              <td className="p-2.5 text-center font-mono text-[#C9A84C] border-l border-slate-800">
+                {formatCurrency(c1.salesPrice)}
+              </td>
+              {num >= 2 && (
+                <td className="p-2.5 text-center font-mono text-[#C9A84C] border-l border-slate-800">
+                  {formatCurrency(c2.salesPrice)}
+                </td>
+              )}
+              {num >= 3 && (
+                <td className="p-2.5 text-center font-mono text-[#C9A84C] border-l border-slate-800">
+                  {formatCurrency(c3.salesPrice)}
+                </td>
+              )}
             </tr>
             <tr>
               <td className="p-2 text-slate-300">Listing Commission ({data.listing_comm_pct}%)</td>
-              <td className="p-2 text-center font-mono border-l border-slate-800">{formatCurrency(c1.listingComm)}</td>
-              {num >= 2 && <td className="p-2 text-center font-mono border-l border-slate-800">{formatCurrency(c2.listingComm)}</td>}
-              {num >= 3 && <td className="p-2 text-center font-mono border-l border-slate-800">{formatCurrency(c3.listingComm)}</td>}
+              <td className="p-2 text-center font-mono border-l border-slate-800">
+                {formatCurrency(c1.listingComm)}
+              </td>
+              {num >= 2 && (
+                <td className="p-2 text-center font-mono border-l border-slate-800">
+                  {formatCurrency(c2.listingComm)}
+                </td>
+              )}
+              {num >= 3 && (
+                <td className="p-2 text-center font-mono border-l border-slate-800">
+                  {formatCurrency(c3.listingComm)}
+                </td>
+              )}
             </tr>
             <tr>
               <td className="p-2 text-slate-300">Selling Commission ({data.selling_comm_pct}%)</td>
-              <td className="p-2 text-center font-mono border-l border-slate-800">{formatCurrency(c1.sellingComm)}</td>
-              {num >= 2 && <td className="p-2 text-center font-mono border-l border-slate-800">{formatCurrency(c2.sellingComm)}</td>}
-              {num >= 3 && <td className="p-2 text-center font-mono border-l border-slate-800">{formatCurrency(c3.sellingComm)}</td>}
+              <td className="p-2 text-center font-mono border-l border-slate-800">
+                {formatCurrency(c1.sellingComm)}
+              </td>
+              {num >= 2 && (
+                <td className="p-2 text-center font-mono border-l border-slate-800">
+                  {formatCurrency(c2.sellingComm)}
+                </td>
+              )}
+              {num >= 3 && (
+                <td className="p-2 text-center font-mono border-l border-slate-800">
+                  {formatCurrency(c3.sellingComm)}
+                </td>
+              )}
             </tr>
             <tr>
               <td className="p-2 text-slate-300">Principal Mortgage Payoff</td>
-              <td className="p-2 text-center font-mono border-l border-slate-800" colSpan={num}>{formatCurrency(data.mortgage_payoff_1 || 0)}</td>
+              <td className="p-2 text-center font-mono border-l border-slate-800" colSpan={num}>
+                {formatCurrency(data.mortgage_payoff_1 || 0)}
+              </td>
             </tr>
             <tr>
               <td className="p-2 text-slate-300">Second Mortgage Payoff</td>
-              <td className="p-2 text-center font-mono border-l border-slate-800" colSpan={num}>{formatCurrency(data.mortgage_payoff_2 || 0)}</td>
+              <td className="p-2 text-center font-mono border-l border-slate-800" colSpan={num}>
+                {formatCurrency(data.mortgage_payoff_2 || 0)}
+              </td>
             </tr>
             <tr>
               <td className="p-2 text-slate-300">Title Closing Fee</td>
-              <td className="p-2 text-center font-mono border-l border-slate-800" colSpan={num}>{formatCurrency(data.seller_title_closing_fee || 0)}</td>
+              <td className="p-2 text-center font-mono border-l border-slate-800" colSpan={num}>
+                {formatCurrency(data.seller_title_closing_fee || 0)}
+              </td>
             </tr>
             <tr>
               <td className="p-2 text-slate-300">Title Search Fee</td>
-              <td className="p-2 text-center font-mono border-l border-slate-800" colSpan={num}>{formatCurrency(data.title_search_fee || 0)}</td>
+              <td className="p-2 text-center font-mono border-l border-slate-800" colSpan={num}>
+                {formatCurrency(data.title_search_fee || 0)}
+              </td>
             </tr>
             <tr>
               <td className="p-2 text-slate-300">Transaction Fee</td>
-              <td className="p-2 text-center font-mono border-l border-slate-800" colSpan={num}>{formatCurrency(data.transaction_fee || 0)}</td>
+              <td className="p-2 text-center font-mono border-l border-slate-800" colSpan={num}>
+                {formatCurrency(data.transaction_fee || 0)}
+              </td>
             </tr>
             <tr>
               <td className="p-2 text-slate-300">Estimated Taxes</td>
-              <td className="p-2 text-center font-mono border-l border-slate-800" colSpan={num}>{formatCurrency(data.estimated_taxes || 0)}</td>
+              <td className="p-2 text-center font-mono border-l border-slate-800" colSpan={num}>
+                {formatCurrency(data.estimated_taxes || 0)}
+              </td>
             </tr>
             <tr>
               <td className="p-2 text-slate-300">Seller Concessions</td>
-              <td className="p-2 text-center font-mono border-l border-slate-800" colSpan={num}>{formatCurrency(data.seller_concessions || 0)}</td>
+              <td className="p-2 text-center font-mono border-l border-slate-800" colSpan={num}>
+                {formatCurrency(data.seller_concessions || 0)}
+              </td>
             </tr>
 
             <tr className="bg-[#1B2F5B]/50 font-bold border-t-2 border-[#C9A84C]/40 text-white">
               <td className="p-2.5 text-[#C9A84C]">TOTAL SELLING COSTS</td>
-              <td className="p-2.5 text-center font-mono border-l border-slate-800">{formatCurrency(c1.totalSellingCosts)}</td>
-              {num >= 2 && <td className="p-2.5 text-center font-mono border-l border-slate-800">{formatCurrency(c2.totalSellingCosts)}</td>}
-              {num >= 3 && <td className="p-2.5 text-center font-mono border-l border-slate-800">{formatCurrency(c3.totalSellingCosts)}</td>}
+              <td className="p-2.5 text-center font-mono border-l border-slate-800">
+                {formatCurrency(c1.totalSellingCosts)}
+              </td>
+              {num >= 2 && (
+                <td className="p-2.5 text-center font-mono border-l border-slate-800">
+                  {formatCurrency(c2.totalSellingCosts)}
+                </td>
+              )}
+              {num >= 3 && (
+                <td className="p-2.5 text-center font-mono border-l border-slate-800">
+                  {formatCurrency(c3.totalSellingCosts)}
+                </td>
+              )}
             </tr>
 
             <tr className="bg-emerald-950/40 font-extrabold border-t-2 border-emerald-500/50 text-emerald-400">
               <td className="p-3 uppercase">ESTIMATED CASH TO SELLER</td>
-              <td className="p-3 text-center font-mono text-sm border-l border-emerald-800/60 bg-emerald-500/10">{formatCurrency(c1.cashToSeller)}</td>
-              {num >= 2 && <td className="p-3 text-center font-mono text-sm border-l border-emerald-800/60 bg-emerald-500/10">{formatCurrency(c2.cashToSeller)}</td>}
-              {num >= 3 && <td className="p-3 text-center font-mono text-sm border-l border-emerald-800/60 bg-emerald-500/10">{formatCurrency(c3.cashToSeller)}</td>}
+              <td className="p-3 text-center font-mono text-sm border-l border-emerald-800/60 bg-emerald-500/10">
+                {formatCurrency(c1.cashToSeller)}
+              </td>
+              {num >= 2 && (
+                <td className="p-3 text-center font-mono text-sm border-l border-emerald-800/60 bg-emerald-500/10">
+                  {formatCurrency(c2.cashToSeller)}
+                </td>
+              )}
+              {num >= 3 && (
+                <td className="p-3 text-center font-mono text-sm border-l border-emerald-800/60 bg-emerald-500/10">
+                  {formatCurrency(c3.cashToSeller)}
+                </td>
+              )}
             </tr>
           </tbody>
         </table>
       </div>
 
       <p className="text-[10px] text-slate-400 font-mono text-center leading-relaxed">
-        NOTE: THIS FORM IS INTENDED AS AN ESTIMATE ONLY. IT DOES NOT INCLUDE TAX PRORATION, ESCROW ADJUSTMENTS AND OTHER MISCELLANEOUS COSTS SOMETIMES ASSOCIATED WITH CLOSING. MATT SMITH REAL ESTATE GROUP/EXP REALTY ACCEPTS NO RESPONSIBILITY FOR THIS ESTIMATE.
+        NOTE: THIS FORM IS INTENDED AS AN ESTIMATE ONLY. IT DOES NOT INCLUDE TAX PRORATION, ESCROW
+        ADJUSTMENTS AND OTHER MISCELLANEOUS COSTS SOMETIMES ASSOCIATED WITH CLOSING. MATT SMITH REAL
+        ESTATE GROUP/EXP REALTY ACCEPTS NO RESPONSIBILITY FOR THIS ESTIMATE.
       </p>
     </div>
   );

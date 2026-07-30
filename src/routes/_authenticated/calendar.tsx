@@ -2,12 +2,42 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  addDays, addMonths, addWeeks, endOfMonth, endOfWeek, format,
-  isSameDay, isSameMonth, startOfDay, startOfMonth, startOfWeek, subMonths, subWeeks,
+  addDays,
+  addMonths,
+  addWeeks,
+  endOfMonth,
+  endOfWeek,
+  format,
+  isSameDay,
+  isSameMonth,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+  subMonths,
+  subWeeks,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus, AlertTriangle, Archive, Download, Sparkles, Copy, X, Check } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  AlertTriangle,
+  Archive,
+  Download,
+  Sparkles,
+  Copy,
+  X,
+  Check,
+} from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { DndContext, useDraggable, useDroppable, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import {
+  DndContext,
+  useDraggable,
+  useDroppable,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -16,7 +46,18 @@ import { cn } from "@/lib/utils";
 import { ContentItemForm } from "@/components/content-item-form";
 import { CalendarListView } from "@/components/calendar-list-view";
 import { useContentDetail } from "@/components/content-detail-provider";
-import { HOURS, QUARTERS, SLOT_HEIGHT_PX, STATUS_CLASS, STATUS_LABEL, PRIORITY_BORDER, BRAND_STYLES, type ContentItem, type Status, type Brand } from "@/lib/content";
+import {
+  HOURS,
+  QUARTERS,
+  SLOT_HEIGHT_PX,
+  STATUS_CLASS,
+  STATUS_LABEL,
+  PRIORITY_BORDER,
+  BRAND_STYLES,
+  type ContentItem,
+  type Status,
+  type Brand,
+} from "@/lib/content";
 import { getHolidaysForDate, HOLIDAY_TYPE_CLASS } from "@/lib/holidays";
 import { exportContentItems } from "@/lib/content-export";
 import { CalendarAnalyzePanel } from "@/components/calendar-analyze-panel";
@@ -48,7 +89,9 @@ function CalendarPage() {
   const [cursor, setCursor] = useState(() => startOfDay(new Date()));
   const [formOpen, setFormOpen] = useState(false);
   const [slotDate, setSlotDate] = useState<Date | null>(null);
-  const [prefill, setPrefill] = useState<{ title?: string; thumbnail_url?: string; platforms?: string[]; notes?: string } | undefined>();
+  const [prefill, setPrefill] = useState<
+    { title?: string; thumbnail_url?: string; platforms?: string[]; notes?: string } | undefined
+  >();
   const [analyzeOpen, setAnalyzeOpen] = useState(false);
   const [brandFilter, setBrandFilter] = useState<"all" | Brand>("all");
   const [hideReposts, setHideReposts] = useState(false);
@@ -70,21 +113,32 @@ function CalendarPage() {
     };
   }, [qc]);
 
-
-
   useEffect(() => {
-    if (search.prefillTitle || search.prefillThumb || search.prefillPlatforms || search.prefillNotes) {
+    if (
+      search.prefillTitle ||
+      search.prefillThumb ||
+      search.prefillPlatforms ||
+      search.prefillNotes
+    ) {
       setPrefill({
         title: search.prefillTitle,
         thumbnail_url: search.prefillThumb,
-        platforms: search.prefillPlatforms ? search.prefillPlatforms.split(",").filter(Boolean) : undefined,
+        platforms: search.prefillPlatforms
+          ? search.prefillPlatforms.split(",").filter(Boolean)
+          : undefined,
         notes: search.prefillNotes,
       });
       setSlotDate(new Date());
       setFormOpen(true);
       navigate({ search: {}, replace: true });
     }
-  }, [search.prefillTitle, search.prefillThumb, search.prefillPlatforms, search.prefillNotes, navigate]);
+  }, [
+    search.prefillTitle,
+    search.prefillThumb,
+    search.prefillPlatforms,
+    search.prefillNotes,
+    navigate,
+  ]);
 
   const range = useMemo(() => {
     if (view === "daily") return { start: startOfDay(cursor), end: addDays(startOfDay(cursor), 1) };
@@ -101,7 +155,8 @@ function CalendarPage() {
     queryKey: ["content-items", range.start.toISOString(), range.end.toISOString()],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
-        .from("content_items").select("*")
+        .from("content_items")
+        .select("*")
         .gte("scheduled_at", range.start.toISOString())
         .lt("scheduled_at", range.end.toISOString())
         .order("scheduled_at", { ascending: true });
@@ -111,25 +166,32 @@ function CalendarPage() {
   });
 
   const filteredItems = useMemo(
-    () => items.filter((it) => {
-      if (brandFilter !== "all" && (it.brand ?? "PP") !== brandFilter) {
-        return false;
-      }
-      if (hideReposts) {
-        const titleLower = (it.title ?? "").toLowerCase();
-        if (titleLower.includes("60-day") || titleLower.includes("90-day") || titleLower.includes("120-day")) {
+    () =>
+      items.filter((it) => {
+        if (brandFilter !== "all" && (it.brand ?? "PP") !== brandFilter) {
           return false;
         }
-      }
-      return true;
-    }),
+        if (hideReposts) {
+          const titleLower = (it.title ?? "").toLowerCase();
+          if (
+            titleLower.includes("60-day") ||
+            titleLower.includes("90-day") ||
+            titleLower.includes("120-day")
+          ) {
+            return false;
+          }
+        }
+        return true;
+      }),
     [items, brandFilter, hideReposts],
   );
 
-
   const reschedule = useMutation({
     mutationFn: async ({ id, newDate }: { id: string; newDate: Date }) => {
-      const { error } = await (supabase as any).from("content_items").update({ scheduled_at: newDate.toISOString() }).eq("id", id);
+      const { error } = await (supabase as any)
+        .from("content_items")
+        .update({ scheduled_at: newDate.toISOString() })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -139,7 +201,10 @@ function CalendarPage() {
     onError: (e: any) => toast.error(e.message ?? "Update failed"),
   });
 
-  const selectedItem = useMemo(() => items.find((i) => i.id === selectedId) ?? null, [items, selectedId]);
+  const selectedItem = useMemo(
+    () => items.find((i) => i.id === selectedId) ?? null,
+    [items, selectedId],
+  );
 
   const duplicate = useMutation({
     mutationFn: async (src: ContentItem) => {
@@ -157,7 +222,11 @@ function CalendarPage() {
         created_by: (src as any).created_by ?? null,
         brand: src.brand ?? "PP",
       };
-      const { data, error } = await (supabase as any).from("content_items").insert(payload).select("id").single();
+      const { data, error } = await (supabase as any)
+        .from("content_items")
+        .insert(payload)
+        .select("id")
+        .single();
       if (error) throw error;
       return data?.id as string | undefined;
     },
@@ -168,7 +237,6 @@ function CalendarPage() {
     },
     onError: (e: any) => toast.error(e.message ?? "Duplicate failed"),
   });
-
 
   const handleDragEnd = (e: DragEndEvent) => {
     if (!canEditContent) return;
@@ -183,25 +251,42 @@ function CalendarPage() {
     reschedule.mutate({ id, newDate });
   };
 
-  const goPrev = () => setCursor((c) => (view === "daily" ? addDays(c, -1) : view === "weekly" ? subWeeks(c, 1) : subMonths(c, 1)));
-  const goNext = () => setCursor((c) => (view === "daily" ? addDays(c, 1) : view === "weekly" ? addWeeks(c, 1) : addMonths(c, 1)));
+  const goPrev = () =>
+    setCursor((c) =>
+      view === "daily" ? addDays(c, -1) : view === "weekly" ? subWeeks(c, 1) : subMonths(c, 1),
+    );
+  const goNext = () =>
+    setCursor((c) =>
+      view === "daily" ? addDays(c, 1) : view === "weekly" ? addWeeks(c, 1) : addMonths(c, 1),
+    );
   const goToday = () => setCursor(startOfDay(new Date()));
 
   const openSlot = (d: Date) => {
     if (!canEditContent) return;
-    setSlotDate(d); setFormOpen(true);
+    setSlotDate(d);
+    setFormOpen(true);
   };
 
-  const title = view === "monthly" ? format(cursor, "MMMM yyyy")
-    : view === "weekly" ? `${format(range.start, "MMM d")} – ${format(addDays(range.end, -1), "MMM d, yyyy")}`
-    : format(cursor, "EEEE, MMMM d, yyyy");
+  const title =
+    view === "monthly"
+      ? format(cursor, "MMMM yyyy")
+      : view === "weekly"
+        ? `${format(range.start, "MMM d")} – ${format(addDays(range.end, -1), "MMM d, yyyy")}`
+        : format(cursor, "EEEE, MMMM d, yyyy");
 
   const { data: exportProfiles = [] } = useQuery({
     queryKey: ["profiles-min"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from("profiles").select("id, first_name, last_name, email");
+      const { data, error } = await (supabase as any)
+        .from("profiles")
+        .select("id, first_name, last_name, email");
       if (error) throw error;
-      return (data ?? []) as { id: string; first_name: string | null; last_name: string | null; email: string | null }[];
+      return (data ?? []) as {
+        id: string;
+        first_name: string | null;
+        last_name: string | null;
+        email: string | null;
+      }[];
     },
   });
 
@@ -213,12 +298,13 @@ function CalendarPage() {
     exportContentItems(currentItems, exportProfiles);
   };
 
-
   return (
     <div className="p-3 sm:p-4 lg:p-6 max-w-[1400px] mx-auto">
       <header className="mb-4 space-y-3">
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate">Content Calendar</h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate">
+            Content Calendar
+          </h1>
           <p className="text-xs sm:text-sm text-muted-foreground truncate">{title}</p>
         </div>
 
@@ -226,16 +312,26 @@ function CalendarPage() {
           {/* Brand filter — own row, horizontal scroll on small screens */}
           <div className="flex gap-1 bg-muted rounded-md p-0.5 overflow-x-auto flex-nowrap w-full sm:w-fit">
             {(["all", "LOZ", "PP", "AON", "MSREG ALL"] as const).map((b) => (
-              <button key={b} onClick={() => setBrandFilter(b)} className={cn(
-                "shrink-0 px-2.5 py-1.5 text-xs font-semibold rounded transition-colors whitespace-nowrap",
-                brandFilter === b
-                  ? (b === "PP" ? "bg-gold text-gold-foreground"
-                    : b === "LOZ" ? "bg-indigo-400 text-background"
-                    : b === "MSREG ALL" ? "bg-purple-400 text-background"
-                    : b === "AON" ? "bg-sky-500 text-white"
-                    : "bg-foreground text-background")
-                  : "text-muted-foreground hover:text-foreground",
-              )}>{b === "all" ? "All" : b}</button>
+              <button
+                key={b}
+                onClick={() => setBrandFilter(b)}
+                className={cn(
+                  "shrink-0 px-2.5 py-1.5 text-xs font-semibold rounded transition-colors whitespace-nowrap",
+                  brandFilter === b
+                    ? b === "PP"
+                      ? "bg-gold text-gold-foreground"
+                      : b === "LOZ"
+                        ? "bg-indigo-400 text-background"
+                        : b === "MSREG ALL"
+                          ? "bg-purple-400 text-background"
+                          : b === "AON"
+                            ? "bg-sky-500 text-white"
+                            : "bg-foreground text-background"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {b === "all" ? "All" : b}
+              </button>
             ))}
           </div>
 
@@ -259,31 +355,54 @@ function CalendarPage() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex bg-muted rounded-md p-0.5">
             {(["list", "daily", "weekly", "monthly"] as const).map((v) => (
-              <button key={v} onClick={() => setView(v)} className={cn(
-                "px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded capitalize transition-colors",
-                view === v ? "bg-gold text-gold-foreground" : "text-muted-foreground hover:text-foreground",
-              )}>{v}</button>
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={cn(
+                  "px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded capitalize transition-colors",
+                  view === v
+                    ? "bg-gold text-gold-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {v}
+              </button>
             ))}
           </div>
           {view !== "list" && (
             <div className="flex items-center gap-1">
-              <Button size="sm" variant="outline" onClick={goPrev} className="px-2"><ChevronLeft className="h-4 w-4" /></Button>
-              <Button size="sm" variant="outline" onClick={goToday}>Today</Button>
-              <Button size="sm" variant="outline" onClick={goNext} className="px-2"><ChevronRight className="h-4 w-4" /></Button>
+              <Button size="sm" variant="outline" onClick={goPrev} className="px-2">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button size="sm" variant="outline" onClick={goToday}>
+                Today
+              </Button>
+              <Button size="sm" variant="outline" onClick={goNext} className="px-2">
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
           )}
           <div className="flex flex-wrap items-center gap-2 ml-auto">
             <Button size="sm" variant="outline" onClick={() => handleExport(view, filteredItems)}>
-              <Download className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Export</span>
+              <Download className="h-4 w-4 sm:mr-1" />{" "}
+              <span className="hidden sm:inline">Export</span>
             </Button>
             <Button size="sm" variant="outline" onClick={() => setAnalyzeOpen(true)}>
-              <Sparkles className="h-4 w-4 sm:mr-1 text-gold" /> <span className="hidden sm:inline">Analyze</span>
+              <Sparkles className="h-4 w-4 sm:mr-1 text-gold" />{" "}
+              <span className="hidden sm:inline">Analyze</span>
             </Button>
             <Button asChild size="sm" variant="outline">
-              <Link to="/archive"><Archive className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Archive</span></Link>
+              <Link to="/archive">
+                <Archive className="h-4 w-4 sm:mr-1" />{" "}
+                <span className="hidden sm:inline">Archive</span>
+              </Link>
             </Button>
             {canEditContent && (
-              <Button size="sm" className="bg-gold text-gold-foreground hover:bg-gold/90" onClick={() => openSlot(new Date())}>
+              <Button
+                size="sm"
+                className="bg-gold text-gold-foreground hover:bg-gold/90"
+                onClick={() => openSlot(new Date())}
+              >
                 <Plus className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">New</span>
               </Button>
             )}
@@ -295,14 +414,48 @@ function CalendarPage() {
         <CalendarListView brandFilter={brandFilter} />
       ) : (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <div className="bg-card border border-border rounded-xl overflow-hidden" onClick={() => setSelectedId(null)}>
-            {view === "daily" && <DailyView day={cursor} items={filteredItems} onSlotClick={openSlot} onItemClick={detail.open} draggable={canEditContent} selectedId={selectedId} onSelect={setSelectedId} />}
-            {view === "weekly" && <WeeklyView start={range.start} items={filteredItems} onSlotClick={openSlot} onItemClick={detail.open} draggable={canEditContent} selectedId={selectedId} onSelect={setSelectedId} />}
-            {view === "monthly" && <MonthlyView cursor={cursor} start={range.start} end={range.end} items={filteredItems} onDayClick={openSlot} onItemClick={detail.open} draggable={canEditContent} selectedId={selectedId} onSelect={setSelectedId} />}
+          <div
+            className="bg-card border border-border rounded-xl overflow-hidden"
+            onClick={() => setSelectedId(null)}
+          >
+            {view === "daily" && (
+              <DailyView
+                day={cursor}
+                items={filteredItems}
+                onSlotClick={openSlot}
+                onItemClick={detail.open}
+                draggable={canEditContent}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+              />
+            )}
+            {view === "weekly" && (
+              <WeeklyView
+                start={range.start}
+                items={filteredItems}
+                onSlotClick={openSlot}
+                onItemClick={detail.open}
+                draggable={canEditContent}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+              />
+            )}
+            {view === "monthly" && (
+              <MonthlyView
+                cursor={cursor}
+                start={range.start}
+                end={range.end}
+                items={filteredItems}
+                onDayClick={openSlot}
+                onItemClick={detail.open}
+                draggable={canEditContent}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+              />
+            )}
           </div>
         </DndContext>
       )}
-
 
       {selectedItem && canEditContent && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 bg-primary text-primary-foreground border border-gold/40 shadow-2xl rounded-full pl-4 pr-2 py-2">
@@ -316,16 +469,28 @@ function CalendarPage() {
           >
             <Copy className="h-3.5 w-3.5 mr-1" /> Duplicate
           </Button>
-          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-full hover:bg-white/10" onClick={() => setSelectedId(null)}>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 w-8 p-0 rounded-full hover:bg-white/10"
+            onClick={() => setSelectedId(null)}
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
       )}
 
-
-
       {formOpen && (
-        <ContentItemForm key={slotDate?.toISOString() ?? "new"} open={formOpen} onOpenChange={(o) => { setFormOpen(o); if (!o) setPrefill(undefined); }} initialDate={slotDate} initial={prefill} />
+        <ContentItemForm
+          key={slotDate?.toISOString() ?? "new"}
+          open={formOpen}
+          onOpenChange={(o) => {
+            setFormOpen(o);
+            if (!o) setPrefill(undefined);
+          }}
+          initialDate={slotDate}
+          initial={prefill}
+        />
       )}
 
       <CalendarAnalyzePanel
@@ -341,7 +506,8 @@ function CalendarPage() {
         }}
         fetchItems={async (start, end) => {
           const { data, error } = await (supabase as any)
-            .from("content_items").select("*")
+            .from("content_items")
+            .select("*")
             .gte("scheduled_at", start.toISOString())
             .lt("scheduled_at", end.toISOString())
             .order("scheduled_at", { ascending: true });
@@ -358,11 +524,32 @@ function CalendarPage() {
   );
 }
 
-
-function ContentCard({ item, onClick, draggable, selected, onSelect, showTime = true }: { item: ContentItem; onClick: () => void; draggable: boolean; selected?: boolean; onSelect?: (id: string) => void; showTime?: boolean }) {
-  const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({ id: item.id, disabled: !draggable });
-  const targetMissed = item.target_publish_date && new Date(item.target_publish_date) < new Date(new Date().toDateString()) && item.status !== "published";
-  const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 } : undefined;
+function ContentCard({
+  item,
+  onClick,
+  draggable,
+  selected,
+  onSelect,
+  showTime = true,
+}: {
+  item: ContentItem;
+  onClick: () => void;
+  draggable: boolean;
+  selected?: boolean;
+  onSelect?: (id: string) => void;
+  showTime?: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({
+    id: item.id,
+    disabled: !draggable,
+  });
+  const targetMissed =
+    item.target_publish_date &&
+    new Date(item.target_publish_date) < new Date(new Date().toDateString()) &&
+    item.status !== "published";
+  const style = transform
+    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
+    : undefined;
   const scheduledTime = item.scheduled_at ? format(new Date(item.scheduled_at), "h:mm a") : null;
 
   return (
@@ -371,7 +558,10 @@ function ContentCard({ item, onClick, draggable, selected, onSelect, showTime = 
       style={style}
       {...listeners}
       {...attributes}
-      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
       className={cn(
         "relative w-full text-left bg-background hover:bg-accent/40 rounded-lg p-2 text-xs leading-snug border border-border/80 cursor-pointer shadow-sm transition-all space-y-1.5",
         PRIORITY_BORDER[item.priority],
@@ -384,20 +574,34 @@ function ContentCard({ item, onClick, draggable, selected, onSelect, showTime = 
         <button
           type="button"
           onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => { e.stopPropagation(); onSelect(selected ? "" : item.id); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect(selected ? "" : item.id);
+          }}
           title={selected ? "Deselect" : "Select"}
           className={cn(
             "absolute top-1.5 right-1.5 h-4 w-4 rounded-full border flex items-center justify-center transition-colors z-10",
-            selected ? "bg-gold border-gold text-gold-foreground" : "bg-background/80 border-border hover:border-gold text-muted-foreground",
+            selected
+              ? "bg-gold border-gold text-gold-foreground"
+              : "bg-background/80 border-border hover:border-gold text-muted-foreground",
           )}
         >
-          {selected ? <Check className="h-2.5 w-2.5" /> : <span className="block h-1.5 w-1.5 rounded-full bg-current opacity-40" />}
+          {selected ? (
+            <Check className="h-2.5 w-2.5" />
+          ) : (
+            <span className="block h-1.5 w-1.5 rounded-full bg-current opacity-40" />
+          )}
         </button>
       )}
 
       {/* Header Row: Brand, Time badge, Missed Indicator */}
       <div className="flex items-center gap-1.5 flex-wrap pr-4">
-        <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0", BRAND_STYLES[(item.brand ?? "PP") as Brand])}>
+        <span
+          className={cn(
+            "text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0",
+            BRAND_STYLES[(item.brand ?? "PP") as Brand],
+          )}
+        >
           {item.brand ?? "PP"}
         </span>
         {showTime && scheduledTime && (
@@ -410,7 +614,13 @@ function ContentCard({ item, onClick, draggable, selected, onSelect, showTime = 
 
       {/* Title & Thumbnail */}
       <div className="flex items-start gap-2">
-        {item.thumbnail_url && <img src={item.thumbnail_url} alt="" className="h-9 w-9 rounded-md object-cover flex-shrink-0 border border-border/40" />}
+        {item.thumbnail_url && (
+          <img
+            src={item.thumbnail_url}
+            alt=""
+            className="h-9 w-9 rounded-md object-cover flex-shrink-0 border border-border/40"
+          />
+        )}
         <div className="font-semibold text-foreground text-xs leading-snug line-clamp-2 min-w-0 flex-1">
           {item.title}
         </div>
@@ -418,11 +628,19 @@ function ContentCard({ item, onClick, draggable, selected, onSelect, showTime = 
 
       {/* Badges Row: Status & Platforms */}
       <div className="flex items-center gap-1.5 flex-wrap pt-0.5 border-t border-border/30">
-        <span className={cn("px-1.5 py-0.5 rounded border text-[9px] font-medium", STATUS_CLASS[item.status as Status])}>
+        <span
+          className={cn(
+            "px-1.5 py-0.5 rounded border text-[9px] font-medium",
+            STATUS_CLASS[item.status as Status],
+          )}
+        >
           {STATUS_LABEL[item.status as Status]}
         </span>
         {item.platforms.slice(0, 3).map((p) => (
-          <span key={p} className="text-[9px] font-medium text-muted-foreground bg-muted/50 px-1 py-0.5 rounded border border-border/30">
+          <span
+            key={p}
+            className="text-[9px] font-medium text-muted-foreground bg-muted/50 px-1 py-0.5 rounded border border-border/30"
+          >
             {p}
           </span>
         ))}
@@ -431,7 +649,17 @@ function ContentCard({ item, onClick, draggable, selected, onSelect, showTime = 
   );
 }
 
-function DropSlot({ date, children, onSlotClick, hasItems }: { date: Date; children?: React.ReactNode; onSlotClick: (d: Date) => void; hasItems?: boolean }) {
+function DropSlot({
+  date,
+  children,
+  onSlotClick,
+  hasItems,
+}: {
+  date: Date;
+  children?: React.ReactNode;
+  onSlotClick: (d: Date) => void;
+  hasItems?: boolean;
+}) {
   const { setNodeRef, isOver } = useDroppable({ id: slotId(date) });
   const mins = date.getMinutes();
   const isHour = mins === 0;
@@ -440,7 +668,10 @@ function DropSlot({ date, children, onSlotClick, hasItems }: { date: Date; child
   return (
     <div
       ref={setNodeRef}
-      onClick={(e) => { e.stopPropagation(); onSlotClick(date); }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSlotClick(date);
+      }}
       title={format(date, "EEE MMM d · h:mm a")}
       className={cn(
         "px-1 py-0.5 min-h-[22px] transition-colors cursor-pointer group/slot relative rounded-sm",
@@ -492,7 +723,9 @@ function DailyView({ day, items, onSlotClick, onItemClick, draggable, selectedId
           Time
         </div>
         <div className="sticky top-0 z-20 bg-sidebar border-b-2 border-border text-xs font-bold shadow-sm p-3">
-          <div className="text-base font-black text-foreground">{format(day, "EEEE, MMMM d, yyyy")}</div>
+          <div className="text-base font-black text-foreground">
+            {format(day, "EEEE, MMMM d, yyyy")}
+          </div>
           <HolidayBanner date={day} />
         </div>
 
@@ -504,16 +737,33 @@ function DailyView({ day, items, onSlotClick, onItemClick, draggable, selectedId
 
             <div className="border-l border-border/80 min-h-[76px] p-1 flex flex-col justify-between hover:bg-accent/5 transition-colors">
               {QUARTERS.map((q) => {
-                const slot = new Date(day); slot.setHours(h, q, 0, 0);
+                const slot = new Date(day);
+                slot.setHours(h, q, 0, 0);
                 const slotItems = items.filter((it: ContentItem) => {
                   const itd = new Date(it.scheduled_at);
-                  return isSameDay(itd, day) && itd.getHours() === h && Math.floor(itd.getMinutes() / 15) * 15 === q;
+                  return (
+                    isSameDay(itd, day) &&
+                    itd.getHours() === h &&
+                    Math.floor(itd.getMinutes() / 15) * 15 === q
+                  );
                 });
                 return (
-                  <DropSlot key={q} date={slot} onSlotClick={onSlotClick} hasItems={slotItems.length > 0}>
+                  <DropSlot
+                    key={q}
+                    date={slot}
+                    onSlotClick={onSlotClick}
+                    hasItems={slotItems.length > 0}
+                  >
                     <div className="space-y-1.5">
                       {slotItems.map((it: ContentItem) => (
-                        <ContentCard key={it.id} item={it} draggable={draggable} onClick={() => onItemClick(it.id)} selected={selectedId === it.id} onSelect={onSelect} />
+                        <ContentCard
+                          key={it.id}
+                          item={it}
+                          draggable={draggable}
+                          onClick={() => onItemClick(it.id)}
+                          selected={selectedId === it.id}
+                          onSelect={onSelect}
+                        />
                       ))}
                     </div>
                   </DropSlot>
@@ -527,17 +777,36 @@ function DailyView({ day, items, onSlotClick, onItemClick, draggable, selectedId
   );
 }
 
-function WeeklyView({ start, items, onSlotClick, onItemClick, draggable, selectedId, onSelect }: any) {
+function WeeklyView({
+  start,
+  items,
+  onSlotClick,
+  onItemClick,
+  draggable,
+  selectedId,
+  onSelect,
+}: any) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
   return (
     <div className="overflow-auto max-h-[calc(100vh-210px)] relative">
-      <div className="grid min-w-[1542px]" style={{ gridTemplateColumns: "72px repeat(7, minmax(210px, 1fr))" }}>
+      <div
+        className="grid min-w-[1542px]"
+        style={{ gridTemplateColumns: "72px repeat(7, minmax(210px, 1fr))" }}
+      >
         <div className="sticky top-0 left-0 z-30 bg-sidebar border-b-2 border-r-2 border-border px-2.5 py-3 text-xs font-extrabold text-foreground shadow-md uppercase tracking-wider select-none">
           Time
         </div>
         {days.map((d) => (
-          <div key={d.toISOString()} className={cn("sticky top-0 z-20 bg-sidebar border-b-2 border-l border-border text-xs font-bold text-center shadow-sm py-2 px-2", isSameDay(d, new Date()) && "text-gold bg-gold/10")}>
-            <div className="uppercase tracking-wider text-[11px] text-muted-foreground">{format(d, "EEE")}</div>
+          <div
+            key={d.toISOString()}
+            className={cn(
+              "sticky top-0 z-20 bg-sidebar border-b-2 border-l border-border text-xs font-bold text-center shadow-sm py-2 px-2",
+              isSameDay(d, new Date()) && "text-gold bg-gold/10",
+            )}
+          >
+            <div className="uppercase tracking-wider text-[11px] text-muted-foreground">
+              {format(d, "EEE")}
+            </div>
             <div className="text-lg font-black leading-tight text-foreground">{format(d, "d")}</div>
             <HolidayBanner date={d} className="justify-center" />
           </div>
@@ -551,18 +820,38 @@ function WeeklyView({ start, items, onSlotClick, onItemClick, draggable, selecte
 
             {days.map((d) => {
               return (
-                <div key={d.toISOString() + h} className="border-l border-border/80 min-h-[76px] p-1 flex flex-col justify-between hover:bg-accent/5 transition-colors">
+                <div
+                  key={d.toISOString() + h}
+                  className="border-l border-border/80 min-h-[76px] p-1 flex flex-col justify-between hover:bg-accent/5 transition-colors"
+                >
                   {QUARTERS.map((q) => {
-                    const slot = new Date(d); slot.setHours(h, q, 0, 0);
+                    const slot = new Date(d);
+                    slot.setHours(h, q, 0, 0);
                     const slotItems = items.filter((it: ContentItem) => {
                       const itd = new Date(it.scheduled_at);
-                      return isSameDay(itd, d) && itd.getHours() === h && Math.floor(itd.getMinutes() / 15) * 15 === q;
+                      return (
+                        isSameDay(itd, d) &&
+                        itd.getHours() === h &&
+                        Math.floor(itd.getMinutes() / 15) * 15 === q
+                      );
                     });
                     return (
-                      <DropSlot key={q} date={slot} onSlotClick={onSlotClick} hasItems={slotItems.length > 0}>
+                      <DropSlot
+                        key={q}
+                        date={slot}
+                        onSlotClick={onSlotClick}
+                        hasItems={slotItems.length > 0}
+                      >
                         <div className="space-y-1.5">
                           {slotItems.map((it: ContentItem) => (
-                            <ContentCard key={it.id} item={it} draggable={draggable} onClick={() => onItemClick(it.id)} selected={selectedId === it.id} onSelect={onSelect} />
+                            <ContentCard
+                              key={it.id}
+                              item={it}
+                              draggable={draggable}
+                              onClick={() => onItemClick(it.id)}
+                              selected={selectedId === it.id}
+                              onSelect={onSelect}
+                            />
                           ))}
                         </div>
                       </DropSlot>
@@ -578,33 +867,80 @@ function WeeklyView({ start, items, onSlotClick, onItemClick, draggable, selecte
   );
 }
 
-function MonthlyView({ cursor, start, end, items, onDayClick, onItemClick, draggable, selectedId, onSelect }: any) {
+function MonthlyView({
+  cursor,
+  start,
+  end,
+  items,
+  onDayClick,
+  onItemClick,
+  draggable,
+  selectedId,
+  onSelect,
+}: any) {
   const days: Date[] = [];
-  let d = start; while (d < end) { days.push(d); d = addDays(d, 1); }
+  let d = start;
+  while (d < end) {
+    days.push(d);
+    d = addDays(d, 1);
+  }
   const weeks: Date[][] = [];
   for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
   return (
     <div>
       <div className="grid grid-cols-7 bg-sidebar/60 border-b border-border">
-        {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d) => (
-          <div key={d} className="px-2 py-2 text-xs font-semibold text-center text-muted-foreground">{d}</div>
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+          <div
+            key={d}
+            className="px-2 py-2 text-xs font-semibold text-center text-muted-foreground"
+          >
+            {d}
+          </div>
         ))}
       </div>
       {weeks.map((week, wi) => (
         <div key={wi} className="grid grid-cols-7">
           {week.map((day) => {
-            const dayItems = items.filter((it: ContentItem) => isSameDay(new Date(it.scheduled_at), day));
+            const dayItems = items.filter((it: ContentItem) =>
+              isSameDay(new Date(it.scheduled_at), day),
+            );
             const inMonth = isSameMonth(day, cursor);
             const isToday = isSameDay(day, new Date());
-            const noon = new Date(day); noon.setHours(12, 0, 0, 0);
+            const noon = new Date(day);
+            noon.setHours(12, 0, 0, 0);
             return (
-              <MonthDayCell key={day.toISOString()} date={noon} inMonth={inMonth} isToday={isToday} onDayClick={onDayClick}>
-                <div className={cn("text-xs font-medium mb-1", !inMonth && "text-muted-foreground/50", isToday && "text-gold")}>
+              <MonthDayCell
+                key={day.toISOString()}
+                date={noon}
+                inMonth={inMonth}
+                isToday={isToday}
+                onDayClick={onDayClick}
+              >
+                <div
+                  className={cn(
+                    "text-xs font-medium mb-1",
+                    !inMonth && "text-muted-foreground/50",
+                    isToday && "text-gold",
+                  )}
+                >
                   {format(day, "d")}
                 </div>
                 <div className="space-y-1">
-                  {dayItems.slice(0, 3).map((it: ContentItem) => <ContentCard key={it.id} item={it} draggable={draggable} onClick={() => onItemClick(it.id)} selected={selectedId === it.id} onSelect={onSelect} />)}
-                  {dayItems.length > 3 && <div className="text-[10px] text-muted-foreground px-1">+{dayItems.length - 3} more</div>}
+                  {dayItems.slice(0, 3).map((it: ContentItem) => (
+                    <ContentCard
+                      key={it.id}
+                      item={it}
+                      draggable={draggable}
+                      onClick={() => onItemClick(it.id)}
+                      selected={selectedId === it.id}
+                      onSelect={onSelect}
+                    />
+                  ))}
+                  {dayItems.length > 3 && (
+                    <div className="text-[10px] text-muted-foreground px-1">
+                      +{dayItems.length - 3} more
+                    </div>
+                  )}
                 </div>
               </MonthDayCell>
             );
@@ -615,7 +951,19 @@ function MonthlyView({ cursor, start, end, items, onDayClick, onItemClick, dragg
   );
 }
 
-function MonthDayCell({ date, inMonth, isToday, onDayClick, children }: { date: Date; inMonth: boolean; isToday: boolean; onDayClick: (d: Date) => void; children: React.ReactNode }) {
+function MonthDayCell({
+  date,
+  inMonth,
+  isToday,
+  onDayClick,
+  children,
+}: {
+  date: Date;
+  inMonth: boolean;
+  isToday: boolean;
+  onDayClick: (d: Date) => void;
+  children: React.ReactNode;
+}) {
   const { setNodeRef, isOver } = useDroppable({ id: slotId(date) });
   return (
     <div
@@ -632,4 +980,3 @@ function MonthDayCell({ date, inMonth, isToday, onDayClick, children }: { date: 
     </div>
   );
 }
-

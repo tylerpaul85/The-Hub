@@ -11,10 +11,13 @@ export function registerServiceWorker() {
     .then((regs) => regs.forEach((r) => r.unregister().catch(() => {})))
     .catch(() => {});
   if ("caches" in window) {
-    caches.keys().then((names) => {
-      names
-        .filter((n) => n === "msreg-runtime-v1" || n.startsWith("msreg-"))
-        .forEach((n) => caches.delete(n).catch(() => {}));
-    }).catch(() => {});
+    caches
+      .keys()
+      .then((names) => {
+        names
+          .filter((n) => n === "msreg-runtime-v1" || n.startsWith("msreg-"))
+          .forEach((n) => caches.delete(n).catch(() => {}));
+      })
+      .catch(() => {});
   }
 }

@@ -33,7 +33,9 @@ function AgentsHome() {
   }, []);
 
   const dismissTip = () => {
-    try { localStorage.setItem(IOS_TIP_KEY, "1"); } catch {}
+    try {
+      localStorage.setItem(IOS_TIP_KEY, "1");
+    } catch {}
     setShowIosTip(false);
   };
 
@@ -41,7 +43,11 @@ function AgentsHome() {
     <div className="min-h-screen bg-background px-4 py-8 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
       <div className="max-w-3xl mx-auto">
         <header className="text-center mb-8 sm:mb-12">
-          <img src={logo} alt="Matt Smith Real Estate Group" className="h-24 sm:h-28 w-auto mx-auto" />
+          <img
+            src={logo}
+            alt="Matt Smith Real Estate Group"
+            className="h-24 sm:h-28 w-auto mx-auto"
+          />
           <p className="text-[11px] uppercase tracking-[0.2em] text-gold/80 mt-3">Agent Hub</p>
           <h1 className="text-2xl sm:text-3xl font-semibold mt-2">Welcome</h1>
           <p className="text-sm text-muted-foreground mt-2">What do you need today?</p>
@@ -83,15 +89,21 @@ function AgentsHome() {
         {showIosTip && (
           <div className="mt-8 rounded-lg border border-gold/30 bg-card/60 p-4 text-sm">
             <div className="flex items-start gap-3">
-              <div className="text-gold mt-0.5"><Plus className="h-5 w-5" /></div>
+              <div className="text-gold mt-0.5">
+                <Plus className="h-5 w-5" />
+              </div>
               <div className="flex-1">
                 <div className="font-medium">Install on your iPhone</div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Tap the <Share className="inline h-3.5 w-3.5 mx-0.5 align-text-bottom" /> Share button in Safari, then choose
-                  <span className="font-medium"> “Add to Home Screen”</span> to launch the Agent Hub like an app.
+                  Tap the <Share className="inline h-3.5 w-3.5 mx-0.5 align-text-bottom" /> Share
+                  button in Safari, then choose
+                  <span className="font-medium"> “Add to Home Screen”</span> to launch the Agent Hub
+                  like an app.
                 </p>
               </div>
-              <Button size="sm" variant="ghost" onClick={dismissTip} className="text-xs h-7">Got it</Button>
+              <Button size="sm" variant="ghost" onClick={dismissTip} className="text-xs h-7">
+                Got it
+              </Button>
             </div>
           </div>
         )}
@@ -117,7 +129,8 @@ function HubCard({
   title: string;
   subtitle: string;
 }) {
-  const className = "group relative block rounded-2xl border border-gold/30 bg-card p-6 sm:p-8 min-h-[180px] sm:min-h-[220px] hover:border-gold hover:bg-card/80 active:scale-[0.99] transition-all shadow-lg";
+  const className =
+    "group relative block rounded-2xl border border-gold/30 bg-card p-6 sm:p-8 min-h-[180px] sm:min-h-[220px] hover:border-gold hover:bg-card/80 active:scale-[0.99] transition-all shadow-lg";
 
   const content = (
     <div className="flex flex-col h-full">
@@ -136,22 +149,14 @@ function HubCard({
 
   if (href) {
     return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={className}
-      >
+      <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
         {content}
       </a>
     );
   }
 
   return (
-    <Link
-      to={to as any}
-      className={className}
-    >
+    <Link to={to as any} className={className}>
       {content}
     </Link>
   );

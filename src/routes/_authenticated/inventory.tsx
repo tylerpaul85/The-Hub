@@ -8,19 +8,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Boxes, Plus, Pencil, AlertTriangle, CheckCircle2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-
 
 const SIZES = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"] as const;
 const LOW_STOCK = 2;
@@ -63,7 +75,9 @@ function InventoryPage() {
     return (
       <div className="p-10 text-center">
         <h1 className="text-xl font-semibold">Not Authorized</h1>
-        <p className="text-muted-foreground mt-2">This page is for Admin and Client Care users only.</p>
+        <p className="text-muted-foreground mt-2">
+          This page is for Admin and Client Care users only.
+        </p>
       </div>
     );
   }
@@ -74,7 +88,9 @@ function InventoryPage() {
         <Boxes className="h-7 w-7 text-gold" />
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Closing Gift Inventory</h1>
-          <p className="text-muted-foreground text-sm mt-1">Manage shirt stock and fulfill requests.</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            Manage shirt stock and fulfill requests.
+          </p>
         </div>
       </header>
 
@@ -128,10 +144,7 @@ function InventoryTab({ canEdit }: { canEdit: boolean }) {
 
   const delMut = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("closing_gift_inventory")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("closing_gift_inventory").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -144,13 +157,19 @@ function InventoryTab({ canEdit }: { canEdit: boolean }) {
   return (
     <div className="bg-card border border-border rounded-xl">
       <div className="flex flex-wrap items-center gap-3 p-4 border-b border-border">
-        <Label className="text-xs uppercase tracking-wide text-muted-foreground">Filter by color:</Label>
+        <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+          Filter by color:
+        </Label>
         <Select value={colorFilter} onValueChange={setColorFilter}>
-          <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-48">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All colors</SelectItem>
             {colors.map((c) => (
-              <SelectItem key={c.color} value={c.color}>{c.color}</SelectItem>
+              <SelectItem key={c.color} value={c.color}>
+                {c.color}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -173,10 +192,18 @@ function InventoryTab({ canEdit }: { canEdit: boolean }) {
         </TableHeader>
         <TableBody>
           {isLoading && (
-            <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">Loading…</TableCell></TableRow>
+            <TableRow>
+              <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                Loading…
+              </TableCell>
+            </TableRow>
           )}
           {!isLoading && rows.length === 0 && (
-            <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No inventory yet.</TableCell></TableRow>
+            <TableRow>
+              <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                No inventory yet.
+              </TableCell>
+            </TableRow>
           )}
           {rows.map((r) => {
             const low = r.quantity_available <= LOW_STOCK;
@@ -185,12 +212,19 @@ function InventoryTab({ canEdit }: { canEdit: boolean }) {
                 <TableCell className="font-medium">{r.size}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <span className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: r.color_hex }} />
+                    <span
+                      className="h-4 w-4 rounded-full border border-border"
+                      style={{ backgroundColor: r.color_hex }}
+                    />
                     <span>{r.color}</span>
                     <span className="text-xs text-muted-foreground">{r.color_hex}</span>
                   </div>
                 </TableCell>
-                <TableCell className={"text-right font-mono " + (low ? "text-destructive font-semibold" : "")}>
+                <TableCell
+                  className={
+                    "text-right font-mono " + (low ? "text-destructive font-semibold" : "")
+                  }
+                >
                   <div className="inline-flex items-center gap-1.5">
                     {low && <AlertTriangle className="h-3.5 w-3.5" />}
                     {r.quantity_available}
@@ -203,7 +237,8 @@ function InventoryTab({ canEdit }: { canEdit: boolean }) {
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button
-                        size="sm" variant="ghost"
+                        size="sm"
+                        variant="ghost"
                         onClick={() => {
                           if (confirm(`Delete ${r.size} / ${r.color}?`)) delMut.mutate(r.id);
                         }}
@@ -224,7 +259,10 @@ function InventoryTab({ canEdit }: { canEdit: boolean }) {
       {(adding || editing) && (
         <InventoryDialog
           row={editing}
-          onClose={() => { setAdding(false); setEditing(null); }}
+          onClose={() => {
+            setAdding(false);
+            setEditing(null);
+          }}
           onSaved={() => qc.invalidateQueries({ queryKey: ["closing-gift-inventory-admin"] })}
         />
       )}
@@ -233,7 +271,9 @@ function InventoryTab({ canEdit }: { canEdit: boolean }) {
 }
 
 function InventoryDialog({
-  row, onClose, onSaved,
+  row,
+  onClose,
+  onSaved,
 }: {
   row: InventoryRow | null;
   onClose: () => void;
@@ -245,8 +285,14 @@ function InventoryDialog({
   const [qty, setQty] = useState<number>(row?.quantity_available ?? 0);
   const [busy, setBusy] = useState(false);
   async function handleSave() {
-    if (!color.trim()) { toast.error("Color name is required"); return; }
-    if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex)) { toast.error("Hex must be like #001F3F"); return; }
+    if (!color.trim()) {
+      toast.error("Color name is required");
+      return;
+    }
+    if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex)) {
+      toast.error("Hex must be like #001F3F");
+      return;
+    }
     setBusy(true);
     try {
       if (row) {
@@ -280,14 +326,12 @@ function InventoryDialog({
             .eq("id", existing.id);
           if (error) throw error;
         } else {
-          const { error } = await supabase
-            .from("closing_gift_inventory")
-            .insert({
-              size,
-              color: color.trim(),
-              color_hex: hex.trim(),
-              quantity_available: Number(qty) || 0,
-            });
+          const { error } = await supabase.from("closing_gift_inventory").insert({
+            size,
+            color: color.trim(),
+            color_hex: hex.trim(),
+            quantity_available: Number(qty) || 0,
+          });
           if (error) throw error;
         }
       }
@@ -302,7 +346,12 @@ function InventoryDialog({
   }
 
   return (
-    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+    <Dialog
+      open
+      onOpenChange={(o) => {
+        if (!o) onClose();
+      }}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{row ? "Edit Inventory" : "Add Inventory"}</DialogTitle>
@@ -311,20 +360,41 @@ function InventoryDialog({
           <div>
             <Label className="mb-1 block">Size</Label>
             <Select value={size} onValueChange={setSize} disabled={!!row}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                {SIZES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                {SIZES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label htmlFor="color" className="mb-1 block">Color Name</Label>
-            <Input id="color" value={color} onChange={(e) => setColor(e.target.value)} placeholder="Navy Blue" disabled={!!row} />
+            <Label htmlFor="color" className="mb-1 block">
+              Color Name
+            </Label>
+            <Input
+              id="color"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              placeholder="Navy Blue"
+              disabled={!!row}
+            />
           </div>
           <div>
-            <Label htmlFor="hex" className="mb-1 block">Color Hex</Label>
+            <Label htmlFor="hex" className="mb-1 block">
+              Color Hex
+            </Label>
             <div className="flex items-center gap-2">
-              <Input id="hex" value={hex} onChange={(e) => setHex(e.target.value)} placeholder="#001F3F" />
+              <Input
+                id="hex"
+                value={hex}
+                onChange={(e) => setHex(e.target.value)}
+                placeholder="#001F3F"
+              />
               <input
                 type="color"
                 value={/^#[0-9a-fA-F]{6}$/.test(hex) ? hex : "#001F3F"}
@@ -334,13 +404,27 @@ function InventoryDialog({
             </div>
           </div>
           <div>
-            <Label htmlFor="qty" className="mb-1 block">Quantity Available</Label>
-            <Input id="qty" type="number" min={0} value={qty} onChange={(e) => setQty(parseInt(e.target.value, 10) || 0)} />
+            <Label htmlFor="qty" className="mb-1 block">
+              Quantity Available
+            </Label>
+            <Input
+              id="qty"
+              type="number"
+              min={0}
+              value={qty}
+              onChange={(e) => setQty(parseInt(e.target.value, 10) || 0)}
+            />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
-          <Button onClick={handleSave} disabled={busy} className="bg-gold text-navy hover:bg-gold/90">
+          <Button variant="outline" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={busy}
+            className="bg-gold text-navy hover:bg-gold/90"
+          >
             {busy ? "Saving…" : "Save"}
           </Button>
         </DialogFooter>
@@ -353,7 +437,9 @@ function InventoryDialog({
 
 function RequestsTab() {
   const qc = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "fulfilled" | "completed">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "fulfilled" | "completed">(
+    "all",
+  );
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["closing-gift-requests-admin"],
@@ -389,7 +475,9 @@ function RequestsTab() {
       <div className="flex flex-wrap items-center gap-3 p-4 border-b border-border">
         <Label className="text-xs uppercase tracking-wide text-muted-foreground">Status:</Label>
         <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
-          <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-48">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
@@ -398,7 +486,9 @@ function RequestsTab() {
           </SelectContent>
         </Select>
         <div className="flex-1" />
-        <div className="text-xs text-muted-foreground">{filtered.length} request{filtered.length === 1 ? "" : "s"}</div>
+        <div className="text-xs text-muted-foreground">
+          {filtered.length} request{filtered.length === 1 ? "" : "s"}
+        </div>
       </div>
 
       <Table>
@@ -414,20 +504,33 @@ function RequestsTab() {
         </TableHeader>
         <TableBody>
           {isLoading && (
-            <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Loading…</TableCell></TableRow>
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                Loading…
+              </TableCell>
+            </TableRow>
           )}
           {!isLoading && filtered.length === 0 && (
-            <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No requests.</TableCell></TableRow>
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                No requests.
+              </TableCell>
+            </TableRow>
           )}
           {filtered.map((r) => (
             <TableRow key={r.id}>
               <TableCell className="font-medium">{r.agent_name}</TableCell>
-              <TableCell>{r.client_first_name} {r.client_last_name}</TableCell>
+              <TableCell>
+                {r.client_first_name} {r.client_last_name}
+              </TableCell>
               <TableCell>
                 <div className="flex flex-col gap-1">
                   {(r.shirts ?? []).map((s, i) => (
                     <div key={i} className="flex items-center gap-1.5 text-xs">
-                      <span className="h-3 w-3 rounded-full border border-border" style={{ backgroundColor: s.color_hex }} />
+                      <span
+                        className="h-3 w-3 rounded-full border border-border"
+                        style={{ backgroundColor: s.color_hex }}
+                      />
                       <span className="font-mono">{s.size}</span>
                       <span className="text-muted-foreground">· {s.color}</span>
                     </div>
@@ -443,14 +546,20 @@ function RequestsTab() {
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
                   {r.status === "pending" && (
-                    <Button size="sm" variant="outline"
-                      onClick={() => markMut.mutate({ id: r.id, status: "fulfilled" })}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => markMut.mutate({ id: r.id, status: "fulfilled" })}
+                    >
                       Mark Fulfilled
                     </Button>
                   )}
                   {r.status !== "completed" && (
-                    <Button size="sm" className="bg-gold text-navy hover:bg-gold/90"
-                      onClick={() => markMut.mutate({ id: r.id, status: "completed" })}>
+                    <Button
+                      size="sm"
+                      className="bg-gold text-navy hover:bg-gold/90"
+                      onClick={() => markMut.mutate({ id: r.id, status: "completed" })}
+                    >
                       <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Complete
                     </Button>
                   )}
@@ -465,12 +574,17 @@ function RequestsTab() {
 }
 
 function StatusBadge({ status }: { status: RequestRow["status"] }) {
-  const cls = status === "completed"
-    ? "bg-green-500/15 text-green-600 border-green-500/30"
-    : status === "fulfilled"
-    ? "bg-blue-500/15 text-blue-600 border-blue-500/30"
-    : "bg-amber-500/15 text-amber-600 border-amber-500/30";
-  return <span className={"text-[10px] uppercase tracking-wide px-2 py-0.5 rounded border " + cls}>{status}</span>;
+  const cls =
+    status === "completed"
+      ? "bg-green-500/15 text-green-600 border-green-500/30"
+      : status === "fulfilled"
+        ? "bg-blue-500/15 text-blue-600 border-blue-500/30"
+        : "bg-amber-500/15 text-amber-600 border-amber-500/30";
+  return (
+    <span className={"text-[10px] uppercase tracking-wide px-2 py-0.5 rounded border " + cls}>
+      {status}
+    </span>
+  );
 }
 
 // satisfy unused import (redirect) — keep for future RLS-side redirect use

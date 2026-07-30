@@ -1,9 +1,20 @@
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { toCsv, downloadCsv, todayStamp } from "@/lib/csv";
-import { STATUS_LABEL, PRIORITY_LABEL, type ContentItem, type Status, type Priority } from "@/lib/content";
+import {
+  STATUS_LABEL,
+  PRIORITY_LABEL,
+  type ContentItem,
+  type Status,
+  type Priority,
+} from "@/lib/content";
 
-export type ExportProfile = { id: string; first_name: string | null; last_name: string | null; email: string | null };
+export type ExportProfile = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+};
 
 export function exportContentItems(items: ContentItem[], profiles: ExportProfile[]) {
   const pmap = new Map(profiles.map((p) => [p.id, p]));
@@ -14,8 +25,18 @@ export function exportContentItems(items: ContentItem[], profiles: ExportProfile
     return [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "";
   };
   const headers = [
-    "Title", "Caption", "Platforms", "Status", "Scheduled Date", "Scheduled Time",
-    "Priority", "Estimated Publish Target", "Link", "Owner", "Notes", "Created Date",
+    "Title",
+    "Caption",
+    "Platforms",
+    "Status",
+    "Scheduled Date",
+    "Scheduled Time",
+    "Priority",
+    "Estimated Publish Target",
+    "Link",
+    "Owner",
+    "Notes",
+    "Created Date",
   ];
   const rows = items.map((it) => {
     const sched = it.scheduled_at ? new Date(it.scheduled_at) : null;

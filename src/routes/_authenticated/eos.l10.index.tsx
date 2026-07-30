@@ -5,7 +5,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ClipboardList, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -27,7 +33,10 @@ function L10ListPage() {
   const { data: meetings = [] } = useQuery({
     queryKey: ["meetings"],
     queryFn: async () => {
-      const { data, error } = await sb.from("l10_meetings").select("*").order("meeting_date", { ascending: false });
+      const { data, error } = await sb
+        .from("l10_meetings")
+        .select("*")
+        .order("meeting_date", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Meeting[];
     },
@@ -35,11 +44,15 @@ function L10ListPage() {
 
   const create = useMutation({
     mutationFn: async () => {
-      const { data, error } = await sb.from("l10_meetings").insert({
-        meeting_date: newDate,
-        attendees: [],
-        created_by: user?.id,
-      }).select().single();
+      const { data, error } = await sb
+        .from("l10_meetings")
+        .insert({
+          meeting_date: newDate,
+          attendees: [],
+          created_by: user?.id,
+        })
+        .select()
+        .single();
       if (error) throw error;
       return data as Meeting;
     },
@@ -63,17 +76,28 @@ function L10ListPage() {
           </h1>
           <p className="text-muted-foreground mt-1">Weekly leadership meetings.</p>
         </div>
-        <Button size="sm" onClick={() => setCreating(true)}><Plus className="h-4 w-4 mr-1" /> New Meeting</Button>
+        <Button size="sm" onClick={() => setCreating(true)}>
+          <Plus className="h-4 w-4 mr-1" /> New Meeting
+        </Button>
       </header>
 
       <div className="bg-card border border-border rounded-xl divide-y divide-border">
-        {meetings.length === 0 && <div className="p-10 text-center text-muted-foreground text-sm">No meetings yet.</div>}
+        {meetings.length === 0 && (
+          <div className="p-10 text-center text-muted-foreground text-sm">No meetings yet.</div>
+        )}
         {meetings.map((m) => {
           const upcoming = m.meeting_date >= today;
           return (
-            <Link key={m.id} to="/eos/l10/$id" params={{ id: m.id }} className="p-4 flex items-center gap-3 hover:bg-accent/30">
+            <Link
+              key={m.id}
+              to="/eos/l10/$id"
+              params={{ id: m.id }}
+              className="p-4 flex items-center gap-3 hover:bg-accent/30"
+            >
               <div className="flex-1">
-                <div className="font-medium">{format(new Date(m.meeting_date + "T00:00:00"), "EEEE, MMMM d, yyyy")}</div>
+                <div className="font-medium">
+                  {format(new Date(m.meeting_date + "T00:00:00"), "EEEE, MMMM d, yyyy")}
+                </div>
                 <div className="text-xs text-muted-foreground mt-0.5">
                   {upcoming ? "Upcoming" : "Past"}
                   {m.meeting_rating ? ` · Rated ${m.meeting_rating}/10` : ""}
@@ -88,14 +112,20 @@ function L10ListPage() {
 
       <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent>
-          <DialogHeader><DialogTitle>New L10 Meeting</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>New L10 Meeting</DialogTitle>
+          </DialogHeader>
           <div>
             <label className="text-xs text-muted-foreground">Meeting date</label>
             <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} />
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setCreating(false)}>Cancel</Button>
-            <Button onClick={() => create.mutate()} disabled={create.isPending}>Create</Button>
+            <Button variant="ghost" onClick={() => setCreating(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => create.mutate()} disabled={create.isPending}>
+              Create
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

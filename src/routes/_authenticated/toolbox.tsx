@@ -7,8 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -17,8 +29,23 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  Plus, Upload, Trash2, Copy, Link as LinkIcon, Image as ImageIcon, FileText, Video as VideoIcon, Home, X, Loader2, ExternalLink,
-  Users, AlertTriangle, Pencil, Archive, ArchiveRestore,
+  Plus,
+  Upload,
+  Trash2,
+  Copy,
+  Link as LinkIcon,
+  Image as ImageIcon,
+  FileText,
+  Video as VideoIcon,
+  Home,
+  X,
+  Loader2,
+  ExternalLink,
+  Users,
+  AlertTriangle,
+  Pencil,
+  Archive,
+  ArchiveRestore,
 } from "lucide-react";
 import { QrCode } from "@/components/qr-code";
 import { publicUrl } from "@/lib/public-url";
@@ -34,25 +61,50 @@ const sb = supabase as any;
 const BUCKET = "toolbox";
 
 type Listing = {
-  id: string; address: string; agent_name: string | null; status: string;
-  description: string | null; created_at: string; archived?: boolean;
+  id: string;
+  address: string;
+  agent_name: string | null;
+  status: string;
+  description: string | null;
+  created_at: string;
+  archived?: boolean;
 };
 type Asset = {
-  id: string; listing_id: string; asset_type: string;
-  file_url: string | null; drive_url: string | null; thumbnail_url: string | null;
-  name: string | null; created_at: string;
+  id: string;
+  listing_id: string;
+  asset_type: string;
+  file_url: string | null;
+  drive_url: string | null;
+  thumbnail_url: string | null;
+  name: string | null;
+  created_at: string;
 };
 type Caption = { id: string; listing_id: string; caption_text: string; created_at: string };
 type BrandAsset = {
-  id: string; name: string; category: string; file_url: string; file_size: number | null; created_at: string;
+  id: string;
+  name: string;
+  category: string;
+  file_url: string;
+  file_size: number | null;
+  created_at: string;
 };
 type EduItem = {
-  id: string; title: string; category: string; file_url: string | null; drive_url: string | null;
-  caption: string | null; file_size: number | null; created_at: string;
+  id: string;
+  title: string;
+  category: string;
+  file_url: string | null;
+  drive_url: string | null;
+  caption: string | null;
+  file_size: number | null;
+  created_at: string;
 };
 
 const STATUS_OPTS = ["active", "coming_soon", "sold"] as const;
-const STATUS_LABEL: Record<string, string> = { active: "Active", coming_soon: "Coming Soon", sold: "Sold" };
+const STATUS_LABEL: Record<string, string> = {
+  active: "Active",
+  coming_soon: "Coming Soon",
+  sold: "Sold",
+};
 const STATUS_CLASS: Record<string, string> = {
   active: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
   coming_soon: "bg-amber-500/15 text-amber-300 border-amber-500/30",
@@ -62,7 +114,15 @@ const STATUS_CLASS: Record<string, string> = {
 const BRAND_CATS = ["Logos", "Headshots", "Email Signatures", "Business Card Files", "Templates"];
 const EDU_CATS = ["Marketing Update", "Seller Education", "Buyer Education", "Seasonal", "Other"];
 const PREMADE_GRAPHIC_TYPES = ["Just Listed", "Open House", "Price Drop", "Just Sold"];
-const BRANDED_TYPES = ["Testimonial", "Listing Presentation", "Buyer Presentation", "Headshot", "Education", "Social Post", "Other"];
+const BRANDED_TYPES = [
+  "Testimonial",
+  "Listing Presentation",
+  "Buyer Presentation",
+  "Headshot",
+  "Education",
+  "Social Post",
+  "Other",
+];
 
 function bytesLabel(n: number) {
   if (n < 1024) return `${n} B`;
@@ -72,7 +132,9 @@ function bytesLabel(n: number) {
 }
 
 async function uploadFile(path: string, file: File) {
-  const { error } = await sb.storage.from(BUCKET).upload(path, file, { upsert: false, cacheControl: "3600" });
+  const { error } = await sb.storage
+    .from(BUCKET)
+    .upload(path, file, { upsert: false, cacheControl: "3600" });
   if (error) throw error;
   const { data } = await sb.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 24 * 365);
   return { path, url: data?.signedUrl as string };
@@ -129,7 +191,9 @@ function ToolboxPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Agent Toolbox Manager</h1>
-          <p className="text-sm text-muted-foreground mt-1">Upload and organize the assets agents will pull from.</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Upload and organize the assets agents will pull from.
+          </p>
         </div>
         <StorageIndicator />
       </div>
@@ -185,7 +249,8 @@ function StorageIndicator() {
         sb.from("toolbox_brand_assets").select("file_size"),
         sb.from("toolbox_educational").select("file_size"),
       ]);
-      const sum = (rows: any[] | null) => (rows ?? []).reduce((a, r) => a + (Number(r.file_size) || 0), 0);
+      const sum = (rows: any[] | null) =>
+        (rows ?? []).reduce((a, r) => a + (Number(r.file_size) || 0), 0);
       return sum(b.data) + sum(e.data);
     },
     refetchInterval: 5 * 60_000,
@@ -213,12 +278,20 @@ function ListingsTab({ onOpen, userId }: { onOpen: (id: string) => void; userId:
   const [creating, setCreating] = useState(false);
   const [view, setView] = useState<"active" | "archived">("active");
   const [searchQuery, setSearchQuery] = useState("");
-  const [form, setForm] = useState({ address: "", agent_name: "", status: "active", description: "" });
+  const [form, setForm] = useState({
+    address: "",
+    agent_name: "",
+    status: "active",
+    description: "",
+  });
 
   const { data: allListings = [], isLoading } = useQuery<Listing[]>({
     queryKey: ["toolbox-listings"],
     queryFn: async () => {
-      const { data, error } = await sb.from("toolbox_listings").select("*").order("created_at", { ascending: false });
+      const { data, error } = await sb
+        .from("toolbox_listings")
+        .select("*")
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Listing[];
     },
@@ -265,13 +338,17 @@ function ListingsTab({ onOpen, userId }: { onOpen: (id: string) => void; userId:
   const create = useMutation({
     mutationFn: async () => {
       if (!form.address.trim()) throw new Error("Address required");
-      const { data, error } = await sb.from("toolbox_listings").insert({
-        address: form.address.trim(),
-        agent_name: form.agent_name.trim() || null,
-        status: form.status,
-        description: form.description.trim() || null,
-        created_by: userId,
-      }).select("id").single();
+      const { data, error } = await sb
+        .from("toolbox_listings")
+        .insert({
+          address: form.address.trim(),
+          agent_name: form.agent_name.trim() || null,
+          status: form.status,
+          description: form.description.trim() || null,
+          created_by: userId,
+        })
+        .select("id")
+        .single();
       if (error) throw error;
       return data.id as string;
     },
@@ -318,7 +395,9 @@ function ListingsTab({ onOpen, userId }: { onOpen: (id: string) => void; userId:
               onClick={() => setView("active")}
               className={cn(
                 "px-3 py-1.5 text-sm transition-colors",
-                view === "active" ? "bg-gold text-navy font-medium" : "bg-transparent text-foreground hover:bg-accent/40",
+                view === "active"
+                  ? "bg-gold text-navy font-medium"
+                  : "bg-transparent text-foreground hover:bg-accent/40",
               )}
             >
               Active <span className="ml-1 text-xs opacity-70">({activeCount})</span>
@@ -328,7 +407,9 @@ function ListingsTab({ onOpen, userId }: { onOpen: (id: string) => void; userId:
               onClick={() => setView("archived")}
               className={cn(
                 "px-3 py-1.5 text-sm border-l border-border transition-colors",
-                view === "archived" ? "bg-gold text-navy font-medium" : "bg-transparent text-foreground hover:bg-accent/40",
+                view === "archived"
+                  ? "bg-gold text-navy font-medium"
+                  : "bg-transparent text-foreground hover:bg-accent/40",
               )}
             >
               Archived <span className="ml-1 text-xs opacity-70">({archivedCount})</span>
@@ -352,7 +433,10 @@ function ListingsTab({ onOpen, userId }: { onOpen: (id: string) => void; userId:
             )}
           </div>
         </div>
-        <Button onClick={() => setCreating(true)} className="bg-gold text-navy hover:bg-gold/90 shrink-0">
+        <Button
+          onClick={() => setCreating(true)}
+          className="bg-gold text-navy hover:bg-gold/90 shrink-0"
+        >
           <Plus className="h-4 w-4 mr-2" /> New Listing
         </Button>
       </div>
@@ -381,7 +465,11 @@ function ListingsTab({ onOpen, userId }: { onOpen: (id: string) => void; userId:
               >
                 <div className="aspect-video bg-muted relative">
                   {c.thumb ? (
-                    <img src={c.thumb} alt={l.address} className={cn("w-full h-full object-cover", isArchived && "grayscale")} />
+                    <img
+                      src={c.thumb}
+                      alt={l.address}
+                      className={cn("w-full h-full object-cover", isArchived && "grayscale")}
+                    />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                       <Home className="h-8 w-8" />
@@ -398,16 +486,23 @@ function ListingsTab({ onOpen, userId }: { onOpen: (id: string) => void; userId:
                 </div>
                 <div className="p-3 space-y-1">
                   <div className="font-medium truncate">{l.address}</div>
-                  <div className="text-xs text-muted-foreground truncate">{l.agent_name || "—"}</div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {l.agent_name || "—"}
+                  </div>
                   <div className="flex items-center justify-between pt-1 gap-1">
-                    <span className="text-xs text-gold">{c.assets} asset{c.assets === 1 ? "" : "s"}</span>
+                    <span className="text-xs text-gold">
+                      {c.assets} asset{c.assets === 1 ? "" : "s"}
+                    </span>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {isArchived ? (
                         <Button
                           size="sm"
                           variant="outline"
                           className="h-7 text-xs border-gold/50 text-gold hover:bg-gold/10"
-                          onClick={(e) => { e.stopPropagation(); archive.mutate({ id: l.id, archived: false }); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            archive.mutate({ id: l.id, archived: false });
+                          }}
                         >
                           <ArchiveRestore className="h-3.5 w-3.5 mr-1" /> Restore
                         </Button>
@@ -416,7 +511,10 @@ function ListingsTab({ onOpen, userId }: { onOpen: (id: string) => void; userId:
                           size="sm"
                           variant="ghost"
                           className="h-7 text-xs"
-                          onClick={(e) => { e.stopPropagation(); archive.mutate({ id: l.id, archived: true }); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            archive.mutate({ id: l.id, archived: true });
+                          }}
                           title="Archive (e.g. under contract)"
                         >
                           <Archive className="h-3.5 w-3.5 mr-1" /> Archive
@@ -426,7 +524,15 @@ function ListingsTab({ onOpen, userId }: { onOpen: (id: string) => void; userId:
                         size="icon"
                         variant="ghost"
                         className="h-7 w-7"
-                        onClick={(e) => { e.stopPropagation(); if (confirm("Delete this listing and all its assets? This cannot be undone — consider Archive instead.")) del.mutate(l.id); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (
+                            confirm(
+                              "Delete this listing and all its assets? This cannot be undone — consider Archive instead.",
+                            )
+                          )
+                            del.mutate(l.id);
+                        }}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -439,36 +545,61 @@ function ListingsTab({ onOpen, userId }: { onOpen: (id: string) => void; userId:
         </div>
       )}
 
-
       <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent>
-          <DialogHeader><DialogTitle>New Listing</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>New Listing</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3">
             <div>
               <Label>Property Address</Label>
-              <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="123 Main St, City" />
+              <Input
+                value={form.address}
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                placeholder="123 Main St, City"
+              />
             </div>
             <div>
               <Label>Agent Name</Label>
-              <Input value={form.agent_name} onChange={(e) => setForm({ ...form, agent_name: e.target.value })} placeholder="Agent name" />
+              <Input
+                value={form.agent_name}
+                onChange={(e) => setForm({ ...form, agent_name: e.target.value })}
+                placeholder="Agent name"
+              />
             </div>
             <div>
               <Label>Status</Label>
               <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {STATUS_OPTS.map((s) => <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>)}
+                  {STATUS_OPTS.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {STATUS_LABEL[s]}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label>Description</Label>
-              <Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+              <Textarea
+                rows={3}
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setCreating(false)}>Cancel</Button>
-            <Button onClick={() => create.mutate()} disabled={create.isPending} className="bg-gold text-navy hover:bg-gold/90">
+            <Button variant="ghost" onClick={() => setCreating(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => create.mutate()}
+              disabled={create.isPending}
+              className="bg-gold text-navy hover:bg-gold/90"
+            >
               {create.isPending ? "Creating…" : "Create"}
             </Button>
           </DialogFooter>
@@ -480,7 +611,15 @@ function ListingsTab({ onOpen, userId }: { onOpen: (id: string) => void; userId:
 
 /* ---------------- Listing detail sheet ---------------- */
 
-function ListingSheet({ listingId, onClose, userId }: { listingId: string | null; onClose: () => void; userId: string | null }) {
+function ListingSheet({
+  listingId,
+  onClose,
+  userId,
+}: {
+  listingId: string | null;
+  onClose: () => void;
+  userId: string | null;
+}) {
   const qc = useQueryClient();
   const open = !!listingId;
 
@@ -488,7 +627,11 @@ function ListingSheet({ listingId, onClose, userId }: { listingId: string | null
     queryKey: ["toolbox-listing", listingId],
     enabled: open,
     queryFn: async () => {
-      const { data } = await sb.from("toolbox_listings").select("*").eq("id", listingId).maybeSingle();
+      const { data } = await sb
+        .from("toolbox_listings")
+        .select("*")
+        .eq("id", listingId)
+        .maybeSingle();
       return data as Listing | null;
     },
   });
@@ -497,7 +640,11 @@ function ListingSheet({ listingId, onClose, userId }: { listingId: string | null
     queryKey: ["toolbox-assets", listingId],
     enabled: open,
     queryFn: async () => {
-      const { data, error } = await sb.from("toolbox_assets").select("*").eq("listing_id", listingId).order("created_at", { ascending: false });
+      const { data, error } = await sb
+        .from("toolbox_assets")
+        .select("*")
+        .eq("listing_id", listingId)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Asset[];
     },
@@ -507,7 +654,11 @@ function ListingSheet({ listingId, onClose, userId }: { listingId: string | null
     queryKey: ["toolbox-captions", listingId],
     enabled: open,
     queryFn: async () => {
-      const { data, error } = await sb.from("toolbox_captions").select("*").eq("listing_id", listingId).order("created_at", { ascending: true });
+      const { data, error } = await sb
+        .from("toolbox_captions")
+        .select("*")
+        .eq("listing_id", listingId)
+        .order("created_at", { ascending: true });
       if (error) throw error;
       return data as Caption[];
     },
@@ -530,7 +681,11 @@ function ListingSheet({ listingId, onClose, userId }: { listingId: string | null
           <SheetTitle className="truncate">{listing?.address ?? "Listing"}</SheetTitle>
           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
             {listing?.agent_name && <span>{listing.agent_name}</span>}
-            {listing && <Badge className={cn("border", STATUS_CLASS[listing.status])}>{STATUS_LABEL[listing.status]}</Badge>}
+            {listing && (
+              <Badge className={cn("border", STATUS_CLASS[listing.status])}>
+                {STATUS_LABEL[listing.status]}
+              </Badge>
+            )}
             {listing && photos.length > 0 && (
               <div className="ml-auto">
                 <DownloadPhotosButton photos={photos} address={listing.address} />
@@ -604,43 +759,59 @@ function AssetTile({ asset, onDelete }: { asset: Asset; onDelete: () => void }) 
 }
 
 function AssetSection({
-  title, icon, listingId, userId, assets, kind, accept, onChange,
+  title,
+  icon,
+  listingId,
+  userId,
+  assets,
+  kind,
+  accept,
+  onChange,
 }: {
-  title: string; icon: React.ReactNode; listingId: string; userId: string | null;
-  assets: Asset[]; kind: "photo" | "graphic"; accept: string; onChange: () => void;
+  title: string;
+  icon: React.ReactNode;
+  listingId: string;
+  userId: string | null;
+  assets: Asset[];
+  kind: "photo" | "graphic";
+  accept: string;
+  onChange: () => void;
 }) {
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const [graphicType, setGraphicType] = useState<string>(PREMADE_GRAPHIC_TYPES[0]);
 
-  const handleFiles = useCallback(async (files: FileList | File[]) => {
-    const arr = Array.from(files);
-    if (!arr.length) return;
-    setUploading(arr.length);
-    let done = 0;
-    for (const f of arr) {
-      try {
-        const path = makeStorageKey(`listings/${listingId}/${kind}`, f.name);
-        const { url } = await uploadFile(path, f);
-        await sb.from("toolbox_assets").insert({
-          listing_id: listingId,
-          asset_type: kind,
-          file_url: url,
-          thumbnail_url: url,
-          name: kind === "graphic" ? graphicType : f.name,
-          created_by: userId,
-        });
-      } catch (e: any) {
-        toast.error(`Failed: ${f.name}: ${e.message}`);
+  const handleFiles = useCallback(
+    async (files: FileList | File[]) => {
+      const arr = Array.from(files);
+      if (!arr.length) return;
+      setUploading(arr.length);
+      let done = 0;
+      for (const f of arr) {
+        try {
+          const path = makeStorageKey(`listings/${listingId}/${kind}`, f.name);
+          const { url } = await uploadFile(path, f);
+          await sb.from("toolbox_assets").insert({
+            listing_id: listingId,
+            asset_type: kind,
+            file_url: url,
+            thumbnail_url: url,
+            name: kind === "graphic" ? graphicType : f.name,
+            created_by: userId,
+          });
+        } catch (e: any) {
+          toast.error(`Failed: ${f.name}: ${e.message}`);
+        }
+        done++;
+        setUploading(arr.length - done);
       }
-      done++;
-      setUploading(arr.length - done);
-    }
-    setUploading(0);
-    onChange();
-    toast.success(`Uploaded ${arr.length} file${arr.length === 1 ? "" : "s"}`);
-  }, [listingId, kind, userId, graphicType, onChange]);
+      setUploading(0);
+      onChange();
+      toast.success(`Uploaded ${arr.length} file${arr.length === 1 ? "" : "s"}`);
+    },
+    [listingId, kind, userId, graphicType, onChange],
+  );
 
   const remove = async (a: Asset) => {
     if (!confirm("Delete this asset?")) return;
@@ -651,34 +822,52 @@ function AssetSection({
   return (
     <section>
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold flex items-center gap-2 text-gold">{icon} {title}</h3>
+        <h3 className="text-sm font-semibold flex items-center gap-2 text-gold">
+          {icon} {title}
+        </h3>
         {kind === "graphic" && (
           <Select value={graphicType} onValueChange={setGraphicType}>
-            <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-8 w-[160px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
-              {PREMADE_GRAPHIC_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+              {PREMADE_GRAPHIC_TYPES.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {t}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         )}
       </div>
 
       <div
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => {
-          e.preventDefault(); setDragOver(false);
+          e.preventDefault();
+          setDragOver(false);
           handleFiles(e.dataTransfer.files);
         }}
         onClick={() => inputRef.current?.click()}
         className={cn(
           "border-2 border-dashed rounded-md p-4 text-center cursor-pointer text-sm transition-colors",
-          dragOver ? "border-gold bg-gold/5" : "border-border hover:border-gold/50 text-muted-foreground"
+          dragOver
+            ? "border-gold bg-gold/5"
+            : "border-border hover:border-gold/50 text-muted-foreground",
         )}
       >
         {uploading > 0 ? (
-          <span className="flex items-center justify-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Uploading {uploading} remaining…</span>
+          <span className="flex items-center justify-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" /> Uploading {uploading} remaining…
+          </span>
         ) : (
-          <span className="flex items-center justify-center gap-2"><Upload className="h-4 w-4" /> Drag &amp; drop or click to upload</span>
+          <span className="flex items-center justify-center gap-2">
+            <Upload className="h-4 w-4" /> Drag &amp; drop or click to upload
+          </span>
         )}
         <input
           ref={inputRef}
@@ -695,7 +884,9 @@ function AssetSection({
           {assets.map((a) => (
             <div key={a.id} className="space-y-1">
               <AssetTile asset={a} onDelete={() => remove(a)} />
-              {kind === "graphic" && <div className="text-[10px] text-muted-foreground truncate">{a.name}</div>}
+              {kind === "graphic" && (
+                <div className="text-[10px] text-muted-foreground truncate">{a.name}</div>
+              )}
             </div>
           ))}
         </div>
@@ -704,7 +895,17 @@ function AssetSection({
   );
 }
 
-function VideoSection({ listingId, userId, assets, onChange }: { listingId: string; userId: string | null; assets: Asset[]; onChange: () => void }) {
+function VideoSection({
+  listingId,
+  userId,
+  assets,
+  onChange,
+}: {
+  listingId: string;
+  userId: string | null;
+  assets: Asset[];
+  onChange: () => void;
+}) {
   const [url, setUrl] = useState("");
   const add = async () => {
     if (!url.trim()) return;
@@ -736,13 +937,25 @@ function VideoSection({ listingId, userId, assets, onChange }: { listingId: stri
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && add()}
         />
-        <Button onClick={add} variant="secondary"><LinkIcon className="h-4 w-4 mr-1" />Add</Button>
+        <Button onClick={add} variant="secondary">
+          <LinkIcon className="h-4 w-4 mr-1" />
+          Add
+        </Button>
       </div>
       <div className="space-y-1 mt-3">
         {assets.map((a) => (
-          <div key={a.id} className="flex items-center justify-between gap-2 rounded border border-border bg-card/50 px-3 py-2">
-            <a href={a.drive_url ?? "#"} target="_blank" rel="noreferrer" className="text-sm text-gold hover:underline truncate flex items-center gap-2">
-              <ExternalLink className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">{a.drive_url}</span>
+          <div
+            key={a.id}
+            className="flex items-center justify-between gap-2 rounded border border-border bg-card/50 px-3 py-2"
+          >
+            <a
+              href={a.drive_url ?? "#"}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm text-gold hover:underline truncate flex items-center gap-2"
+            >
+              <ExternalLink className="h-3.5 w-3.5 shrink-0" />{" "}
+              <span className="truncate">{a.drive_url}</span>
             </a>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => remove(a)}>
               <Trash2 className="h-3.5 w-3.5" />
@@ -754,7 +967,12 @@ function VideoSection({ listingId, userId, assets, onChange }: { listingId: stri
   );
 }
 
-function GraphicSection(props: { listingId: string; userId: string | null; assets: Asset[]; onChange: () => void }) {
+function GraphicSection(props: {
+  listingId: string;
+  userId: string | null;
+  assets: Asset[];
+  onChange: () => void;
+}) {
   return (
     <AssetSection
       title="Pre-made Graphics"
@@ -769,11 +987,23 @@ function GraphicSection(props: { listingId: string; userId: string | null; asset
   );
 }
 
-function CaptionsSection({ listingId, userId, captions, onChange }: { listingId: string; userId: string | null; captions: Caption[]; onChange: () => void }) {
+function CaptionsSection({
+  listingId,
+  userId,
+  captions,
+  onChange,
+}: {
+  listingId: string;
+  userId: string | null;
+  captions: Caption[];
+  onChange: () => void;
+}) {
   const [text, setText] = useState("");
   const add = async () => {
     if (!text.trim()) return;
-    await sb.from("toolbox_captions").insert({ listing_id: listingId, caption_text: text.trim(), created_by: userId });
+    await sb
+      .from("toolbox_captions")
+      .insert({ listing_id: listingId, caption_text: text.trim(), created_by: userId });
     setText("");
     onChange();
   };
@@ -795,15 +1025,28 @@ function CaptionsSection({ listingId, userId, captions, onChange }: { listingId:
           <div key={c.id} className="rounded border border-border bg-card/50 p-3 group">
             <div className="text-sm whitespace-pre-wrap">{c.caption_text}</div>
             <div className="flex justify-end gap-1 mt-2">
-              <Button size="sm" variant="ghost" onClick={() => copy(c.caption_text)}><Copy className="h-3.5 w-3.5 mr-1" />Copy</Button>
-              <Button size="sm" variant="ghost" onClick={() => remove(c.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+              <Button size="sm" variant="ghost" onClick={() => copy(c.caption_text)}>
+                <Copy className="h-3.5 w-3.5 mr-1" />
+                Copy
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => remove(c.id)}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
             </div>
           </div>
         ))}
       </div>
       <div className="mt-3 space-y-2">
-        <Textarea rows={3} placeholder="Write a caption agents can copy…" value={text} onChange={(e) => setText(e.target.value)} />
-        <Button onClick={add} className="bg-gold text-navy hover:bg-gold/90"><Plus className="h-4 w-4 mr-1" />Add caption</Button>
+        <Textarea
+          rows={3}
+          placeholder="Write a caption agents can copy…"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
+        <Button onClick={add} className="bg-gold text-navy hover:bg-gold/90">
+          <Plus className="h-4 w-4 mr-1" />
+          Add caption
+        </Button>
       </div>
     </section>
   );
@@ -821,7 +1064,10 @@ function BrandTab({ userId }: { userId: string | null }) {
   const { data: items = [] } = useQuery<BrandAsset[]>({
     queryKey: ["toolbox-brand"],
     queryFn: async () => {
-      const { data, error } = await sb.from("toolbox_brand_assets").select("*").order("created_at", { ascending: false });
+      const { data, error } = await sb
+        .from("toolbox_brand_assets")
+        .select("*")
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data as BrandAsset[];
     },
@@ -876,26 +1122,58 @@ function BrandTab({ userId }: { userId: string | null }) {
           <div>
             <Label>Category</Label>
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                {BRAND_CATS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                {BRAND_CATS.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <div className="md:col-span-2">
             <Label>Name (optional)</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Falls back to file name" />
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Falls back to file name"
+            />
           </div>
-          <Button onClick={() => inputRef.current?.click()} disabled={uploading} className="bg-gold text-navy hover:bg-gold/90">
-            {uploading ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Uploading…</> : <><Upload className="h-4 w-4 mr-1" />Upload</>}
+          <Button
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+            className="bg-gold text-navy hover:bg-gold/90"
+          >
+            {uploading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                Uploading…
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4 mr-1" />
+                Upload
+              </>
+            )}
           </Button>
-          <input ref={inputRef} type="file" multiple className="hidden" onChange={(e) => upload(e.target.files)} />
+          <input
+            ref={inputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => upload(e.target.files)}
+          />
         </div>
       </Card>
 
       {BRAND_CATS.map((c) => (
         <section key={c}>
-          <h3 className="text-sm font-semibold text-gold mb-2">{c} <span className="text-muted-foreground font-normal">· {grouped[c].length}</span></h3>
+          <h3 className="text-sm font-semibold text-gold mb-2">
+            {c} <span className="text-muted-foreground font-normal">· {grouped[c].length}</span>
+          </h3>
           {grouped[c].length === 0 ? (
             <div className="text-xs text-muted-foreground">No items yet.</div>
           ) : (
@@ -904,9 +1182,15 @@ function BrandTab({ userId }: { userId: string | null }) {
                 <Card key={i.id} className="overflow-hidden group">
                   <div className="aspect-square bg-muted relative">
                     {/\.(png|jpe?g|gif|webp|svg)$/i.test(i.file_url) ? (
-                      <img src={i.file_url} alt={i.name} className="w-full h-full object-contain p-2" />
+                      <img
+                        src={i.file_url}
+                        alt={i.name}
+                        className="w-full h-full object-contain p-2"
+                      />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground"><FileText className="h-8 w-8" /></div>
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                        <FileText className="h-8 w-8" />
+                      </div>
                     )}
                     <button
                       onClick={() => remove(i.id)}
@@ -917,7 +1201,14 @@ function BrandTab({ userId }: { userId: string | null }) {
                   </div>
                   <div className="p-2">
                     <div className="text-xs font-medium truncate">{i.name}</div>
-                    <a href={i.file_url} target="_blank" rel="noreferrer" className="text-[10px] text-gold hover:underline">Open</a>
+                    <a
+                      href={i.file_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[10px] text-gold hover:underline"
+                    >
+                      Open
+                    </a>
                   </div>
                 </Card>
               ))}
@@ -933,21 +1224,32 @@ function BrandTab({ userId }: { userId: string | null }) {
 
 function EduTab({ userId }: { userId: string | null }) {
   const qc = useQueryClient();
-  const [form, setForm] = useState({ title: "", category: EDU_CATS[0], caption: "", drive_url: "" });
+  const [form, setForm] = useState({
+    title: "",
+    category: EDU_CATS[0],
+    caption: "",
+    drive_url: "",
+  });
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
   const { data: items = [] } = useQuery<EduItem[]>({
     queryKey: ["toolbox-edu"],
     queryFn: async () => {
-      const { data, error } = await sb.from("toolbox_educational").select("*").order("created_at", { ascending: false });
+      const { data, error } = await sb
+        .from("toolbox_educational")
+        .select("*")
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data as EduItem[];
     },
   });
 
   const submitFile = async (files: FileList | null) => {
-    if (!form.title.trim()) { toast.error("Title required"); return; }
+    if (!form.title.trim()) {
+      toast.error("Title required");
+      return;
+    }
     if (!files || !files.length) return;
     setUploading(true);
     try {
@@ -966,12 +1268,17 @@ function EduTab({ userId }: { userId: string | null }) {
       toast.success("Added");
       qc.invalidateQueries({ queryKey: ["toolbox-edu"] });
       qc.invalidateQueries({ queryKey: ["toolbox-storage"] });
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) {
+      toast.error(e.message);
+    }
     setUploading(false);
   };
 
   const submitLink = async () => {
-    if (!form.title.trim() || !form.drive_url.trim()) { toast.error("Title and Drive URL required"); return; }
+    if (!form.title.trim() || !form.drive_url.trim()) {
+      toast.error("Title and Drive URL required");
+      return;
+    }
     await sb.from("toolbox_educational").insert({
       title: form.title.trim(),
       category: form.category,
@@ -991,7 +1298,10 @@ function EduTab({ userId }: { userId: string | null }) {
     qc.invalidateQueries({ queryKey: ["toolbox-storage"] });
   };
 
-  const copy = async (t: string) => { await navigator.clipboard.writeText(t); toast.success("Caption copied"); };
+  const copy = async (t: string) => {
+    await navigator.clipboard.writeText(t);
+    toast.success("Caption copied");
+  };
 
   return (
     <div className="space-y-6">
@@ -999,36 +1309,77 @@ function EduTab({ userId }: { userId: string | null }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <Label>Title</Label>
-            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            <Input
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+            />
           </div>
           <div>
             <Label>Category</Label>
             <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                {EDU_CATS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                {EDU_CATS.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
         </div>
         <div>
           <Label>Optional caption</Label>
-          <Textarea rows={2} value={form.caption} onChange={(e) => setForm({ ...form, caption: e.target.value })} />
+          <Textarea
+            rows={2}
+            value={form.caption}
+            onChange={(e) => setForm({ ...form, caption: e.target.value })}
+          />
         </div>
         <div className="flex flex-wrap gap-2 items-end">
-          <Button onClick={() => inputRef.current?.click()} disabled={uploading} className="bg-gold text-navy hover:bg-gold/90">
-            {uploading ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Uploading…</> : <><Upload className="h-4 w-4 mr-1" />Upload file</>}
+          <Button
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+            className="bg-gold text-navy hover:bg-gold/90"
+          >
+            {uploading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                Uploading…
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4 mr-1" />
+                Upload file
+              </>
+            )}
           </Button>
-          <input ref={inputRef} type="file" className="hidden" onChange={(e) => submitFile(e.target.files)} />
+          <input
+            ref={inputRef}
+            type="file"
+            className="hidden"
+            onChange={(e) => submitFile(e.target.files)}
+          />
           <div className="flex-1 min-w-[200px] flex gap-2">
-            <Input placeholder="…or paste Drive URL" value={form.drive_url} onChange={(e) => setForm({ ...form, drive_url: e.target.value })} />
-            <Button variant="secondary" onClick={submitLink}><LinkIcon className="h-4 w-4 mr-1" />Add link</Button>
+            <Input
+              placeholder="…or paste Drive URL"
+              value={form.drive_url}
+              onChange={(e) => setForm({ ...form, drive_url: e.target.value })}
+            />
+            <Button variant="secondary" onClick={submitLink}>
+              <LinkIcon className="h-4 w-4 mr-1" />
+              Add link
+            </Button>
           </div>
         </div>
       </Card>
 
       {items.length === 0 ? (
-        <Card className="p-10 text-center text-muted-foreground border-dashed">No educational content yet.</Card>
+        <Card className="p-10 text-center text-muted-foreground border-dashed">
+          No educational content yet.
+        </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {items.map((i) => (
@@ -1038,7 +1389,11 @@ function EduTab({ userId }: { userId: string | null }) {
                   <img src={i.file_url} alt={i.title} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                    {i.drive_url ? <VideoIcon className="h-8 w-8" /> : <FileText className="h-8 w-8" />}
+                    {i.drive_url ? (
+                      <VideoIcon className="h-8 w-8" />
+                    ) : (
+                      <FileText className="h-8 w-8" />
+                    )}
                   </div>
                 )}
                 <button
@@ -1047,17 +1402,49 @@ function EduTab({ userId }: { userId: string | null }) {
                 >
                   <Trash2 className="h-3 w-3 text-white" />
                 </button>
-                <Badge className="absolute top-2 left-2 bg-navy/80 border border-gold/30 text-gold">{i.category}</Badge>
+                <Badge className="absolute top-2 left-2 bg-navy/80 border border-gold/30 text-gold">
+                  {i.category}
+                </Badge>
               </div>
               <div className="p-3 space-y-2">
                 <div className="font-medium text-sm">{i.title}</div>
                 {i.caption && (
-                  <div className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">{i.caption}</div>
+                  <div className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">
+                    {i.caption}
+                  </div>
                 )}
                 <div className="flex items-center gap-2 pt-1">
-                  {i.file_url && <a href={i.file_url} target="_blank" rel="noreferrer" className="text-xs text-gold hover:underline">File</a>}
-                  {i.drive_url && <a href={i.drive_url} target="_blank" rel="noreferrer" className="text-xs text-gold hover:underline">Drive</a>}
-                  {i.caption && <Button size="sm" variant="ghost" className="ml-auto h-7" onClick={() => copy(i.caption!)}><Copy className="h-3 w-3 mr-1" />Copy</Button>}
+                  {i.file_url && (
+                    <a
+                      href={i.file_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-gold hover:underline"
+                    >
+                      File
+                    </a>
+                  )}
+                  {i.drive_url && (
+                    <a
+                      href={i.drive_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-gold hover:underline"
+                    >
+                      Drive
+                    </a>
+                  )}
+                  {i.caption && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="ml-auto h-7"
+                      onClick={() => copy(i.caption!)}
+                    >
+                      <Copy className="h-3 w-3 mr-1" />
+                      Copy
+                    </Button>
+                  )}
                 </div>
               </div>
             </Card>
@@ -1073,15 +1460,32 @@ function EduTab({ userId }: { userId: string | null }) {
  * ============================================================ */
 
 type OpenHouse = {
-  id: string; address: string; agent_name: string | null; status: string;
-  open_house_at: string | null; description: string | null; created_at: string;
+  id: string;
+  address: string;
+  agent_name: string | null;
+  status: string;
+  open_house_at: string | null;
+  description: string | null;
+  created_at: string;
 };
 type OHAsset = {
-  id: string; open_house_id: string; asset_type: string;
-  file_url: string | null; drive_url: string | null; thumbnail_url: string | null;
-  name: string | null; category?: string | null; created_at: string;
+  id: string;
+  open_house_id: string;
+  asset_type: string;
+  file_url: string | null;
+  drive_url: string | null;
+  thumbnail_url: string | null;
+  name: string | null;
+  category?: string | null;
+  created_at: string;
 };
-type OHCaption = { id: string; open_house_id: string; caption_text: string; category?: string | null; created_at: string };
+type OHCaption = {
+  id: string;
+  open_house_id: string;
+  caption_text: string;
+  category?: string | null;
+  created_at: string;
+};
 
 const OH_STATUS_OPTS = ["upcoming", "past"] as const;
 const OH_STATUS_LABEL: Record<string, string> = { upcoming: "Upcoming", past: "Past" };
@@ -1089,7 +1493,13 @@ const OH_STATUS_CLASS: Record<string, string> = {
   upcoming: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
   past: "bg-zinc-500/15 text-zinc-300 border-zinc-500/30",
 };
-const OH_CATEGORIES = ["Agent QR Code", "Branded Photos and Copy", "Coloring Page", "Flyer", "Other"] as const;
+const OH_CATEGORIES = [
+  "Agent QR Code",
+  "Branded Photos and Copy",
+  "Coloring Page",
+  "Flyer",
+  "Other",
+] as const;
 type OHCategory = (typeof OH_CATEGORIES)[number];
 const OH_UPLOAD_ACCEPT = "image/*,application/pdf,.doc,.docx,.txt,.rtf";
 
@@ -1097,8 +1507,16 @@ function fmtDateTime(iso: string | null) {
   if (!iso) return "";
   try {
     const d = new Date(iso);
-    return d.toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-  } catch { return ""; }
+    return d.toLocaleString(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  } catch {
+    return "";
+  }
 }
 
 function toLocalInput(iso: string | null) {
@@ -1108,15 +1526,30 @@ function toLocalInput(iso: string | null) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function OpenHousesTab({ onOpen, userId }: { onOpen: (id: string) => void; userId: string | null }) {
+function OpenHousesTab({
+  onOpen,
+  userId,
+}: {
+  onOpen: (id: string) => void;
+  userId: string | null;
+}) {
   const qc = useQueryClient();
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ address: "", agent_name: "", status: "upcoming", open_house_at: "", description: "" });
+  const [form, setForm] = useState({
+    address: "",
+    agent_name: "",
+    status: "upcoming",
+    open_house_at: "",
+    description: "",
+  });
 
   const { data: items = [], isLoading } = useQuery<OpenHouse[]>({
     queryKey: ["toolbox-open-houses"],
     queryFn: async () => {
-      const { data, error } = await sb.from("toolbox_open_houses").select("*").order("open_house_at", { ascending: true, nullsFirst: false });
+      const { data, error } = await sb
+        .from("toolbox_open_houses")
+        .select("*")
+        .order("open_house_at", { ascending: true, nullsFirst: false });
       if (error) throw error;
       return data as OpenHouse[];
     },
@@ -1126,7 +1559,9 @@ function OpenHousesTab({ onOpen, userId }: { onOpen: (id: string) => void; userI
     queryKey: ["toolbox-oh-counts", items.map((l) => l.id).join(",")],
     enabled: items.length > 0,
     queryFn: async () => {
-      const { data } = await sb.from("toolbox_open_house_assets").select("open_house_id,thumbnail_url,file_url,asset_type,category");
+      const { data } = await sb
+        .from("toolbox_open_house_assets")
+        .select("open_house_id,thumbnail_url,file_url,asset_type,category");
       const isImg = (u: string | null | undefined) =>
         !!u && /\.(png|jpe?g|gif|webp|svg|avif|heic)(\?|#|$)/i.test(String(u).split("?")[0]);
       const out: Record<string, { assets: number; thumb: string | null }> = {};
@@ -1157,21 +1592,31 @@ function OpenHousesTab({ onOpen, userId }: { onOpen: (id: string) => void; userI
   const create = useMutation({
     mutationFn: async () => {
       if (!form.address.trim()) throw new Error("Address required");
-      const { data, error } = await sb.from("toolbox_open_houses").insert({
-        address: form.address.trim(),
-        agent_name: form.agent_name.trim() || null,
-        status: form.status,
-        open_house_at: form.open_house_at ? new Date(form.open_house_at).toISOString() : null,
-        description: form.description.trim() || null,
-        created_by: userId,
-      }).select("id").single();
+      const { data, error } = await sb
+        .from("toolbox_open_houses")
+        .insert({
+          address: form.address.trim(),
+          agent_name: form.agent_name.trim() || null,
+          status: form.status,
+          open_house_at: form.open_house_at ? new Date(form.open_house_at).toISOString() : null,
+          description: form.description.trim() || null,
+          created_by: userId,
+        })
+        .select("id")
+        .single();
       if (error) throw error;
       return data.id as string;
     },
     onSuccess: (id) => {
       toast.success("Open house created");
       setCreating(false);
-      setForm({ address: "", agent_name: "", status: "upcoming", open_house_at: "", description: "" });
+      setForm({
+        address: "",
+        agent_name: "",
+        status: "upcoming",
+        open_house_at: "",
+        description: "",
+      });
       qc.invalidateQueries({ queryKey: ["toolbox-open-houses"] });
       onOpen(id);
     },
@@ -1227,17 +1672,24 @@ function OpenHousesTab({ onOpen, userId }: { onOpen: (id: string) => void; userI
                 </div>
                 <div className="p-3 space-y-1">
                   <div className="font-medium truncate">{l.address}</div>
-                  <div className="text-xs text-muted-foreground truncate">{l.agent_name || "—"}</div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {l.agent_name || "—"}
+                  </div>
                   {l.open_house_at && (
                     <div className="text-xs text-gold/90">{fmtDateTime(l.open_house_at)}</div>
                   )}
                   <div className="flex items-center justify-between pt-1">
-                    <span className="text-xs text-gold">{c.assets} asset{c.assets === 1 ? "" : "s"}</span>
+                    <span className="text-xs text-gold">
+                      {c.assets} asset{c.assets === 1 ? "" : "s"}
+                    </span>
                     <Button
                       size="icon"
                       variant="ghost"
                       className="h-7 w-7 opacity-0 group-hover:opacity-100"
-                      onClick={(e) => { e.stopPropagation(); if (confirm("Delete this open house and all its assets?")) del.mutate(l.id); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm("Delete this open house and all its assets?")) del.mutate(l.id);
+                      }}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -1251,37 +1703,67 @@ function OpenHousesTab({ onOpen, userId }: { onOpen: (id: string) => void; userI
 
       <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent>
-          <DialogHeader><DialogTitle>New Open House</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>New Open House</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3">
             <div>
               <Label>Property Address</Label>
-              <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="123 Main St, City" />
+              <Input
+                value={form.address}
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                placeholder="123 Main St, City"
+              />
             </div>
             <div>
               <Label>Hosting Agent</Label>
-              <Input value={form.agent_name} onChange={(e) => setForm({ ...form, agent_name: e.target.value })} placeholder="Agent name" />
+              <Input
+                value={form.agent_name}
+                onChange={(e) => setForm({ ...form, agent_name: e.target.value })}
+                placeholder="Agent name"
+              />
             </div>
             <div>
               <Label>Open House Date &amp; Time</Label>
-              <Input type="datetime-local" value={form.open_house_at} onChange={(e) => setForm({ ...form, open_house_at: e.target.value })} />
+              <Input
+                type="datetime-local"
+                value={form.open_house_at}
+                onChange={(e) => setForm({ ...form, open_house_at: e.target.value })}
+              />
             </div>
             <div>
               <Label>Status</Label>
               <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {OH_STATUS_OPTS.map((s) => <SelectItem key={s} value={s}>{OH_STATUS_LABEL[s]}</SelectItem>)}
+                  {OH_STATUS_OPTS.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {OH_STATUS_LABEL[s]}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label>Description</Label>
-              <Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+              <Textarea
+                rows={3}
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setCreating(false)}>Cancel</Button>
-            <Button onClick={() => create.mutate()} disabled={create.isPending} className="bg-gold text-navy hover:bg-gold/90">
+            <Button variant="ghost" onClick={() => setCreating(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => create.mutate()}
+              disabled={create.isPending}
+              className="bg-gold text-navy hover:bg-gold/90"
+            >
               {create.isPending ? "Creating…" : "Create"}
             </Button>
           </DialogFooter>
@@ -1291,17 +1773,35 @@ function OpenHousesTab({ onOpen, userId }: { onOpen: (id: string) => void; userI
   );
 }
 
-function OpenHouseSheet({ openHouseId, onClose, userId }: { openHouseId: string | null; onClose: () => void; userId: string | null }) {
+function OpenHouseSheet({
+  openHouseId,
+  onClose,
+  userId,
+}: {
+  openHouseId: string | null;
+  onClose: () => void;
+  userId: string | null;
+}) {
   const qc = useQueryClient();
   const open = !!openHouseId;
   const [editing, setEditing] = useState(false);
-  const [edit, setEdit] = useState({ address: "", agent_name: "", status: "upcoming", open_house_at: "", description: "" });
+  const [edit, setEdit] = useState({
+    address: "",
+    agent_name: "",
+    status: "upcoming",
+    open_house_at: "",
+    description: "",
+  });
 
   const { data: oh } = useQuery<OpenHouse | null>({
     queryKey: ["toolbox-open-house", openHouseId],
     enabled: open,
     queryFn: async () => {
-      const { data } = await sb.from("toolbox_open_houses").select("*").eq("id", openHouseId).maybeSingle();
+      const { data } = await sb
+        .from("toolbox_open_houses")
+        .select("*")
+        .eq("id", openHouseId)
+        .maybeSingle();
       return data as OpenHouse | null;
     },
   });
@@ -1310,7 +1810,11 @@ function OpenHouseSheet({ openHouseId, onClose, userId }: { openHouseId: string 
     queryKey: ["toolbox-oh-assets", openHouseId],
     enabled: open,
     queryFn: async () => {
-      const { data, error } = await sb.from("toolbox_open_house_assets").select("*").eq("open_house_id", openHouseId).order("created_at", { ascending: false });
+      const { data, error } = await sb
+        .from("toolbox_open_house_assets")
+        .select("*")
+        .eq("open_house_id", openHouseId)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data as OHAsset[];
     },
@@ -1320,7 +1824,11 @@ function OpenHouseSheet({ openHouseId, onClose, userId }: { openHouseId: string 
     queryKey: ["toolbox-oh-captions", openHouseId],
     enabled: open,
     queryFn: async () => {
-      const { data, error } = await sb.from("toolbox_open_house_captions").select("*").eq("open_house_id", openHouseId).order("created_at", { ascending: true });
+      const { data, error } = await sb
+        .from("toolbox_open_house_captions")
+        .select("*")
+        .eq("open_house_id", openHouseId)
+        .order("created_at", { ascending: true });
       if (error) throw error;
       return data as OHCaption[];
     },
@@ -1347,13 +1855,16 @@ function OpenHouseSheet({ openHouseId, onClose, userId }: { openHouseId: string 
   const saveEdit = useMutation({
     mutationFn: async () => {
       if (!oh) throw new Error("Missing");
-      const { error } = await sb.from("toolbox_open_houses").update({
-        address: edit.address.trim(),
-        agent_name: edit.agent_name.trim() || null,
-        status: edit.status,
-        open_house_at: edit.open_house_at ? new Date(edit.open_house_at).toISOString() : null,
-        description: edit.description.trim() || null,
-      }).eq("id", oh.id);
+      const { error } = await sb
+        .from("toolbox_open_houses")
+        .update({
+          address: edit.address.trim(),
+          agent_name: edit.agent_name.trim() || null,
+          status: edit.status,
+          open_house_at: edit.open_house_at ? new Date(edit.open_house_at).toISOString() : null,
+          description: edit.description.trim() || null,
+        })
+        .eq("id", oh.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -1364,9 +1875,6 @@ function OpenHouseSheet({ openHouseId, onClose, userId }: { openHouseId: string 
     },
     onError: (e: any) => toast.error(e.message),
   });
-
-
-
 
   const ohPhotos = assets.filter((a) => {
     const u = a.file_url || a.thumbnail_url || "";
@@ -1382,12 +1890,22 @@ function OpenHouseSheet({ openHouseId, onClose, userId }: { openHouseId: string 
           <SheetTitle className="truncate">{oh?.address ?? "Open House"}</SheetTitle>
           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
             {oh?.agent_name && <span>{oh.agent_name}</span>}
-            {oh && <Badge className={cn("border", OH_STATUS_CLASS[oh.status])}>{OH_STATUS_LABEL[oh.status]}</Badge>}
-            {oh?.open_house_at && <span className="text-gold">{fmtDateTime(oh.open_house_at)}</span>}
+            {oh && (
+              <Badge className={cn("border", OH_STATUS_CLASS[oh.status])}>
+                {OH_STATUS_LABEL[oh.status]}
+              </Badge>
+            )}
+            {oh?.open_house_at && (
+              <span className="text-gold">{fmtDateTime(oh.open_house_at)}</span>
+            )}
             {oh && (
               <div className="ml-auto flex items-center gap-2">
-                {ohPhotos.length > 0 && <DownloadPhotosButton photos={ohPhotos} address={oh.address} />}
-                <Button variant="ghost" size="sm" className="h-7" onClick={beginEdit}>Edit details</Button>
+                {ohPhotos.length > 0 && (
+                  <DownloadPhotosButton photos={ohPhotos} address={oh.address} />
+                )}
+                <Button variant="ghost" size="sm" className="h-7" onClick={beginEdit}>
+                  Edit details
+                </Button>
               </div>
             )}
           </div>
@@ -1402,33 +1920,80 @@ function OpenHouseSheet({ openHouseId, onClose, userId }: { openHouseId: string 
                 openHouseId={oh.id}
                 userId={userId}
                 assets={assets.filter((a) => (a.category ?? "Other") === cat)}
-                captions={cat === "Branded Photos and Copy" ? captions.filter((c) => (c.category ?? "Branded Photos and Copy") === cat) : []}
+                captions={
+                  cat === "Branded Photos and Copy"
+                    ? captions.filter((c) => (c.category ?? "Branded Photos and Copy") === cat)
+                    : []
+                }
                 onChange={invAll}
               />
             ))}
           </div>
         )}
 
-
         <Dialog open={editing} onOpenChange={setEditing}>
           <DialogContent>
-            <DialogHeader><DialogTitle>Edit Open House</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle>Edit Open House</DialogTitle>
+            </DialogHeader>
             <div className="space-y-3">
-              <div><Label>Property Address</Label><Input value={edit.address} onChange={(e) => setEdit({ ...edit, address: e.target.value })} /></div>
-              <div><Label>Hosting Agent</Label><Input value={edit.agent_name} onChange={(e) => setEdit({ ...edit, agent_name: e.target.value })} /></div>
-              <div><Label>Open House Date &amp; Time</Label><Input type="datetime-local" value={edit.open_house_at} onChange={(e) => setEdit({ ...edit, open_house_at: e.target.value })} /></div>
+              <div>
+                <Label>Property Address</Label>
+                <Input
+                  value={edit.address}
+                  onChange={(e) => setEdit({ ...edit, address: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Hosting Agent</Label>
+                <Input
+                  value={edit.agent_name}
+                  onChange={(e) => setEdit({ ...edit, agent_name: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Open House Date &amp; Time</Label>
+                <Input
+                  type="datetime-local"
+                  value={edit.open_house_at}
+                  onChange={(e) => setEdit({ ...edit, open_house_at: e.target.value })}
+                />
+              </div>
               <div>
                 <Label>Status</Label>
                 <Select value={edit.status} onValueChange={(v) => setEdit({ ...edit, status: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{OH_STATUS_OPTS.map((s) => <SelectItem key={s} value={s}>{OH_STATUS_LABEL[s]}</SelectItem>)}</SelectContent>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {OH_STATUS_OPTS.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {OH_STATUS_LABEL[s]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
-              <div><Label>Description</Label><Textarea rows={3} value={edit.description} onChange={(e) => setEdit({ ...edit, description: e.target.value })} /></div>
+              <div>
+                <Label>Description</Label>
+                <Textarea
+                  rows={3}
+                  value={edit.description}
+                  onChange={(e) => setEdit({ ...edit, description: e.target.value })}
+                />
+              </div>
             </div>
             <DialogFooter>
-              <Button variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
-              <Button onClick={() => saveEdit.mutate()} disabled={saveEdit.isPending} className="bg-gold text-navy hover:bg-gold/90">{saveEdit.isPending ? "Saving…" : "Save"}</Button>
+              <Button variant="ghost" onClick={() => setEditing(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => saveEdit.mutate()}
+                disabled={saveEdit.isPending}
+                className="bg-gold text-navy hover:bg-gold/90"
+              >
+                {saveEdit.isPending ? "Saving…" : "Save"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -1439,7 +2004,8 @@ function OpenHouseSheet({ openHouseId, onClose, userId }: { openHouseId: string 
 
 function OHAssetTile({ asset, onDelete }: { asset: OHAsset; onDelete: () => void }) {
   const thumb = asset.thumbnail_url || asset.file_url;
-  const isImg = !!thumb && /\.(png|jpe?g|gif|webp|svg|avif|heic)(\?|#|$)/i.test(String(thumb).split("?")[0]);
+  const isImg =
+    !!thumb && /\.(png|jpe?g|gif|webp|svg|avif|heic)(\?|#|$)/i.test(String(thumb).split("?")[0]);
   return (
     <div className="relative group rounded-md overflow-hidden border border-border bg-muted aspect-square">
       {isImg ? (
@@ -1450,7 +2016,11 @@ function OHAssetTile({ asset, onDelete }: { asset: OHAsset; onDelete: () => void
           <span className="text-[9px] truncate w-full text-center">{asset.name ?? "File"}</span>
         </div>
       )}
-      <button type="button" onClick={onDelete} className="absolute top-1 right-1 bg-black/60 hover:bg-rose-600/80 rounded p-1 opacity-0 group-hover:opacity-100 transition">
+      <button
+        type="button"
+        onClick={onDelete}
+        className="absolute top-1 right-1 bg-black/60 hover:bg-rose-600/80 rounded p-1 opacity-0 group-hover:opacity-100 transition"
+      >
         <Trash2 className="h-3 w-3 text-white" />
       </button>
     </div>
@@ -1458,45 +2028,60 @@ function OHAssetTile({ asset, onDelete }: { asset: OHAsset; onDelete: () => void
 }
 
 function OHCategorySection({
-  category, openHouseId, userId, assets, captions, onChange,
+  category,
+  openHouseId,
+  userId,
+  assets,
+  captions,
+  onChange,
 }: {
-  category: OHCategory; openHouseId: string; userId: string | null;
-  assets: OHAsset[]; captions: OHCaption[]; onChange: () => void;
+  category: OHCategory;
+  openHouseId: string;
+  userId: string | null;
+  assets: OHAsset[];
+  captions: OHCaption[];
+  onChange: () => void;
 }) {
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const [captionText, setCaptionText] = useState("");
 
-  const handleFiles = useCallback(async (files: FileList | File[]) => {
-    const arr = Array.from(files);
-    if (!arr.length) return;
-    setUploading(arr.length);
-    let done = 0;
-    for (const f of arr) {
-      try {
-        const slug = category.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-        const path = makeStorageKey(`open-houses/${openHouseId}/${slug}`, f.name);
-        const { url } = await uploadFile(path, f);
-        await sb.from("toolbox_open_house_assets").insert({
-          open_house_id: openHouseId,
-          asset_type: "file",
-          category,
-          file_url: url,
-          thumbnail_url: url,
-          name: f.name,
-          created_by: userId,
-        });
-      } catch (e: any) {
-        toast.error(`Failed: ${f.name}: ${e.message}`);
+  const handleFiles = useCallback(
+    async (files: FileList | File[]) => {
+      const arr = Array.from(files);
+      if (!arr.length) return;
+      setUploading(arr.length);
+      let done = 0;
+      for (const f of arr) {
+        try {
+          const slug = category
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "");
+          const path = makeStorageKey(`open-houses/${openHouseId}/${slug}`, f.name);
+          const { url } = await uploadFile(path, f);
+          await sb.from("toolbox_open_house_assets").insert({
+            open_house_id: openHouseId,
+            asset_type: "file",
+            category,
+            file_url: url,
+            thumbnail_url: url,
+            name: f.name,
+            created_by: userId,
+          });
+        } catch (e: any) {
+          toast.error(`Failed: ${f.name}: ${e.message}`);
+        }
+        done++;
+        setUploading(arr.length - done);
       }
-      done++;
-      setUploading(arr.length - done);
-    }
-    setUploading(0);
-    onChange();
-    toast.success(`Uploaded ${arr.length} file${arr.length === 1 ? "" : "s"}`);
-  }, [openHouseId, category, userId, onChange]);
+      setUploading(0);
+      onChange();
+      toast.success(`Uploaded ${arr.length} file${arr.length === 1 ? "" : "s"}`);
+    },
+    [openHouseId, category, userId, onChange],
+  );
 
   const removeAsset = async (a: OHAsset) => {
     if (!confirm("Delete this asset?")) return;
@@ -1507,14 +2092,22 @@ function OHCategorySection({
   const addCaption = async () => {
     if (!captionText.trim()) return;
     await sb.from("toolbox_open_house_captions").insert({
-      open_house_id: openHouseId, caption_text: captionText.trim(), category, created_by: userId,
+      open_house_id: openHouseId,
+      caption_text: captionText.trim(),
+      category,
+      created_by: userId,
     });
-    setCaptionText(""); onChange();
+    setCaptionText("");
+    onChange();
   };
   const removeCaption = async (id: string) => {
-    await sb.from("toolbox_open_house_captions").delete().eq("id", id); onChange();
+    await sb.from("toolbox_open_house_captions").delete().eq("id", id);
+    onChange();
   };
-  const copy = async (t: string) => { await navigator.clipboard.writeText(t); toast.success("Caption copied"); };
+  const copy = async (t: string) => {
+    await navigator.clipboard.writeText(t);
+    toast.success("Caption copied");
+  };
 
   const showCaptions = category === "Branded Photos and Copy";
 
@@ -1524,19 +2117,41 @@ function OHCategorySection({
         <ImageIcon className="h-4 w-4" /> {category}
       </h3>
       <div
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
         onDragLeave={() => setDragOver(false)}
-        onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          handleFiles(e.dataTransfer.files);
+        }}
         onClick={() => inputRef.current?.click()}
-        className={cn("border-2 border-dashed rounded-md p-4 text-center cursor-pointer text-sm transition-colors",
-          dragOver ? "border-gold bg-gold/5" : "border-border hover:border-gold/50 text-muted-foreground")}
+        className={cn(
+          "border-2 border-dashed rounded-md p-4 text-center cursor-pointer text-sm transition-colors",
+          dragOver
+            ? "border-gold bg-gold/5"
+            : "border-border hover:border-gold/50 text-muted-foreground",
+        )}
       >
         {uploading > 0 ? (
-          <span className="flex items-center justify-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Uploading {uploading} remaining…</span>
+          <span className="flex items-center justify-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" /> Uploading {uploading} remaining…
+          </span>
         ) : (
-          <span className="flex items-center justify-center gap-2"><Upload className="h-4 w-4" /> Drag &amp; drop or click — images, PDFs, docs</span>
+          <span className="flex items-center justify-center gap-2">
+            <Upload className="h-4 w-4" /> Drag &amp; drop or click — images, PDFs, docs
+          </span>
         )}
-        <input ref={inputRef} type="file" accept={OH_UPLOAD_ACCEPT} multiple className="hidden" onChange={(e) => e.target.files && handleFiles(e.target.files)} />
+        <input
+          ref={inputRef}
+          type="file"
+          accept={OH_UPLOAD_ACCEPT}
+          multiple
+          className="hidden"
+          onChange={(e) => e.target.files && handleFiles(e.target.files)}
+        />
       </div>
       {assets.length > 0 && (
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-3">
@@ -1548,42 +2163,66 @@ function OHCategorySection({
 
       {showCaptions && (
         <div className="mt-4 rounded-md border border-border bg-card/40 p-3 space-y-3">
-          <h4 className="text-xs font-semibold text-gold flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" /> Ready-to-use captions / copy</h4>
+          <h4 className="text-xs font-semibold text-gold flex items-center gap-1.5">
+            <FileText className="h-3.5 w-3.5" /> Ready-to-use captions / copy
+          </h4>
           {captions.length > 0 && (
             <div className="space-y-2">
               {captions.map((c) => (
                 <div key={c.id} className="rounded border border-border bg-background p-2">
                   <div className="text-sm whitespace-pre-wrap">{c.caption_text}</div>
                   <div className="flex justify-end gap-1 mt-1">
-                    <Button size="sm" variant="ghost" onClick={() => copy(c.caption_text)}><Copy className="h-3.5 w-3.5 mr-1" />Copy</Button>
-                    <Button size="sm" variant="ghost" onClick={() => removeCaption(c.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => copy(c.caption_text)}>
+                      <Copy className="h-3.5 w-3.5 mr-1" />
+                      Copy
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => removeCaption(c.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </div>
               ))}
             </div>
           )}
-          <Textarea rows={3} placeholder="Write copy agents can paste with photos…" value={captionText} onChange={(e) => setCaptionText(e.target.value)} />
-          <Button size="sm" onClick={addCaption} className="bg-gold text-navy hover:bg-gold/90"><Plus className="h-4 w-4 mr-1" />Add caption</Button>
+          <Textarea
+            rows={3}
+            placeholder="Write copy agents can paste with photos…"
+            value={captionText}
+            onChange={(e) => setCaptionText(e.target.value)}
+          />
+          <Button size="sm" onClick={addCaption} className="bg-gold text-navy hover:bg-gold/90">
+            <Plus className="h-4 w-4 mr-1" />
+            Add caption
+          </Button>
         </div>
       )}
     </section>
   );
 }
 
-
-
 /* ============================================================
  * Agent Branded Content
  * ============================================================ */
 
 type BrandedAgent = {
-  id: string; name: string; email: string | null; headshot_url: string | null; identifier: string | null;
-  active: boolean; created_at: string;
+  id: string;
+  name: string;
+  email: string | null;
+  headshot_url: string | null;
+  identifier: string | null;
+  active: boolean;
+  created_at: string;
 };
 type BrandedContent = {
-  id: string; agent_id: string; content_type: string; title: string;
-  file_url: string | null; drive_url: string | null; caption: string | null;
-  file_size: number | null; created_at: string;
+  id: string;
+  agent_id: string;
+  content_type: string;
+  title: string;
+  file_url: string | null;
+  drive_url: string | null;
+  caption: string | null;
+  file_size: number | null;
+  created_at: string;
 };
 
 function BrandedTab({ userId }: { userId: string | null }) {
@@ -1602,7 +2241,10 @@ function BrandedTab({ userId }: { userId: string | null }) {
   const { data: agents = [] } = useQuery<BrandedAgent[]>({
     queryKey: ["toolbox-agents"],
     queryFn: async () => {
-      const { data, error } = await sb.from("toolbox_agents").select("*").order("name", { ascending: true });
+      const { data, error } = await sb
+        .from("toolbox_agents")
+        .select("*")
+        .order("name", { ascending: true });
       if (error) throw error;
       return data as BrandedAgent[];
     },
@@ -1623,13 +2265,18 @@ function BrandedTab({ userId }: { userId: string | null }) {
       <div className="flex items-end justify-between gap-2 flex-wrap">
         <div>
           <h2 className="text-lg font-semibold">Agents</h2>
-          <p className="text-xs text-muted-foreground">Manage the roster used for branded content.</p>
+          <p className="text-xs text-muted-foreground">
+            Manage the roster used for branded content.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => setBulkAdding(true)}>
             <Users className="h-4 w-4 mr-2" /> Bulk add agents
           </Button>
-          <Button onClick={() => setAddingAgent(true)} className="bg-gold text-navy hover:bg-gold/90">
+          <Button
+            onClick={() => setAddingAgent(true)}
+            className="bg-gold text-navy hover:bg-gold/90"
+          >
             <Plus className="h-4 w-4 mr-2" /> Add agent
           </Button>
         </div>
@@ -1682,19 +2329,30 @@ function BrandedTab({ userId }: { userId: string | null }) {
 }
 
 function AgentCard({
-  agent, count, selected, onSelect, onChanged,
+  agent,
+  count,
+  selected,
+  onSelect,
+  onChanged,
 }: {
-  agent: BrandedAgent; count: number; selected: boolean;
-  onSelect: () => void; onChanged: () => void;
+  agent: BrandedAgent;
+  count: number;
+  selected: boolean;
+  onSelect: () => void;
+  onChanged: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const remove = async () => {
-    const msg = count > 0
-      ? `Remove ${agent.name}? This will also permanently delete their ${count} branded content item${count === 1 ? "" : "s"}.`
-      : `Remove ${agent.name}?`;
+    const msg =
+      count > 0
+        ? `Remove ${agent.name}? This will also permanently delete their ${count} branded content item${count === 1 ? "" : "s"}.`
+        : `Remove ${agent.name}?`;
     if (!confirm(msg)) return;
     const { error } = await sb.from("toolbox_agents").delete().eq("id", agent.id);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Agent removed");
     onChanged();
   };
@@ -1702,30 +2360,47 @@ function AgentCard({
     <>
       <Card
         onClick={onSelect}
-        className={cn("p-3 cursor-pointer hover:border-gold/60 transition group", selected && "border-gold")}
+        className={cn(
+          "p-3 cursor-pointer hover:border-gold/60 transition group",
+          selected && "border-gold",
+        )}
       >
         <div className="flex items-center gap-3">
           <div className="h-12 w-12 rounded-full bg-muted overflow-hidden shrink-0 flex items-center justify-center">
             {agent.headshot_url ? (
-              <img src={agent.headshot_url} alt={agent.name} className="w-full h-full object-cover" />
+              <img
+                src={agent.headshot_url}
+                alt={agent.name}
+                className="w-full h-full object-cover"
+              />
             ) : (
-              <span className="text-sm font-semibold text-muted-foreground">{agent.name.charAt(0).toUpperCase()}</span>
+              <span className="text-sm font-semibold text-muted-foreground">
+                {agent.name.charAt(0).toUpperCase()}
+              </span>
             )}
           </div>
           <div className="min-w-0 flex-1">
             <div className="font-medium text-sm truncate">{agent.name}</div>
-            <div className="text-xs text-muted-foreground">{count} item{count === 1 ? "" : "s"}</div>
+            <div className="text-xs text-muted-foreground">
+              {count} item{count === 1 ? "" : "s"}
+            </div>
           </div>
           <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
             <button
-              onClick={(e) => { e.stopPropagation(); setEditing(true); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditing(true);
+              }}
               className="p-1 rounded hover:bg-gold/20 text-muted-foreground hover:text-gold"
               aria-label="Edit agent"
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); remove(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                remove();
+              }}
               className="p-1 rounded hover:bg-rose-600/20 text-muted-foreground hover:text-rose-400"
               aria-label="Remove agent"
             >
@@ -1734,19 +2409,20 @@ function AgentCard({
           </div>
         </div>
       </Card>
-      <EditAgentDialog
-        open={editing}
-        onOpenChange={setEditing}
-        agent={agent}
-        onSaved={onChanged}
-      />
+      <EditAgentDialog open={editing} onOpenChange={setEditing} agent={agent} onSaved={onChanged} />
     </>
   );
 }
 
 function AddAgentDialog({
-  open, onOpenChange, onAdded,
-}: { open: boolean; onOpenChange: (v: boolean) => void; onAdded: () => void }) {
+  open,
+  onOpenChange,
+  onAdded,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onAdded: () => void;
+}) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [identifier, setIdentifier] = useState("");
@@ -1754,16 +2430,23 @@ function AddAgentDialog({
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
-    if (!name.trim()) { toast.error("Name required"); return; }
+    if (!name.trim()) {
+      toast.error("Name required");
+      return;
+    }
     setBusy(true);
     try {
       let headshot_url: string | null = null;
-      const { data: row, error } = await sb.from("toolbox_agents").insert({
-        name: name.trim(),
-        email: email.trim() || null,
-        identifier: identifier.trim() || null,
-        active: true,
-      }).select("id").single();
+      const { data: row, error } = await sb
+        .from("toolbox_agents")
+        .insert({
+          name: name.trim(),
+          email: email.trim() || null,
+          identifier: identifier.trim() || null,
+          active: true,
+        })
+        .select("id")
+        .single();
       if (error) throw error;
       if (headshot) {
         const path = makeStorageKey(`agents/${row.id}/headshot`, headshot.name);
@@ -1772,39 +2455,73 @@ function AddAgentDialog({
         await sb.from("toolbox_agents").update({ headshot_url }).eq("id", row.id);
       }
       toast.success("Agent added");
-      setName(""); setEmail(""); setIdentifier(""); setHeadshot(null);
+      setName("");
+      setEmail("");
+      setIdentifier("");
+      setHeadshot(null);
       onAdded();
       onOpenChange(false);
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) {
+      toast.error(e.message);
+    }
     setBusy(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Add agent</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Add agent</DialogTitle>
+        </DialogHeader>
         <div className="space-y-3">
           <div>
             <Label>Agent name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Doe" autoFocus />
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Jane Doe"
+              autoFocus
+            />
           </div>
           <div>
             <Label>Email</Label>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane@example.com" />
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="jane@example.com"
+            />
           </div>
           <div>
             <Label>Identifier (optional)</Label>
-            <Input value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="license #, etc." />
+            <Input
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="license #, etc."
+            />
           </div>
           <div>
             <Label>Headshot (optional)</Label>
-            <Input type="file" accept="image/*" onChange={(e) => setHeadshot(e.target.files?.[0] ?? null)} />
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setHeadshot(e.target.files?.[0] ?? null)}
+            />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="secondary" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
           <Button onClick={submit} disabled={busy} className="bg-gold text-navy hover:bg-gold/90">
-            {busy ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Saving…</> : "Add agent"}
+            {busy ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                Saving…
+              </>
+            ) : (
+              "Add agent"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1813,8 +2530,14 @@ function AddAgentDialog({
 }
 
 function BulkAddAgentsDialog({
-  open, onOpenChange, onAdded,
-}: { open: boolean; onOpenChange: (v: boolean) => void; onAdded: () => void }) {
+  open,
+  onOpenChange,
+  onAdded,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onAdded: () => void;
+}) {
   const [raw, setRaw] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -1860,7 +2583,9 @@ function BulkAddAgentsDialog({
       setRaw("");
       onAdded();
       onOpenChange(false);
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) {
+      toast.error(e.message);
+    }
     setBusy(false);
   };
 
@@ -1880,7 +2605,8 @@ function BulkAddAgentsDialog({
             disabled={busy}
           />
           <div className="text-xs text-muted-foreground">
-            Format: <span className="font-medium text-foreground">Name, email</span> — one per line. Blank lines are skipped.
+            Format: <span className="font-medium text-foreground">Name, email</span> — one per line.
+            Blank lines are skipped.
           </div>
 
           {parsed.valid.length > 0 && (
@@ -1903,12 +2629,14 @@ function BulkAddAgentsDialog({
             <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
               <div className="text-sm font-medium text-amber-300 flex items-center gap-1.5">
                 <AlertTriangle className="h-4 w-4" />
-                {parsed.invalid.length} line{parsed.invalid.length === 1 ? "" : "s"} could not be parsed
+                {parsed.invalid.length} line{parsed.invalid.length === 1 ? "" : "s"} could not be
+                parsed
               </div>
               <div className="mt-2 max-h-40 overflow-y-auto space-y-1">
                 {parsed.invalid.map((inv, i) => (
                   <div key={i} className="text-xs text-amber-200/80">
-                    <span className="font-medium">Line {inv.line}:</span> {inv.reason} — "{inv.text}"
+                    <span className="font-medium">Line {inv.line}:</span> {inv.reason} — "{inv.text}
+                    "
                   </div>
                 ))}
               </div>
@@ -1916,13 +2644,22 @@ function BulkAddAgentsDialog({
           )}
         </div>
         <DialogFooter>
-          <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={busy}>Cancel</Button>
+          <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={busy}>
+            Cancel
+          </Button>
           <Button
             onClick={submit}
             disabled={busy || parsed.valid.length === 0}
             className="bg-gold text-navy hover:bg-gold/90"
           >
-            {busy ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Adding…</> : `Add ${parsed.valid.length || ""}`}
+            {busy ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                Adding…
+              </>
+            ) : (
+              `Add ${parsed.valid.length || ""}`
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1931,9 +2668,15 @@ function BulkAddAgentsDialog({
 }
 
 function EditAgentDialog({
-  open, onOpenChange, agent, onSaved,
+  open,
+  onOpenChange,
+  agent,
+  onSaved,
 }: {
-  open: boolean; onOpenChange: (v: boolean) => void; agent: BrandedAgent; onSaved: () => void;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  agent: BrandedAgent;
+  onSaved: () => void;
 }) {
   const [name, setName] = useState(agent.name);
   const [email, setEmail] = useState(agent.email ?? "");
@@ -1963,7 +2706,10 @@ function EditAgentDialog({
   };
 
   const submit = async () => {
-    if (!name.trim()) { toast.error("Name required"); return; }
+    if (!name.trim()) {
+      toast.error("Name required");
+      return;
+    }
     setBusy(true);
     try {
       let headshot_url = previewUrl;
@@ -1972,17 +2718,22 @@ function EditAgentDialog({
         const { url } = await uploadFile(path, headshot);
         headshot_url = url;
       }
-      const { error } = await sb.from("toolbox_agents").update({
-        name: name.trim(),
-        email: email.trim() || null,
-        identifier: identifier.trim() || null,
-        headshot_url,
-      }).eq("id", agent.id);
+      const { error } = await sb
+        .from("toolbox_agents")
+        .update({
+          name: name.trim(),
+          email: email.trim() || null,
+          identifier: identifier.trim() || null,
+          headshot_url,
+        })
+        .eq("id", agent.id);
       if (error) throw error;
       toast.success("Agent updated");
       onSaved();
       onOpenChange(false);
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) {
+      toast.error(e.message);
+    }
     setBusy(false);
   };
 
@@ -1994,7 +2745,9 @@ function EditAgentDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Edit agent</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Edit agent</DialogTitle>
+        </DialogHeader>
         <div className="space-y-4">
           <div>
             <Label>Agent name</Label>
@@ -2002,11 +2755,20 @@ function EditAgentDialog({
           </div>
           <div>
             <Label>Email</Label>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane@example.com" />
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="jane@example.com"
+            />
           </div>
           <div>
             <Label>Identifier (optional)</Label>
-            <Input value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="license #, etc." />
+            <Input
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="license #, etc."
+            />
           </div>
           <div>
             <Label>Headshot</Label>
@@ -2015,13 +2777,25 @@ function EditAgentDialog({
                 {previewUrl ? (
                   <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-lg font-semibold text-muted-foreground">{name.charAt(0).toUpperCase()}</span>
+                  <span className="text-lg font-semibold text-muted-foreground">
+                    {name.charAt(0).toUpperCase()}
+                  </span>
                 )}
               </div>
               <div className="flex flex-col gap-2">
-                <Input type="file" accept="image/*" onChange={(e) => onPickFile(e.target.files?.[0] ?? null)} />
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => onPickFile(e.target.files?.[0] ?? null)}
+                />
                 {previewUrl && (
-                  <Button type="button" variant="ghost" size="sm" onClick={clearHeadshot} className="text-muted-foreground hover:text-rose-400 justify-start">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearHeadshot}
+                    className="text-muted-foreground hover:text-rose-400 justify-start"
+                  >
                     <Trash2 className="h-3.5 w-3.5 mr-1" /> Remove headshot
                   </Button>
                 )}
@@ -2030,9 +2804,18 @@ function EditAgentDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="secondary" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
           <Button onClick={submit} disabled={busy} className="bg-gold text-navy hover:bg-gold/90">
-            {busy ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Saving…</> : "Save changes"}
+            {busy ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                Saving…
+              </>
+            ) : (
+              "Save changes"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -2041,10 +2824,21 @@ function EditAgentDialog({
 }
 
 function AgentBrandedContentPanel({
-  agent, userId, onChanged,
-}: { agent: BrandedAgent; userId: string | null; onChanged: () => void }) {
+  agent,
+  userId,
+  onChanged,
+}: {
+  agent: BrandedAgent;
+  userId: string | null;
+  onChanged: () => void;
+}) {
   const qc = useQueryClient();
-  const [form, setForm] = useState({ title: "", content_type: BRANDED_TYPES[0], caption: "", drive_url: "" });
+  const [form, setForm] = useState({
+    title: "",
+    content_type: BRANDED_TYPES[0],
+    caption: "",
+    drive_url: "",
+  });
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [filter, setFilter] = useState<string>("all");
@@ -2052,15 +2846,18 @@ function AgentBrandedContentPanel({
   const { data: items = [] } = useQuery<BrandedContent[]>({
     queryKey: ["toolbox-agent-content", agent.id],
     queryFn: async () => {
-      const { data, error } = await sb.from("toolbox_agent_content")
-        .select("*").eq("agent_id", agent.id).order("created_at", { ascending: false });
+      const { data, error } = await sb
+        .from("toolbox_agent_content")
+        .select("*")
+        .eq("agent_id", agent.id)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data as BrandedContent[];
     },
   });
 
   const filtered = useMemo(
-    () => filter === "all" ? items : items.filter((i) => i.content_type === filter),
+    () => (filter === "all" ? items : items.filter((i) => i.content_type === filter)),
     [items, filter],
   );
 
@@ -2071,7 +2868,10 @@ function AgentBrandedContentPanel({
   };
 
   const submitFiles = async (files: FileList | null) => {
-    if (!form.title.trim()) { toast.error("Title required"); return; }
+    if (!form.title.trim()) {
+      toast.error("Title required");
+      return;
+    }
     if (!files || !files.length) return;
     setUploading(true);
     try {
@@ -2090,12 +2890,17 @@ function AgentBrandedContentPanel({
       setForm({ title: "", content_type: form.content_type, caption: "", drive_url: "" });
       toast.success("Added");
       refresh();
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) {
+      toast.error(e.message);
+    }
     setUploading(false);
   };
 
   const submitLink = async () => {
-    if (!form.title.trim() || !form.drive_url.trim()) { toast.error("Title and Drive URL required"); return; }
+    if (!form.title.trim() || !form.drive_url.trim()) {
+      toast.error("Title and Drive URL required");
+      return;
+    }
     const { error } = await sb.from("toolbox_agent_content").insert({
       agent_id: agent.id,
       content_type: form.content_type,
@@ -2103,7 +2908,10 @@ function AgentBrandedContentPanel({
       drive_url: form.drive_url.trim(),
       caption: form.caption.trim() || null,
     });
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     setForm({ title: "", content_type: form.content_type, caption: "", drive_url: "" });
     toast.success("Added");
     refresh();
@@ -2112,19 +2920,29 @@ function AgentBrandedContentPanel({
   const remove = async (id: string) => {
     if (!confirm("Delete this item?")) return;
     const { error } = await sb.from("toolbox_agent_content").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     refresh();
   };
 
-  const copy = async (t: string) => { await navigator.clipboard.writeText(t); toast.success("Caption copied"); };
+  const copy = async (t: string) => {
+    await navigator.clipboard.writeText(t);
+    toast.success("Caption copied");
+  };
 
   return (
     <Card className="p-4 space-y-4 border-gold/40">
       <div className="flex items-center gap-3">
         <div className="h-10 w-10 rounded-full bg-muted overflow-hidden flex items-center justify-center">
-          {agent.headshot_url
-            ? <img src={agent.headshot_url} alt={agent.name} className="w-full h-full object-cover" />
-            : <span className="text-sm font-semibold text-muted-foreground">{agent.name.charAt(0).toUpperCase()}</span>}
+          {agent.headshot_url ? (
+            <img src={agent.headshot_url} alt={agent.name} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-sm font-semibold text-muted-foreground">
+              {agent.name.charAt(0).toUpperCase()}
+            </span>
+          )}
         </div>
         <div>
           <div className="font-semibold">{agent.name}</div>
@@ -2136,30 +2954,73 @@ function AgentBrandedContentPanel({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <Label>Title</Label>
-            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            <Input
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+            />
           </div>
           <div>
             <Label>Type</Label>
-            <Select value={form.content_type} onValueChange={(v) => setForm({ ...form, content_type: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <Select
+              value={form.content_type}
+              onValueChange={(v) => setForm({ ...form, content_type: v })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                {BRANDED_TYPES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                {BRANDED_TYPES.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
         </div>
         <div>
           <Label>Optional caption</Label>
-          <Textarea rows={2} value={form.caption} onChange={(e) => setForm({ ...form, caption: e.target.value })} />
+          <Textarea
+            rows={2}
+            value={form.caption}
+            onChange={(e) => setForm({ ...form, caption: e.target.value })}
+          />
         </div>
         <div className="flex flex-wrap gap-2 items-end">
-          <Button onClick={() => inputRef.current?.click()} disabled={uploading} className="bg-gold text-navy hover:bg-gold/90">
-            {uploading ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Uploading…</> : <><Upload className="h-4 w-4 mr-1" />Upload file(s)</>}
+          <Button
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+            className="bg-gold text-navy hover:bg-gold/90"
+          >
+            {uploading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                Uploading…
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4 mr-1" />
+                Upload file(s)
+              </>
+            )}
           </Button>
-          <input ref={inputRef} type="file" multiple className="hidden" onChange={(e) => submitFiles(e.target.files)} />
+          <input
+            ref={inputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => submitFiles(e.target.files)}
+          />
           <div className="flex-1 min-w-[200px] flex gap-2">
-            <Input placeholder="…or paste Drive URL (video)" value={form.drive_url} onChange={(e) => setForm({ ...form, drive_url: e.target.value })} />
-            <Button variant="secondary" onClick={submitLink}><LinkIcon className="h-4 w-4 mr-1" />Add link</Button>
+            <Input
+              placeholder="…or paste Drive URL (video)"
+              value={form.drive_url}
+              onChange={(e) => setForm({ ...form, drive_url: e.target.value })}
+            />
+            <Button variant="secondary" onClick={submitLink}>
+              <LinkIcon className="h-4 w-4 mr-1" />
+              Add link
+            </Button>
           </div>
         </div>
       </div>
@@ -2167,7 +3028,10 @@ function AgentBrandedContentPanel({
       <div className="flex items-center gap-2 flex-wrap">
         <button
           onClick={() => setFilter("all")}
-          className={cn("text-xs px-2 py-1 rounded border", filter === "all" ? "border-gold text-gold" : "border-border text-muted-foreground")}
+          className={cn(
+            "text-xs px-2 py-1 rounded border",
+            filter === "all" ? "border-gold text-gold" : "border-border text-muted-foreground",
+          )}
         >
           All · {items.length}
         </button>
@@ -2178,7 +3042,10 @@ function AgentBrandedContentPanel({
             <button
               key={t}
               onClick={() => setFilter(t)}
-              className={cn("text-xs px-2 py-1 rounded border", filter === t ? "border-gold text-gold" : "border-border text-muted-foreground")}
+              className={cn(
+                "text-xs px-2 py-1 rounded border",
+                filter === t ? "border-gold text-gold" : "border-border text-muted-foreground",
+              )}
             >
               {t} · {n}
             </button>
@@ -2187,11 +3054,14 @@ function AgentBrandedContentPanel({
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-sm text-muted-foreground text-center py-6">No items yet for this filter.</div>
+        <div className="text-sm text-muted-foreground text-center py-6">
+          No items yet for this filter.
+        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {filtered.map((i) => {
-            const isImg = i.file_url && /\.(png|jpe?g|gif|webp|svg|avif|heic)(\?|#|$)/i.test(i.file_url);
+            const isImg =
+              i.file_url && /\.(png|jpe?g|gif|webp|svg|avif|heic)(\?|#|$)/i.test(i.file_url);
             return (
               <Card key={i.id} className="overflow-hidden group">
                 <div className="aspect-video bg-muted relative">
@@ -2199,7 +3069,11 @@ function AgentBrandedContentPanel({
                     <img src={i.file_url!} alt={i.title} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                      {i.drive_url ? <VideoIcon className="h-8 w-8" /> : <FileText className="h-8 w-8" />}
+                      {i.drive_url ? (
+                        <VideoIcon className="h-8 w-8" />
+                      ) : (
+                        <FileText className="h-8 w-8" />
+                      )}
                     </div>
                   )}
                   <button
@@ -2208,15 +3082,49 @@ function AgentBrandedContentPanel({
                   >
                     <Trash2 className="h-3 w-3 text-white" />
                   </button>
-                  <Badge className="absolute top-2 left-2 bg-navy/80 border border-gold/30 text-gold">{i.content_type}</Badge>
+                  <Badge className="absolute top-2 left-2 bg-navy/80 border border-gold/30 text-gold">
+                    {i.content_type}
+                  </Badge>
                 </div>
                 <div className="p-3 space-y-2">
                   <div className="font-medium text-sm">{i.title}</div>
-                  {i.caption && <div className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">{i.caption}</div>}
+                  {i.caption && (
+                    <div className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">
+                      {i.caption}
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 pt-1">
-                    {i.file_url && <a href={i.file_url} target="_blank" rel="noreferrer" className="text-xs text-gold hover:underline">File</a>}
-                    {i.drive_url && <a href={i.drive_url} target="_blank" rel="noreferrer" className="text-xs text-gold hover:underline">Drive</a>}
-                    {i.caption && <Button size="sm" variant="ghost" className="ml-auto h-7" onClick={() => copy(i.caption!)}><Copy className="h-3 w-3 mr-1" />Copy</Button>}
+                    {i.file_url && (
+                      <a
+                        href={i.file_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-gold hover:underline"
+                      >
+                        File
+                      </a>
+                    )}
+                    {i.drive_url && (
+                      <a
+                        href={i.drive_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-gold hover:underline"
+                      >
+                        Drive
+                      </a>
+                    )}
+                    {i.caption && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="ml-auto h-7"
+                        onClick={() => copy(i.caption!)}
+                      >
+                        <Copy className="h-3 w-3 mr-1" />
+                        Copy
+                      </Button>
+                    )}
                   </div>
                 </div>
               </Card>

@@ -1,15 +1,26 @@
 export type RockStatus = "on_track" | "off_track" | "complete";
 export type IssueStatus = "pending" | "open" | "solved" | "tabled" | "converted";
 
-export type Member = { id: string; email: string; first_name: string | null; last_name: string | null };
+export type Member = {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+};
 
-export function displayName(m?: { email: string; first_name?: string | null; last_name?: string | null } | null): string {
+export function displayName(
+  m?: { email: string; first_name?: string | null; last_name?: string | null } | null,
+): string {
   if (!m) return "Unknown";
   const full = [m.first_name, m.last_name].filter(Boolean).join(" ").trim();
   return full || m.email;
 }
 
-export function mentionHandle(m: { email: string; first_name?: string | null; last_name?: string | null }): string {
+export function mentionHandle(m: {
+  email: string;
+  first_name?: string | null;
+  last_name?: string | null;
+}): string {
   const full = [m.first_name, m.last_name].filter(Boolean).join("");
   if (full) return full.replace(/[^A-Za-z0-9]/g, "");
   return (m.email.split("@")[0] || "user").replace(/[^A-Za-z0-9]/g, "");

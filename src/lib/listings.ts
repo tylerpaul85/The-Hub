@@ -19,7 +19,14 @@ export const LISTING_STATUS_CLASS: Record<ListingStatus, string> = {
 
 // ─── Post type ───────────────────────────────────────────────────────────────
 
-export const POST_TYPES = ["active", "repost_60", "repost_90", "repost_120", "under_contract", "manual"] as const;
+export const POST_TYPES = [
+  "active",
+  "repost_60",
+  "repost_90",
+  "repost_120",
+  "under_contract",
+  "manual",
+] as const;
 export type PostType = (typeof POST_TYPES)[number];
 
 export const POST_TYPE_LABEL: Record<PostType, string> = {
@@ -66,9 +73,9 @@ export type Listing = {
   agent_name: string | null;
   mls_id: string | null;
   list_price: number | null;
-  list_date: string;    // ISO date YYYY-MM-DD
-  post_date: string;    // When listing goes live / initial post date
-  post_time: string;    // HH:MM:SS
+  list_date: string; // ISO date YYYY-MM-DD
+  post_date: string; // When listing goes live / initial post date
+  post_time: string; // HH:MM:SS
   canva_link: string | null;
   website_link: string | null;
   brand: string | null;
@@ -126,7 +133,11 @@ export function calcDaysListed(listDate: string): number {
 
 export function formatPrice(price: number | null): string {
   if (price == null) return "—";
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(price);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(price);
 }
 
 // ─── CSV parser ───────────────────────────────────────────────────────────────
@@ -158,7 +169,8 @@ export function parseCsvListings(csv: string): CsvParseResult {
 
   // Detect header row
   const firstLower = lines[0].toLowerCase();
-  const hasHeader = firstLower.includes("address") || firstLower.includes("agent") || firstLower.includes("mls");
+  const hasHeader =
+    firstLower.includes("address") || firstLower.includes("agent") || firstLower.includes("mls");
   const dataLines = hasHeader ? lines.slice(1) : lines;
 
   for (let i = 0; i < dataLines.length; i++) {
@@ -173,7 +185,7 @@ export function parseCsvListings(csv: string): CsvParseResult {
     const rawPriceStr = (rawPrice ?? "").trim().replace(/[$,\s]/g, "");
     const listPrice = rawPriceStr ? parseFloat(rawPriceStr) : null;
     const listDate = parseFlexDate(rawDate ?? "");
-    const rawStatusStr = ((rawStatus ?? "").trim().toLowerCase().replace(/\s+/g, "_")) as string;
+    const rawStatusStr = (rawStatus ?? "").trim().toLowerCase().replace(/\s+/g, "_") as string;
     const status: ListingStatus = LISTING_STATUSES.includes(rawStatusStr as ListingStatus)
       ? (rawStatusStr as ListingStatus)
       : "active";
@@ -191,7 +203,14 @@ export function parseCsvListings(csv: string): CsvParseResult {
       continue;
     }
 
-    valid.push({ address, agent_name: agentName, mls_id: mlsId, list_price: listPrice, list_date: listDate, status });
+    valid.push({
+      address,
+      agent_name: agentName,
+      mls_id: mlsId,
+      list_price: listPrice,
+      list_date: listDate,
+      status,
+    });
   }
 
   return { valid, errors };

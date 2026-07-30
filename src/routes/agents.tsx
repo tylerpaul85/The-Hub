@@ -36,11 +36,15 @@ function AgentsLayout() {
     const prevHref = linkEl?.getAttribute("href");
     if (linkEl) linkEl.setAttribute("href", "/agents-manifest.webmanifest");
 
-    const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]') as HTMLMetaElement | null;
+    const appleTitle = document.querySelector(
+      'meta[name="apple-mobile-web-app-title"]',
+    ) as HTMLMetaElement | null;
     const prevAppleTitle = appleTitle?.getAttribute("content");
     if (appleTitle) appleTitle.setAttribute("content", "MSREG Agent Hub");
 
-    const appName = document.querySelector('meta[name="application-name"]') as HTMLMetaElement | null;
+    const appName = document.querySelector(
+      'meta[name="application-name"]',
+    ) as HTMLMetaElement | null;
     const prevAppName = appName?.getAttribute("content");
     if (appName) appName.setAttribute("content", "MSREG Agent Hub");
 
@@ -95,7 +99,9 @@ function Gate({ onUnlock }: { onUnlock: (token: string) => void }) {
       onUnlock(token);
     } catch (err: any) {
       toast.error(
-        err?.message?.includes("Incorrect") ? "Incorrect access code — please try again" : "Could not verify code",
+        err?.message?.includes("Incorrect")
+          ? "Incorrect access code — please try again"
+          : "Could not verify code",
       );
     }
     setBusy(false);
@@ -126,7 +132,11 @@ function Gate({ onUnlock }: { onUnlock: (token: string) => void }) {
             className="text-center text-base h-11"
             autoComplete="off"
           />
-          <Button type="submit" disabled={busy} className="w-full h-11 bg-gold text-navy hover:bg-gold/90 font-semibold">
+          <Button
+            type="submit"
+            disabled={busy}
+            className="w-full h-11 bg-gold text-navy hover:bg-gold/90 font-semibold"
+          >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enter Agent Hub"}
           </Button>
         </form>

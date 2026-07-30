@@ -45,7 +45,11 @@ type Props = {
   labelClassName?: string;
 };
 
-export function QuickHeadlineButton({ variant = "outline", size = "sm", labelClassName }: Props = {}) {
+export function QuickHeadlineButton({
+  variant = "outline",
+  size = "sm",
+  labelClassName,
+}: Props = {}) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);

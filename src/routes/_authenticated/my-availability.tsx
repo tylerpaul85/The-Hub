@@ -5,9 +5,28 @@ import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { CalendarOff, Pencil, Trash2, Plus, UserCircle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -154,10 +173,14 @@ function MyAvailabilityPage() {
         <div>
           <Label className="text-xs text-muted-foreground">Office</Label>
           <Select value={officeFilter} onValueChange={setOfficeFilter}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               {OFFICES.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -172,11 +195,14 @@ function MyAvailabilityPage() {
             </SelectTrigger>
             <SelectContent>
               {filteredAgents.length === 0 ? (
-                <div className="px-2 py-1.5 text-xs text-muted-foreground">No agents in this office</div>
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                  No agents in this office
+                </div>
               ) : (
                 filteredAgents.map((a: any) => (
                   <SelectItem key={a.id} value={a.id}>
-                    {a.name} ({a.office === "str" ? "St. Robert" : a.office === "loz" ? "LOZ" : "Rolla"})
+                    {a.name} (
+                    {a.office === "str" ? "St. Robert" : a.office === "loz" ? "LOZ" : "Rolla"})
                   </SelectItem>
                 ))
               )}
@@ -206,14 +232,23 @@ function MyAvailabilityPage() {
             </TableHeader>
             <TableBody>
               {listQ.isLoading ? (
-                <TableRow><TableCell colSpan={3} className="text-muted-foreground">Loading…</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={3} className="text-muted-foreground">
+                    Loading…
+                  </TableCell>
+                </TableRow>
               ) : (listQ.data ?? []).length === 0 ? (
-                <TableRow><TableCell colSpan={3} className="text-muted-foreground">No time off submitted.</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={3} className="text-muted-foreground">
+                    No time off submitted.
+                  </TableCell>
+                </TableRow>
               ) : (
                 (listQ.data ?? []).map((r: any) => (
                   <TableRow key={r.id}>
                     <TableCell>
-                      {format(new Date(r.date_start + "T00:00"), "MMM d, yyyy")} — {format(new Date(r.date_end + "T00:00"), "MMM d, yyyy")}
+                      {format(new Date(r.date_start + "T00:00"), "MMM d, yyyy")} —{" "}
+                      {format(new Date(r.date_end + "T00:00"), "MMM d, yyyy")}
                     </TableCell>
                     <TableCell className="capitalize">{r.reason ?? "—"}</TableCell>
                     <TableCell className="text-right">
@@ -260,18 +295,24 @@ function MyAvailabilityPage() {
             <div>
               <Label>Reason (optional)</Label>
               <Select value={reason} onValueChange={setReason}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No reason</SelectItem>
                   {REASONS.map((r) => (
-                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                    <SelectItem key={r.value} value={r.value}>
+                      {r.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
             <Button
               className="bg-gold text-navy hover:bg-gold/90"
               onClick={() => saveMut.mutate()}

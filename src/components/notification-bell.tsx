@@ -9,8 +9,16 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { useContentDetail } from "@/components/content-detail-provider";
 
-type DbNotif = { id: string; type: string; message: string; content_id: string | null; task_id: string | null; video_id: string | null; read: boolean; created_at: string };
-
+type DbNotif = {
+  id: string;
+  type: string;
+  message: string;
+  content_id: string | null;
+  task_id: string | null;
+  video_id: string | null;
+  read: boolean;
+  created_at: string;
+};
 
 export function NotificationBell() {
   const { user } = useAuth();
@@ -18,7 +26,6 @@ export function NotificationBell() {
   const detail = useContentDetail();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-
 
   const { data: dbNotifs = [] } = useQuery({
     queryKey: ["notifications", user?.id],
@@ -41,15 +48,23 @@ export function NotificationBell() {
     if (!user) return;
     const ch = supabase
       .channel("notif-" + user.id)
-      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
-        () => qc.invalidateQueries({ queryKey: ["notifications", user.id] }))
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        () => qc.invalidateQueries({ queryKey: ["notifications", user.id] }),
+      )
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, [user, qc]);
 
   const markAllRead = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await (supabase as any).from("notifications").update({ read: true }).eq("id", id);
+      const { error } = await (supabase as any)
+        .from("notifications")
+        .update({ read: true })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications", user?.id] }),
@@ -71,16 +86,20 @@ export function NotificationBell() {
     }
   };
 
-
   // Newest first
-  const combined = [...dbNotifs].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const combined = [...dbNotifs].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
 
   if (!user) return null;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button className="relative h-9 w-9 rounded-md hover:bg-accent/40 flex items-center justify-center" aria-label="Notifications">
+        <button
+          className="relative h-9 w-9 rounded-md hover:bg-accent/40 flex items-center justify-center"
+          aria-label="Notifications"
+        >
           <Bell className="h-5 w-5 text-foreground" />
           {total > 0 && (
             <span className="absolute -top-0.5 -right-0.5 bg-destructive text-destructive-foreground text-[10px] font-bold min-w-[18px] h-[18px] rounded-full px-1 flex items-center justify-center">
@@ -90,7 +109,9 @@ export function NotificationBell() {
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0 max-h-[70vh] overflow-y-auto">
-        <div className="px-4 py-2.5 border-b border-border text-sm font-semibold">Notifications</div>
+        <div className="px-4 py-2.5 border-b border-border text-sm font-semibold">
+          Notifications
+        </div>
         {combined.length === 0 && (
           <div className="p-6 text-center text-sm text-muted-foreground">You're all caught up.</div>
         )}
@@ -109,10 +130,20 @@ export function NotificationBell() {
               {isMention ? (
                 <AtSign className="mt-0.5 h-4 w-4 flex-shrink-0 text-gold" />
               ) : (
-                <span className={cn("mt-1 h-2 w-2 rounded-full flex-shrink-0", !n.read ? "bg-gold" : "bg-muted")} />
+                <span
+                  className={cn(
+                    "mt-1 h-2 w-2 rounded-full flex-shrink-0",
+                    !n.read ? "bg-gold" : "bg-muted",
+                  )}
+                />
               )}
               <div className="flex-1 min-w-0">
-                <div className={cn("text-sm", isMention ? "text-gold font-semibold" : "text-foreground")}>
+                <div
+                  className={cn(
+                    "text-sm",
+                    isMention ? "text-gold font-semibold" : "text-foreground",
+                  )}
+                >
                   {isMention && <span className="mr-1">@mention:</span>}
                   {n.message}
                 </div>

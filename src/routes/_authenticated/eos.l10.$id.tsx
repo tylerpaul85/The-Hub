@@ -6,9 +6,22 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ArrowUp, ArrowDown, Star, Plus, X, CheckCircle2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -110,13 +123,20 @@ function L10DetailPage() {
     );
   };
   const reopenMeeting = () => {
-    updateMeeting.mutate({ status: "in_progress", completed_at: null, completed_by: null } as Partial<Meeting>);
+    updateMeeting.mutate({
+      status: "in_progress",
+      completed_at: null,
+      completed_by: null,
+    } as Partial<Meeting>);
   };
 
   return (
     <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
       <div>
-        <Link to="/eos/l10" className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+        <Link
+          to="/eos/l10"
+          className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+        >
           <ChevronLeft className="h-4 w-4" /> Back to meetings
         </Link>
         <div className="mt-2 flex flex-wrap items-center gap-3 justify-between">
@@ -124,12 +144,14 @@ function L10DetailPage() {
             L10 · {format(new Date(meeting.meeting_date + "T00:00:00"), "EEEE, MMMM d, yyyy")}
           </h1>
           <div className="flex items-center gap-2">
-            <span className={cn(
-              "text-xs px-2 py-1 rounded border",
-              isCompleted
-                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                : "bg-blue-500/15 text-blue-400 border-blue-500/30",
-            )}>
+            <span
+              className={cn(
+                "text-xs px-2 py-1 rounded border",
+                isCompleted
+                  ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                  : "bg-blue-500/15 text-blue-400 border-blue-500/30",
+              )}
+            >
               {isCompleted ? "Completed · Locked" : "In progress"}
             </span>
             {!isCompleted && (
@@ -138,7 +160,9 @@ function L10DetailPage() {
               </Button>
             )}
             {isCompleted && isAdmin && (
-              <Button size="sm" variant="outline" onClick={reopenMeeting}>Reopen (admin)</Button>
+              <Button size="sm" variant="outline" onClick={reopenMeeting}>
+                Reopen (admin)
+              </Button>
             )}
             {isAdmin && (
               <Button size="sm" variant="destructive" onClick={() => setConfirmDelete(true)}>
@@ -149,7 +173,8 @@ function L10DetailPage() {
         </div>
         {isCompleted && !isAdmin && (
           <div className="mt-3 text-xs text-muted-foreground border border-border rounded p-3 bg-muted/30">
-            This meeting has been submitted and is locked. Only admins can make changes. You can still mark your to-dos complete.
+            This meeting has been submitted and is locked. Only admins can make changes. You can
+            still mark your to-dos complete.
           </div>
         )}
       </div>
@@ -159,12 +184,17 @@ function L10DetailPage() {
           <DialogHeader>
             <DialogTitle>Complete this meeting?</DialogTitle>
             <DialogDescription>
-              This finalizes the meeting and locks it from further edits by non-admins. To-dos can still be marked complete afterward. Admins can reopen it later if needed.
+              This finalizes the meeting and locks it from further edits by non-admins. To-dos can
+              still be marked complete afterward. Admins can reopen it later if needed.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setConfirmComplete(false)}>Cancel</Button>
-            <Button onClick={completeMeeting} disabled={updateMeeting.isPending}>Yes, complete meeting</Button>
+            <Button variant="ghost" onClick={() => setConfirmComplete(false)}>
+              Cancel
+            </Button>
+            <Button onClick={completeMeeting} disabled={updateMeeting.isPending}>
+              Yes, complete meeting
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -174,27 +204,43 @@ function L10DetailPage() {
           <DialogHeader>
             <DialogTitle>Delete this meeting?</DialogTitle>
             <DialogDescription>
-              This permanently removes the meeting record, its scorecard entries, rock reviews, ratings, and issue priorities. Any to-dos and issues created during this meeting are preserved but detached from it. This action is logged in the audit log and cannot be undone.
+              This permanently removes the meeting record, its scorecard entries, rock reviews,
+              ratings, and issue priorities. Any to-dos and issues created during this meeting are
+              preserved but detached from it. This action is logged in the audit log and cannot be
+              undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setConfirmDelete(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={() => deleteMeeting.mutate()} disabled={deleteMeeting.isPending}>
+            <Button variant="ghost" onClick={() => setConfirmDelete(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteMeeting.mutate()}
+              disabled={deleteMeeting.isPending}
+            >
               Yes, delete meeting
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-
       <Section title="Attendees">
-        <AttendeesEditor meeting={meeting} members={members} canEdit={canEdit}
-          onSave={(attendees) => updateMeeting.mutate({ attendees })} />
+        <AttendeesEditor
+          meeting={meeting}
+          members={members}
+          canEdit={canEdit}
+          onSave={(attendees) => updateMeeting.mutate({ attendees })}
+        />
       </Section>
 
       <Section title="Segue">
-        <TextBlock value={meeting.segue ?? ""} canEdit={canEdit} placeholder="Opening notes, personal & business bests..."
-          onSave={(v) => updateMeeting.mutate({ segue: v })} />
+        <TextBlock
+          value={meeting.segue ?? ""}
+          canEdit={canEdit}
+          placeholder="Opening notes, personal & business bests..."
+          onSave={(v) => updateMeeting.mutate({ segue: v })}
+        />
       </Section>
 
       <Section title="Scorecard Review">
@@ -206,21 +252,37 @@ function L10DetailPage() {
       </Section>
 
       <Section title="Headlines">
-        <HeadlinesSection meetingId={id} canEdit={canEdit} isAdmin={isAdmin} members={members} userId={user?.id ?? null} />
+        <HeadlinesSection
+          meetingId={id}
+          canEdit={canEdit}
+          isAdmin={isAdmin}
+          members={members}
+          userId={user?.id ?? null}
+        />
       </Section>
 
       <Section title="To-Do Review">
         <TodosSection meetingId={id} canEdit={canEdit} members={members} />
       </Section>
 
-
       <Section title="IDS — Issues">
-        <IdsSection meetingId={id} canEdit={canEdit} isAdmin={isAdmin} members={members} userId={user?.id ?? null} />
+        <IdsSection
+          meetingId={id}
+          canEdit={canEdit}
+          isAdmin={isAdmin}
+          members={members}
+          userId={user?.id ?? null}
+        />
       </Section>
 
       <Section title="Conclude">
-        <ConcludeSection meeting={meeting} canEdit={canEdit} members={members} userId={user?.id ?? null}
-          onSave={(patch) => updateMeeting.mutate(patch)} />
+        <ConcludeSection
+          meeting={meeting}
+          canEdit={canEdit}
+          members={members}
+          userId={user?.id ?? null}
+          onSave={(patch) => updateMeeting.mutate(patch)}
+        />
       </Section>
     </div>
   );
@@ -235,14 +297,32 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function TextBlock({ value, canEdit, placeholder, onSave }: { value: string; canEdit: boolean; placeholder?: string; onSave: (v: string) => void }) {
+function TextBlock({
+  value,
+  canEdit,
+  placeholder,
+  onSave,
+}: {
+  value: string;
+  canEdit: boolean;
+  placeholder?: string;
+  onSave: (v: string) => void;
+}) {
   const [local, setLocal] = useState(value);
   useEffect(() => setLocal(value), [value]);
   return (
     <div className="space-y-2">
-      <Textarea rows={4} value={local} disabled={!canEdit} onChange={(e) => setLocal(e.target.value)} placeholder={placeholder} />
+      <Textarea
+        rows={4}
+        value={local}
+        disabled={!canEdit}
+        onChange={(e) => setLocal(e.target.value)}
+        placeholder={placeholder}
+      />
       {canEdit && local !== value && (
-        <Button size="sm" onClick={() => onSave(local)}>Save</Button>
+        <Button size="sm" onClick={() => onSave(local)}>
+          Save
+        </Button>
       )}
     </div>
   );
@@ -251,20 +331,35 @@ function TextBlock({ value, canEdit, placeholder, onSave }: { value: string; can
 // Emails excluded from the L10 attendee picker (kept in profiles for history/mentions).
 const L10_ATTENDEE_EXCLUDE_EMAILS = new Set(["nancy@mattsmithrealestategroup.com"]);
 
-function AttendeesEditor({ meeting, members, canEdit, onSave }: { meeting: Meeting; members: Member[]; canEdit: boolean; onSave: (ids: string[]) => void }) {
+function AttendeesEditor({
+  meeting,
+  members,
+  canEdit,
+  onSave,
+}: {
+  meeting: Meeting;
+  members: Member[];
+  canEdit: boolean;
+  onSave: (ids: string[]) => void;
+}) {
   const selected = new Set(meeting.attendees ?? []);
   const visible = members.filter((m) => !L10_ATTENDEE_EXCLUDE_EMAILS.has(m.email.toLowerCase()));
   const toggle = (id: string) => {
     if (!canEdit) return;
     const next = new Set(selected);
-    if (next.has(id)) next.delete(id); else next.add(id);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
     onSave(Array.from(next));
   };
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
       {visible.map((m) => (
         <label key={m.id} className="flex items-center gap-2 text-sm cursor-pointer">
-          <Checkbox checked={selected.has(m.id)} disabled={!canEdit} onCheckedChange={() => toggle(m.id)} />
+          <Checkbox
+            checked={selected.has(m.id)}
+            disabled={!canEdit}
+            onCheckedChange={() => toggle(m.id)}
+          />
           <span>{displayName(m)}</span>
         </label>
       ))}
@@ -327,7 +422,15 @@ function ScorecardSection({ meetingDate, members }: { meetingDate: string; membe
   };
 
   if (measurables.length === 0) {
-    return <div className="text-sm text-muted-foreground">No measurables defined. <Link to="/eos/scorecard" className="text-gold underline">Set them up</Link>.</div>;
+    return (
+      <div className="text-sm text-muted-foreground">
+        No measurables defined.{" "}
+        <Link to="/eos/scorecard" className="text-gold underline">
+          Set them up
+        </Link>
+        .
+      </div>
+    );
   }
 
   // Group by source
@@ -345,10 +448,14 @@ function ScorecardSection({ meetingDate, members }: { meetingDate: string; membe
     <div className="space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
         <div>
-          <span className="text-xs uppercase tracking-wider text-muted-foreground">Reviewing week of </span>
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">
+            Reviewing week of{" "}
+          </span>
           <span className="font-semibold">{rangeLabel}</span>
         </div>
-        <div className="text-xs text-muted-foreground">{submitted}/{total} numbers submitted · pulled from Scorecard</div>
+        <div className="text-xs text-muted-foreground">
+          {submitted}/{total} numbers submitted · pulled from Scorecard
+        </div>
       </div>
 
       <div className="space-y-5">
@@ -374,20 +481,28 @@ function ScorecardSection({ meetingDate, members }: { meetingDate: string; membe
                 {groups[g].map((m) => {
                   const has = entryMap.has(m.id);
                   const actual = entryMap.get(m.id);
-                  const hitResult = has ? isGoalHit(actual as number, m.weekly_target, m.goal_direction) : null;
+                  const hitResult = has
+                    ? isGoalHit(actual as number, m.weekly_target, m.goal_direction)
+                    : null;
                   const comparable = hitResult !== null;
                   const hit = hitResult === true;
                   return (
                     <tr key={m.id} className="border-t border-border">
                       <td className="py-2 pr-2 truncate">{m.label}</td>
-                      <td className="py-2 pr-2 text-muted-foreground truncate">{nameOf(m.owner_id)}</td>
-                      <td className="py-2 pr-2 text-right text-muted-foreground tabular-nums">{m.weekly_target}</td>
-                      <td className={cn(
-                        "py-2 text-right font-medium tabular-nums",
-                        !has && "text-muted-foreground italic font-normal",
-                        has && comparable && hit && "text-emerald-400",
-                        has && comparable && !hit && "text-destructive",
-                      )}>
+                      <td className="py-2 pr-2 text-muted-foreground truncate">
+                        {nameOf(m.owner_id)}
+                      </td>
+                      <td className="py-2 pr-2 text-right text-muted-foreground tabular-nums">
+                        {m.weekly_target}
+                      </td>
+                      <td
+                        className={cn(
+                          "py-2 text-right font-medium tabular-nums",
+                          !has && "text-muted-foreground italic font-normal",
+                          has && comparable && hit && "text-emerald-400",
+                          has && comparable && !hit && "text-destructive",
+                        )}
+                      >
                         {has ? actual : "not entered"}
                       </td>
                     </tr>
@@ -402,7 +517,15 @@ function ScorecardSection({ meetingDate, members }: { meetingDate: string; membe
   );
 }
 
-function RockReviewSection({ meetingId, canEdit, members }: { meetingId: string; canEdit: boolean; members: Member[] }) {
+function RockReviewSection({
+  meetingId,
+  canEdit,
+  members,
+}: {
+  meetingId: string;
+  canEdit: boolean;
+  members: Member[];
+}) {
   const qc = useQueryClient();
   const quarter = currentQuarter();
 
@@ -418,18 +541,25 @@ function RockReviewSection({ meetingId, canEdit, members }: { meetingId: string;
   const { data: reviews = [] } = useQuery({
     queryKey: ["rock-reviews", meetingId],
     queryFn: async () => {
-      const { data, error } = await sb.from("l10_rock_reviews").select("*").eq("meeting_id", meetingId);
+      const { data, error } = await sb
+        .from("l10_rock_reviews")
+        .select("*")
+        .eq("meeting_id", meetingId);
       if (error) throw error;
-      return (data ?? []) as { id: string; meeting_id: string; rock_id: string; status: RockStatus }[];
+      return (data ?? []) as {
+        id: string;
+        meeting_id: string;
+        rock_id: string;
+        status: RockStatus;
+      }[];
     },
   });
 
   const upsert = useMutation({
     mutationFn: async ({ rock_id, status }: { rock_id: string; status: RockStatus }) => {
-      const { error } = await sb.from("l10_rock_reviews").upsert(
-        { meeting_id: meetingId, rock_id, status },
-        { onConflict: "meeting_id,rock_id" },
-      );
+      const { error } = await sb
+        .from("l10_rock_reviews")
+        .upsert({ meeting_id: meetingId, rock_id, status }, { onConflict: "meeting_id,rock_id" });
       if (error) throw error;
       const { error: e2 } = await sb.from("rocks").update({ status }).eq("id", rock_id);
       if (e2) throw e2;
@@ -441,7 +571,8 @@ function RockReviewSection({ meetingId, canEdit, members }: { meetingId: string;
     onError: (e: Error) => toast.error(e.message),
   });
 
-  if (rocks.length === 0) return <div className="text-sm text-muted-foreground">No rocks for {quarter}.</div>;
+  if (rocks.length === 0)
+    return <div className="text-sm text-muted-foreground">No rocks for {quarter}.</div>;
 
   return (
     <div className="space-y-2">
@@ -452,13 +583,23 @@ function RockReviewSection({ meetingId, canEdit, members }: { meetingId: string;
           <div key={r.id} className="flex items-center gap-3 p-2 border border-border rounded">
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium truncate">{r.title}</div>
-              <div className="text-xs text-muted-foreground">{displayName(members.find((m) => m.id === r.owner))}</div>
+              <div className="text-xs text-muted-foreground">
+                {displayName(members.find((m) => m.id === r.owner))}
+              </div>
             </div>
-            <Select value={status} disabled={!canEdit} onValueChange={(v) => upsert.mutate({ rock_id: r.id, status: v as RockStatus })}>
-              <SelectTrigger className={cn("w-36 text-xs", ROCK_STATUS_CLASS[status])}><SelectValue /></SelectTrigger>
+            <Select
+              value={status}
+              disabled={!canEdit}
+              onValueChange={(v) => upsert.mutate({ rock_id: r.id, status: v as RockStatus })}
+            >
+              <SelectTrigger className={cn("w-36 text-xs", ROCK_STATUS_CLASS[status])}>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {(["on_track", "off_track", "complete"] as RockStatus[]).map((s) => (
-                  <SelectItem key={s} value={s}>{ROCK_STATUS_LABEL[s]}</SelectItem>
+                  <SelectItem key={s} value={s}>
+                    {ROCK_STATUS_LABEL[s]}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -469,7 +610,15 @@ function RockReviewSection({ meetingId, canEdit, members }: { meetingId: string;
   );
 }
 
-function TodosSection({ meetingId, canEdit, members }: { meetingId: string; canEdit: boolean; members: Member[] }) {
+function TodosSection({
+  meetingId,
+  canEdit,
+  members,
+}: {
+  meetingId: string;
+  canEdit: boolean;
+  members: Member[];
+}) {
   const qc = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
   const [title, setTitle] = useState("");
@@ -479,7 +628,11 @@ function TodosSection({ meetingId, canEdit, members }: { meetingId: string; canE
   const { data: todos = [] } = useQuery({
     queryKey: ["todos", meetingId],
     queryFn: async () => {
-      const { data, error } = await sb.from("todos").select("*").or(`completed.eq.false,meeting_id.eq.${meetingId}`).order("due_date");
+      const { data, error } = await sb
+        .from("todos")
+        .select("*")
+        .or(`completed.eq.false,meeting_id.eq.${meetingId}`)
+        .order("due_date");
       if (error) throw error;
       return (data ?? []) as Todo[];
     },
@@ -497,13 +650,18 @@ function TodosSection({ meetingId, canEdit, members }: { meetingId: string; canE
     mutationFn: async () => {
       if (!title.trim() || !owner) throw new Error("Title & owner required");
       const { error } = await sb.from("todos").insert({
-        title: title.trim(), owner, due_date: due, meeting_id: meetingId,
+        title: title.trim(),
+        owner,
+        due_date: due,
+        meeting_id: meetingId,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["todos"] });
-      setTitle(""); setOwner(""); setShowAdd(false);
+      setTitle("");
+      setOwner("");
+      setShowAdd(false);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -517,11 +675,18 @@ function TodosSection({ meetingId, canEdit, members }: { meetingId: string; canE
     const overdue = !t.completed && t.due_date < today;
     return (
       <div key={t.id} className="flex items-center gap-3 p-2 border border-border rounded">
-        <Checkbox checked={t.completed} onCheckedChange={(v) => toggle.mutate({ id: t.id, completed: !!v })} />
+        <Checkbox
+          checked={t.completed}
+          onCheckedChange={(v) => toggle.mutate({ id: t.id, completed: !!v })}
+        />
         <div className="flex-1 min-w-0">
-          <div className={cn("text-sm", t.completed && "line-through text-muted-foreground")}>{t.title}</div>
+          <div className={cn("text-sm", t.completed && "line-through text-muted-foreground")}>
+            {t.title}
+          </div>
           <div className={cn("text-xs", overdue ? "text-destructive" : "text-muted-foreground")}>
-            {displayName(members.find((m) => m.id === t.owner))} · Due {t.due_date}{overdue ? " · overdue" : ""}{t.completed ? " · done" : ""}
+            {displayName(members.find((m) => m.id === t.owner))} · Due {t.due_date}
+            {overdue ? " · overdue" : ""}
+            {t.completed ? " · done" : ""}
           </div>
         </div>
       </div>
@@ -535,39 +700,61 @@ function TodosSection({ meetingId, canEdit, members }: { meetingId: string; canE
           Carried over from previous meetings {carryover.length > 0 && `(${carryover.length})`}
         </div>
         <div className="space-y-2">
-          {carryover.length === 0 && <div className="text-sm text-muted-foreground italic">Nothing to carry over.</div>}
+          {carryover.length === 0 && (
+            <div className="text-sm text-muted-foreground italic">Nothing to carry over.</div>
+          )}
           {carryover.map(renderTodo)}
         </div>
         {carryover.length > 0 && (
-          <div className="text-[11px] text-muted-foreground mt-2">Tip: check off completed to-dos to clear them from next week's review.</div>
+          <div className="text-[11px] text-muted-foreground mt-2">
+            Tip: check off completed to-dos to clear them from next week's review.
+          </div>
         )}
       </div>
 
       {thisMeeting.length > 0 && (
         <div>
-          <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">New this meeting</div>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+            New this meeting
+          </div>
           <div className="space-y-2">{thisMeeting.map(renderTodo)}</div>
         </div>
       )}
 
       {canEdit && !showAdd && (
-        <Button size="sm" variant="outline" onClick={() => setShowAdd(true)}>+ Add To-Do</Button>
+        <Button size="sm" variant="outline" onClick={() => setShowAdd(true)}>
+          + Add To-Do
+        </Button>
       )}
       {canEdit && showAdd && (
         <div className="border border-border rounded p-3 space-y-2">
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="To-do title" />
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="To-do title"
+          />
           <div className="grid grid-cols-2 gap-2">
             <Select value={owner} onValueChange={setOwner}>
-              <SelectTrigger><SelectValue placeholder="Owner" /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue placeholder="Owner" />
+              </SelectTrigger>
               <SelectContent>
-                {members.map((m) => <SelectItem key={m.id} value={m.id}>{displayName(m)}</SelectItem>)}
+                {members.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {displayName(m)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
           </div>
           <div className="flex gap-2">
-            <Button size="sm" onClick={() => add.mutate()}>Add</Button>
-            <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>Cancel</Button>
+            <Button size="sm" onClick={() => add.mutate()}>
+              Add
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>
+              Cancel
+            </Button>
           </div>
         </div>
       )}
@@ -575,7 +762,19 @@ function TodosSection({ meetingId, canEdit, members }: { meetingId: string; canE
   );
 }
 
-function IdsSection({ meetingId, canEdit, isAdmin, members, userId }: { meetingId: string; canEdit: boolean; isAdmin: boolean; members: Member[]; userId: string | null }) {
+function IdsSection({
+  meetingId,
+  canEdit,
+  isAdmin,
+  members,
+  userId,
+}: {
+  meetingId: string;
+  canEdit: boolean;
+  isAdmin: boolean;
+  members: Member[];
+  userId: string | null;
+}) {
   const qc = useQueryClient();
   const [openIssue, setOpenIssue] = useState<Issue | null>(null);
   const [newTitle, setNewTitle] = useState("");
@@ -586,7 +785,12 @@ function IdsSection({ meetingId, canEdit, isAdmin, members, userId }: { meetingI
   const { data: issues = [] } = useQuery({
     queryKey: ["issues", meetingId],
     queryFn: async () => {
-      const { data, error } = await sb.from("issues").select("*").neq("status", "pending").or(`status.eq.open,meeting_id.eq.${meetingId}`).order("created_at");
+      const { data, error } = await sb
+        .from("issues")
+        .select("*")
+        .neq("status", "pending")
+        .or(`status.eq.open,meeting_id.eq.${meetingId}`)
+        .order("created_at");
       if (error) throw error;
       return (data ?? []) as Issue[];
     },
@@ -594,7 +798,10 @@ function IdsSection({ meetingId, canEdit, isAdmin, members, userId }: { meetingI
 
   const quickResolve = useMutation({
     mutationFn: async (issue_id: string) => {
-      const { error } = await sb.from("issues").update({ status: "solved", meeting_id: meetingId }).eq("id", issue_id);
+      const { error } = await sb
+        .from("issues")
+        .update({ status: "solved", meeting_id: meetingId })
+        .eq("id", issue_id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -619,11 +826,14 @@ function IdsSection({ meetingId, canEdit, isAdmin, members, userId }: { meetingI
     onError: (e: Error) => toast.error(e.message),
   });
 
-
   const { data: priorities = [] } = useQuery({
     queryKey: ["issue-priorities", meetingId],
     queryFn: async () => {
-      const { data, error } = await sb.from("l10_meeting_issue_priorities").select("*").eq("meeting_id", meetingId).order("rank");
+      const { data, error } = await sb
+        .from("l10_meeting_issue_priorities")
+        .select("*")
+        .eq("meeting_id", meetingId)
+        .order("rank");
       if (error) throw error;
       return (data ?? []) as IssuePriority[];
     },
@@ -641,7 +851,9 @@ function IdsSection({ meetingId, canEdit, isAdmin, members, userId }: { meetingI
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["issues"] });
-      setNewTitle(""); setNewDesc(""); setShowAdd(false);
+      setNewTitle("");
+      setNewDesc("");
+      setShowAdd(false);
       toast.success("Issue added");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -650,13 +862,18 @@ function IdsSection({ meetingId, canEdit, isAdmin, members, userId }: { meetingI
   const prioritize = useMutation({
     mutationFn: async (issue_id: string) => {
       if (priorities.find((p) => p.issue_id === issue_id)) {
-        const { error } = await sb.from("l10_meeting_issue_priorities").delete()
-          .eq("meeting_id", meetingId).eq("issue_id", issue_id);
+        const { error } = await sb
+          .from("l10_meeting_issue_priorities")
+          .delete()
+          .eq("meeting_id", meetingId)
+          .eq("issue_id", issue_id);
         if (error) throw error;
       } else {
         const nextRank = (priorities[priorities.length - 1]?.rank ?? 0) + 1;
         const { error } = await sb.from("l10_meeting_issue_priorities").insert({
-          meeting_id: meetingId, issue_id, rank: nextRank,
+          meeting_id: meetingId,
+          issue_id,
+          rank: nextRank,
         });
         if (error) throw error;
       }
@@ -670,11 +887,24 @@ function IdsSection({ meetingId, canEdit, isAdmin, members, userId }: { meetingI
       const idx = priorities.findIndex((p) => p.issue_id === issue_id);
       const swapIdx = idx + dir;
       if (idx < 0 || swapIdx < 0 || swapIdx >= priorities.length) return;
-      const a = priorities[idx], b = priorities[swapIdx];
+      const a = priorities[idx],
+        b = priorities[swapIdx];
       // swap ranks via two updates; use large temp to avoid PK collision
-      await sb.from("l10_meeting_issue_priorities").update({ rank: -999 }).eq("meeting_id", meetingId).eq("issue_id", a.issue_id);
-      await sb.from("l10_meeting_issue_priorities").update({ rank: a.rank }).eq("meeting_id", meetingId).eq("issue_id", b.issue_id);
-      await sb.from("l10_meeting_issue_priorities").update({ rank: b.rank }).eq("meeting_id", meetingId).eq("issue_id", a.issue_id);
+      await sb
+        .from("l10_meeting_issue_priorities")
+        .update({ rank: -999 })
+        .eq("meeting_id", meetingId)
+        .eq("issue_id", a.issue_id);
+      await sb
+        .from("l10_meeting_issue_priorities")
+        .update({ rank: a.rank })
+        .eq("meeting_id", meetingId)
+        .eq("issue_id", b.issue_id);
+      await sb
+        .from("l10_meeting_issue_priorities")
+        .update({ rank: b.rank })
+        .eq("meeting_id", meetingId)
+        .eq("issue_id", a.issue_id);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["issue-priorities", meetingId] }),
   });
@@ -692,7 +922,9 @@ function IdsSection({ meetingId, canEdit, isAdmin, members, userId }: { meetingI
           Top Issues to Discuss {prioritized.length > 0 && `(${prioritized.length})`}
         </div>
         {prioritized.length === 0 && (
-          <div className="text-sm text-muted-foreground italic">Star issues below to bring them up to the top.</div>
+          <div className="text-sm text-muted-foreground italic">
+            Star issues below to bring them up to the top.
+          </div>
         )}
         <div className="space-y-2">
           {prioritized.map((i, idx) => (
@@ -718,9 +950,13 @@ function IdsSection({ meetingId, canEdit, isAdmin, members, userId }: { meetingI
       </div>
 
       <div>
-        <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">All Open Issues</div>
+        <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+          All Open Issues
+        </div>
         <div className="space-y-2">
-          {unprioritized.length === 0 && <div className="text-sm text-muted-foreground italic">No other open issues.</div>}
+          {unprioritized.length === 0 && (
+            <div className="text-sm text-muted-foreground italic">No other open issues.</div>
+          )}
           {unprioritized.map((i) => (
             <IssueRow
               key={i.id}
@@ -746,11 +982,32 @@ function IdsSection({ meetingId, canEdit, isAdmin, members, userId }: { meetingI
       )}
       {showAdd && (
         <div className="border border-border rounded p-3 space-y-2">
-          <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Issue title" />
-          <Textarea rows={3} value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="Description (optional)" />
+          <Input
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            placeholder="Issue title"
+          />
+          <Textarea
+            rows={3}
+            value={newDesc}
+            onChange={(e) => setNewDesc(e.target.value)}
+            placeholder="Description (optional)"
+          />
           <div className="flex gap-2">
-            <Button size="sm" onClick={() => addIssue.mutate()} disabled={addIssue.isPending}>Add</Button>
-            <Button size="sm" variant="ghost" onClick={() => { setShowAdd(false); setNewTitle(""); setNewDesc(""); }}>Cancel</Button>
+            <Button size="sm" onClick={() => addIssue.mutate()} disabled={addIssue.isPending}>
+              Add
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setShowAdd(false);
+                setNewTitle("");
+                setNewDesc("");
+              }}
+            >
+              Cancel
+            </Button>
           </div>
         </div>
       )}
@@ -763,7 +1020,11 @@ function IdsSection({ meetingId, canEdit, isAdmin, members, userId }: { meetingI
         canEdit={canEdit}
         isAdmin={isAdmin}
         onClose={() => setOpenIssue(null)}
-        onDeleted={() => { setOpenIssue(null); qc.invalidateQueries({ queryKey: ["issues"] }); qc.invalidateQueries({ queryKey: ["issue-priorities", meetingId] }); }}
+        onDeleted={() => {
+          setOpenIssue(null);
+          qc.invalidateQueries({ queryKey: ["issues"] });
+          qc.invalidateQueries({ queryKey: ["issue-priorities", meetingId] });
+        }}
       />
 
       <Dialog open={!!confirmDel} onOpenChange={(o) => !o && setConfirmDel(null)}>
@@ -771,12 +1032,19 @@ function IdsSection({ meetingId, canEdit, isAdmin, members, userId }: { meetingI
           <DialogHeader>
             <DialogTitle>Delete this issue?</DialogTitle>
             <DialogDescription>
-              "{confirmDel?.title}" will be permanently removed. Use this for duplicates or mistakes. To keep a record, mark it Resolved instead.
+              "{confirmDel?.title}" will be permanently removed. Use this for duplicates or
+              mistakes. To keep a record, mark it Resolved instead.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setConfirmDel(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={() => confirmDel && deleteIssue.mutate(confirmDel.id)} disabled={deleteIssue.isPending}>
+            <Button variant="ghost" onClick={() => setConfirmDel(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => confirmDel && deleteIssue.mutate(confirmDel.id)}
+              disabled={deleteIssue.isPending}
+            >
               Yes, delete
             </Button>
           </DialogFooter>
@@ -787,7 +1055,20 @@ function IdsSection({ meetingId, canEdit, isAdmin, members, userId }: { meetingI
 }
 
 function IssueRow({
-  issue, members, rank, canEdit, isAdmin, isPrioritized, canMoveUp, canMoveDown, meetingId, onOpen, onStar, onMove, onResolve, onDelete,
+  issue,
+  members,
+  rank,
+  canEdit,
+  isAdmin,
+  isPrioritized,
+  canMoveUp,
+  canMoveDown,
+  meetingId,
+  onOpen,
+  onStar,
+  onMove,
+  onResolve,
+  onDelete,
 }: {
   issue: Issue;
   members: Member[];
@@ -812,27 +1093,49 @@ function IssueRow({
         </div>
       )}
       <button onClick={onOpen} className="flex-1 min-w-0 text-left">
-
         <div className="text-sm font-medium">{issue.title}</div>
-        {issue.description && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{issue.description}</div>}
+        {issue.description && (
+          <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{issue.description}</div>
+        )}
         <div className="text-[10px] text-muted-foreground mt-1">
-          from {displayName(members.find((m) => m.id === issue.submitted_by)) ?? "—"} · {format(new Date(issue.created_at), "MMM d")}
-          {issue.status !== "open" && <span className="ml-2 px-1.5 py-0.5 bg-muted rounded uppercase">{issue.status}</span>}
+          from {displayName(members.find((m) => m.id === issue.submitted_by)) ?? "—"} ·{" "}
+          {format(new Date(issue.created_at), "MMM d")}
+          {issue.status !== "open" && (
+            <span className="ml-2 px-1.5 py-0.5 bg-muted rounded uppercase">{issue.status}</span>
+          )}
         </div>
       </button>
       <div className="flex items-center gap-1 shrink-0">
         {isPrioritized && onMove && (
           <>
-            <Button size="icon" variant="ghost" className="h-7 w-7" disabled={!canEdit || !canMoveUp} onClick={() => onMove(-1)}>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              disabled={!canEdit || !canMoveUp}
+              onClick={() => onMove(-1)}
+            >
               <ArrowUp className="h-3.5 w-3.5" />
             </Button>
-            <Button size="icon" variant="ghost" className="h-7 w-7" disabled={!canEdit || !canMoveDown} onClick={() => onMove(1)}>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              disabled={!canEdit || !canMoveDown}
+              onClick={() => onMove(1)}
+            >
               <ArrowDown className="h-3.5 w-3.5" />
             </Button>
           </>
         )}
         {canEdit && issue.status === "open" && (
-          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onStar} title={isPrioritized ? "Remove from top" : "Move to top"}>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            onClick={onStar}
+            title={isPrioritized ? "Remove from top" : "Move to top"}
+          >
             {isPrioritized ? <X className="h-3.5 w-3.5" /> : <Star className="h-3.5 w-3.5" />}
           </Button>
         )}
@@ -840,12 +1143,24 @@ function IssueRow({
           <ReclassifyIssueMenu issue={issue} meetingId={meetingId} iconOnly />
         )}
         {canEdit && issue.status === "open" && onResolve && (
-          <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-400 hover:text-emerald-300" onClick={onResolve} title="Mark resolved">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 text-emerald-400 hover:text-emerald-300"
+            onClick={onResolve}
+            title="Mark resolved"
+          >
             <CheckCircle2 className="h-3.5 w-3.5" />
           </Button>
         )}
         {isAdmin && onDelete && (
-          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={onDelete} title="Delete issue">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 text-destructive hover:text-destructive"
+            onClick={onDelete}
+            title="Delete issue"
+          >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         )}
@@ -855,7 +1170,14 @@ function IssueRow({
 }
 
 function IssueDetailDialog({
-  issue, meetingId, members, userId, canEdit, isAdmin, onClose, onDeleted,
+  issue,
+  meetingId,
+  members,
+  userId,
+  canEdit,
+  isAdmin,
+  onClose,
+  onDeleted,
 }: {
   issue: Issue | null;
   meetingId: string;
@@ -875,13 +1197,18 @@ function IssueDetailDialog({
   const [showActionForm, setShowActionForm] = useState(false);
   const [taskTitle, setTaskTitle] = useState("");
   const [taskOwner, setTaskOwner] = useState("");
-  const [taskDue, setTaskDue] = useState(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));
+  const [taskDue, setTaskDue] = useState(
+    new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+  );
   const [showTaskForm, setShowTaskForm] = useState(false);
 
   useEffect(() => {
     if (issue) {
-      setNoteBody(""); setOutcome(""); setAction("solved");
-      setShowActionForm(false); setShowTaskForm(false);
+      setNoteBody("");
+      setOutcome("");
+      setAction("solved");
+      setShowActionForm(false);
+      setShowTaskForm(false);
       setTaskTitle("");
     }
   }, [issue?.id]);
@@ -890,7 +1217,11 @@ function IssueDetailDialog({
     queryKey: ["issue-notes", issue?.id],
     enabled: !!issue,
     queryFn: async () => {
-      const { data, error } = await sb.from("issue_notes").select("*").eq("issue_id", issue!.id).order("created_at");
+      const { data, error } = await sb
+        .from("issue_notes")
+        .select("*")
+        .eq("issue_id", issue!.id)
+        .order("created_at");
       if (error) throw error;
       return (data ?? []) as IssueNote[];
     },
@@ -900,7 +1231,11 @@ function IssueDetailDialog({
     queryKey: ["issue-tasks", issue?.id],
     enabled: !!issue,
     queryFn: async () => {
-      const { data, error } = await sb.from("todos").select("*").eq("issue_id", issue!.id).order("created_at");
+      const { data, error } = await sb
+        .from("todos")
+        .select("*")
+        .eq("issue_id", issue!.id)
+        .order("created_at");
       if (error) throw error;
       return (data ?? []) as Todo[];
     },
@@ -910,7 +1245,9 @@ function IssueDetailDialog({
     mutationFn: async () => {
       if (!noteBody.trim() || !issue || !userId) return;
       const { error } = await sb.from("issue_notes").insert({
-        issue_id: issue.id, author_id: userId, body: noteBody.trim(),
+        issue_id: issue.id,
+        author_id: userId,
+        body: noteBody.trim(),
       });
       if (error) throw error;
     },
@@ -934,7 +1271,9 @@ function IssueDetailDialog({
       if (error) throw error;
     },
     onSuccess: () => {
-      setTaskTitle(""); setTaskOwner(""); setShowTaskForm(false);
+      setTaskTitle("");
+      setTaskOwner("");
+      setShowTaskForm(false);
       qc.invalidateQueries({ queryKey: ["issue-tasks", issue?.id] });
       qc.invalidateQueries({ queryKey: ["todos"] });
       toast.success("Task created");
@@ -947,21 +1286,37 @@ function IssueDetailDialog({
       if (!issue) return;
       if (action === "converted") {
         if (!convertOwner) throw new Error("Pick an owner for the new rock");
-        const { data: rock, error: rerr } = await sb.from("rocks").insert({
-          title: issue.title, description: issue.description,
-          owner: convertOwner, quarter: convertQuarter, status: "on_track",
-        }).select().single();
+        const { data: rock, error: rerr } = await sb
+          .from("rocks")
+          .insert({
+            title: issue.title,
+            description: issue.description,
+            owner: convertOwner,
+            quarter: convertQuarter,
+            status: "on_track",
+          })
+          .select()
+          .single();
         if (rerr) throw rerr;
-        const { error } = await sb.from("issues").update({
-          status: "converted", meeting_id: meetingId, converted_rock_id: rock.id, outcome_note: outcome || null,
-        }).eq("id", issue.id);
+        const { error } = await sb
+          .from("issues")
+          .update({
+            status: "converted",
+            meeting_id: meetingId,
+            converted_rock_id: rock.id,
+            outcome_note: outcome || null,
+          })
+          .eq("id", issue.id);
         if (error) throw error;
       } else {
-        const { error } = await sb.from("issues").update({
-          status: action,
-          meeting_id: action === "solved" ? meetingId : null,
-          outcome_note: outcome || null,
-        }).eq("id", issue.id);
+        const { error } = await sb
+          .from("issues")
+          .update({
+            status: action,
+            meeting_id: action === "solved" ? meetingId : null,
+            outcome_note: outcome || null,
+          })
+          .eq("id", issue.id);
         if (error) throw error;
       }
     },
@@ -990,8 +1345,14 @@ function IssueDetailDialog({
                 </div>
               )}
               <div className="text-xs text-muted-foreground">
-                Submitted by {displayName(members.find((m) => m.id === issue.submitted_by)) ?? "—"} on {format(new Date(issue.created_at), "MMM d, yyyy")}
-                {issue.status !== "open" && <> · <span className="uppercase font-semibold">{issue.status}</span></>}
+                Submitted by {displayName(members.find((m) => m.id === issue.submitted_by)) ?? "—"}{" "}
+                on {format(new Date(issue.created_at), "MMM d, yyyy")}
+                {issue.status !== "open" && (
+                  <>
+                    {" "}
+                    · <span className="uppercase font-semibold">{issue.status}</span>
+                  </>
+                )}
               </div>
               {issue.outcome_note && (
                 <div className="text-sm bg-muted/40 p-3 rounded">
@@ -1002,21 +1363,37 @@ function IssueDetailDialog({
 
               {/* Notes */}
               <div>
-                <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Notes</div>
+                <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+                  Notes
+                </div>
                 <div className="space-y-2">
-                  {notes.length === 0 && <div className="text-xs text-muted-foreground italic">No notes yet.</div>}
+                  {notes.length === 0 && (
+                    <div className="text-xs text-muted-foreground italic">No notes yet.</div>
+                  )}
                   {notes.map((n) => (
                     <div key={n.id} className="border border-border rounded p-2">
                       <div className="text-xs text-muted-foreground mb-1">
-                        {displayName(members.find((m) => m.id === n.author_id)) ?? "—"} · {format(new Date(n.created_at), "MMM d, h:mm a")}
+                        {displayName(members.find((m) => m.id === n.author_id)) ?? "—"} ·{" "}
+                        {format(new Date(n.created_at), "MMM d, h:mm a")}
                       </div>
                       <div className="text-sm whitespace-pre-wrap">{n.body}</div>
                     </div>
                   ))}
                 </div>
                 <div className="mt-2 flex gap-2">
-                  <Textarea rows={2} value={noteBody} onChange={(e) => setNoteBody(e.target.value)} placeholder="Add a note..." />
-                  <Button size="sm" onClick={() => addNote.mutate()} disabled={!noteBody.trim() || addNote.isPending}>Post</Button>
+                  <Textarea
+                    rows={2}
+                    value={noteBody}
+                    onChange={(e) => setNoteBody(e.target.value)}
+                    placeholder="Add a note..."
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => addNote.mutate()}
+                    disabled={!noteBody.trim() || addNote.isPending}
+                  >
+                    Post
+                  </Button>
                 </div>
               </div>
 
@@ -1031,12 +1408,19 @@ function IssueDetailDialog({
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  {tasks.length === 0 && !showTaskForm && <div className="text-xs text-muted-foreground italic">No tasks yet.</div>}
+                  {tasks.length === 0 && !showTaskForm && (
+                    <div className="text-xs text-muted-foreground italic">No tasks yet.</div>
+                  )}
                   {tasks.map((t) => (
-                    <div key={t.id} className="text-sm border border-border rounded p-2 flex items-center gap-2">
+                    <div
+                      key={t.id}
+                      className="text-sm border border-border rounded p-2 flex items-center gap-2"
+                    >
                       <Checkbox checked={t.completed} disabled />
                       <div className="flex-1">
-                        <div className={cn(t.completed && "line-through text-muted-foreground")}>{t.title}</div>
+                        <div className={cn(t.completed && "line-through text-muted-foreground")}>
+                          {t.title}
+                        </div>
                         <div className="text-xs text-muted-foreground">
                           {displayName(members.find((m) => m.id === t.owner))} · Due {t.due_date}
                         </div>
@@ -1046,19 +1430,41 @@ function IssueDetailDialog({
                 </div>
                 {showTaskForm && (
                   <div className="border border-border rounded p-3 space-y-2 mt-2">
-                    <Input value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} placeholder="Task title" />
+                    <Input
+                      value={taskTitle}
+                      onChange={(e) => setTaskTitle(e.target.value)}
+                      placeholder="Task title"
+                    />
                     <div className="grid grid-cols-2 gap-2">
                       <Select value={taskOwner} onValueChange={setTaskOwner}>
-                        <SelectTrigger><SelectValue placeholder="Owner" /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Owner" />
+                        </SelectTrigger>
                         <SelectContent>
-                          {members.map((m) => <SelectItem key={m.id} value={m.id}>{displayName(m)}</SelectItem>)}
+                          {members.map((m) => (
+                            <SelectItem key={m.id} value={m.id}>
+                              {displayName(m)}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
-                      <Input type="date" value={taskDue} onChange={(e) => setTaskDue(e.target.value)} />
+                      <Input
+                        type="date"
+                        value={taskDue}
+                        onChange={(e) => setTaskDue(e.target.value)}
+                      />
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" onClick={() => addTask.mutate()} disabled={addTask.isPending}>Add Task</Button>
-                      <Button size="sm" variant="ghost" onClick={() => setShowTaskForm(false)}>Cancel</Button>
+                      <Button
+                        size="sm"
+                        onClick={() => addTask.mutate()}
+                        disabled={addTask.isPending}
+                      >
+                        Add Task
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setShowTaskForm(false)}>
+                        Cancel
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -1068,33 +1474,58 @@ function IssueDetailDialog({
               {canEdit && issue.status === "open" && (
                 <div>
                   {!showActionForm ? (
-                    <Button size="sm" variant="outline" onClick={() => setShowActionForm(true)}>Resolve Issue</Button>
+                    <Button size="sm" variant="outline" onClick={() => setShowActionForm(true)}>
+                      Resolve Issue
+                    </Button>
                   ) : (
                     <div className="border border-border rounded p-3 space-y-2">
-                      <div className="text-xs uppercase tracking-wide text-muted-foreground">Resolve</div>
+                      <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                        Resolve
+                      </div>
                       <Select value={action} onValueChange={(v) => setAction(v as any)}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="solved">Solved</SelectItem>
                           <SelectItem value="tabled">Table to next meeting</SelectItem>
                           <SelectItem value="converted">Convert to Rock</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Textarea rows={2} value={outcome} onChange={(e) => setOutcome(e.target.value)} placeholder="Outcome note (optional)" />
+                      <Textarea
+                        rows={2}
+                        value={outcome}
+                        onChange={(e) => setOutcome(e.target.value)}
+                        placeholder="Outcome note (optional)"
+                      />
                       {action === "converted" && (
                         <div className="grid grid-cols-2 gap-2">
                           <Select value={convertOwner} onValueChange={setConvertOwner}>
-                            <SelectTrigger><SelectValue placeholder="Rock owner" /></SelectTrigger>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Rock owner" />
+                            </SelectTrigger>
                             <SelectContent>
-                              {members.map((m) => <SelectItem key={m.id} value={m.id}>{displayName(m)}</SelectItem>)}
+                              {members.map((m) => (
+                                <SelectItem key={m.id} value={m.id}>
+                                  {displayName(m)}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
-                          <Input value={convertQuarter} onChange={(e) => setConvertQuarter(e.target.value)} placeholder="Q3 2026" />
+                          <Input
+                            value={convertQuarter}
+                            onChange={(e) => setConvertQuarter(e.target.value)}
+                            placeholder="Q3 2026"
+                          />
                         </div>
                       )}
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={() => apply.mutate()} disabled={apply.isPending}>Apply</Button>
-                        <Button size="sm" variant="ghost" onClick={() => setShowActionForm(false)}>Cancel</Button>
+                        <Button size="sm" onClick={() => apply.mutate()} disabled={apply.isPending}>
+                          Apply
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setShowActionForm(false)}>
+                          Cancel
+                        </Button>
                       </div>
                     </div>
                   )}
@@ -1110,7 +1541,10 @@ function IssueDetailDialog({
                     if (!issue) return;
                     if (!confirm(`Delete "${issue.title}"? This cannot be undone.`)) return;
                     const { error } = await sb.from("issues").delete().eq("id", issue.id);
-                    if (error) { toast.error(error.message); return; }
+                    if (error) {
+                      toast.error(error.message);
+                      return;
+                    }
                     toast.success("Issue deleted");
                     qc.invalidateQueries({ queryKey: ["issues"] });
                     onDeleted();
@@ -1118,8 +1552,12 @@ function IssueDetailDialog({
                 >
                   <Trash2 className="h-4 w-4 mr-1" /> Delete
                 </Button>
-              ) : <span />}
-              <Button variant="ghost" onClick={onClose}>Close</Button>
+              ) : (
+                <span />
+              )}
+              <Button variant="ghost" onClick={onClose}>
+                Close
+              </Button>
             </DialogFooter>
           </>
         )}
@@ -1129,7 +1567,11 @@ function IssueDetailDialog({
 }
 
 function ConcludeSection({
-  meeting, canEdit, members, userId, onSave,
+  meeting,
+  canEdit,
+  members,
+  userId,
+  onSave,
 }: {
   meeting: Meeting;
   canEdit: boolean;
@@ -1144,7 +1586,10 @@ function ConcludeSection({
   const { data: ratings = [] } = useQuery({
     queryKey: ["meeting-ratings", meeting.id],
     queryFn: async () => {
-      const { data, error } = await sb.from("l10_meeting_ratings").select("*").eq("meeting_id", meeting.id);
+      const { data, error } = await sb
+        .from("l10_meeting_ratings")
+        .select("*")
+        .eq("meeting_id", meeting.id);
       if (error) throw error;
       return (data ?? []) as MeetingRating[];
     },
@@ -1153,19 +1598,22 @@ function ConcludeSection({
   const setRating = useMutation({
     mutationFn: async ({ targetId, rating }: { targetId: string; rating: number }) => {
       if (!userId) throw new Error("Sign in required");
-      const { error } = await sb.from("l10_meeting_ratings").upsert(
-        { meeting_id: meeting.id, user_id: targetId, rating },
-        { onConflict: "meeting_id,user_id" },
-      );
+      const { error } = await sb
+        .from("l10_meeting_ratings")
+        .upsert(
+          { meeting_id: meeting.id, user_id: targetId, rating },
+          { onConflict: "meeting_id,user_id" },
+        );
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["meeting-ratings", meeting.id] }),
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const avg = ratings.length > 0
-    ? (ratings.reduce((s, r) => s + r.rating, 0) / ratings.length).toFixed(1)
-    : null;
+  const avg =
+    ratings.length > 0
+      ? (ratings.reduce((s, r) => s + r.rating, 0) / ratings.length).toFixed(1)
+      : null;
 
   // Show ratings for all attendees of this meeting
   const attendeeIds = meeting.attendees ?? [];
@@ -1175,9 +1623,12 @@ function ConcludeSection({
     <div className="space-y-5">
       <div>
         <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-          Attendee ratings (1–10) {avg && <span className="text-foreground font-semibold">· Avg {avg}</span>}
+          Attendee ratings (1–10){" "}
+          {avg && <span className="text-foreground font-semibold">· Avg {avg}</span>}
         </div>
-        {attendees.length === 0 && <div className="text-sm text-muted-foreground italic">No attendees set.</div>}
+        {attendees.length === 0 && (
+          <div className="text-sm text-muted-foreground italic">No attendees set.</div>
+        )}
         <div className="space-y-2">
           {attendees.map((a) => {
             const r = ratings.find((x) => x.user_id === a.id);
@@ -1185,8 +1636,18 @@ function ConcludeSection({
             return (
               <div key={a.id} className="border border-border rounded p-3">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm font-medium">{displayName(a)}{a.id === userId && <span className="text-muted-foreground text-xs ml-2">(you)</span>}</div>
-                  <div className={cn("text-sm font-semibold", r ? "text-foreground" : "text-muted-foreground")}>
+                  <div className="text-sm font-medium">
+                    {displayName(a)}
+                    {a.id === userId && (
+                      <span className="text-muted-foreground text-xs ml-2">(you)</span>
+                    )}
+                  </div>
+                  <div
+                    className={cn(
+                      "text-sm font-semibold",
+                      r ? "text-foreground" : "text-muted-foreground",
+                    )}
+                  >
                     {r ? `${r.rating}/10` : "—"}
                   </div>
                 </div>
@@ -1215,10 +1676,22 @@ function ConcludeSection({
       </div>
 
       <div>
-        <label className="text-xs uppercase tracking-wide text-muted-foreground">Closing notes</label>
-        <Textarea rows={4} value={notes} disabled={!canEdit} onChange={(e) => setNotes(e.target.value)} className="mt-2" />
+        <label className="text-xs uppercase tracking-wide text-muted-foreground">
+          Closing notes
+        </label>
+        <Textarea
+          rows={4}
+          value={notes}
+          disabled={!canEdit}
+          onChange={(e) => setNotes(e.target.value)}
+          className="mt-2"
+        />
         {canEdit && notes !== (meeting.conclude_notes ?? "") && (
-          <Button size="sm" className="mt-2" onClick={() => onSave({ conclude_notes: notes || null })}>
+          <Button
+            size="sm"
+            className="mt-2"
+            onClick={() => onSave({ conclude_notes: notes || null })}
+          >
             Save notes
           </Button>
         )}

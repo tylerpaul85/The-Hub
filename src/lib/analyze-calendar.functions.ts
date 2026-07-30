@@ -23,7 +23,6 @@ const InputSchema = z.object({
   items: z.array(ItemSchema),
 });
 
-
 export type Recommendation = {
   title: string;
   description: string;
@@ -89,7 +88,10 @@ Each item must have this shape: { "title": string, "description": string, "categ
         max_tokens: 4000,
         system,
         messages: [
-          { role: "user", content: `Here is the content calendar data to analyze:\n\n${JSON.stringify(userPayload, null, 2)}\n\nReturn ONLY the JSON array.` },
+          {
+            role: "user",
+            content: `Here is the content calendar data to analyze:\n\n${JSON.stringify(userPayload, null, 2)}\n\nReturn ONLY the JSON array.`,
+          },
         ],
       }),
     });
@@ -104,7 +106,8 @@ Each item must have this shape: { "title": string, "description": string, "categ
       content?: { type: string; text?: string }[];
       stop_reason?: string;
     };
-    const content = json.content?.map((b) => (b.type === "text" ? b.text ?? "" : "")).join("") ?? "";
+    const content =
+      json.content?.map((b) => (b.type === "text" ? (b.text ?? "") : "")).join("") ?? "";
 
     let recommendations: Recommendation[] = [];
     const tryParse = (s: string) => {
@@ -141,7 +144,5 @@ Each item must have this shape: { "title": string, "description": string, "categ
       });
     }
 
-
     return { recommendations, generatedAt: new Date().toISOString() };
   });
-

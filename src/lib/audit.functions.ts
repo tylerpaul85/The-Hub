@@ -43,7 +43,13 @@ export const logAuthEvent = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) =>
     z
       .object({
-        event_type: z.enum(["auth.login_success", "auth.login_failure", "auth.signout", "auth.signup", "auth.rate_limited"]),
+        event_type: z.enum([
+          "auth.login_success",
+          "auth.login_failure",
+          "auth.signout",
+          "auth.signup",
+          "auth.rate_limited",
+        ]),
         email: z.string().email().max(255).optional(),
         reason: z.string().max(200).optional(),
       })

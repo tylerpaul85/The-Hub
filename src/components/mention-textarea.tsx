@@ -25,7 +25,15 @@ interface Props {
  * of users whose display name or handle starts with the token. Inserting picks a user
  * and stores `@Handle` in the body; the user id is added to the returned mentions array.
  */
-export function MentionTextarea({ value, onChange, users, placeholder, rows = 3, disabled, className }: Props) {
+export function MentionTextarea({
+  value,
+  onChange,
+  users,
+  placeholder,
+  rows = 3,
+  disabled,
+  className,
+}: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const [query, setQuery] = useState<string | null>(null);
   const [active, setActive] = useState(0);
@@ -40,7 +48,9 @@ export function MentionTextarea({ value, onChange, users, placeholder, rows = 3,
     return ids;
   };
 
-  useEffect(() => { setActive(0); }, [query]);
+  useEffect(() => {
+    setActive(0);
+  }, [query]);
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
@@ -51,20 +61,24 @@ export function MentionTextarea({ value, onChange, users, placeholder, rows = 3,
     onChange(text, computeMentions(text));
   };
 
-  const filtered = query !== null
-    ? users.filter((u) => {
-        const q = query.toLowerCase();
-        return (
-          mentionHandle(u).toLowerCase().startsWith(q) ||
-          displayName(u).toLowerCase().startsWith(q) ||
-          (u.first_name ?? "").toLowerCase().startsWith(q) ||
-          u.email.toLowerCase().startsWith(q)
-        );
-      }).slice(0, 6)
-    : [];
+  const filtered =
+    query !== null
+      ? users
+          .filter((u) => {
+            const q = query.toLowerCase();
+            return (
+              mentionHandle(u).toLowerCase().startsWith(q) ||
+              displayName(u).toLowerCase().startsWith(q) ||
+              (u.first_name ?? "").toLowerCase().startsWith(q) ||
+              u.email.toLowerCase().startsWith(q)
+            );
+          })
+          .slice(0, 6)
+      : [];
 
   const pick = (u: MentionUser) => {
-    const ta = ref.current; if (!ta) return;
+    const ta = ref.current;
+    if (!ta) return;
     const caret = ta.selectionStart ?? value.length;
     const before = value.slice(0, caret);
     const after = value.slice(caret);
@@ -81,10 +95,18 @@ export function MentionTextarea({ value, onChange, users, placeholder, rows = 3,
 
   const onKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (filtered.length === 0) return;
-    if (e.key === "ArrowDown") { e.preventDefault(); setActive((a) => (a + 1) % filtered.length); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); setActive((a) => (a - 1 + filtered.length) % filtered.length); }
-    else if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); pick(filtered[active]); }
-    else if (e.key === "Escape") { setQuery(null); }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActive((a) => (a + 1) % filtered.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActive((a) => (a - 1 + filtered.length) % filtered.length);
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      pick(filtered[active]);
+    } else if (e.key === "Escape") {
+      setQuery(null);
+    }
   };
 
   return (
@@ -107,7 +129,10 @@ export function MentionTextarea({ value, onChange, users, placeholder, rows = 3,
               <button
                 key={u.id}
                 type="button"
-                onMouseDown={(e) => { e.preventDefault(); pick(u); }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  pick(u);
+                }}
                 className={cn(
                   "w-full text-left px-3 py-1.5 text-sm flex items-center gap-2",
                   i === active ? "bg-gold/15 text-gold" : "hover:bg-accent/40",

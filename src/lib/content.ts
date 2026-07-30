@@ -26,7 +26,15 @@ export const BRAND_STYLES: Record<string, string> = {
   MSREG: "bg-purple-400/15 text-purple-300 border-purple-400/40",
 };
 
-export const STATUSES = ["draft", "in_review", "needs_revision", "pending_re_approval", "approved", "scheduled", "published"] as const;
+export const STATUSES = [
+  "draft",
+  "in_review",
+  "needs_revision",
+  "pending_re_approval",
+  "approved",
+  "scheduled",
+  "published",
+] as const;
 export type Status = (typeof STATUSES)[number];
 
 export const PRIORITIES = ["low", "normal", "high", "urgent"] as const;
@@ -46,7 +54,8 @@ export const STATUS_CLASS: Record<Status, string> = {
   draft: "bg-status-draft/25 text-status-draft border-status-draft/50",
   in_review: "bg-status-review/25 text-status-review border-status-review/50",
   needs_revision: "bg-destructive/20 text-destructive border-destructive/50",
-  pending_re_approval: "bg-[oklch(0.72_0.18_55)]/20 text-[oklch(0.82_0.18_55)] border-[oklch(0.72_0.18_55)]/50",
+  pending_re_approval:
+    "bg-[oklch(0.72_0.18_55)]/20 text-[oklch(0.82_0.18_55)] border-[oklch(0.72_0.18_55)]/50",
   approved: "bg-status-approved/25 text-status-approved border-status-approved/50",
   scheduled: "bg-status-scheduled/25 text-status-scheduled border-status-scheduled/50",
   published: "bg-status-published/25 text-status-published border-status-published/50",

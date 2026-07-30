@@ -62,7 +62,10 @@ export const deleteDutyAgent = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdminOrCare(context.supabase, context.userId);
-    const { error } = await context.supabase.from("duty_calendar_agents").delete().eq("id", data.id);
+    const { error } = await context.supabase
+      .from("duty_calendar_agents")
+      .delete()
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -86,9 +89,7 @@ export const bulkImportDutyAgents = createServerFn({ method: "POST" })
     const { data: existing } = await context.supabase
       .from("duty_calendar_agents")
       .select("name,office");
-    const seen = new Set(
-      (existing ?? []).map((e: any) => `${e.name.toLowerCase()}|${e.office}`),
-    );
+    const seen = new Set((existing ?? []).map((e: any) => `${e.name.toLowerCase()}|${e.office}`));
     const toInsert = data.rows
       .filter((r) => !seen.has(`${r.name.toLowerCase()}|${r.office}`))
       .map((r) => ({ name: r.name, office: r.office, status: "active" as const }));
@@ -132,7 +133,10 @@ export const submitAvailability = createServerFn({ method: "POST" })
       reason: data.reason ?? null,
     };
     if (data.id) {
-      const { error } = await context.supabase.from("agent_availability").update(payload).eq("id", data.id);
+      const { error } = await context.supabase
+        .from("agent_availability")
+        .update(payload)
+        .eq("id", data.id);
       if (error) throw new Error(error.message);
       return { ok: true, id: data.id };
     }
@@ -175,7 +179,9 @@ function daysInMonth(year: number, month: number) {
 export const getDutyCalendar = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ month: z.number().int().min(1).max(12), year: z.number().int(), office: OFFICE }).parse(d),
+    z
+      .object({ month: z.number().int().min(1).max(12), year: z.number().int(), office: OFFICE })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
@@ -229,7 +235,9 @@ export const getDutyCalendar = createServerFn({ method: "POST" })
         };
       })
       .sort((a: any, b: any) =>
-        a.date_start === b.date_start ? a.agent_name.localeCompare(b.agent_name) : a.date_start.localeCompare(b.date_start),
+        a.date_start === b.date_start
+          ? a.agent_name.localeCompare(b.agent_name)
+          : a.date_start.localeCompare(b.date_start),
       );
 
     return { grid, agents: agents ?? [], days_in_month: dim, ooo_ranges };
@@ -250,18 +258,16 @@ export const assignDutyDay = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdminOrCare(context.supabase, context.userId);
-    const { error } = await context.supabase
-      .from("duty_calendar")
-      .upsert(
-        {
-          year: data.year,
-          month: data.month,
-          office: data.office,
-          duty_day: data.day,
-          assigned_agent_id: data.agent_id,
-        },
-        { onConflict: "year,month,office,duty_day" },
-      );
+    const { error } = await context.supabase.from("duty_calendar").upsert(
+      {
+        year: data.year,
+        month: data.month,
+        office: data.office,
+        duty_day: data.day,
+        assigned_agent_id: data.agent_id,
+      },
+      { onConflict: "year,month,office,duty_day" },
+    );
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -274,7 +280,9 @@ export const createDutyCalendar = createServerFn({ method: "POST" })
         month: z.number().int().min(1).max(12),
         year: z.number().int(),
         office: OFFICE,
-        assignments: z.array(z.object({ day: z.number().int(), agent_id: z.string().uuid().nullable() })),
+        assignments: z.array(
+          z.object({ day: z.number().int(), agent_id: z.string().uuid().nullable() }),
+        ),
       })
       .parse(d),
   )
@@ -317,7 +325,9 @@ export const deleteDutyCalendarMonth = createServerFn({ method: "POST" })
 export const analyzeDutyAssignments = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ month: z.number().int().min(1).max(12), year: z.number().int(), office: OFFICE }).parse(d),
+    z
+      .object({ month: z.number().int().min(1).max(12), year: z.number().int(), office: OFFICE })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertAdminOrCare(context.supabase, context.userId);
@@ -359,8 +369,16 @@ export const analyzeDutyAssignments = createServerFn({ method: "POST" })
       oooByAgent[a.name] = Array.from(new Set(dates));
     }
 
-    const officeLabel = data.office === "rolla" ? "Rolla" : data.office === "str" ? "St. Robert" : "Lake of the Ozarks";
-    const monthLabel = new Date(data.year, data.month - 1, 1).toLocaleString("en-US", { month: "long", year: "numeric" });
+    const officeLabel =
+      data.office === "rolla"
+        ? "Rolla"
+        : data.office === "str"
+          ? "St. Robert"
+          : "Lake of the Ozarks";
+    const monthLabel = new Date(data.year, data.month - 1, 1).toLocaleString("en-US", {
+      month: "long",
+      year: "numeric",
+    });
 
     // Exclude Sundays — duty days are Monday-Saturday only
     const eligibleDays: number[] = [];
@@ -418,10 +436,17 @@ export const analyzeDutyAssignments = createServerFn({ method: "POST" })
       })
       .join("\n");
 
-    const prevMonthLabel = new Date(prevYear, prevMonth - 1, 1).toLocaleString("en-US", { month: "long", year: "numeric" });
-    const prevLines = Object.entries(prevByAgentName)
-      .map(([name, info]) => `- ${name}: ${info.count} duty days${info.days.length ? ` (days: ${info.days.join(", ")})` : ""}`)
-      .join("\n") || "- No previous month data available";
+    const prevMonthLabel = new Date(prevYear, prevMonth - 1, 1).toLocaleString("en-US", {
+      month: "long",
+      year: "numeric",
+    });
+    const prevLines =
+      Object.entries(prevByAgentName)
+        .map(
+          ([name, info]) =>
+            `- ${name}: ${info.count} duty days${info.days.length ? ` (days: ${info.days.join(", ")})` : ""}`,
+        )
+        .join("\n") || "- No previous month data available";
 
     const prompt = `You are scheduling duty days for a real estate office for ${monthLabel}.
 Office: ${officeLabel}
@@ -489,7 +514,11 @@ Return ONLY JSON in this exact shape with no commentary:
     const eligibleSet = new Set(eligibleDays);
     const mapped = (parsed.suggestions ?? [])
       .filter((s) => s.day >= 1 && s.day <= dim && eligibleSet.has(s.day))
-      .map((s) => ({ day: s.day, agent_id: byName.get((s.agent ?? "").toLowerCase()) ?? null, agent_name: s.agent }));
+      .map((s) => ({
+        day: s.day,
+        agent_id: byName.get((s.agent ?? "").toLowerCase()) ?? null,
+        agent_name: s.agent,
+      }));
 
     return { suggestions: mapped, days_in_month: dim };
   });

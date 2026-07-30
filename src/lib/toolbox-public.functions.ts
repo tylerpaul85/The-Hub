@@ -63,13 +63,13 @@ export const listPublicListings = createServerFn({ method: "POST" })
         if (thumbs[a.listing_id]) continue;
         // Prefer an image asset; for videos use their thumbnail_url if present.
         const candidate =
-          a.asset_type === "video"
-            ? a.thumbnail_url
-            : a.thumbnail_url || a.file_url;
+          a.asset_type === "video" ? a.thumbnail_url : a.thumbnail_url || a.file_url;
         if (candidate) thumbs[a.listing_id] = candidate;
       }
     }
-    return { listings: (listings ?? []).map((l: any) => ({ ...l, thumbnail: thumbs[l.id] ?? null })) };
+    return {
+      listings: (listings ?? []).map((l: any) => ({ ...l, thumbnail: thumbs[l.id] ?? null })),
+    };
   });
 
 export const getPublicListing = createServerFn({ method: "POST" })
@@ -80,9 +80,21 @@ export const getPublicListing = createServerFn({ method: "POST" })
     assertToken(data.token);
     const sb = await admin();
     const [{ data: listing }, { data: assets }, { data: captions }] = await Promise.all([
-      sb.from("toolbox_listings").select("id,address,agent_name,status,description").eq("id", data.id).maybeSingle(),
-      sb.from("toolbox_assets").select("*").eq("listing_id", data.id).order("created_at", { ascending: true }),
-      sb.from("toolbox_captions").select("id,caption_text,created_at").eq("listing_id", data.id).order("created_at", { ascending: true }),
+      sb
+        .from("toolbox_listings")
+        .select("id,address,agent_name,status,description")
+        .eq("id", data.id)
+        .maybeSingle(),
+      sb
+        .from("toolbox_assets")
+        .select("*")
+        .eq("listing_id", data.id)
+        .order("created_at", { ascending: true }),
+      sb
+        .from("toolbox_captions")
+        .select("id,caption_text,created_at")
+        .eq("listing_id", data.id)
+        .order("created_at", { ascending: true }),
     ]);
     if (!listing) throw new Error("Not found");
     return { listing, assets: assets ?? [], captions: captions ?? [] };
@@ -150,7 +162,9 @@ export const listPublicOpenHouses = createServerFn({ method: "POST" })
         if (isImg(c)) thumbs[a.open_house_id] = c;
       }
     }
-    return { openHouses: (rows ?? []).map((r: any) => ({ ...r, thumbnail: thumbs[r.id] ?? null })) };
+    return {
+      openHouses: (rows ?? []).map((r: any) => ({ ...r, thumbnail: thumbs[r.id] ?? null })),
+    };
   });
 
 export const getPublicOpenHouse = createServerFn({ method: "POST" })
@@ -161,9 +175,21 @@ export const getPublicOpenHouse = createServerFn({ method: "POST" })
     assertToken(data.token);
     const sb = await admin();
     const [{ data: openHouse }, { data: assets }, { data: captions }] = await Promise.all([
-      sb.from("toolbox_open_houses").select("id,address,agent_name,status,open_house_at,description").eq("id", data.id).maybeSingle(),
-      sb.from("toolbox_open_house_assets").select("*").eq("open_house_id", data.id).order("created_at", { ascending: true }),
-      sb.from("toolbox_open_house_captions").select("id,caption_text,category,created_at").eq("open_house_id", data.id).order("created_at", { ascending: true }),
+      sb
+        .from("toolbox_open_houses")
+        .select("id,address,agent_name,status,open_house_at,description")
+        .eq("id", data.id)
+        .maybeSingle(),
+      sb
+        .from("toolbox_open_house_assets")
+        .select("*")
+        .eq("open_house_id", data.id)
+        .order("created_at", { ascending: true }),
+      sb
+        .from("toolbox_open_house_captions")
+        .select("id,caption_text,category,created_at")
+        .eq("open_house_id", data.id)
+        .order("created_at", { ascending: true }),
     ]);
     if (!openHouse) throw new Error("Not found");
     return { openHouse, assets: assets ?? [], captions: captions ?? [] };
@@ -178,7 +204,11 @@ export const listPublicBrandedAgents = createServerFn({ method: "POST" })
     const sb = await admin();
     // Get all active agents, then filter to ones with at least one content item.
     const [{ data: agents }, { data: content }] = await Promise.all([
-      sb.from("toolbox_agents").select("id,name,headshot_url,identifier,active").eq("active", true).order("name", { ascending: true }),
+      sb
+        .from("toolbox_agents")
+        .select("id,name,headshot_url,identifier,active")
+        .eq("active", true)
+        .order("name", { ascending: true }),
       sb.from("toolbox_agent_content").select("agent_id"),
     ]);
     const have = new Set<string>(((content ?? []) as any[]).map((c) => c.agent_id));
@@ -194,8 +224,13 @@ export const listPublicAgentBrandedContent = createServerFn({ method: "POST" })
     assertToken(data.token);
     const sb = await admin();
     const [{ data: agent }, { data: items }] = await Promise.all([
-      sb.from("toolbox_agents").select("id,name,headshot_url,identifier").eq("id", data.agentId).maybeSingle(),
-      sb.from("toolbox_agent_content")
+      sb
+        .from("toolbox_agents")
+        .select("id,name,headshot_url,identifier")
+        .eq("id", data.agentId)
+        .maybeSingle(),
+      sb
+        .from("toolbox_agent_content")
         .select("id,content_type,title,file_url,drive_url,caption,file_size,created_at")
         .eq("agent_id", data.agentId)
         .order("created_at", { ascending: false }),

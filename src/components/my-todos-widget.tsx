@@ -57,8 +57,14 @@ export function MyTodosWidget() {
               />
               <div className="flex-1 min-w-0">
                 <div className="text-sm truncate">{t.title}</div>
-                <div className={cn("text-xs mt-0.5", overdue ? "text-destructive" : "text-muted-foreground")}>
-                  Due {t.due_date}{overdue ? " · overdue" : ""}
+                <div
+                  className={cn(
+                    "text-xs mt-0.5",
+                    overdue ? "text-destructive" : "text-muted-foreground",
+                  )}
+                >
+                  Due {t.due_date}
+                  {overdue ? " · overdue" : ""}
                 </div>
               </div>
             </div>

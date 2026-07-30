@@ -3,9 +3,22 @@ import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type AppRole = "admin" | "marketing_coordinator" | "video_editor" | "videographer" | "contributor" | "client_care";
+type AppRole =
+  | "admin"
+  | "marketing_coordinator"
+  | "video_editor"
+  | "videographer"
+  | "contributor"
+  | "client_care";
 
-const ROLE_PRIORITY: AppRole[] = ["admin", "marketing_coordinator", "video_editor", "videographer", "client_care", "contributor"];
+const ROLE_PRIORITY: AppRole[] = [
+  "admin",
+  "marketing_coordinator",
+  "video_editor",
+  "videographer",
+  "client_care",
+  "contributor",
+];
 
 interface AuthContextValue {
   user: User | null;
@@ -48,33 +61,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Session cache: avoid refetching user_roles on every auth state change (token refresh, tab focus, etc.).
     const cacheKey = `user_roles:${uid}`;
     try {
-      const cached = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(cacheKey) : null;
+      const cached =
+        typeof sessionStorage !== "undefined" ? sessionStorage.getItem(cacheKey) : null;
       if (cached) {
         const list = JSON.parse(cached) as AppRole[];
         setRoles(list);
-        setRole(ROLE_PRIORITY.find((r) => list.includes(r)) ?? (list[0] ?? null));
+        setRole(ROLE_PRIORITY.find((r) => list.includes(r)) ?? list[0] ?? null);
         return;
       }
     } catch {}
-    const { data } = await (supabase as any)
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", uid);
+    const { data } = await (supabase as any).from("user_roles").select("role").eq("user_id", uid);
     if (!data || data.length === 0) {
       setRole(null);
       setRoles([]);
-      try { sessionStorage.setItem(cacheKey, JSON.stringify([])); } catch {}
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify([]));
+      } catch {}
       return;
     }
     const list = data.map((r: any) => r.role as AppRole);
     setRoles(list);
     const top = ROLE_PRIORITY.find((r) => list.includes(r)) ?? "contributor";
     setRole(top);
-    try { sessionStorage.setItem(cacheKey, JSON.stringify(list)); } catch {}
+    try {
+      sessionStorage.setItem(cacheKey, JSON.stringify(list));
+    } catch {}
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
       if (event === "PASSWORD_RECOVERY") {
@@ -92,7 +109,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setRole(null);
         setRoles([]);
-        try { sessionStorage.removeItem(`user_roles:${s?.user?.id ?? ""}`); } catch {}
+        try {
+          sessionStorage.removeItem(`user_roles:${s?.user?.id ?? ""}`);
+        } catch {}
       }
     });
 
@@ -115,17 +134,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const ping = () => pingActive(uid);
 
     const clearTimers = () => {
-      if (warnTimer.current) { clearTimeout(warnTimer.current); warnTimer.current = null; }
-      if (logoutTimer.current) { clearTimeout(logoutTimer.current); logoutTimer.current = null; }
+      if (warnTimer.current) {
+        clearTimeout(warnTimer.current);
+        warnTimer.current = null;
+      }
+      if (logoutTimer.current) {
+        clearTimeout(logoutTimer.current);
+        logoutTimer.current = null;
+      }
     };
     const scheduleIdle = () => {
       clearTimers();
       warnedRef.current = false;
       warnTimer.current = window.setTimeout(() => {
         warnedRef.current = true;
-        toast.warning("You'll be signed out in 10 minutes due to inactivity. Move your mouse or press a key to stay signed in.", {
-          duration: 30_000,
-        });
+        toast.warning(
+          "You'll be signed out in 10 minutes due to inactivity. Move your mouse or press a key to stay signed in.",
+          {
+            duration: 30_000,
+          },
+        );
       }, IDLE_WARN_MS);
       logoutTimer.current = window.setTimeout(async () => {
         toast.error("Signed out due to 60 minutes of inactivity.");
@@ -136,16 +164,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     scheduleIdle();
     // Heartbeat: every 30 min while tab visible. Idle timers still enforce 60-min sign-out.
-    const interval = setInterval(() => {
-      if (document.visibilityState === "visible") ping();
-    }, 30 * 60 * 1000);
-    const onVisible = () => { if (document.visibilityState === "visible") { ping(); scheduleIdle(); } };
+    const interval = setInterval(
+      () => {
+        if (document.visibilityState === "visible") ping();
+      },
+      30 * 60 * 1000,
+    );
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        ping();
+        scheduleIdle();
+      }
+    };
     let throttle: number | null = null;
     const onActivity = () => {
       scheduleIdle();
       if (throttle) return;
       // Throttle activity-driven pings to once every 10 min.
-      throttle = window.setTimeout(() => { throttle = null; ping(); }, 10 * 60 * 1000);
+      throttle = window.setTimeout(
+        () => {
+          throttle = null;
+          ping();
+        },
+        10 * 60 * 1000,
+      );
     };
     document.addEventListener("visibilitychange", onVisible);
     // Only meaningful interactions count — dropped mousemove/scroll to cut listener overhead and ping churn.
@@ -162,7 +204,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const signOut = async () => {
-    try { if (user) sessionStorage.removeItem(`user_roles:${user.id}`); } catch {}
+    try {
+      if (user) sessionStorage.removeItem(`user_roles:${user.id}`);
+    } catch {}
     await supabase.auth.signOut();
     setRole(null);
     setRoles([]);
@@ -170,19 +214,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshRole = async () => {
     if (!user) return;
-    try { sessionStorage.removeItem(`user_roles:${user.id}`); } catch {}
+    try {
+      sessionStorage.removeItem(`user_roles:${user.id}`);
+    } catch {}
     await fetchRole(user.id);
   };
 
   const isAdmin = roles.includes("admin");
   const canEditContent = isAdmin || roles.includes("marketing_coordinator");
   const canEditVideos =
-    isAdmin || roles.includes("marketing_coordinator") || roles.includes("video_editor") || roles.includes("videographer");
+    isAdmin ||
+    roles.includes("marketing_coordinator") ||
+    roles.includes("video_editor") ||
+    roles.includes("videographer");
   const canDelete = roles.length > 0 && !roles.every((r) => r === "client_care");
 
   return (
     <AuthContext.Provider
-      value={{ user, session, role, roles, loading, isAdmin, canEditContent, canEditVideos, canDelete, signOut, refreshRole }}
+      value={{
+        user,
+        session,
+        role,
+        roles,
+        loading,
+        isAdmin,
+        canEditContent,
+        canEditVideos,
+        canDelete,
+        signOut,
+        refreshRole,
+      }}
     >
       {children}
     </AuthContext.Provider>

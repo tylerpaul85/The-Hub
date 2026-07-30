@@ -15,8 +15,20 @@ import { DownloadPhotosButton } from "@/components/download-photos-button";
 import { verifyToolboxCode } from "@/lib/toolbox-public.functions";
 import logo from "@/assets/msreg-logo.png";
 import {
-  Search, Download, Copy, ExternalLink, ArrowLeft, X, Image as ImageIcon,
-  FileText, Video as VideoIcon, Home, Lock, Loader2, Package, User,
+  Search,
+  Download,
+  Copy,
+  ExternalLink,
+  ArrowLeft,
+  X,
+  Image as ImageIcon,
+  FileText,
+  Video as VideoIcon,
+  Home,
+  Lock,
+  Loader2,
+  Package,
+  User,
 } from "lucide-react";
 
 export const Route = createFileRoute("/agent-toolbox")({
@@ -34,22 +46,37 @@ export const Route = createFileRoute("/agent-toolbox")({
 
 const STORAGE_KEY = "msreg-toolbox-token";
 
-const STATUS_LABEL: Record<string, string> = { active: "Active", coming_soon: "Coming Soon", sold: "Sold" };
+const STATUS_LABEL: Record<string, string> = {
+  active: "Active",
+  coming_soon: "Coming Soon",
+  sold: "Sold",
+};
 const STATUS_CLASS: Record<string, string> = {
-  active: "bg-emerald-950/40 text-emerald-400 border-emerald-500/20 text-[10px] font-medium tracking-wide px-2 py-0.5",
-  coming_soon: "bg-amber-950/40 text-amber-400 border-amber-500/20 text-[10px] font-medium tracking-wide px-2 py-0.5",
+  active:
+    "bg-emerald-950/40 text-emerald-400 border-emerald-500/20 text-[10px] font-medium tracking-wide px-2 py-0.5",
+  coming_soon:
+    "bg-amber-950/40 text-amber-400 border-amber-500/20 text-[10px] font-medium tracking-wide px-2 py-0.5",
   sold: "bg-rose-950/40 text-rose-400 border-rose-500/20 text-[10px] font-medium tracking-wide px-2 py-0.5",
 };
 const OH_STATUS_LABEL: Record<string, string> = { upcoming: "Upcoming", past: "Past" };
 const OH_STATUS_CLASS: Record<string, string> = {
-  upcoming: "bg-emerald-950/40 text-emerald-400 border-emerald-500/20 text-[10px] font-medium tracking-wide px-2 py-0.5",
+  upcoming:
+    "bg-emerald-950/40 text-emerald-400 border-emerald-500/20 text-[10px] font-medium tracking-wide px-2 py-0.5",
   past: "bg-zinc-900/60 text-zinc-400 border-zinc-700/30 text-[10px] font-medium tracking-wide px-2 py-0.5",
 };
 function fmtDateTime(iso: string | null) {
   if (!iso) return "";
   try {
-    return new Date(iso).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-  } catch { return ""; }
+    return new Date(iso).toLocaleString(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  } catch {
+    return "";
+  }
 }
 
 function PublicToolboxPage() {
@@ -62,8 +89,28 @@ function PublicToolboxPage() {
     } catch {}
   }, []);
 
-  if (!token) return <Gate onUnlock={(t) => { try { localStorage.setItem(STORAGE_KEY, t); } catch {}; setToken(t); }} />;
-  return <Toolbox token={token} onLock={() => { try { localStorage.removeItem(STORAGE_KEY); } catch {}; setToken(null); }} />;
+  if (!token)
+    return (
+      <Gate
+        onUnlock={(t) => {
+          try {
+            localStorage.setItem(STORAGE_KEY, t);
+          } catch {}
+          setToken(t);
+        }}
+      />
+    );
+  return (
+    <Toolbox
+      token={token}
+      onLock={() => {
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+        } catch {}
+        setToken(null);
+      }}
+    />
+  );
 }
 
 /* -------- Access gate -------- */
@@ -93,7 +140,9 @@ function Gate({ onUnlock }: { onUnlock: (token: string) => void }) {
           <img src={logo} alt="MSREG" className="h-20 w-auto" />
           <div>
             <h1 className="text-lg font-semibold tracking-tight">Agent Toolbox</h1>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-gold/80 mt-1">Matt Smith Real Estate Group</p>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-gold/80 mt-1">
+              Matt Smith Real Estate Group
+            </p>
           </div>
         </div>
         <form onSubmit={submit} className="space-y-4">
@@ -110,7 +159,11 @@ function Gate({ onUnlock }: { onUnlock: (token: string) => void }) {
               className="text-center text-base h-11 focus-visible:ring-gold"
             />
           </div>
-          <Button type="submit" disabled={busy} className="w-full bg-gold text-navy hover:bg-gold/90 font-semibold h-11 transition-all">
+          <Button
+            type="submit"
+            disabled={busy}
+            className="w-full bg-gold text-navy hover:bg-gold/90 font-semibold h-11 transition-all"
+          >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Unlock"}
           </Button>
         </form>
@@ -137,12 +190,16 @@ function Toolbox({ token, onLock }: { token: string; onLock: () => void }) {
             <img src={logo} alt="MSREG" className="h-9 w-auto shrink-0" />
             <div className="min-w-0">
               <div className="font-semibold text-sm truncate">Agent Toolbox</div>
-              <div className="text-[10px] uppercase tracking-[0.15em] text-gold/80 truncate">Matt Smith Real Estate Group</div>
+              <div className="text-[10px] uppercase tracking-[0.15em] text-gold/80 truncate">
+                Matt Smith Real Estate Group
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-1">
             <AgentHubHomeLink />
-            <Button variant="ghost" size="sm" onClick={onLock} className="text-xs">Lock</Button>
+            <Button variant="ghost" size="sm" onClick={onLock} className="text-xs">
+              Lock
+            </Button>
           </div>
         </div>
       </header>
@@ -155,11 +212,21 @@ function Toolbox({ token, onLock }: { token: string; onLock: () => void }) {
         ) : (
           <Tabs value={tab} onValueChange={setTab} className="w-full">
             <TabsList className="w-full h-11 grid grid-cols-5">
-              <TabsTrigger value="listings" className="text-xs sm:text-sm">Listings</TabsTrigger>
-              <TabsTrigger value="open_houses" className="text-xs sm:text-sm">Open Houses</TabsTrigger>
-              <TabsTrigger value="brand" className="text-xs sm:text-sm">Branding</TabsTrigger>
-              <TabsTrigger value="edu" className="text-xs sm:text-sm">Education</TabsTrigger>
-              <TabsTrigger value="branded" className="text-xs sm:text-sm">Agent Branded</TabsTrigger>
+              <TabsTrigger value="listings" className="text-xs sm:text-sm">
+                Listings
+              </TabsTrigger>
+              <TabsTrigger value="open_houses" className="text-xs sm:text-sm">
+                Open Houses
+              </TabsTrigger>
+              <TabsTrigger value="brand" className="text-xs sm:text-sm">
+                Branding
+              </TabsTrigger>
+              <TabsTrigger value="edu" className="text-xs sm:text-sm">
+                Education
+              </TabsTrigger>
+              <TabsTrigger value="branded" className="text-xs sm:text-sm">
+                Agent Branded
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="listings" className="mt-4">
               <ListingsList token={token} onOpen={setOpenListing} />
@@ -210,11 +277,14 @@ function ListingsList({ token, onOpen }: { token: string; onOpen: (id: string) =
 
         for (const a of (assets ?? []) as any[]) {
           if (thumbs[a.listing_id]) continue;
-          const candidate = a.asset_type === "video" ? a.thumbnail_url : a.thumbnail_url || a.file_url;
+          const candidate =
+            a.asset_type === "video" ? a.thumbnail_url : a.thumbnail_url || a.file_url;
           if (candidate) thumbs[a.listing_id] = candidate;
         }
       }
-      return { listings: (listings ?? []).map((l: any) => ({ ...l, thumbnail: thumbs[l.id] ?? null })) };
+      return {
+        listings: (listings ?? []).map((l: any) => ({ ...l, thumbnail: thumbs[l.id] ?? null })),
+      };
     },
   });
 
@@ -222,7 +292,9 @@ function ListingsList({ token, onOpen }: { token: string; onOpen: (id: string) =
     const items = (data?.listings ?? []) as any[];
     if (!q.trim()) return items;
     const s = q.toLowerCase();
-    return items.filter((l) => l.address?.toLowerCase().includes(s) || (l.agent_name ?? "").toLowerCase().includes(s));
+    return items.filter(
+      (l) => l.address?.toLowerCase().includes(s) || (l.agent_name ?? "").toLowerCase().includes(s),
+    );
   }, [data, q]);
 
   return (
@@ -253,19 +325,32 @@ function ListingsList({ token, onOpen }: { token: string; onOpen: (id: string) =
             >
               <div className="aspect-video bg-muted relative overflow-hidden">
                 {l.thumbnail ? (
-                  <img src={l.thumbnail} alt={l.address} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <img
+                    src={l.thumbnail}
+                    alt={l.address}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-muted-foreground group-hover:scale-105 transition-transform duration-500">
                     <Home className="h-8 w-8" />
                   </div>
                 )}
-                <Badge className={cn("absolute top-3 left-3 border shadow-sm z-10", STATUS_CLASS[l.status])}>
+                <Badge
+                  className={cn(
+                    "absolute top-3 left-3 border shadow-sm z-10",
+                    STATUS_CLASS[l.status],
+                  )}
+                >
                   {STATUS_LABEL[l.status] ?? l.status}
                 </Badge>
               </div>
               <div className="p-4">
-                <div className="font-semibold text-sm text-white group-hover:text-gold transition-colors duration-200 truncate">{l.address}</div>
-                <div className="text-xs text-muted-foreground truncate mt-1">{l.agent_name || "—"}</div>
+                <div className="font-semibold text-sm text-white group-hover:text-gold transition-colors duration-200 truncate">
+                  {l.address}
+                </div>
+                <div className="text-xs text-muted-foreground truncate mt-1">
+                  {l.agent_name || "—"}
+                </div>
               </div>
             </button>
           ))}
@@ -282,9 +367,21 @@ function ListingView({ token, id, onBack }: { token: string; id: string; onBack:
     queryKey: ["public-toolbox-listing", id],
     queryFn: async () => {
       const [{ data: listing }, { data: assets }, { data: captions }] = await Promise.all([
-        supabase.from("toolbox_listings").select("id,address,agent_name,status,description").eq("id", id).maybeSingle(),
-        supabase.from("toolbox_assets").select("*").eq("listing_id", id).order("created_at", { ascending: true }),
-        supabase.from("toolbox_captions").select("id,caption_text,created_at").eq("listing_id", id).order("created_at", { ascending: true }),
+        supabase
+          .from("toolbox_listings")
+          .select("id,address,agent_name,status,description")
+          .eq("id", id)
+          .maybeSingle(),
+        supabase
+          .from("toolbox_assets")
+          .select("*")
+          .eq("listing_id", id)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("toolbox_captions")
+          .select("id,caption_text,created_at")
+          .eq("listing_id", id)
+          .order("created_at", { ascending: true }),
       ]);
       if (!listing) throw new Error("Not found");
       return { listing, assets: assets ?? [], captions: captions ?? [] };
@@ -298,9 +395,7 @@ function ListingView({ token, id, onBack }: { token: string; id: string; onBack:
   const photos = assets.filter((a: any) => a.asset_type === "photo");
   const videos = assets.filter((a: any) => a.asset_type === "video");
   const graphics = assets.filter((a: any) => a.asset_type === "graphic");
-  const allImages = assets.filter(
-    (a: any) => a.asset_type !== "video" && isImageUrl(a.file_url),
-  );
+  const allImages = assets.filter((a: any) => a.asset_type !== "video" && isImageUrl(a.file_url));
 
   return (
     <div className="space-y-6">
@@ -317,22 +412,27 @@ function ListingView({ token, id, onBack }: { token: string; id: string; onBack:
             <h1 className="text-xl font-semibold">{listing.address}</h1>
             <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
               {listing.agent_name && <span>{listing.agent_name}</span>}
-              <Badge className={cn("border", STATUS_CLASS[listing.status])}>{STATUS_LABEL[listing.status] ?? listing.status}</Badge>
+              <Badge className={cn("border", STATUS_CLASS[listing.status])}>
+                {STATUS_LABEL[listing.status] ?? listing.status}
+              </Badge>
             </div>
           </div>
           {allImages.length > 0 && (
             <DownloadPhotosButton photos={allImages} address={listing.address} />
           )}
         </div>
-        {listing.description && <p className="text-sm text-muted-foreground mt-2">{listing.description}</p>}
+        {listing.description && (
+          <p className="text-sm text-muted-foreground mt-2">{listing.description}</p>
+        )}
       </div>
-
 
       {photos.length > 0 && <PhotoGallery photos={photos} address={listing.address} />}
 
       {videos.length > 0 && (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-gold flex items-center gap-2"><VideoIcon className="h-4 w-4" /> Videos</h2>
+          <h2 className="text-sm font-semibold text-gold flex items-center gap-2">
+            <VideoIcon className="h-4 w-4" /> Videos
+          </h2>
           <div className="space-y-2">
             {videos.map((v: any) => (
               <a
@@ -354,16 +454,28 @@ function ListingView({ token, id, onBack }: { token: string; id: string; onBack:
 
       {graphics.length > 0 && (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-gold flex items-center gap-2"><ImageIcon className="h-4 w-4" /> Pre-made Graphics</h2>
+          <h2 className="text-sm font-semibold text-gold flex items-center gap-2">
+            <ImageIcon className="h-4 w-4" /> Pre-made Graphics
+          </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {graphics.map((g: any) => (
               <div key={g.id} className="rounded-lg overflow-hidden border border-border bg-card">
                 <div className="aspect-square bg-muted">
-                  <img src={g.thumbnail_url || g.file_url} alt={g.name ?? ""} className="w-full h-full object-cover" />
+                  <img
+                    src={g.thumbnail_url || g.file_url}
+                    alt={g.name ?? ""}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div className="p-2 space-y-1">
-                  {g.name && <div className="text-[11px] text-muted-foreground truncate">{g.name}</div>}
-                  <DownloadButton url={g.file_url} filename={`${slug(listing.address)}-${slug(g.name ?? "graphic")}.jpg`} small />
+                  {g.name && (
+                    <div className="text-[11px] text-muted-foreground truncate">{g.name}</div>
+                  )}
+                  <DownloadButton
+                    url={g.file_url}
+                    filename={`${slug(listing.address)}-${slug(g.name ?? "graphic")}.jpg`}
+                    small
+                  />
                 </div>
               </div>
             ))}
@@ -373,7 +485,9 @@ function ListingView({ token, id, onBack }: { token: string; id: string; onBack:
 
       {captions.length > 0 && (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-gold flex items-center gap-2"><FileText className="h-4 w-4" /> Ready-to-use Captions</h2>
+          <h2 className="text-sm font-semibold text-gold flex items-center gap-2">
+            <FileText className="h-4 w-4" /> Ready-to-use Captions
+          </h2>
           <div className="space-y-2">
             {captions.map((c: any) => (
               <CaptionCard key={c.id} text={c.caption_text} />
@@ -382,11 +496,14 @@ function ListingView({ token, id, onBack }: { token: string; id: string; onBack:
         </section>
       )}
 
-      {photos.length === 0 && videos.length === 0 && graphics.length === 0 && captions.length === 0 && (
-        <Card className="p-8 text-center text-sm text-muted-foreground border-dashed">
-          Marketing hasn't uploaded assets for this listing yet.
-        </Card>
-      )}
+      {photos.length === 0 &&
+        videos.length === 0 &&
+        graphics.length === 0 &&
+        captions.length === 0 && (
+          <Card className="p-8 text-center text-sm text-muted-foreground border-dashed">
+            Marketing hasn't uploaded assets for this listing yet.
+          </Card>
+        )}
     </div>
   );
 }
@@ -428,20 +545,48 @@ function PhotoGallery({ photos, address }: { photos: any[]; address: string }) {
     <section className="space-y-2">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-gold flex items-center gap-2">
-          <ImageIcon className="h-4 w-4" /> Photos <span className="text-muted-foreground font-normal">· {photos.length}</span>
+          <ImageIcon className="h-4 w-4" /> Photos{" "}
+          <span className="text-muted-foreground font-normal">· {photos.length}</span>
         </h2>
-        <Button onClick={downloadAll} disabled={zipping} size="sm" className="bg-gold text-navy hover:bg-gold/90 h-9">
-          {zipping ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Zipping…</> : <><Package className="h-4 w-4 mr-1" />Download all</>}
+        <Button
+          onClick={downloadAll}
+          disabled={zipping}
+          size="sm"
+          className="bg-gold text-navy hover:bg-gold/90 h-9"
+        >
+          {zipping ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              Zipping…
+            </>
+          ) : (
+            <>
+              <Package className="h-4 w-4 mr-1" />
+              Download all
+            </>
+          )}
         </Button>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {photos.map((p, idx) => (
           <div key={p.id} className="rounded-lg overflow-hidden border border-border bg-card">
-            <button onClick={() => setLightbox(idx)} className="block w-full aspect-square bg-muted">
-              <img src={p.thumbnail_url || p.file_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+            <button
+              onClick={() => setLightbox(idx)}
+              className="block w-full aspect-square bg-muted"
+            >
+              <img
+                src={p.thumbnail_url || p.file_url}
+                alt=""
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
             </button>
             <div className="p-1.5">
-              <DownloadButton url={p.file_url} filename={`${slug(address)}-${String(idx + 1).padStart(2, "0")}.jpg`} small />
+              <DownloadButton
+                url={p.file_url}
+                filename={`${slug(address)}-${String(idx + 1).padStart(2, "0")}.jpg`}
+                small
+              />
             </div>
           </div>
         ))}
@@ -452,12 +597,33 @@ function PhotoGallery({ photos, address }: { photos: any[]; address: string }) {
           className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-4"
           onClick={() => setLightbox(null)}
         >
-          <img src={photos[lightbox].file_url} alt="" className="max-w-full max-h-[80vh] object-contain" />
+          <img
+            src={photos[lightbox].file_url}
+            alt=""
+            className="max-w-full max-h-[80vh] object-contain"
+          />
           <div className="mt-4 flex gap-2" onClick={(e) => e.stopPropagation()}>
-            <Button size="sm" variant="secondary" onClick={() => setLightbox((i) => (i! > 0 ? i! - 1 : photos.length - 1))}>Prev</Button>
-            <DownloadButton url={photos[lightbox].file_url} filename={`${slug(address)}-${String(lightbox + 1).padStart(2, "0")}.jpg`} />
-            <Button size="sm" variant="secondary" onClick={() => setLightbox((i) => (i! < photos.length - 1 ? i! + 1 : 0))}>Next</Button>
-            <Button size="sm" variant="ghost" onClick={() => setLightbox(null)}>Close</Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setLightbox((i) => (i! > 0 ? i! - 1 : photos.length - 1))}
+            >
+              Prev
+            </Button>
+            <DownloadButton
+              url={photos[lightbox].file_url}
+              filename={`${slug(address)}-${String(lightbox + 1).padStart(2, "0")}.jpg`}
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setLightbox((i) => (i! < photos.length - 1 ? i! + 1 : 0))}
+            >
+              Next
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setLightbox(null)}>
+              Close
+            </Button>
           </div>
         </div>
       )}
@@ -484,7 +650,15 @@ function CaptionCard({ text }: { text: string }) {
   );
 }
 
-function DownloadButton({ url, filename, small }: { url: string; filename: string; small?: boolean }) {
+function DownloadButton({
+  url,
+  filename,
+  small,
+}: {
+  url: string;
+  filename: string;
+  small?: boolean;
+}) {
   const [busy, setBusy] = useState(false);
   const onClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -506,8 +680,20 @@ function DownloadButton({ url, filename, small }: { url: string; filename: strin
     setBusy(false);
   };
   return (
-    <Button onClick={onClick} disabled={busy} size="sm" variant="secondary" className={cn("w-full", small ? "h-8 text-xs" : "h-10")}>
-      {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Download className="h-3.5 w-3.5 mr-1" /> Download</>}
+    <Button
+      onClick={onClick}
+      disabled={busy}
+      size="sm"
+      variant="secondary"
+      className={cn("w-full", small ? "h-8 text-xs" : "h-10")}
+    >
+      {busy ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <>
+          <Download className="h-3.5 w-3.5 mr-1" /> Download
+        </>
+      )}
     </Button>
   );
 }
@@ -535,13 +721,20 @@ function BrandList({ token }: { token: string }) {
   }, [items]);
 
   if (isLoading) return <div className="text-center text-muted-foreground py-10">Loading…</div>;
-  if (items.length === 0) return <Card className="p-8 text-center text-sm text-muted-foreground border-dashed">No branding assets yet.</Card>;
+  if (items.length === 0)
+    return (
+      <Card className="p-8 text-center text-sm text-muted-foreground border-dashed">
+        No branding assets yet.
+      </Card>
+    );
 
   return (
     <div className="space-y-6">
       {Object.entries(grouped).map(([cat, list]) => (
         <section key={cat} className="space-y-2">
-          <h3 className="text-sm font-semibold text-gold">{cat} <span className="text-muted-foreground font-normal">· {list.length}</span></h3>
+          <h3 className="text-sm font-semibold text-gold">
+            {cat} <span className="text-muted-foreground font-normal">· {list.length}</span>
+          </h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {list.map((i) => {
               const isImg = isImageUrl(i.file_url);
@@ -549,7 +742,11 @@ function BrandList({ token }: { token: string }) {
                 <div key={i.id} className="rounded-lg overflow-hidden border border-border bg-card">
                   <div className="aspect-square bg-muted flex items-center justify-center">
                     {isImg ? (
-                      <img src={i.file_url} alt={i.name} className="w-full h-full object-contain p-2" />
+                      <img
+                        src={i.file_url}
+                        alt={i.name}
+                        className="w-full h-full object-contain p-2"
+                      />
                     ) : (
                       <FileText className="h-10 w-10 text-muted-foreground" />
                     )}
@@ -591,13 +788,20 @@ function EduList({ token }: { token: string }) {
   }, [items]);
 
   if (isLoading) return <div className="text-center text-muted-foreground py-10">Loading…</div>;
-  if (items.length === 0) return <Card className="p-8 text-center text-sm text-muted-foreground border-dashed">No educational content yet.</Card>;
+  if (items.length === 0)
+    return (
+      <Card className="p-8 text-center text-sm text-muted-foreground border-dashed">
+        No educational content yet.
+      </Card>
+    );
 
   return (
     <div className="space-y-6">
       {Object.entries(grouped).map(([cat, list]) => (
         <section key={cat} className="space-y-2">
-          <h3 className="text-sm font-semibold text-gold">{cat} <span className="text-muted-foreground font-normal">· {list.length}</span></h3>
+          <h3 className="text-sm font-semibold text-gold">
+            {cat} <span className="text-muted-foreground font-normal">· {list.length}</span>
+          </h3>
           <div className="space-y-2">
             {list.map((i) => {
               const isImg = isImageUrl(i.file_url);
@@ -614,12 +818,17 @@ function EduList({ token }: { token: string }) {
                     <div className="font-medium text-sm">{i.title}</div>
                     {i.caption && (
                       <>
-                        <div className="text-sm text-muted-foreground whitespace-pre-wrap">{i.caption}</div>
+                        <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+                          {i.caption}
+                        </div>
                         <Button
                           size="sm"
                           variant="secondary"
                           className="w-full h-9"
-                          onClick={async () => { await navigator.clipboard.writeText(i.caption); toast.success("Caption copied"); }}
+                          onClick={async () => {
+                            await navigator.clipboard.writeText(i.caption);
+                            toast.success("Caption copied");
+                          }}
                         >
                           <Copy className="h-3.5 w-3.5 mr-1" /> Copy caption
                         </Button>
@@ -650,13 +859,19 @@ function EduList({ token }: { token: string }) {
 /* -------- utils -------- */
 
 function slug(s: string) {
-  return (s || "asset").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 60);
+  return (s || "asset")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 60);
 }
 
 function AgentHubHomeLink() {
   const [show, setShow] = useState(false);
   useEffect(() => {
-    try { setShow(localStorage.getItem("msreg-agent-hub-unlocked") === "1"); } catch {}
+    try {
+      setShow(localStorage.getItem("msreg-agent-hub-unlocked") === "1");
+    } catch {}
   }, []);
   if (!show) return null;
   return (
@@ -703,22 +918,34 @@ function OpenHousesList({ token, onOpen }: { token: string; onOpen: (id: string)
             "Flyer",
             "Coloring Page",
             "Other",
-            "Agent QR Code"
+            "Agent QR Code",
           ];
-          
+
           let bestCandidate = null;
           for (const cat of preferredCategories) {
-            const match = ohAssets.find(a => a.category === cat && (a.asset_type === "video" ? a.thumbnail_url : a.thumbnail_url || a.file_url));
+            const match = ohAssets.find(
+              (a) =>
+                a.category === cat &&
+                (a.asset_type === "video" ? a.thumbnail_url : a.thumbnail_url || a.file_url),
+            );
             if (match) {
-              bestCandidate = match.asset_type === "video" ? match.thumbnail_url : match.thumbnail_url || match.file_url;
+              bestCandidate =
+                match.asset_type === "video"
+                  ? match.thumbnail_url
+                  : match.thumbnail_url || match.file_url;
               break;
             }
           }
 
           if (!bestCandidate && ohAssets.length) {
-            const fallback = ohAssets.find(a => a.asset_type === "video" ? a.thumbnail_url : a.thumbnail_url || a.file_url);
+            const fallback = ohAssets.find((a) =>
+              a.asset_type === "video" ? a.thumbnail_url : a.thumbnail_url || a.file_url,
+            );
             if (fallback) {
-              bestCandidate = fallback.asset_type === "video" ? fallback.thumbnail_url : fallback.thumbnail_url || fallback.file_url;
+              bestCandidate =
+                fallback.asset_type === "video"
+                  ? fallback.thumbnail_url
+                  : fallback.thumbnail_url || fallback.file_url;
             }
           }
 
@@ -727,7 +954,9 @@ function OpenHousesList({ token, onOpen }: { token: string; onOpen: (id: string)
           }
         }
       }
-      return { openHouses: (rows ?? []).map((o: any) => ({ ...o, thumbnail: thumbs[o.id] ?? null })) };
+      return {
+        openHouses: (rows ?? []).map((o: any) => ({ ...o, thumbnail: thumbs[o.id] ?? null })),
+      };
     },
   });
 
@@ -735,14 +964,21 @@ function OpenHousesList({ token, onOpen }: { token: string; onOpen: (id: string)
     const items = (data?.openHouses ?? []) as any[];
     if (!q.trim()) return items;
     const s = q.toLowerCase();
-    return items.filter((l) => l.address?.toLowerCase().includes(s) || (l.agent_name ?? "").toLowerCase().includes(s));
+    return items.filter(
+      (l) => l.address?.toLowerCase().includes(s) || (l.agent_name ?? "").toLowerCase().includes(s),
+    );
   }, [data, q]);
 
   return (
     <div className="space-y-4">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by address or agent" className="pl-9 h-11 text-base" />
+        <Input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search by address or agent"
+          className="pl-9 h-11 text-base"
+        />
       </div>
 
       {isLoading ? (
@@ -763,7 +999,9 @@ function OpenHousesList({ token, onOpen }: { token: string; onOpen: (id: string)
                 {l.thumbnail ? (
                   <img src={l.thumbnail} alt={l.address} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground"><Home className="h-8 w-8" /></div>
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                    <Home className="h-8 w-8" />
+                  </div>
                 )}
                 <Badge className={cn("absolute top-2 left-2 border", OH_STATUS_CLASS[l.status])}>
                   {OH_STATUS_LABEL[l.status] ?? l.status}
@@ -772,7 +1010,9 @@ function OpenHousesList({ token, onOpen }: { token: string; onOpen: (id: string)
               <div className="p-3">
                 <div className="font-medium text-sm truncate">{l.address}</div>
                 <div className="text-xs text-muted-foreground truncate">{l.agent_name || "—"}</div>
-                {l.open_house_at && <div className="text-xs text-gold mt-0.5">{fmtDateTime(l.open_house_at)}</div>}
+                {l.open_house_at && (
+                  <div className="text-xs text-gold mt-0.5">{fmtDateTime(l.open_house_at)}</div>
+                )}
               </div>
             </button>
           ))}
@@ -782,16 +1022,34 @@ function OpenHousesList({ token, onOpen }: { token: string; onOpen: (id: string)
   );
 }
 
-const OH_CATEGORIES = ["Agent QR Code", "Branded Photos and Copy", "Coloring Page", "Flyer", "Other"] as const;
+const OH_CATEGORIES = [
+  "Agent QR Code",
+  "Branded Photos and Copy",
+  "Coloring Page",
+  "Flyer",
+  "Other",
+] as const;
 
 function OpenHouseView({ token, id, onBack }: { token: string; id: string; onBack: () => void }) {
   const { data, isLoading } = useQuery({
     queryKey: ["public-toolbox-open-house", id],
     queryFn: async () => {
       const [{ data: openHouse }, { data: assets }, { data: captions }] = await Promise.all([
-        supabase.from("toolbox_open_houses").select("id,address,agent_name,status,open_house_at,description").eq("id", id).maybeSingle(),
-        supabase.from("toolbox_open_house_assets").select("*").eq("open_house_id", id).order("created_at", { ascending: true }),
-        supabase.from("toolbox_open_house_captions").select("id,caption_text,created_at").eq("open_house_id", id).order("created_at", { ascending: true }),
+        supabase
+          .from("toolbox_open_houses")
+          .select("id,address,agent_name,status,open_house_at,description")
+          .eq("id", id)
+          .maybeSingle(),
+        supabase
+          .from("toolbox_open_house_assets")
+          .select("*")
+          .eq("open_house_id", id)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("toolbox_open_house_captions")
+          .select("id,caption_text,created_at")
+          .eq("open_house_id", id)
+          .order("created_at", { ascending: true }),
       ]);
       if (!openHouse) throw new Error("Not found");
       return { openHouse, assets: assets ?? [], captions: captions ?? [] };
@@ -800,7 +1058,9 @@ function OpenHouseView({ token, id, onBack }: { token: string; id: string; onBac
   const [detailItem, setDetailItem] = useState<any | null>(null);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setDetailItem(null); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDetailItem(null);
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
@@ -826,7 +1086,10 @@ function OpenHouseView({ token, id, onBack }: { token: string; id: string; onBac
 
   return (
     <div className="space-y-6">
-      <button onClick={onBack} className="flex items-center gap-1 text-sm text-gold hover:underline">
+      <button
+        onClick={onBack}
+        className="flex items-center gap-1 text-sm text-gold hover:underline"
+      >
         <ArrowLeft className="h-4 w-4" /> All open houses
       </button>
 
@@ -834,10 +1097,16 @@ function OpenHouseView({ token, id, onBack }: { token: string; id: string; onBac
         <h1 className="text-xl font-semibold">{openHouse.address}</h1>
         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
           {openHouse.agent_name && <span>{openHouse.agent_name}</span>}
-          <Badge className={cn("border", OH_STATUS_CLASS[openHouse.status])}>{OH_STATUS_LABEL[openHouse.status] ?? openHouse.status}</Badge>
-          {openHouse.open_house_at && <span className="text-gold">{fmtDateTime(openHouse.open_house_at)}</span>}
+          <Badge className={cn("border", OH_STATUS_CLASS[openHouse.status])}>
+            {OH_STATUS_LABEL[openHouse.status] ?? openHouse.status}
+          </Badge>
+          {openHouse.open_house_at && (
+            <span className="text-gold">{fmtDateTime(openHouse.open_house_at)}</span>
+          )}
         </div>
-        {openHouse.description && <p className="text-sm text-muted-foreground mt-2">{openHouse.description}</p>}
+        {openHouse.description && (
+          <p className="text-sm text-muted-foreground mt-2">{openHouse.description}</p>
+        )}
         {(() => {
           const ohPhotos = assets.filter((a: any) => isImageUrl(a.file_url));
           return ohPhotos.length > 0 ? (
@@ -863,23 +1132,37 @@ function OpenHouseView({ token, id, onBack }: { token: string; id: string; onBac
                 {items.map((a) => {
                   const isImg = isImageUrl(a.file_url);
                   return (
-                    <div key={a.id} className="rounded-lg overflow-hidden border border-border bg-card">
+                    <div
+                      key={a.id}
+                      className="rounded-lg overflow-hidden border border-border bg-card"
+                    >
                       <button
                         onClick={() => setDetailItem({ ...a, _category: cat })}
                         className="block w-full aspect-square bg-muted relative"
                       >
                         {isImg ? (
-                          <img src={a.thumbnail_url || a.file_url} alt={a.name ?? ""} className="w-full h-full object-cover" loading="lazy" />
+                          <img
+                            src={a.thumbnail_url || a.file_url}
+                            alt={a.name ?? ""}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
                         ) : (
                           <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground gap-1 p-2">
                             <FileText className="h-10 w-10" />
-                            <span className="text-[10px] truncate w-full text-center">{a.name ?? "File"}</span>
+                            <span className="text-[10px] truncate w-full text-center">
+                              {a.name ?? "File"}
+                            </span>
                           </div>
                         )}
                       </button>
                       {a.file_url && (
                         <div className="p-1.5">
-                          <DownloadButton url={a.file_url} filename={a.name || `${slug(cat)}-${a.id}`} small />
+                          <DownloadButton
+                            url={a.file_url}
+                            filename={a.name || `${slug(cat)}-${a.id}`}
+                            small
+                          />
                         </div>
                       )}
                     </div>
@@ -889,7 +1172,9 @@ function OpenHouseView({ token, id, onBack }: { token: string; id: string; onBac
             )}
             {caps.length > 0 && (
               <div className="space-y-2">
-                {caps.map((c) => <CaptionCard key={c.id} text={c.caption_text} />)}
+                {caps.map((c) => (
+                  <CaptionCard key={c.id} text={c.caption_text} />
+                ))}
               </div>
             )}
           </section>
@@ -906,16 +1191,29 @@ function OpenHouseView({ token, id, onBack }: { token: string; id: string; onBac
         <div className="fixed inset-0 bg-black/95 z-50 flex flex-col">
           <div className="flex items-center justify-between gap-3 p-4 border-b border-white/10 shrink-0">
             <div className="min-w-0">
-              <h2 className="text-base font-semibold truncate">{detailItem.name || detailItem._category}</h2>
-              <Badge className="bg-navy/80 border border-gold/30 text-gold mt-1">{detailItem._category}</Badge>
+              <h2 className="text-base font-semibold truncate">
+                {detailItem.name || detailItem._category}
+              </h2>
+              <Badge className="bg-navy/80 border border-gold/30 text-gold mt-1">
+                {detailItem._category}
+              </Badge>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setDetailItem(null)} className="shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setDetailItem(null)}
+              className="shrink-0"
+            >
               <X className="h-5 w-5" />
             </Button>
           </div>
           <div className="flex-1 overflow-auto p-4 flex flex-col items-center justify-center gap-4">
             {isImageUrl(detailItem.file_url) ? (
-              <img src={detailItem.file_url} alt={detailItem.name ?? ""} className="max-w-full max-h-[75vh] object-contain rounded-lg" />
+              <img
+                src={detailItem.file_url}
+                alt={detailItem.name ?? ""}
+                className="max-w-full max-h-[75vh] object-contain rounded-lg"
+              />
             ) : (
               <div className="flex flex-col items-center gap-4 text-center">
                 <FileText className="h-20 w-20 text-gold" />
@@ -925,7 +1223,10 @@ function OpenHouseView({ token, id, onBack }: { token: string; id: string; onBac
           </div>
           <div className="p-4 border-t border-white/10 bg-card shrink-0">
             {detailItem.file_url && (
-              <DownloadButton url={detailItem.file_url} filename={detailItem.name || `${slug(detailItem._category)}-${detailItem.id}`} />
+              <DownloadButton
+                url={detailItem.file_url}
+                filename={detailItem.name || `${slug(detailItem._category)}-${detailItem.id}`}
+              />
             )}
           </div>
         </div>
@@ -934,10 +1235,17 @@ function OpenHouseView({ token, id, onBack }: { token: string; id: string; onBac
   );
 }
 
-
 /* -------- Agent Branded (agent-facing) -------- */
 
-const BRANDED_TYPES = ["Testimonial", "Listing Presentation", "Buyer Presentation", "Headshot", "Education", "Social Post", "Other"];
+const BRANDED_TYPES = [
+  "Testimonial",
+  "Listing Presentation",
+  "Buyer Presentation",
+  "Headshot",
+  "Education",
+  "Social Post",
+  "Other",
+];
 
 function BrandedAgentSection({ token }: { token: string }) {
   const [agentId, setAgentId] = useState<string | null>(null);
@@ -945,7 +1253,11 @@ function BrandedAgentSection({ token }: { token: string }) {
     queryKey: ["public-toolbox-branded-agents"],
     queryFn: async () => {
       const [agentsRes, contentRes] = await Promise.all([
-        supabase.from("toolbox_agents").select("id,name,headshot_url,identifier,active").eq("active", true).order("name", { ascending: true }),
+        supabase
+          .from("toolbox_agents")
+          .select("id,name,headshot_url,identifier,active")
+          .eq("active", true)
+          .order("name", { ascending: true }),
         supabase.from("toolbox_agent_content").select("agent_id"),
       ]);
       const agents = agentsRes.data ?? [];
@@ -959,7 +1271,14 @@ function BrandedAgentSection({ token }: { token: string }) {
 
   if (agentId) {
     const a = agents.find((x) => x.id === agentId);
-    return <BrandedContentView token={token} agentId={agentId} agentName={a?.name ?? ""} onBack={() => setAgentId(null)} />;
+    return (
+      <BrandedContentView
+        token={token}
+        agentId={agentId}
+        agentName={a?.name ?? ""}
+        onBack={() => setAgentId(null)}
+      />
+    );
   }
 
   if (isLoading) return <div className="text-center text-muted-foreground py-10">Loading…</div>;
@@ -973,7 +1292,9 @@ function BrandedAgentSection({ token }: { token: string }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">Choose an agent to view their branded content.</p>
+      <p className="text-sm text-muted-foreground">
+        Choose an agent to view their branded content.
+      </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {agents.map((a) => (
           <button
@@ -997,14 +1318,30 @@ function BrandedAgentSection({ token }: { token: string }) {
 }
 
 function BrandedContentView({
-  token, agentId, agentName, onBack,
-}: { token: string; agentId: string; agentName: string; onBack: () => void }) {
+  token,
+  agentId,
+  agentName,
+  onBack,
+}: {
+  token: string;
+  agentId: string;
+  agentName: string;
+  onBack: () => void;
+}) {
   const { data, isLoading } = useQuery({
     queryKey: ["public-toolbox-agent-content", agentId],
     queryFn: async () => {
       const [{ data: agent }, { data: items }] = await Promise.all([
-        supabase.from("toolbox_agents").select("id,name,headshot_url,identifier").eq("id", agentId).maybeSingle(),
-        supabase.from("toolbox_agent_content").select("*").eq("agent_id", agentId).order("created_at", { ascending: false }),
+        supabase
+          .from("toolbox_agents")
+          .select("id,name,headshot_url,identifier")
+          .eq("id", agentId)
+          .maybeSingle(),
+        supabase
+          .from("toolbox_agent_content")
+          .select("*")
+          .eq("agent_id", agentId)
+          .order("created_at", { ascending: false }),
       ]);
       if (!agent) throw new Error("Agent not found");
       return { agent, items: items ?? [] };
@@ -1027,14 +1364,21 @@ function BrandedContentView({
 
   return (
     <div className="space-y-4">
-      <button onClick={onBack} className="flex items-center gap-1 text-sm text-gold hover:underline">
+      <button
+        onClick={onBack}
+        className="flex items-center gap-1 text-sm text-gold hover:underline"
+      >
         <ArrowLeft className="h-4 w-4" /> All agents
       </button>
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className="h-16 w-16 rounded-full bg-muted overflow-hidden shrink-0 flex items-center justify-center border border-border">
             {agentData?.headshot_url ? (
-              <img src={agentData.headshot_url} alt={agentName} className="w-full h-full object-cover" />
+              <img
+                src={agentData.headshot_url}
+                alt={agentName}
+                className="w-full h-full object-cover"
+              />
             ) : (
               <User className="h-8 w-8 text-muted-foreground" />
             )}
@@ -1045,7 +1389,11 @@ function BrandedContentView({
           </div>
         </div>
         {agentData?.headshot_url && (
-          <DownloadButton url={agentData.headshot_url} filename={`${agentData?.name || agentName} headshot`} small />
+          <DownloadButton
+            url={agentData.headshot_url}
+            filename={`${agentData?.name || agentName} headshot`}
+            small
+          />
         )}
       </div>
 
@@ -1060,7 +1408,12 @@ function BrandedContentView({
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setFilter("all")}
-              className={cn("text-xs px-3 py-1.5 rounded-full border", filter === "all" ? "border-gold text-gold bg-gold/10" : "border-border text-muted-foreground")}
+              className={cn(
+                "text-xs px-3 py-1.5 rounded-full border",
+                filter === "all"
+                  ? "border-gold text-gold bg-gold/10"
+                  : "border-border text-muted-foreground",
+              )}
             >
               All · {items.length}
             </button>
@@ -1071,7 +1424,12 @@ function BrandedContentView({
                 <button
                   key={t}
                   onClick={() => setFilter(t)}
-                  className={cn("text-xs px-3 py-1.5 rounded-full border", filter === t ? "border-gold text-gold bg-gold/10" : "border-border text-muted-foreground")}
+                  className={cn(
+                    "text-xs px-3 py-1.5 rounded-full border",
+                    filter === t
+                      ? "border-gold text-gold bg-gold/10"
+                      : "border-border text-muted-foreground",
+                  )}
                 >
                   {t} · {n}
                 </button>
@@ -1092,21 +1450,32 @@ function BrandedContentView({
                       <img src={i.file_url} alt={i.title} className="w-full h-full object-cover" />
                     ) : (
                       <div className="flex flex-col items-center gap-1 text-muted-foreground">
-                        {i.drive_url ? <VideoIcon className="h-10 w-10" /> : <FileText className="h-10 w-10" />}
+                        {i.drive_url ? (
+                          <VideoIcon className="h-10 w-10" />
+                        ) : (
+                          <FileText className="h-10 w-10" />
+                        )}
                       </div>
                     )}
-                    <Badge className="absolute top-2 left-2 bg-navy/80 border border-gold/30 text-gold pointer-events-none">{i.content_type}</Badge>
+                    <Badge className="absolute top-2 left-2 bg-navy/80 border border-gold/30 text-gold pointer-events-none">
+                      {i.content_type}
+                    </Badge>
                   </div>
                   <div className="p-3 space-y-2">
                     <div className="font-medium text-sm">{i.title}</div>
                     {i.caption && (
                       <>
-                        <div className="text-sm text-muted-foreground whitespace-pre-wrap">{i.caption}</div>
+                        <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+                          {i.caption}
+                        </div>
                         <Button
                           size="sm"
                           variant="secondary"
                           className="w-full h-9"
-                          onClick={async () => { await navigator.clipboard.writeText(i.caption); toast.success("Caption copied"); }}
+                          onClick={async () => {
+                            await navigator.clipboard.writeText(i.caption);
+                            toast.success("Caption copied");
+                          }}
                         >
                           <Copy className="h-3.5 w-3.5 mr-1" /> Copy caption
                         </Button>
@@ -1136,9 +1505,16 @@ function BrandedContentView({
           <div className="flex items-center justify-between gap-3 p-4 border-b border-white/10 shrink-0">
             <div className="min-w-0">
               <h2 className="text-base font-semibold truncate">{detailItem.title}</h2>
-              <Badge className="bg-navy/80 border border-gold/30 text-gold mt-1">{detailItem.content_type}</Badge>
+              <Badge className="bg-navy/80 border border-gold/30 text-gold mt-1">
+                {detailItem.content_type}
+              </Badge>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setDetailItem(null)} className="shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setDetailItem(null)}
+              className="shrink-0"
+            >
               <X className="h-5 w-5" />
             </Button>
           </div>
@@ -1163,7 +1539,9 @@ function BrandedContentView({
           </div>
           <div className="p-4 border-t border-white/10 bg-card space-y-3 shrink-0">
             {detailItem.caption && (
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{detailItem.caption}</p>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                {detailItem.caption}
+              </p>
             )}
             {detailItem.file_url && (
               <DownloadButton url={detailItem.file_url} filename={detailItem.title || "file"} />

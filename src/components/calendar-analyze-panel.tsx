@@ -51,10 +51,10 @@ export function CalendarAnalyzePanel({
         const days = eachDayOfInterval({ start: range.start, end: addDays(range.end, -1) });
         // Exclude AON entirely from the analysis
         const filteredItems = items.filter((it) => (it as any).brand !== "AON");
-        const scheduled = new Set(filteredItems.map((it) => format(new Date(it.scheduled_at), "yyyy-MM-dd")));
-        const emptyDays = days
-          .map((d) => format(d, "yyyy-MM-dd"))
-          .filter((s) => !scheduled.has(s));
+        const scheduled = new Set(
+          filteredItems.map((it) => format(new Date(it.scheduled_at), "yyyy-MM-dd")),
+        );
+        const emptyDays = days.map((d) => format(d, "yyyy-MM-dd")).filter((s) => !scheduled.has(s));
 
         const holidays: { date: string; name: string }[] = [];
         for (const d of days) {
@@ -98,7 +98,10 @@ export function CalendarAnalyzePanel({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md bg-card border-l border-border p-0 flex flex-col">
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-md bg-card border-l border-border p-0 flex flex-col"
+      >
         <SheetHeader className="p-5 border-b border-border">
           <SheetTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-gold" />
@@ -114,7 +117,9 @@ export function CalendarAnalyzePanel({
                 onClick={() => setScope(s)}
                 className={cn(
                   "flex-1 px-3 py-1.5 text-xs font-medium rounded transition-colors",
-                  scope === s ? "bg-gold text-gold-foreground" : "text-muted-foreground hover:text-foreground",
+                  scope === s
+                    ? "bg-gold text-gold-foreground"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 {s === "week" ? "This Week" : "This Month"}
@@ -127,9 +132,13 @@ export function CalendarAnalyzePanel({
             className="w-full bg-gold text-gold-foreground hover:bg-gold/90"
           >
             {loading ? (
-              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Analyzing…</>
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Analyzing…
+              </>
             ) : (
-              <><Sparkles className="h-4 w-4 mr-2" /> Analyze</>
+              <>
+                <Sparkles className="h-4 w-4 mr-2" /> Analyze
+              </>
             )}
           </Button>
         </div>
@@ -160,34 +169,45 @@ export function CalendarAnalyzePanel({
             </p>
           )}
 
-          {!loading && !error && recs && recs.map((r, i) => (
-            <div key={i} className="rounded-lg border border-border bg-background/60 p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded border uppercase tracking-wide", CATEGORY_CLASS[r.category] ?? "bg-muted border-border")}>
-                  {r.category}
-                </span>
+          {!loading &&
+            !error &&
+            recs &&
+            recs.map((r, i) => (
+              <div
+                key={i}
+                className="rounded-lg border border-border bg-background/60 p-4 space-y-2"
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "text-[10px] font-semibold px-2 py-0.5 rounded border uppercase tracking-wide",
+                      CATEGORY_CLASS[r.category] ?? "bg-muted border-border",
+                    )}
+                  >
+                    {r.category}
+                  </span>
+                  {r.suggested_date && (
+                    <span className="text-[10px] text-muted-foreground">{r.suggested_date}</span>
+                  )}
+                </div>
+                <h4 className="font-semibold text-sm leading-snug">{r.title}</h4>
+                <p className="text-sm text-muted-foreground leading-relaxed">{r.description}</p>
                 {r.suggested_date && (
-                  <span className="text-[10px] text-muted-foreground">{r.suggested_date}</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-1"
+                    onClick={() => {
+                      const [y, m, d] = r.suggested_date!.split("-").map(Number);
+                      const dt = new Date(y, m - 1, d, 10, 0, 0, 0);
+                      onCreatePost(dt);
+                    }}
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1.5" /> Create Post
+                  </Button>
                 )}
               </div>
-              <h4 className="font-semibold text-sm leading-snug">{r.title}</h4>
-              <p className="text-sm text-muted-foreground leading-relaxed">{r.description}</p>
-              {r.suggested_date && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="mt-1"
-                  onClick={() => {
-                    const [y, m, d] = r.suggested_date!.split("-").map(Number);
-                    const dt = new Date(y, m - 1, d, 10, 0, 0, 0);
-                    onCreatePost(dt);
-                  }}
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1.5" /> Create Post
-                </Button>
-              )}
-            </div>
-          ))}
+            ))}
 
           {!loading && !error && !recs && (
             <p className="text-sm text-muted-foreground text-center py-12">

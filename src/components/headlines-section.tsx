@@ -120,10 +120,7 @@ export function HeadlinesSection({
       // issue row, drop it from the Issues list — reviewing as a
       // cascade/announcement means it's been handled, not IDS'd.
       if (h.converted_issue_id) {
-        const { error: delErr } = await sb
-          .from("issues")
-          .delete()
-          .eq("id", h.converted_issue_id);
+        const { error: delErr } = await sb.from("issues").delete().eq("id", h.converted_issue_id);
         if (delErr) throw delErr;
       }
       const { error } = await sb
@@ -147,10 +144,7 @@ export function HeadlinesSection({
 
   const reopen = useMutation({
     mutationFn: async (h: Headline) => {
-      const { error } = await sb
-        .from("headlines")
-        .update({ reviewed_at: null })
-        .eq("id", h.id);
+      const { error } = await sb.from("headlines").update({ reviewed_at: null }).eq("id", h.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -239,26 +233,18 @@ export function HeadlinesSection({
       // remove the issue row so it doesn't linger in the Issues list.
       const removingIssueLink = !!h.converted_issue_id;
       if (removingIssueLink) {
-        const { error: delErr } = await sb
-          .from("issues")
-          .delete()
-          .eq("id", h.converted_issue_id);
+        const { error: delErr } = await sb.from("issues").delete().eq("id", h.converted_issue_id);
         if (delErr) throw delErr;
       }
       const { error } = await sb
         .from("headlines")
-        .update(
-          removingIssueLink
-            ? { kind, converted_issue_id: null }
-            : { kind },
-        )
+        .update(removingIssueLink ? { kind, converted_issue_id: null } : { kind })
         .eq("id", h.id);
       if (error) throw error;
     },
     onSuccess: () => invalidate(),
     onError: (e: Error) => toast.error(e.message),
   });
-
 
   const del = useMutation({
     mutationFn: async (h: Headline) => {

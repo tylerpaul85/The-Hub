@@ -99,8 +99,7 @@ function AccessDenied() {
 
 function VirtualStagingPage() {
   const { user, roles, loading } = useAuth();
-  const allowed =
-    roles.includes("admin") || roles.includes("marketing_coordinator");
+  const allowed = roles.includes("admin") || roles.includes("marketing_coordinator");
 
   if (loading) return null;
   if (!user || !allowed) return <AccessDenied />;
@@ -182,9 +181,7 @@ function useUpload(userId: string) {
       setUploading(true);
       try {
         const ext = f.name.split(".").pop()?.toLowerCase() || "jpg";
-        const path = `${userId}/${Date.now()}-${Math.random()
-          .toString(36)
-          .slice(2, 8)}.${ext}`;
+        const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
         const { error: upErr } = await supabase.storage
           .from("staging-uploads")
           .upload(path, f, { contentType: f.type, upsert: false });
@@ -454,11 +451,7 @@ function HistoryGrid({
           >
             <div className="aspect-video bg-muted flex items-center justify-center overflow-hidden">
               {j.source_image_url ? (
-                <img
-                  src={j.source_image_url}
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
+                <img src={j.source_image_url} alt="" className="w-full h-full object-cover" />
               ) : (
                 <ImageIcon className="h-6 w-6 text-muted-foreground" />
               )}
@@ -472,8 +465,8 @@ function HistoryGrid({
                     j.status === "done"
                       ? "text-gold"
                       : j.status === "error"
-                      ? "text-destructive"
-                      : "text-muted-foreground"
+                        ? "text-destructive"
+                        : "text-muted-foreground"
                   }
                 >
                   {j.status}
@@ -635,16 +628,12 @@ function StagingTool({ userId }: { userId: string }) {
       <HistoryGrid
         history={history ?? []}
         onPick={setActiveJobId}
-        formatLabel={(j) =>
-          `${(j.room_type ?? "").replace(/_/g, " ")} • ${j.style ?? ""}`
-        }
+        formatLabel={(j) => `${(j.room_type ?? "").replace(/_/g, " ")} • ${j.style ?? ""}`}
       />
 
       <Dialog open={!!modalUrl} onOpenChange={(o) => !o && setModalUrl(null)}>
         <DialogContent className="max-w-4xl p-0 bg-transparent border-0 shadow-none">
-          {modalUrl && (
-            <img src={modalUrl} alt="Full size" className="w-full h-auto rounded-md" />
-          )}
+          {modalUrl && <img src={modalUrl} alt="Full size" className="w-full h-auto rounded-md" />}
         </DialogContent>
       </Dialog>
     </div>
@@ -719,8 +708,7 @@ function DuskTool({ userId }: { userId: string }) {
     setActiveJobId(null);
   };
 
-  const canConvert =
-    !!upload.sourceUrl && !!skyStyle && !upload.uploading && !convertMut.isPending;
+  const canConvert = !!upload.sourceUrl && !!skyStyle && !upload.uploading && !convertMut.isPending;
   const isProcessing =
     activeJob && (activeJob.status === "pending" || activeJob.status === "processing");
   const isDone = activeJob?.status === "done";
@@ -730,11 +718,7 @@ function DuskTool({ userId }: { userId: string }) {
     <div className="space-y-6">
       {!isDone && !isProcessing && (
         <Card className="p-5 space-y-5 border-gold/20">
-          <Dropzone
-            label="Exterior Daytime Photo"
-            hint="JPG or PNG, up to 20 MB"
-            upload={upload}
-          />
+          <Dropzone label="Exterior Daytime Photo" hint="JPG or PNG, up to 20 MB" upload={upload} />
           <div className="space-y-2">
             <Label>Sky Style</Label>
             <Select value={skyStyle} onValueChange={setSkyStyle}>
@@ -787,9 +771,7 @@ function DuskTool({ userId }: { userId: string }) {
 
       <Dialog open={!!modalUrl} onOpenChange={(o) => !o && setModalUrl(null)}>
         <DialogContent className="max-w-4xl p-0 bg-transparent border-0 shadow-none">
-          {modalUrl && (
-            <img src={modalUrl} alt="Full size" className="w-full h-auto rounded-md" />
-          )}
+          {modalUrl && <img src={modalUrl} alt="Full size" className="w-full h-auto rounded-md" />}
         </DialogContent>
       </Dialog>
     </div>
@@ -864,8 +846,7 @@ function DeclutterTool({ userId }: { userId: string }) {
     setActiveJobId(null);
   };
 
-  const canRun =
-    !!upload.sourceUrl && !!intensity && !upload.uploading && !declutterMut.isPending;
+  const canRun = !!upload.sourceUrl && !!intensity && !upload.uploading && !declutterMut.isPending;
   const isProcessing =
     activeJob && (activeJob.status === "pending" || activeJob.status === "processing");
   const isDone = activeJob?.status === "done";
@@ -875,11 +856,7 @@ function DeclutterTool({ userId }: { userId: string }) {
     <div className="space-y-6">
       {!isDone && !isProcessing && (
         <Card className="p-5 space-y-5 border-gold/20">
-          <Dropzone
-            label="Occupied Room Photo"
-            hint="JPG or PNG, up to 20 MB"
-            upload={upload}
-          />
+          <Dropzone label="Occupied Room Photo" hint="JPG or PNG, up to 20 MB" upload={upload} />
           <div className="space-y-2">
             <Label>Decluttering Intensity</Label>
             <div className="grid sm:grid-cols-3 gap-2">
@@ -939,9 +916,7 @@ function DeclutterTool({ userId }: { userId: string }) {
 
       <Dialog open={!!modalUrl} onOpenChange={(o) => !o && setModalUrl(null)}>
         <DialogContent className="max-w-4xl p-0 bg-transparent border-0 shadow-none">
-          {modalUrl && (
-            <img src={modalUrl} alt="Full size" className="w-full h-auto rounded-md" />
-          )}
+          {modalUrl && <img src={modalUrl} alt="Full size" className="w-full h-auto rounded-md" />}
         </DialogContent>
       </Dialog>
     </div>

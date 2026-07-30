@@ -157,7 +157,10 @@ function PublicAvailabilityPage() {
     <div className="min-h-screen bg-background px-4 py-8 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
       <div className="max-w-3xl mx-auto">
         <div className="mb-4">
-          <Link to="/agents" className="inline-flex items-center gap-1 text-xs text-gold hover:underline">
+          <Link
+            to="/agents"
+            className="inline-flex items-center gap-1 text-xs text-gold hover:underline"
+          >
             <ChevronLeft className="h-3.5 w-3.5" /> Back to Agent Hub
           </Link>
         </div>
@@ -175,10 +178,14 @@ function PublicAvailabilityPage() {
             <div className="space-y-1.5">
               <Label>Office</Label>
               <Select value={officeFilter} onValueChange={setOfficeFilter}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   {OFFICES.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -223,19 +230,28 @@ function PublicAvailabilityPage() {
               <TableBody>
                 {!selectedAgent ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center text-sm text-muted-foreground py-6">
+                    <TableCell
+                      colSpan={3}
+                      className="text-center text-sm text-muted-foreground py-6"
+                    >
                       Select your name to view and add time off.
                     </TableCell>
                   </TableRow>
                 ) : listQ.isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center text-sm text-muted-foreground py-6">
+                    <TableCell
+                      colSpan={3}
+                      className="text-center text-sm text-muted-foreground py-6"
+                    >
                       Loading…
                     </TableCell>
                   </TableRow>
                 ) : (listQ.data ?? []).length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center text-sm text-muted-foreground py-6">
+                    <TableCell
+                      colSpan={3}
+                      className="text-center text-sm text-muted-foreground py-6"
+                    >
                       No time off submitted yet.
                     </TableCell>
                   </TableRow>
@@ -245,7 +261,9 @@ function PublicAvailabilityPage() {
                     const e = new Date(row.date_end + "T00:00:00");
                     return (
                       <TableRow key={row.id}>
-                        <TableCell>{format(s, "MMM d, yyyy")} – {format(e, "MMM d, yyyy")}</TableCell>
+                        <TableCell>
+                          {format(s, "MMM d, yyyy")} – {format(e, "MMM d, yyyy")}
+                        </TableCell>
                         <TableCell className="capitalize">{row.reason ?? "—"}</TableCell>
                         <TableCell className="text-right">
                           <Button size="sm" variant="ghost" onClick={() => openEdit(row)}>
@@ -297,18 +315,24 @@ function PublicAvailabilityPage() {
             <div className="space-y-1.5">
               <Label>Reason (optional)</Label>
               <Select value={reason} onValueChange={setReason}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">—</SelectItem>
                   {REASONS.map((r) => (
-                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                    <SelectItem key={r.value} value={r.value}>
+                      {r.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
             <Button
               onClick={() => saveMut.mutate()}
               disabled={saveMut.isPending}

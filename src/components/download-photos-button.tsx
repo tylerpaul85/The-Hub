@@ -18,7 +18,12 @@ export type PhotoLike = {
 };
 
 function sanitize(s: string) {
-  return s.replace(/[^a-z0-9]+/gi, "_").replace(/^_+|_+$/g, "").slice(0, 80) || "listing";
+  return (
+    s
+      .replace(/[^a-z0-9]+/gi, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 80) || "listing"
+  );
 }
 
 function extFromUrl(url: string, fallback = "jpg") {
@@ -196,11 +201,13 @@ export function DownloadPhotosButton({
           <Button
             size="sm"
             disabled={busy !== null}
-            className={
-              className ?? "h-7 bg-gold text-navy hover:bg-gold/90"
-            }
+            className={className ?? "h-7 bg-gold text-navy hover:bg-gold/90"}
           >
-            {busy ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Download className="h-3 w-3 mr-1" />}
+            {busy ? (
+              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+            ) : (
+              <Download className="h-3 w-3 mr-1" />
+            )}
             {busy === "zip" ? "Zipping…" : busy === "share" ? "Preparing…" : "Download Photos"}
           </Button>
         </DropdownMenuTrigger>

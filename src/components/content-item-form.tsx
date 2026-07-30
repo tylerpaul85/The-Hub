@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -91,7 +97,10 @@ export function ContentItemForm({ open, onOpenChange, initialDate, initial }: Pr
   });
 
   const togglePlatform = (p: string) =>
-    setForm((f) => ({ ...f, platforms: f.platforms.includes(p) ? f.platforms.filter((x) => x !== p) : [...f.platforms, p] }));
+    setForm((f) => ({
+      ...f,
+      platforms: f.platforms.includes(p) ? f.platforms.filter((x) => x !== p) : [...f.platforms, p],
+    }));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,28 +111,51 @@ export function ContentItemForm({ open, onOpenChange, initialDate, initial }: Pr
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>New Content Item</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>New Content Item</DialogTitle>
+        </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="title">Title *</Label>
-            <Input id="title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required maxLength={200} className="mt-1.5" placeholder="Content title" />
+            <Input
+              id="title"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              required
+              maxLength={200}
+              className="mt-1.5"
+              placeholder="Content title"
+            />
           </div>
 
           <div>
             <Label htmlFor="notes">Notes</Label>
-            <Textarea id="notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} maxLength={2000} className="mt-1.5" placeholder="Internal notes…" />
+            <Textarea
+              id="notes"
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              rows={3}
+              maxLength={2000}
+              className="mt-1.5"
+              placeholder="Internal notes…"
+            />
           </div>
 
           <div>
             <Label>Brand</Label>
             <div className="mt-2 flex flex-wrap gap-2">
               {BRANDS.map((b) => (
-                <button type="button" key={b}
+                <button
+                  type="button"
+                  key={b}
                   onClick={() => setForm({ ...form, brand: b })}
                   className={cn(
                     "px-3 py-1.5 border rounded-md text-sm font-semibold transition-colors",
-                    form.brand === b ? BRAND_STYLES[b] : "border-border text-muted-foreground hover:bg-accent/40",
-                  )}>
+                    form.brand === b
+                      ? BRAND_STYLES[b]
+                      : "border-border text-muted-foreground hover:bg-accent/40",
+                  )}
+                >
                   {b}
                 </button>
               ))}
@@ -134,11 +166,19 @@ export function ContentItemForm({ open, onOpenChange, initialDate, initial }: Pr
             <Label>Platforms</Label>
             <div className="mt-2 flex flex-wrap gap-3">
               {PLATFORMS.map((p) => (
-                <label key={p} className={cn(
-                  "flex items-center gap-2 px-3 py-1.5 border rounded-md cursor-pointer text-sm",
-                  form.platforms.includes(p) ? PLATFORM_CHIP[p] : "border-border hover:bg-accent/40",
-                )}>
-                  <Checkbox checked={form.platforms.includes(p)} onCheckedChange={() => togglePlatform(p)} />
+                <label
+                  key={p}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 border rounded-md cursor-pointer text-sm",
+                    form.platforms.includes(p)
+                      ? PLATFORM_CHIP[p]
+                      : "border-border hover:bg-accent/40",
+                  )}
+                >
+                  <Checkbox
+                    checked={form.platforms.includes(p)}
+                    onCheckedChange={() => togglePlatform(p)}
+                  />
                   {p}
                 </label>
               ))}
@@ -150,11 +190,23 @@ export function ContentItemForm({ open, onOpenChange, initialDate, initial }: Pr
               <div className="text-xs font-semibold text-emerald-300">Blog details</div>
               <div>
                 <Label className="text-xs">Blog content (for review)</Label>
-                <Textarea value={form.blog_content} onChange={(e) => setForm({ ...form, blog_content: e.target.value })} rows={4} className="mt-1.5" placeholder="Paste blog body here…" />
+                <Textarea
+                  value={form.blog_content}
+                  onChange={(e) => setForm({ ...form, blog_content: e.target.value })}
+                  rows={4}
+                  className="mt-1.5"
+                  placeholder="Paste blog body here…"
+                />
               </div>
               <div>
                 <Label className="text-xs">Doc link</Label>
-                <Input type="url" value={form.blog_doc_link} onChange={(e) => setForm({ ...form, blog_doc_link: e.target.value })} placeholder="https://docs.google.com/…" className="mt-1.5" />
+                <Input
+                  type="url"
+                  value={form.blog_doc_link}
+                  onChange={(e) => setForm({ ...form, blog_doc_link: e.target.value })}
+                  placeholder="https://docs.google.com/…"
+                  className="mt-1.5"
+                />
               </div>
             </div>
           )}
@@ -164,11 +216,22 @@ export function ContentItemForm({ open, onOpenChange, initialDate, initial }: Pr
               <div className="text-xs font-semibold text-red-300">YouTube details</div>
               <div>
                 <Label className="text-xs">Video title</Label>
-                <Input value={form.youtube_video_title} onChange={(e) => setForm({ ...form, youtube_video_title: e.target.value })} className="mt-1.5" placeholder="YouTube video title" />
+                <Input
+                  value={form.youtube_video_title}
+                  onChange={(e) => setForm({ ...form, youtube_video_title: e.target.value })}
+                  className="mt-1.5"
+                  placeholder="YouTube video title"
+                />
               </div>
               <div>
                 <Label className="text-xs">Thumbnail link</Label>
-                <Input type="url" value={form.youtube_thumbnail_url} onChange={(e) => setForm({ ...form, youtube_thumbnail_url: e.target.value })} placeholder="https://…" className="mt-1.5" />
+                <Input
+                  type="url"
+                  value={form.youtube_thumbnail_url}
+                  onChange={(e) => setForm({ ...form, youtube_thumbnail_url: e.target.value })}
+                  placeholder="https://…"
+                  className="mt-1.5"
+                />
               </div>
             </div>
           )}
@@ -178,46 +241,92 @@ export function ContentItemForm({ open, onOpenChange, initialDate, initial }: Pr
               <div className="text-xs font-semibold text-amber-300">Email (Mailchimp) details</div>
               <div>
                 <Label className="text-xs">Subject line</Label>
-                <Input value={form.email_subject_line} onChange={(e) => setForm({ ...form, email_subject_line: e.target.value })} className="mt-1.5" placeholder="Email subject" />
+                <Input
+                  value={form.email_subject_line}
+                  onChange={(e) => setForm({ ...form, email_subject_line: e.target.value })}
+                  className="mt-1.5"
+                  placeholder="Email subject"
+                />
               </div>
               <div>
                 <Label className="text-xs">Email body</Label>
-                <Textarea value={form.email_body} onChange={(e) => setForm({ ...form, email_body: e.target.value })} rows={6} className="mt-1.5" placeholder="Email body content…" />
+                <Textarea
+                  value={form.email_body}
+                  onChange={(e) => setForm({ ...form, email_body: e.target.value })}
+                  rows={6}
+                  className="mt-1.5"
+                  placeholder="Email body content…"
+                />
               </div>
             </div>
           )}
 
           {hasPlatform("Meta") && (
             <div className="rounded-md border border-blue-500/30 bg-blue-500/5 p-3 space-y-3">
-              <div className="text-xs font-semibold text-blue-300">Meta (Facebook/Instagram) details</div>
+              <div className="text-xs font-semibold text-blue-300">
+                Meta (Facebook/Instagram) details
+              </div>
               <div>
                 <Label className="text-xs">Graphic link</Label>
-                <Input type="url" value={form.meta_graphic_link} onChange={(e) => setForm({ ...form, meta_graphic_link: e.target.value })} placeholder="https://… (image / graphic)" className="mt-1.5" />
+                <Input
+                  type="url"
+                  value={form.meta_graphic_link}
+                  onChange={(e) => setForm({ ...form, meta_graphic_link: e.target.value })}
+                  placeholder="https://… (image / graphic)"
+                  className="mt-1.5"
+                />
               </div>
               <div>
                 <Label className="text-xs">Video link</Label>
-                <Input type="url" value={form.meta_video_link} onChange={(e) => setForm({ ...form, meta_video_link: e.target.value })} placeholder="https://… (video)" className="mt-1.5" />
+                <Input
+                  type="url"
+                  value={form.meta_video_link}
+                  onChange={(e) => setForm({ ...form, meta_video_link: e.target.value })}
+                  placeholder="https://… (video)"
+                  className="mt-1.5"
+                />
               </div>
               <div>
                 <Label className="text-xs">Copy</Label>
-                <Textarea value={form.meta_copy} onChange={(e) => setForm({ ...form, meta_copy: e.target.value })} rows={4} className="mt-1.5" placeholder="Post copy…" />
+                <Textarea
+                  value={form.meta_copy}
+                  onChange={(e) => setForm({ ...form, meta_copy: e.target.value })}
+                  rows={4}
+                  className="mt-1.5"
+                  placeholder="Post copy…"
+                />
               </div>
             </div>
           )}
 
           <div>
             <Label htmlFor="scheduled_at">Scheduled *</Label>
-            <Input id="scheduled_at" type="datetime-local" value={form.scheduled_at} onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })} required className="mt-1.5" />
+            <Input
+              id="scheduled_at"
+              type="datetime-local"
+              value={form.scheduled_at}
+              onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })}
+              required
+              className="mt-1.5"
+            />
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={mutation.isPending} className="bg-gold text-gold-foreground hover:bg-gold/90">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={mutation.isPending}
+              className="bg-gold text-gold-foreground hover:bg-gold/90"
+            >
               {mutation.isPending ? "Saving..." : "Create"}
             </Button>
           </DialogFooter>
           {initialDate && (
-            <p className="text-xs text-muted-foreground text-center">Slot: {format(initialDate, "EEE MMM d, h:mm a")}</p>
+            <p className="text-xs text-muted-foreground text-center">
+              Slot: {format(initialDate, "EEE MMM d, h:mm a")}
+            </p>
           )}
         </form>
       </DialogContent>

@@ -1,5 +1,30 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Calendar, LayoutDashboard, Users, LogOut, Video, BookOpen, Inbox, Target, ClipboardList, BarChart3, ShieldCheck, Ticket, Wrench, ClipboardCheck, CircleAlert, FlaskConical, Boxes, Gift, CalendarOff, CalendarDays, Home, Bot, Mail, Calculator } from "lucide-react";
+import {
+  Calendar,
+  LayoutDashboard,
+  Users,
+  LogOut,
+  Video,
+  BookOpen,
+  Inbox,
+  Target,
+  ClipboardList,
+  BarChart3,
+  ShieldCheck,
+  Ticket,
+  Wrench,
+  ClipboardCheck,
+  CircleAlert,
+  FlaskConical,
+  Boxes,
+  Gift,
+  CalendarOff,
+  CalendarDays,
+  Home,
+  Bot,
+  Mail,
+  Calculator,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -36,11 +61,21 @@ const ADMIN_NAV = [
   { to: "/users", label: "Users", icon: Users, adminOnly: true },
   { to: "/signatures", label: "Email Signatures", icon: Mail, adminOnly: true },
   { to: "/admin-net-sheets", label: "Agent Net Sheets", icon: Calculator, adminOnly: true },
+  { to: "/admin/swag-credits", label: "Swag Credits", icon: Ticket, adminOnly: false },
   { to: "/audit-log", label: "Audit Log", icon: ShieldCheck, adminOnly: true },
   { to: "/admin/assistant", label: "AI Assistant", icon: Bot, adminOnly: true },
 ] as const;
 
-const CLIENT_CARE_ALLOWED = ["/dashboard", "/tasks", "/requests", "/inventory", "/closing-gift", "/my-availability", "/duty-calendar", "/duty-agents"];
+const CLIENT_CARE_ALLOWED = [
+  "/dashboard",
+  "/tasks",
+  "/requests",
+  "/inventory",
+  "/closing-gift",
+  "/my-availability",
+  "/duty-calendar",
+  "/duty-agents",
+];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { isAdmin, user, signOut, role, roles } = useAuth();
@@ -49,7 +84,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const canSeeExperiments = EXPERIMENT_EMAILS.includes((user?.email ?? "").toLowerCase());
   const isClientCareOnly = roles.length > 0 && roles.every((r) => r === "client_care");
   const filterNav = <T extends { to: string; adminOnly: boolean }>(items: readonly T[]) =>
-    items.filter((n) => (!n.adminOnly || isAdmin) && (!isClientCareOnly || CLIENT_CARE_ALLOWED.includes(n.to)));
+    items.filter(
+      (n) => (!n.adminOnly || isAdmin) && (!isClientCareOnly || CLIENT_CARE_ALLOWED.includes(n.to)),
+    );
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -57,8 +94,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="px-5 py-5 border-b border-sidebar-border flex items-center gap-3">
           <img src={logo} alt="Matt Smith Real Estate Group" className="h-10 w-auto shrink-0" />
           <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-white truncate">MSREG</p>
-            <p className="text-[9px] uppercase tracking-[0.15em] text-gold font-medium mt-0.5 truncate">Marketing Hub</p>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-white truncate">
+              MSREG
+            </p>
+            <p className="text-[9px] uppercase tracking-[0.15em] text-gold font-medium mt-0.5 truncate">
+              Marketing Hub
+            </p>
           </div>
         </div>
 
@@ -71,8 +112,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                 to={item.to}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
-                  active 
-                    ? "bg-gold/10 text-gold border-l-2 border-gold -ml-3 pl-2.5 rounded-r-md" 
+                  active
+                    ? "bg-gold/10 text-gold border-l-2 border-gold -ml-3 pl-2.5 rounded-r-md"
                     : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-white",
                 )}
               >
@@ -84,7 +125,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* EOS Section */}
           {!isClientCareOnly && (
             <>
-              <div className="pt-5 pb-1.5 px-3 text-[9px] font-semibold uppercase tracking-[0.25em] text-muted-foreground/80">EOS Systems</div>
+              <div className="pt-5 pb-1.5 px-3 text-[9px] font-semibold uppercase tracking-[0.25em] text-muted-foreground/80">
+                EOS Systems
+              </div>
               {EOS_NAV.filter((n) => !n.adminOnly || isAdmin).map((item) => {
                 const active = pathname === item.to || pathname.startsWith(item.to + "/");
                 return (
@@ -93,8 +136,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                     to={item.to}
                     className={cn(
                       "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
-                      active 
-                        ? "bg-gold/10 text-gold border-l-2 border-gold -ml-3 pl-2.5 rounded-r-md" 
+                      active
+                        ? "bg-gold/10 text-gold border-l-2 border-gold -ml-3 pl-2.5 rounded-r-md"
                         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-white",
                     )}
                   >
@@ -109,7 +152,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* Client Care Section */}
           {(isAdmin || roles.includes("client_care")) && (
             <>
-              <div className="pt-5 pb-1.5 px-3 text-[9px] font-semibold uppercase tracking-[0.25em] text-muted-foreground/80">Client Care</div>
+              <div className="pt-5 pb-1.5 px-3 text-[9px] font-semibold uppercase tracking-[0.25em] text-muted-foreground/80">
+                Client Care
+              </div>
               {CLIENT_CARE_NAV.map((item) => {
                 const active = pathname === item.to || pathname.startsWith(item.to + "/");
                 return (
@@ -118,8 +163,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                     to={item.to}
                     className={cn(
                       "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
-                      active 
-                        ? "bg-gold/10 text-gold border-l-2 border-gold -ml-3 pl-2.5 rounded-r-md" 
+                      active
+                        ? "bg-gold/10 text-gold border-l-2 border-gold -ml-3 pl-2.5 rounded-r-md"
                         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-white",
                     )}
                   >
@@ -132,10 +177,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           )}
 
           {/* Admin Section */}
-          {isAdmin && (
+          {(isAdmin || roles.includes("marketing_coordinator")) && (
             <>
-              <div className="pt-5 pb-1.5 px-3 text-[9px] font-semibold uppercase tracking-[0.25em] text-muted-foreground/80">Admin Tools</div>
-              {ADMIN_NAV.map((item) => {
+              <div className="pt-5 pb-1.5 px-3 text-[9px] font-semibold uppercase tracking-[0.25em] text-muted-foreground/80">
+                Admin Tools
+              </div>
+              {ADMIN_NAV.filter((item) => !item.adminOnly || isAdmin).map((item) => {
                 const active = pathname === item.to || pathname.startsWith(item.to + "/");
                 return (
                   <Link
@@ -143,8 +190,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                     to={item.to}
                     className={cn(
                       "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
-                      active 
-                        ? "bg-gold/10 text-gold border-l-2 border-gold -ml-3 pl-2.5 rounded-r-md" 
+                      active
+                        ? "bg-gold/10 text-gold border-l-2 border-gold -ml-3 pl-2.5 rounded-r-md"
                         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-white",
                     )}
                   >
@@ -159,13 +206,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* Lab/Experiments Section */}
           {canSeeExperiments && (
             <>
-              <div className="pt-5 pb-1.5 px-3 text-[9px] font-semibold uppercase tracking-[0.25em] text-muted-foreground/80">Lab</div>
+              <div className="pt-5 pb-1.5 px-3 text-[9px] font-semibold uppercase tracking-[0.25em] text-muted-foreground/80">
+                Lab
+              </div>
               <Link
                 to="/experiments"
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
-                  pathname.startsWith("/experiments") 
-                    ? "bg-gold/10 text-gold border-l-2 border-gold -ml-3 pl-2.5 rounded-r-md" 
+                  pathname.startsWith("/experiments")
+                    ? "bg-gold/10 text-gold border-l-2 border-gold -ml-3 pl-2.5 rounded-r-md"
                     : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-white",
                 )}
               >
@@ -178,10 +227,26 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <div className="p-3 border-t border-sidebar-border space-y-2 bg-sidebar/50">
           <div className="px-2 py-1 text-xs">
-            <div className="text-white font-medium truncate">{((user?.user_metadata as any)?.first_name || (user?.user_metadata as any)?.last_name) ? [(user?.user_metadata as any)?.first_name, (user?.user_metadata as any)?.last_name].filter(Boolean).join(" ") : user?.email}</div>
-            <div className="text-muted-foreground text-[10px] tracking-wider uppercase mt-0.5">{role ?? "loading..."}</div>
+            <div className="text-white font-medium truncate">
+              {(user?.user_metadata as any)?.first_name || (user?.user_metadata as any)?.last_name
+                ? [
+                    (user?.user_metadata as any)?.first_name,
+                    (user?.user_metadata as any)?.last_name,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")
+                : user?.email}
+            </div>
+            <div className="text-muted-foreground text-[10px] tracking-wider uppercase mt-0.5">
+              {role ?? "loading..."}
+            </div>
           </div>
-          <Button variant="ghost" size="sm" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-white" onClick={signOut}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-white"
+            onClick={signOut}
+          >
             <LogOut className="h-4 w-4 mr-2" /> Sign out
           </Button>
         </div>
@@ -203,14 +268,42 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <nav className="md:hidden flex border-b border-border bg-sidebar overflow-x-auto">
-          {[...NAV, ...(isClientCareOnly ? [] : EOS_NAV), ...(isAdmin ? ADMIN_NAV : []), ...(canSeeExperiments && !isClientCareOnly ? [{ to: "/experiments", label: "Experiments", icon: FlaskConical, adminOnly: false } as const] : [])].filter((n) => (!n.adminOnly || isAdmin) && (!isClientCareOnly || CLIENT_CARE_ALLOWED.includes(n.to))).map((item) => {
-            const active = pathname === item.to;
-            return (
-              <Link key={item.to} to={item.to} className={cn("flex items-center gap-2 px-4 py-2.5 text-xs whitespace-nowrap", active ? "text-gold border-b-2 border-gold" : "text-muted-foreground")}>
-                <item.icon className="h-3.5 w-3.5" />{item.label}
-              </Link>
-            );
-          })}
+          {[
+            ...NAV,
+            ...(isClientCareOnly ? [] : EOS_NAV),
+            ...(isAdmin || roles.includes("marketing_coordinator") ? ADMIN_NAV : []),
+            ...(canSeeExperiments && !isClientCareOnly
+              ? [
+                  {
+                    to: "/experiments",
+                    label: "Experiments",
+                    icon: FlaskConical,
+                    adminOnly: false,
+                  } as const,
+                ]
+              : []),
+          ]
+            .filter(
+              (n) =>
+                (!n.adminOnly || isAdmin) &&
+                (!isClientCareOnly || CLIENT_CARE_ALLOWED.includes(n.to)),
+            )
+            .map((item) => {
+              const active = pathname === item.to;
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2.5 text-xs whitespace-nowrap",
+                    active ? "text-gold border-b-2 border-gold" : "text-muted-foreground",
+                  )}
+                >
+                  <item.icon className="h-3.5 w-3.5" />
+                  {item.label}
+                </Link>
+              );
+            })}
         </nav>
 
         <main className="flex-1 overflow-auto">{children}</main>

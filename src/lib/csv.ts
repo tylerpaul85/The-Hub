@@ -2,7 +2,8 @@
 
 export function csvEscape(value: unknown): string {
   if (value === null || value === undefined) return "";
-  let s = typeof value === "string" ? value : Array.isArray(value) ? value.join("; ") : String(value);
+  let s =
+    typeof value === "string" ? value : Array.isArray(value) ? value.join("; ") : String(value);
   // Normalize newlines so Excel/Sheets stay happy.
   s = s.replace(/\r\n?/g, "\n");
   if (/[",\n]/.test(s)) {

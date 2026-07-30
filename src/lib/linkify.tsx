@@ -3,7 +3,13 @@ import { Fragment } from "react";
 const URL_RE = /(https?:\/\/[^\s<>"')]+)/g;
 
 // Render text and auto-convert any URLs into target="_blank" anchor tags.
-export function Linkify({ text, className }: { text: string | null | undefined; className?: string }) {
+export function Linkify({
+  text,
+  className,
+}: {
+  text: string | null | undefined;
+  className?: string;
+}) {
   if (!text) return null;
   const parts = text.split(URL_RE);
   return (

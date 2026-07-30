@@ -6,10 +6,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 // Role guard helpers
 // ----------------------------------------------------------------
 async function assertAdminOrMarketing(supabase: any, userId: string) {
-  const { data, error } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId);
+  const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId);
   if (error) throw new Error(error.message);
   const roles = (data ?? []).map((r: any) => r.role as string);
   if (!roles.includes("admin") && !roles.includes("marketing_coordinator")) {
@@ -127,29 +124,27 @@ export const saveAgentSignatureData = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdminOrMarketing(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await (supabaseAdmin as any)
-      .from("agent_signature_data")
-      .upsert(
-        {
-          toolbox_agent_id: data.toolbox_agent_id,
-          title: data.title ?? null,
-          mobile_phone: data.mobile_phone ?? null,
-          office_phone: data.office_phone ?? null,
-          headshot_url: data.headshot_url || null,
-          office1_label: data.office1_label ?? null,
-          office1_addr: data.office1_addr ?? null,
-          office2_label: data.office2_label ?? null,
-          office2_addr: data.office2_addr ?? null,
-          show_office_rolla: data.show_office_rolla ?? true,
-          show_office_strobert: data.show_office_strobert ?? false,
-          show_office_osage: data.show_office_osage ?? false,
-          office_rolla_addr: data.office_rolla_addr ?? null,
-          office_strobert_addr: data.office_strobert_addr ?? null,
-          office_osage_addr: data.office_osage_addr ?? null,
-          gmail_email: data.gmail_email || null,
-        },
-        { onConflict: "toolbox_agent_id" }
-      );
+    const { error } = await (supabaseAdmin as any).from("agent_signature_data").upsert(
+      {
+        toolbox_agent_id: data.toolbox_agent_id,
+        title: data.title ?? null,
+        mobile_phone: data.mobile_phone ?? null,
+        office_phone: data.office_phone ?? null,
+        headshot_url: data.headshot_url || null,
+        office1_label: data.office1_label ?? null,
+        office1_addr: data.office1_addr ?? null,
+        office2_label: data.office2_label ?? null,
+        office2_addr: data.office2_addr ?? null,
+        show_office_rolla: data.show_office_rolla ?? true,
+        show_office_strobert: data.show_office_strobert ?? false,
+        show_office_osage: data.show_office_osage ?? false,
+        office_rolla_addr: data.office_rolla_addr ?? null,
+        office_strobert_addr: data.office_strobert_addr ?? null,
+        office_osage_addr: data.office_osage_addr ?? null,
+        gmail_email: data.gmail_email || null,
+      },
+      { onConflict: "toolbox_agent_id" },
+    );
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -214,18 +209,14 @@ export const uploadHeadshot = createServerFn({ method: "POST" })
     const ext = data.mime_type.split("/")[1];
     const path = `${data.toolbox_agent_id}/headshot.${ext}`;
 
-    const { error } = await sb.storage
-      .from("signature-headshots")
-      .upload(path, buffer, {
-        upsert: true,
-        contentType: data.mime_type,
-        cacheControl: "31536000", // 1 year
-      });
+    const { error } = await sb.storage.from("signature-headshots").upload(path, buffer, {
+      upsert: true,
+      contentType: data.mime_type,
+      cacheControl: "31536000", // 1 year
+    });
     if (error) throw new Error(error.message);
 
-    const { data: urlData } = sb.storage
-      .from("signature-headshots")
-      .getPublicUrl(path);
+    const { data: urlData } = sb.storage.from("signature-headshots").getPublicUrl(path);
 
     return { url: urlData.publicUrl as string };
   });
@@ -467,7 +458,7 @@ function compileTemplateServer(template: string, data: Record<string, any>): str
   rendered = rendered.replace(ifElseRegex, (match, key, trueBranch, falseBranch) => {
     const val = data[key];
     const isTrue = val && String(val).trim() !== "" && String(val) !== "null";
-    return isTrue ? trueBranch : (falseBranch || "");
+    return isTrue ? trueBranch : falseBranch || "";
   });
   const varRegex = /\{\{(\w+)\}\}/g;
   rendered = rendered.replace(varRegex, (match, key) => {
@@ -491,7 +482,9 @@ export const pushSignatureToGmail = createServerFn({ method: "POST" })
 
     const keyString = process.env.GOOGLE_SA_KEY_JSON;
     if (!keyString) {
-      throw new Error("Missing Google Service Account key in environment variables (GOOGLE_SA_KEY_JSON)");
+      throw new Error(
+        "Missing Google Service Account key in environment variables (GOOGLE_SA_KEY_JSON)",
+      );
     }
     let key: any;
     try {
@@ -499,9 +492,11 @@ export const pushSignatureToGmail = createServerFn({ method: "POST" })
     } catch (e) {
       // Handle escaped double quotes from Netlify configuration
       try {
-        key = JSON.parse(keyString.replace(/\\n/g, '\n'));
+        key = JSON.parse(keyString.replace(/\\n/g, "\n"));
       } catch (e2) {
-        throw new Error("Failed to parse GOOGLE_SA_KEY_JSON environment variable. Ensure it is valid JSON.");
+        throw new Error(
+          "Failed to parse GOOGLE_SA_KEY_JSON environment variable. Ensure it is valid JSON.",
+        );
       }
     }
 
@@ -533,7 +528,12 @@ export const pushSignatureToGmail = createServerFn({ method: "POST" })
 
     const { google } = await import("googleapis");
 
-    const results: Array<{ id: string; name: string; status: "success" | "error"; error?: string }> = [];
+    const results: Array<{
+      id: string;
+      name: string;
+      status: "success" | "error";
+      error?: string;
+    }> = [];
 
     for (const agent of agents ?? []) {
       const sig = sigByAgent.get(agent.id);
@@ -551,9 +551,18 @@ export const pushSignatureToGmail = createServerFn({ method: "POST" })
 
       try {
         // Calculate active office locations based on agent checkboxes and team defaults
-        const rollaAddr = sig?.office_rolla_addr || teamConfig.office_rolla_addr || "1043 Kingshighway, Rolla, MO 65401";
-        const strobertAddr = sig?.office_strobert_addr || teamConfig.office_strobert_addr || "157 Saint Robert Blvd, St. Robert, MO 65584";
-        const osageAddr = sig?.office_osage_addr || teamConfig.office_osage_addr || "456 Shore Dr, Osage Beach, MO 65065";
+        const rollaAddr =
+          sig?.office_rolla_addr ||
+          teamConfig.office_rolla_addr ||
+          "1043 Kingshighway, Rolla, MO 65401";
+        const strobertAddr =
+          sig?.office_strobert_addr ||
+          teamConfig.office_strobert_addr ||
+          "157 Saint Robert Blvd, St. Robert, MO 65584";
+        const osageAddr =
+          sig?.office_osage_addr ||
+          teamConfig.office_osage_addr ||
+          "456 Shore Dr, Osage Beach, MO 65065";
 
         const showRolla = sig?.show_office_rolla ?? true;
         const showStRobert = sig?.show_office_strobert ?? false;
@@ -561,10 +570,19 @@ export const pushSignatureToGmail = createServerFn({ method: "POST" })
 
         const activeOffices: Array<{ label: string; addr: string }> = [];
         if (showRolla && rollaAddr) activeOffices.push({ label: "Rolla", addr: rollaAddr });
-        if (showStRobert && strobertAddr) activeOffices.push({ label: "St. Robert", addr: strobertAddr });
+        if (showStRobert && strobertAddr)
+          activeOffices.push({ label: "St. Robert", addr: strobertAddr });
         if (showOsage && osageAddr) activeOffices.push({ label: "Osage Beach", addr: osageAddr });
-        if (sig?.office1_addr) activeOffices.push({ label: sig.office1_label || "Primary Office", addr: sig.office1_addr });
-        if (sig?.office2_addr) activeOffices.push({ label: sig.office2_label || "Second Office", addr: sig.office2_addr });
+        if (sig?.office1_addr)
+          activeOffices.push({
+            label: sig.office1_label || "Primary Office",
+            addr: sig.office1_addr,
+          });
+        if (sig?.office2_addr)
+          activeOffices.push({
+            label: sig.office2_label || "Second Office",
+            addr: sig.office2_addr,
+          });
 
         const o1 = activeOffices[0];
         const o2 = activeOffices[1];
@@ -609,7 +627,7 @@ export const pushSignatureToGmail = createServerFn({ method: "POST" })
           undefined,
           key.private_key,
           ["https://www.googleapis.com/auth/gmail.settings.basic"],
-          gmailEmail
+          gmailEmail,
         );
 
         const gmail = google.gmail({ version: "v1", auth });
@@ -686,4 +704,3 @@ export const pushSignatureToGmail = createServerFn({ method: "POST" })
 
     return results;
   });
-

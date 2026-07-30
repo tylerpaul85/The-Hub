@@ -53,7 +53,8 @@ function AuthPage() {
     setBusy(true);
     try {
       if (mode === "signup") {
-        if (!firstName.trim() || !lastName.trim()) throw new Error("First and last name are required");
+        if (!firstName.trim() || !lastName.trim())
+          throw new Error("First and last name are required");
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -77,7 +78,9 @@ function AuthPage() {
         }
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
-          logEvent({ data: { event_type: "auth.login_failure", email, reason: error.message } }).catch(() => {});
+          logEvent({
+            data: { event_type: "auth.login_failure", email, reason: error.message },
+          }).catch(() => {});
           throw error;
         }
         logEvent({ data: { event_type: "auth.login_success", email } }).catch(() => {});
@@ -134,7 +137,11 @@ function AuthPage() {
                   autoComplete="email"
                 />
               </div>
-              <Button type="submit" disabled={busy} className="w-full bg-gold text-gold-foreground hover:bg-gold/90">
+              <Button
+                type="submit"
+                disabled={busy}
+                className="w-full bg-gold text-gold-foreground hover:bg-gold/90"
+              >
                 {busy ? "Please wait..." : "Send recovery link"}
               </Button>
               <div className="mt-4 text-center text-sm">
@@ -154,23 +161,58 @@ function AuthPage() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label htmlFor="first-name">First name</Label>
-                      <Input id="first-name" required value={firstName} onChange={(e) => setFirstName(e.target.value)} className="mt-1.5" autoComplete="given-name" />
+                      <Input
+                        id="first-name"
+                        required
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        className="mt-1.5"
+                        autoComplete="given-name"
+                      />
                     </div>
                     <div>
                       <Label htmlFor="last-name">Last name</Label>
-                      <Input id="last-name" required value={lastName} onChange={(e) => setLastName(e.target.value)} className="mt-1.5" autoComplete="family-name" />
+                      <Input
+                        id="last-name"
+                        required
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        className="mt-1.5"
+                        autoComplete="family-name"
+                      />
                     </div>
                   </div>
                 )}
                 <div>
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1.5" autoComplete="email" />
+                  <Input
+                    id="email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="mt-1.5"
+                    autoComplete="email"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="password">Password</Label>
-                  <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5" autoComplete={mode === "signin" ? "current-password" : "new-password"} />
+                  <Input
+                    id="password"
+                    type="password"
+                    required
+                    minLength={6}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="mt-1.5"
+                    autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                  />
                 </div>
-                <Button type="submit" disabled={busy} className="w-full bg-gold text-gold-foreground hover:bg-gold/90">
+                <Button
+                  type="submit"
+                  disabled={busy}
+                  className="w-full bg-gold text-gold-foreground hover:bg-gold/90"
+                >
                   {busy ? "Please wait..." : mode === "signin" ? "Sign in" : "Create account"}
                 </Button>
               </form>
@@ -187,9 +229,19 @@ function AuthPage() {
               )}
               <div className="mt-4 text-center text-sm text-muted-foreground">
                 {mode === "signin" ? (
-                  <>Need an account? <button onClick={() => setMode("signup")} className="text-gold hover:underline">Sign up</button></>
+                  <>
+                    Need an account?{" "}
+                    <button onClick={() => setMode("signup")} className="text-gold hover:underline">
+                      Sign up
+                    </button>
+                  </>
                 ) : (
-                  <>Already have one? <button onClick={() => setMode("signin")} className="text-gold hover:underline">Sign in</button></>
+                  <>
+                    Already have one?{" "}
+                    <button onClick={() => setMode("signin")} className="text-gold hover:underline">
+                      Sign in
+                    </button>
+                  </>
                 )}
               </div>
             </>

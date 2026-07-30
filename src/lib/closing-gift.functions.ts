@@ -3,10 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 async function assertAdminOrClientCare(supabase: any, userId: string) {
-  const { data, error } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId);
+  const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId);
   if (error) throw new Error(error.message);
   const roles = (data ?? []).map((r: any) => r.role);
   if (!roles.includes("admin") && !roles.includes("client_care")) {
@@ -19,7 +16,6 @@ async function assertAdmin(supabase: any, userId: string) {
   // Client Care owns the closing-gift inventory process, so treat them as admin here.
   await assertAdminOrClientCare(supabase, userId);
 }
-
 
 function getSecurityCode(): string {
   return (process.env.TOOLBOX_ACCESS_CODE || "MSREG2026").trim();
@@ -127,13 +123,21 @@ export const listClosingGiftInventory = createServerFn({ method: "POST" })
       .order("size")
       .order("color");
     if (error) throw new Error(error.message);
-    return rows as Array<{ size: string; color: string; color_hex: string; quantity_available: number }>;
+    return rows as Array<{
+      size: string;
+      color: string;
+      color_hex: string;
+      quantity_available: number;
+    }>;
   });
 
 const upsertSchema = z.object({
   size: z.string().trim().min(1).max(10),
   color: z.string().trim().min(1).max(60),
-  color_hex: z.string().trim().regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Must be a hex color"),
+  color_hex: z
+    .string()
+    .trim()
+    .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Must be a hex color"),
   quantity: z.number().int().min(0).max(100000),
 });
 
@@ -196,10 +200,12 @@ export const deleteInventoryRow = createServerFn({ method: "POST" })
 export const markRequestCompleted = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      request_id: z.string().uuid(),
-      status: z.enum(["pending", "fulfilled", "completed"]).optional(),
-    }).parse(d),
+    z
+      .object({
+        request_id: z.string().uuid(),
+        status: z.enum(["pending", "fulfilled", "completed"]).optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertAdminOrClientCare(context.supabase, context.userId);
