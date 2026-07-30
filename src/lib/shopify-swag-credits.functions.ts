@@ -282,7 +282,7 @@ export const syncSwagCreditBalances = createServerFn({ method: "POST" })
           });
           const card = response.gift_card;
 
-          if (!card.enabled) {
+          if (card.disabled_at !== null && card.disabled_at !== undefined) {
             await supabaseAdmin
               .from("shopify_swag_credits")
               .update({
