@@ -30,12 +30,55 @@ async function verifyMarketingAdmin(context: any) {
 // Shopify API request helper
 async function callShopify(endpoint: string, options: RequestInit = {}) {
   const shopifyStoreUrl = process.env.SHOPIFY_STORE_URL;
-  const shopifyAccessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+  if (!shopifyStoreUrl) {
+    throw new Error("Shopify configuration missing. Please configure SHOPIFY_STORE_URL.");
+  }
 
-  if (!shopifyStoreUrl || !shopifyAccessToken) {
-    throw new Error(
-      "Shopify configuration missing. Please configure SHOPIFY_STORE_URL and SHOPIFY_ADMIN_ACCESS_TOKEN environment variables.",
-    );
+  // Determine access token (use legacy static token if present, otherwise perform Client Credentials exchange)
+  let shopifyAccessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+
+  if (!shopifyAccessToken) {
+    const clientId = process.env.SHOPIFY_CLIENT_ID;
+    const clientSecret = process.env.SHOPIFY_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      throw new Error(
+        "Shopify authentication missing. Please configure either SHOPIFY_ADMIN_ACCESS_TOKEN (legacy) or SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET (2026 OAuth).",
+      );
+    }
+
+    const cleanedUrl = shopifyStoreUrl.replace(/^(https?:\/\/)?/, "").replace(/\/$/, "");
+    const oauthUrl = `https://${cleanedUrl}/admin/oauth/access_token`;
+
+    try {
+      const authRes = await fetch(oauthUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          grant_type: "client_credentials",
+          client_id: clientId,
+          client_secret: clientSecret,
+        }),
+      });
+
+      if (!authRes.ok) {
+        const errorText = await authRes.text();
+        console.error(`Shopify OAuth token exchange failure (${authRes.status}): ${errorText}`);
+        throw new Error(`Shopify OAuth failed: ${authRes.statusText} (${errorText})`);
+      }
+
+      const authData = await authRes.json();
+      shopifyAccessToken = authData.access_token;
+    } catch (authErr: any) {
+      console.error("Failed to exchange Shopify Client Credentials:", authErr);
+      throw new Error(`Shopify Authentication failed: ${authErr.message}`);
+    }
+  }
+
+  if (!shopifyAccessToken) {
+    throw new Error("Failed to obtain Shopify Access Token.");
   }
 
   const cleanedUrl = shopifyStoreUrl.replace(/^(https?:\/\/)?/, "").replace(/\/$/, "");
@@ -279,15 +322,18 @@ export const syncSwagCreditBalances = createServerFn({ method: "POST" })
     return { ok: true, syncCount, revokedCount, errorCount };
   });
 
-/**
- * Check if Shopify credentials are set in the environment.
- */
 export const checkShopifyConfig = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await verifyMarketingAdmin(context);
+    const hasLegacyToken =
+      !!process.env.SHOPIFY_STORE_URL && !!process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+    const hasNewCredentials =
+      !!process.env.SHOPIFY_STORE_URL &&
+      !!process.env.SHOPIFY_CLIENT_ID &&
+      !!process.env.SHOPIFY_CLIENT_SECRET;
     return {
-      configured: !!process.env.SHOPIFY_STORE_URL && !!process.env.SHOPIFY_ADMIN_ACCESS_TOKEN,
+      configured: hasLegacyToken || hasNewCredentials,
       storeUrl: process.env.SHOPIFY_STORE_URL || null,
     };
   });

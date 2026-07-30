@@ -332,11 +332,19 @@ function AdminSwagCreditsPage() {
             <code className="bg-red-950/50 px-1 py-0.5 rounded text-white border border-red-500/20 font-mono text-xs">
               SHOPIFY_STORE_URL
             </code>{" "}
-            and{" "}
+            and either{" "}
+            <code className="bg-red-950/50 px-1 py-0.5 rounded text-white border border-red-500/20 font-mono text-xs">
+              SHOPIFY_CLIENT_ID
+            </code>{" "}
+            +{" "}
+            <code className="bg-red-950/50 px-1 py-0.5 rounded text-white border border-red-500/20 font-mono text-xs">
+              SHOPIFY_CLIENT_SECRET
+            </code>{" "}
+            (2026 OAuth) or the legacy{" "}
             <code className="bg-red-950/50 px-1 py-0.5 rounded text-white border border-red-500/20 font-mono text-xs">
               SHOPIFY_ADMIN_ACCESS_TOKEN
-            </code>{" "}
-            in your Netlify / local configuration.
+            </code>
+            .
           </AlertDescription>
         </Alert>
       )}
