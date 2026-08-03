@@ -311,12 +311,21 @@ function ListingsList({ token, onOpen }: { token: string; onOpen: (id: string) =
                     src={l.thumbnail}
                     alt={l.address}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    onError={(e) => {
+                      // Hide broken image and show fallback
+                      const target = e.currentTarget;
+                      target.style.display = "none";
+                      const fallback = target.nextElementSibling as HTMLElement | null;
+                      if (fallback) fallback.style.display = "flex";
+                    }}
                   />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground group-hover:scale-105 transition-transform duration-500">
-                    <Home className="h-8 w-8" />
-                  </div>
-                )}
+                ) : null}
+                <div
+                  className="w-full h-full flex items-center justify-center text-muted-foreground group-hover:scale-105 transition-transform duration-500"
+                  style={{ display: l.thumbnail ? "none" : "flex" }}
+                >
+                  <Home className="h-8 w-8" />
+                </div>
                 <Badge
                   className={cn(
                     "absolute top-3 left-3 border shadow-sm z-10",
@@ -358,7 +367,7 @@ function ListingView({ token, id, onBack }: { token: string; id: string; onBack:
   const photos = assets.filter((a: any) => a.asset_type === "photo");
   const videos = assets.filter((a: any) => a.asset_type === "video");
   const graphics = assets.filter((a: any) => a.asset_type === "graphic");
-  const allImages = assets.filter((a: any) => a.asset_type !== "video" && isImageUrl(a.file_url));
+  const allImages = assets.filter((a: any) => a.asset_type !== "video" && (isImageUrl(a.file_url) || isImageUrl(a.thumbnail_url) || isImageUrl(a.drive_url)));
 
   return (
     <div className="space-y-6">

@@ -59,19 +59,29 @@ export const listPublicListings = createServerFn({ method: "POST" })
         .select("listing_id,thumbnail_url,file_url,drive_url,asset_type,created_at")
         .in("listing_id", ids)
         .order("created_at", { ascending: true });
+
+      const toPreview = (url: string): string => {
+        const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+          url.match(/\/open\?id=([a-zA-Z0-9_-]+)/) ||
+          url.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
+          url.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
+        return fileIdMatch && fileIdMatch[1]
+          ? `https://lh3.googleusercontent.com/d/${fileIdMatch[1]}`
+          : url;
+      };
+
+      // Pass 1: prefer photo/graphic assets (these are actual images)
+      for (const a of (assets ?? []) as any[]) {
+        if (thumbs[a.listing_id]) continue;
+        if (a.asset_type === "video") continue; // skip videos in first pass
+        const candidate = a.thumbnail_url || a.file_url || a.drive_url;
+        if (candidate) thumbs[a.listing_id] = toPreview(candidate);
+      }
+      // Pass 2: fallback to any asset (including videos that might have thumbnails)
       for (const a of (assets ?? []) as any[]) {
         if (thumbs[a.listing_id]) continue;
         const candidate = a.thumbnail_url || a.file_url || a.drive_url;
-        if (candidate) {
-          // Convert Google Drive links if needed
-          const fileIdMatch = candidate.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
-            candidate.match(/\/open\?id=([a-zA-Z0-9_-]+)/) ||
-            candidate.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
-            candidate.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
-          thumbs[a.listing_id] = fileIdMatch && fileIdMatch[1]
-            ? `https://lh3.googleusercontent.com/d/${fileIdMatch[1]}`
-            : candidate;
-        }
+        if (candidate) thumbs[a.listing_id] = toPreview(candidate);
       }
     }
     return {
