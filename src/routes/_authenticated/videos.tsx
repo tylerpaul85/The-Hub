@@ -114,24 +114,32 @@ function VideosPage() {
   });
 
   const moveStage = useMutation({
-    mutationFn: async ({ id, stage }: { id: string; stage: VideoStage }) => {
-      const { error } = await (supabase as any).from("videos").update({ stage }).eq("id", id);
+    mutationFn: async ({ id, stage, is_listing }: { id: string; stage: VideoStage; is_listing: boolean }) => {
+      const { error } = await supabase.from("videos").update({ stage, is_listing } as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["videos"] }),
     onError: (e: any) => toast.error(e.message ?? "Move failed"),
   });
 
-  const makeDragHandler = (isListing: boolean) => (e: DragEndEvent) => {
+  const handleDragEnd = (e: DragEndEvent) => {
     const id = e.active.id as string;
     const overId = e.over?.id as string | undefined;
-    if (!overId?.startsWith("stage|")) return;
-    const [, stageRaw] = overId.split("|");
+    if (!overId) return;
+    
+    const parts = overId.split("|");
+    if (parts.length !== 2) return;
+    const [pipelineType, stageRaw] = parts;
+    if (pipelineType !== "listing" && pipelineType !== "brand") return;
+
     const stage = stageRaw as VideoStage;
     if (!VIDEO_STAGES.includes(stage)) return;
+    
     const v = videos.find((x) => x.id === id);
-    if (!v || v.stage === stage || v.is_listing !== isListing) return;
-    moveStage.mutate({ id, stage });
+    const targetIsListing = pipelineType === "listing";
+    
+    if (!v || (v.stage === stage && v.is_listing === targetIsListing)) return;
+    moveStage.mutate({ id, stage, is_listing: targetIsListing });
   };
 
   const filtered = useMemo(() => {
@@ -249,73 +257,67 @@ function VideosPage() {
         </Link>
       </div>
 
-      {/* Listings Pipeline */}
-      <section className="mb-8">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold">Listing Videos</h2>
-            <span className="text-xs text-muted-foreground">
-              ({filtered.filter((v) => v.is_listing).length} videos)
-            </span>
+      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        {/* Listings Pipeline */}
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold">Listing Videos</h2>
+              <span className="text-xs text-muted-foreground">
+                ({filtered.filter((v) => v.is_listing).length} videos)
+              </span>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => setCreatingListing(true)}
+              className="bg-gold text-gold-foreground hover:bg-gold/90"
+            >
+              <Plus className="h-4 w-4 mr-1" /> New Listing Video
+            </Button>
           </div>
-          <Button
-            size="sm"
-            onClick={() => setCreatingListing(true)}
-            className="bg-gold text-gold-foreground hover:bg-gold/90"
-          >
-            <Plus className="h-4 w-4 mr-1" /> New Listing Video
-          </Button>
-        </div>
-        <DndContext
-          sensors={sensors}
-          onDragEnd={makeDragHandler(true)}
-        >
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             {VIDEO_STAGES.map((s) => (
               <StageColumn
                 key={s}
                 stage={s}
+                pipelineType="listing"
                 videos={filtered.filter((v) => v.stage === s && v.is_listing)}
                 onOpen={setEditing}
               />
             ))}
           </div>
-        </DndContext>
-      </section>
+        </section>
 
-      {/* Non-Listings Pipeline */}
-      <section className="mb-8">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold">Brand / Non-Listing Videos</h2>
-            <span className="text-xs text-muted-foreground">
-              ({filtered.filter((v) => !v.is_listing).length} videos)
-            </span>
+        {/* Non-Listings Pipeline */}
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold">Brand / Non-Listing Videos</h2>
+              <span className="text-xs text-muted-foreground">
+                ({filtered.filter((v) => !v.is_listing).length} videos)
+              </span>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => setCreatingListing(false)}
+              className="bg-gold text-gold-foreground hover:bg-gold/90"
+            >
+              <Plus className="h-4 w-4 mr-1" /> New Brand Video
+            </Button>
           </div>
-          <Button
-            size="sm"
-            onClick={() => setCreatingListing(false)}
-            className="bg-gold text-gold-foreground hover:bg-gold/90"
-          >
-            <Plus className="h-4 w-4 mr-1" /> New Brand Video
-          </Button>
-        </div>
-        <DndContext
-          sensors={sensors}
-          onDragEnd={makeDragHandler(false)}
-        >
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             {VIDEO_STAGES.map((s) => (
               <StageColumn
                 key={s}
                 stage={s}
+                pipelineType="brand"
                 videos={filtered.filter((v) => v.stage === s && !v.is_listing)}
                 onOpen={setEditing}
               />
             ))}
           </div>
-        </DndContext>
-      </section>
+        </section>
+      </DndContext>
 
       {(editing || creatingListing !== null) && (
         <VideoFormDialog
@@ -339,13 +341,15 @@ function VideosPage() {
 function StageColumn({
   stage,
   videos,
+  pipelineType,
   onOpen,
 }: {
   stage: VideoStage;
   videos: Video[];
+  pipelineType: "listing" | "brand";
   onOpen: (v: Video) => void;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `stage|${stage}` });
+  const { setNodeRef, isOver } = useDroppable({ id: `${pipelineType}|${stage}` });
   return (
     <div
       ref={setNodeRef}
