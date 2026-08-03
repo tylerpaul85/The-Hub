@@ -10,7 +10,7 @@ export function cn(...inputs: ClassValue[]) {
  * so they can be rendered in HTML <img> tags.
  */
 export function getGoogleDrivePreviewUrl(url: string | null | undefined): string | null {
-  if (!url) return null;
+  if (!url || typeof url !== "string") return null;
   const str = url.trim();
   if (!str) return null;
 

@@ -37,7 +37,7 @@ export function makeStorageKey(prefix: string, originalName: string): string {
 // Strip query string then test extension. Signed URLs include ?token=...
 // which breaks naive `/\.(png|jpe?g)$/i` checks.
 export function isImageUrl(url: string | null | undefined): boolean {
-  if (!url) return false;
+  if (!url || typeof url !== "string") return false;
   const str = url.trim();
   // Google Drive preview URLs (lh3.googleusercontent.com/d/XXX) are always images
   if (/lh3\.googleusercontent\.com\/d\//i.test(str)) return true;
