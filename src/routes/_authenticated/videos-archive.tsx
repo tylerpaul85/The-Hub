@@ -55,11 +55,11 @@ function VideosArchivePage() {
       const { data, error } = await supabase
         .from("videos")
         .select("*")
-        .eq("is_archived", true)
+        .eq("is_archived" as any, true)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as Video[];
+      return data as unknown as Video[];
     },
   });
 
@@ -67,7 +67,7 @@ function VideosArchivePage() {
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from("videos")
-        .update({ is_archived: false })
+        .update({ is_archived: false } as any)
         .eq("id", id);
       if (error) throw error;
     },
