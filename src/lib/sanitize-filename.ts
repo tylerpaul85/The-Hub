@@ -39,10 +39,10 @@ export function makeStorageKey(prefix: string, originalName: string): string {
 export function isImageUrl(url: string | null | undefined): boolean {
   if (!url || typeof url !== "string") return false;
   const str = url.trim();
-  // Google Drive preview URLs (lh3.googleusercontent.com/d/XXX) are always images
-  if (/lh3\.googleusercontent\.com\/d\//i.test(str)) return true;
-  // Google Drive file links that were converted to preview URLs
-  if (/drive\.google\.com\/.*\/file\/d\//i.test(str)) return true;
+  // Google Drive preview URLs and file links
+  if (/\/file\/d\/|\/open\?id=|[?&]id=|lh3\.googleusercontent\.com\/d\//i.test(str)) {
+    return true;
+  }
   // Standard file extension check
   const path = str.split("?")[0].split("#")[0];
   return /\.(png|jpe?g|gif|webp|svg|avif|heic)$/i.test(path);
