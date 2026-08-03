@@ -55,7 +55,7 @@ export const Route = createFileRoute("/_authenticated/videos")({
 });
 
 type VideoType = "horizontal" | "reel";
-type Brand = "MSREG" | "AON";
+
 
 interface Video {
   id: string;
@@ -73,6 +73,7 @@ interface Video {
   video_type: VideoType;
   brand: Brand;
   is_listing: boolean;
+  is_archived: boolean;
 }
 
 function BrandBadge({ brand }: { brand: Brand }) {
@@ -99,6 +100,7 @@ function VideosPage() {
   const [typeFilter, setTypeFilter] = useState<"all" | "horizontal" | "reel">("all");
   const [dateSort, setDateSort] = useState<"none" | "soonest" | "latest">("soonest");
   const [dueWithin, setDueWithin] = useState<"all" | "2" | "7" | "30" | "overdue">("all");
+  const [showArchived, setShowArchived] = useState(false);
 
   const { data: videos = [] } = useQuery({
     queryKey: ["videos"],
@@ -137,7 +139,11 @@ function VideosPage() {
     const now = Date.now();
     const dayMs = 86400000;
     const liveOf = (v: Video) => v.publish_at ?? v.estimated_publish_date ?? null;
-    let list = videos.filter((v) => brandFilter === "all" || v.brand === brandFilter);
+    let list = videos.filter((v) => {
+      if (!showArchived && v.is_archived) return false;
+      if (brandFilter !== "all" && v.brand !== brandFilter) return false;
+      return true;
+    });
     if (dueWithin !== "all") {
       list = list.filter((v) => {
         const d = liveOf(v);
@@ -164,7 +170,7 @@ function VideosPage() {
       list = list.filter((v) => v.video_type === typeFilter);
     }
     return list;
-  }, [videos, brandFilter, dueWithin, dateSort, typeFilter]);
+  }, [videos, brandFilter, dueWithin, dateSort, typeFilter, showArchived]);
 
   return (
     <div className="p-4 lg:p-6 max-w-[1600px] mx-auto">
@@ -235,6 +241,11 @@ function VideosPage() {
             </SelectContent>
           </Select>
         </div>
+        <div className="h-6 w-px bg-border" />
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <Checkbox checked={showArchived} onCheckedChange={(v) => setShowArchived(!!v)} />
+          Show Archived
+        </label>
       </div>
 
       {/* Listings Pipeline */}
@@ -493,6 +504,7 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
     video_type: initialType,
     brand: (video?.brand ?? "MSREG ALL") as Brand,
     is_listing: video?.is_listing ?? defaultIsListing,
+    is_archived: video?.is_archived ?? false,
   });
 
   const isReel = form.video_type === "reel";
@@ -518,6 +530,7 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
         video_type: form.video_type,
         brand: form.brand,
         is_listing: form.is_listing,
+        is_archived: form.is_archived,
       };
 
       let videoId = video?.id ?? null;
@@ -818,7 +831,7 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
             </div>
 
             <DialogFooter className="flex items-center justify-between sm:justify-between gap-2">
-              <div>
+              <div className="flex gap-2">
                 {video && (
                   <Button
                     variant="ghost"
@@ -829,6 +842,17 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
                     }}
                   >
                     Delete
+                  </Button>
+                )}
+                {video && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setForm({ ...form, is_archived: !form.is_archived });
+                    }}
+                  >
+                    {form.is_archived ? "Unarchive" : "Archive"}
                   </Button>
                 )}
               </div>
