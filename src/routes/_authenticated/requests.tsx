@@ -110,6 +110,17 @@ const priorityColor: Record<string, string> = {
   low: "bg-muted/50 text-muted-foreground border-border",
 };
 
+function safeFmtDate(d: string | null | undefined, fmtStr = "MMM d, p") {
+  if (!d) return "—";
+  try {
+    const dt = new Date(d);
+    if (isNaN(dt.getTime())) return "—";
+    return format(dt, fmtStr);
+  } catch {
+    return "—";
+  }
+}
+
 function RequestsInbox() {
   const { isAdmin, user, roles } = useAuth();
   const isClientCare = roles?.includes("client_care");
@@ -153,35 +164,38 @@ function RequestsInbox() {
       if (cErr) throw cErr;
 
       // 3. Map closing gift requests to standard Req shape
-      const mappedGifts = (closingGifts || []).map((r: any) => ({
-        id: r.id,
-        agent_name: r.agent_name,
-        agent_email: "—",
-        request_types: ["Closing Gift"],
-        scope: "personal",
-        property_address: r.closing_location,
-        deadline: r.closing_date,
-        description:
-          r.comments ||
-          `Request for closing gift shirts for client ${r.client_first_name} ${r.client_last_name}.`,
-        priority: "normal",
-        copy_notes: null,
-        file_urls: [],
-        status: r.status === "pending" ? "pending" : "approved",
-        decline_note: null,
-        created_at: r.created_at,
-        reviewed_at: r.created_at,
-        closing_gift: {
-          closing_date: r.closing_date,
-          office_location: r.closing_location,
-          shirt_count: (r.shirts as any[]).length,
-          shirt_sizes: (r.shirts as any[]).map((s) => `${s.size} (${s.color})`),
-        },
-        closing_gift_completed_at:
-          r.status === "completed" || r.status === "fulfilled" ? r.created_at : null,
-        closing_gift_completed_by: null,
-        is_closing_gift_request_table_row: true,
-      }));
+      const mappedGifts = (closingGifts || []).map((r: any) => {
+        const shirtsArr = Array.isArray(r.shirts) ? r.shirts : [];
+        return {
+          id: r.id,
+          agent_name: r.agent_name || "Unknown Agent",
+          agent_email: "—",
+          request_types: ["Closing Gift"],
+          scope: "personal" as const,
+          property_address: r.closing_location ?? null,
+          deadline: r.closing_date ?? null,
+          description:
+            r.comments ||
+            `Request for closing gift shirts for client ${r.client_first_name || ""} ${r.client_last_name || ""}.`.trim(),
+          priority: "normal" as const,
+          copy_notes: null,
+          file_urls: [],
+          status: (r.status === "pending" ? "pending" : "approved") as any,
+          decline_note: null,
+          created_at: r.created_at || new Date().toISOString(),
+          reviewed_at: r.created_at ?? null,
+          closing_gift: {
+            closing_date: r.closing_date ?? null,
+            office_location: r.closing_location ?? null,
+            shirt_count: shirtsArr.length,
+            shirt_sizes: shirtsArr.map((s: any) => `${s?.size || ""} (${s?.color || ""})`),
+          },
+          closing_gift_completed_at:
+            r.status === "completed" || r.status === "fulfilled" ? r.created_at : null,
+          closing_gift_completed_by: null,
+          is_closing_gift_request_table_row: true,
+        };
+      });
 
       // 4. Merge and sort by created_at descending
       const merged = [...(marketing || []), ...mappedGifts];
@@ -525,7 +539,7 @@ function RequestsInbox() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <div className="text-xs text-muted-foreground whitespace-nowrap">
-                    {format(new Date(r.created_at), "MMM d, p")}
+                    {safeFmtDate(r.created_at, "MMM d, p")}
                   </div>
                   {(isAdmin || isClientCare) && (
                     <Button
@@ -580,7 +594,7 @@ function RequestsInbox() {
                   <Field label="Property">{selected.property_address}</Field>
                 )}
                 {selected.deadline && (
-                  <Field label="Deadline">{format(new Date(selected.deadline), "PPP")}</Field>
+                  <Field label="Deadline">{safeFmtDate(selected.deadline, "PPP")}</Field>
                 )}
                 <Field label="Description">
                   <p className="whitespace-pre-wrap">{selected.description}</p>
@@ -599,7 +613,7 @@ function RequestsInbox() {
                       <div>
                         <span className="text-muted-foreground">Closing date: </span>
                         {selected.closing_gift.closing_date
-                          ? format(new Date(selected.closing_gift.closing_date), "PPP")
+                          ? safeFmtDate(selected.closing_gift.closing_date, "PPP")
                           : "—"}
                       </div>
                       <div>
@@ -638,7 +652,7 @@ function RequestsInbox() {
                     </div>
                   </Field>
                 )}
-                <Field label="Submitted">{format(new Date(selected.created_at), "PPP p")}</Field>
+                <Field label="Submitted">{safeFmtDate(selected.created_at, "PPP p")}</Field>
                 {selected.status === "declined" && selected.decline_note && (
                   <Field label="Decline note">
                     <p className="whitespace-pre-wrap text-destructive">{selected.decline_note}</p>
@@ -649,7 +663,7 @@ function RequestsInbox() {
                     <span className="font-semibold text-emerald-300">Closing gift completed</span>
                     <span className="text-muted-foreground">
                       {" "}
-                      · {format(new Date(selected.closing_gift_completed_at), "PPP p")}
+                      · {safeFmtDate(selected.closing_gift_completed_at, "PPP p")}
                     </span>
                   </div>
                 )}

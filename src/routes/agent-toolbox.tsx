@@ -12,7 +12,17 @@ import { toast } from "sonner";
 import { cn, getGoogleDrivePreviewUrl } from "@/lib/utils";
 import { isImageUrl } from "@/lib/sanitize-filename";
 import { DownloadPhotosButton } from "@/components/download-photos-button";
-import { verifyToolboxCode } from "@/lib/toolbox-public.functions";
+import {
+  verifyToolboxCode,
+  listPublicListings,
+  getPublicListing,
+  listPublicBrand,
+  listPublicEdu,
+  listPublicOpenHouses,
+  getPublicOpenHouse,
+  listPublicBrandedAgents,
+  listPublicAgentBrandedContent,
+} from "@/lib/toolbox-public.functions";
 import logo from "@/assets/msreg-logo.png";
 import {
   Search,
@@ -254,37 +264,10 @@ function Toolbox({ token, onLock }: { token: string; onLock: () => void }) {
 
 function ListingsList({ token, onOpen }: { token: string; onOpen: (id: string) => void }) {
   const [q, setQ] = useState("");
+  const fetchListings = useServerFn(listPublicListings);
   const { data, isLoading } = useQuery({
-    queryKey: ["public-toolbox-listings"],
-    queryFn: async () => {
-      const { data: listings, error } = await supabase
-        .from("toolbox_listings")
-        .select("id,address,agent_name,status,description,created_at")
-        .in("status", ["active", "coming_soon"])
-        .eq("archived", false)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-
-      const ids = (listings ?? []).map((l: any) => l.id);
-      let thumbs: Record<string, string> = {};
-      if (ids.length) {
-        const { data: assets, error: aErr } = await supabase
-          .from("toolbox_assets")
-          .select("listing_id,thumbnail_url,file_url,drive_url,asset_type,created_at")
-          .in("listing_id", ids)
-          .order("created_at", { ascending: true });
-        if (aErr) throw aErr;
-
-        for (const a of (assets ?? []) as any[]) {
-          if (thumbs[a.listing_id]) continue;
-          const candidate = a.thumbnail_url || a.file_url || a.drive_url;
-          if (candidate) thumbs[a.listing_id] = getGoogleDrivePreviewUrl(candidate) ?? candidate;
-        }
-      }
-      return {
-        listings: (listings ?? []).map((l: any) => ({ ...l, thumbnail: thumbs[l.id] ?? null })),
-      };
-    },
+    queryKey: ["public-toolbox-listings", token],
+    queryFn: () => fetchListings({ data: { token } }),
   });
 
   const filtered = useMemo(() => {
@@ -362,29 +345,10 @@ function ListingsList({ token, onOpen }: { token: string; onOpen: (id: string) =
 /* -------- Listing detail -------- */
 
 function ListingView({ token, id, onBack }: { token: string; id: string; onBack: () => void }) {
+  const fetchListing = useServerFn(getPublicListing);
   const { data, isLoading } = useQuery({
-    queryKey: ["public-toolbox-listing", id],
-    queryFn: async () => {
-      const [{ data: listing }, { data: assets }, { data: captions }] = await Promise.all([
-        supabase
-          .from("toolbox_listings")
-          .select("id,address,agent_name,status,description")
-          .eq("id", id)
-          .maybeSingle(),
-        supabase
-          .from("toolbox_assets")
-          .select("*")
-          .eq("listing_id", id)
-          .order("created_at", { ascending: true }),
-        supabase
-          .from("toolbox_captions")
-          .select("id,caption_text,created_at")
-          .eq("listing_id", id)
-          .order("created_at", { ascending: true }),
-      ]);
-      if (!listing) throw new Error("Not found");
-      return { listing, assets: assets ?? [], captions: captions ?? [] };
-    },
+    queryKey: ["public-toolbox-listing", id, token],
+    queryFn: () => fetchListing({ data: { token, id } }),
   });
 
   if (isLoading) return <div className="text-center text-muted-foreground py-10">Loading…</div>;
@@ -700,17 +664,10 @@ function DownloadButton({
 /* -------- Branding -------- */
 
 function BrandList({ token }: { token: string }) {
+  const fetchBrand = useServerFn(listPublicBrand);
   const { data, isLoading } = useQuery({
-    queryKey: ["public-toolbox-brand"],
-    queryFn: async () => {
-      const { data: rows, error } = await supabase
-        .from("toolbox_brand_assets")
-        .select("id,name,category,file_url,file_size,created_at")
-        .order("category", { ascending: true })
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return { items: rows ?? [] };
-    },
+    queryKey: ["public-toolbox-brand", token],
+    queryFn: () => fetchBrand({ data: { token } }),
   });
   const items = (data?.items ?? []) as any[];
   const grouped = useMemo(() => {
@@ -767,17 +724,10 @@ function BrandList({ token }: { token: string }) {
 /* -------- Education -------- */
 
 function EduList({ token }: { token: string }) {
+  const fetchEdu = useServerFn(listPublicEdu);
   const { data, isLoading } = useQuery({
-    queryKey: ["public-toolbox-edu"],
-    queryFn: async () => {
-      const { data: rows, error } = await supabase
-        .from("toolbox_educational")
-        .select("id,title,category,file_url,drive_url,caption,file_size,created_at")
-        .order("category", { ascending: true })
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return { items: rows ?? [] };
-    },
+    queryKey: ["public-toolbox-edu", token],
+    queryFn: () => fetchEdu({ data: { token } }),
   });
   const items = (data?.items ?? []) as any[];
   const grouped = useMemo(() => {
@@ -884,79 +834,10 @@ function AgentHubHomeLink() {
 
 function OpenHousesList({ token, onOpen }: { token: string; onOpen: (id: string) => void }) {
   const [q, setQ] = useState("");
+  const fetchOpenHouses = useServerFn(listPublicOpenHouses);
   const { data, isLoading } = useQuery({
-    queryKey: ["public-toolbox-open-houses"],
-    queryFn: async () => {
-      const { data: rows, error } = await supabase
-        .from("toolbox_open_houses")
-        .select("id,address,agent_name,status,open_house_at,description,created_at")
-        .in("status", ["upcoming", "past"])
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-
-      const ids = (rows ?? []).map((o: any) => o.id);
-      let thumbs: Record<string, string> = {};
-      if (ids.length) {
-        const { data: assets, error: aErr } = await supabase
-          .from("toolbox_open_house_assets")
-          .select("open_house_id,thumbnail_url,file_url,asset_type,created_at,category")
-          .in("open_house_id", ids)
-          .order("created_at", { ascending: true });
-        if (aErr) throw aErr;
-
-        // Group assets by open_house_id
-        const assetsByOH: Record<string, any[]> = {};
-        for (const a of (assets ?? []) as any[]) {
-          (assetsByOH[a.open_house_id] ||= []).push(a);
-        }
-
-        for (const [ohId, ohAssets] of Object.entries(assetsByOH)) {
-          // Prioritize categories: Branded Photos and Copy first, then other media, fallback to QR code
-          const preferredCategories = [
-            "Branded Photos and Copy",
-            "Flyer",
-            "Coloring Page",
-            "Other",
-            "Agent QR Code",
-          ];
-
-          let bestCandidate = null;
-          for (const cat of preferredCategories) {
-            const match = ohAssets.find(
-              (a) =>
-                a.category === cat &&
-                (a.asset_type === "video" ? a.thumbnail_url : a.thumbnail_url || a.file_url),
-            );
-            if (match) {
-              bestCandidate =
-                match.asset_type === "video"
-                  ? match.thumbnail_url
-                  : match.thumbnail_url || match.file_url;
-              break;
-            }
-          }
-
-          if (!bestCandidate && ohAssets.length) {
-            const fallback = ohAssets.find((a) =>
-              a.asset_type === "video" ? a.thumbnail_url : a.thumbnail_url || a.file_url,
-            );
-            if (fallback) {
-              bestCandidate =
-                fallback.asset_type === "video"
-                  ? fallback.thumbnail_url
-                  : fallback.thumbnail_url || fallback.file_url;
-            }
-          }
-
-          if (bestCandidate) {
-            thumbs[ohId] = bestCandidate;
-          }
-        }
-      }
-      return {
-        openHouses: (rows ?? []).map((o: any) => ({ ...o, thumbnail: thumbs[o.id] ?? null })),
-      };
-    },
+    queryKey: ["public-toolbox-open-houses", token],
+    queryFn: () => fetchOpenHouses({ data: { token } }),
   });
 
   const filtered = useMemo(() => {
@@ -1030,29 +911,10 @@ const OH_CATEGORIES = [
 ] as const;
 
 function OpenHouseView({ token, id, onBack }: { token: string; id: string; onBack: () => void }) {
+  const fetchOpenHouse = useServerFn(getPublicOpenHouse);
   const { data, isLoading } = useQuery({
-    queryKey: ["public-toolbox-open-house", id],
-    queryFn: async () => {
-      const [{ data: openHouse }, { data: assets }, { data: captions }] = await Promise.all([
-        supabase
-          .from("toolbox_open_houses")
-          .select("id,address,agent_name,status,open_house_at,description")
-          .eq("id", id)
-          .maybeSingle(),
-        supabase
-          .from("toolbox_open_house_assets")
-          .select("*")
-          .eq("open_house_id", id)
-          .order("created_at", { ascending: true }),
-        supabase
-          .from("toolbox_open_house_captions")
-          .select("id,caption_text,created_at")
-          .eq("open_house_id", id)
-          .order("created_at", { ascending: true }),
-      ]);
-      if (!openHouse) throw new Error("Not found");
-      return { openHouse, assets: assets ?? [], captions: captions ?? [] };
-    },
+    queryKey: ["public-toolbox-open-house", id, token],
+    queryFn: () => fetchOpenHouse({ data: { token, id } }),
   });
   const [detailItem, setDetailItem] = useState<any | null>(null);
 
@@ -1246,25 +1108,12 @@ const BRANDED_TYPES = [
   "Other",
 ];
 
-function BrandedAgentSection({ token }: { token: string }) {
+function AgentBrandedContentList({ token }: { token: string }) {
   const [agentId, setAgentId] = useState<string | null>(null);
+  const fetchAgents = useServerFn(listPublicBrandedAgents);
   const { data, isLoading } = useQuery({
-    queryKey: ["public-toolbox-branded-agents"],
-    queryFn: async () => {
-      const [agentsRes, contentRes] = await Promise.all([
-        supabase
-          .from("toolbox_agents")
-          .select("id,name,headshot_url,identifier,active")
-          .eq("active", true)
-          .order("name", { ascending: true }),
-        supabase.from("toolbox_agent_content").select("agent_id"),
-      ]);
-      const agents = agentsRes.data ?? [];
-      const content = contentRes.data ?? [];
-      const withContentIds = new Set(content.map((c: any) => c.agent_id));
-      const activeWithContent = agents.filter((a: any) => withContentIds.has(a.id));
-      return { agents: activeWithContent };
-    },
+    queryKey: ["public-toolbox-branded-agents", token],
+    queryFn: () => fetchAgents({ data: { token } }),
   });
   const agents = (data?.agents ?? []) as any[];
 
@@ -1327,17 +1176,11 @@ function BrandedContentView({
   agentName: string;
   onBack: () => void;
 }) {
+  const fetchContent = useServerFn(listPublicAgentBrandedContent);
   const { data, isLoading } = useQuery({
-    queryKey: ["public-toolbox-agent-content", agentId],
-    queryFn: async () => {
-      const [{ data: agent }, { data: items }] = await Promise.all([
-        supabase
-          .from("toolbox_agents")
-          .select("id,name,headshot_url,identifier")
-          .eq("id", agentId)
-          .maybeSingle(),
-        supabase
-          .from("toolbox_agent_content")
+    queryKey: ["public-toolbox-agent-content", agentId, token],
+    queryFn: () => fetchContent({ data: { token, agentId } }),
+  });
           .select("*")
           .eq("agent_id", agentId)
           .order("created_at", { ascending: false }),
