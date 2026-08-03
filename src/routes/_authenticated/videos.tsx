@@ -35,10 +35,12 @@ import {
   PRIORITIES,
   PRIORITY_BORDER,
   PRIORITY_LABEL,
-  VIDEO_STAGES,
   VIDEO_STAGE_LABEL,
   type VideoStage,
   type Priority,
+  type Brand,
+  BRANDS,
+  BRAND_STYLES,
 } from "@/lib/content";
 import { ChatThread } from "@/components/chat-thread";
 import { Plus, AlertTriangle, Calendar, Send, Link2 } from "lucide-react";
@@ -69,14 +71,8 @@ interface Video {
   stage: VideoStage;
   video_type: VideoType;
   brand: Brand;
+  is_listing: boolean;
 }
-
-
-
-const BRAND_STYLES: Record<Brand, string> = {
-  MSREG: "bg-gold/15 text-gold border-gold/40",
-  AON: "bg-sky-500/15 text-sky-400 border-sky-500/40",
-};
 
 function BrandBadge({ brand }: { brand: Brand }) {
   return (
@@ -95,7 +91,7 @@ function VideosPage() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const [editing, setEditing] = useState<Video | null>(null);
-  const [creatingType, setCreatingType] = useState<VideoType | null>(null);
+  const [creatingListing, setCreatingListing] = useState<boolean | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const [brandFilter, setBrandFilter] = useState<"all" | Brand>("all");
@@ -124,7 +120,7 @@ function VideosPage() {
     onError: (e: any) => toast.error(e.message ?? "Move failed"),
   });
 
-  const handleDragEnd = (e: DragEndEvent) => {
+  const makeDragHandler = (isListing: boolean) => (e: DragEndEvent) => {
     const id = e.active.id as string;
     const overId = e.over?.id as string | undefined;
     if (!overId?.startsWith("stage|")) return;
@@ -132,7 +128,7 @@ function VideosPage() {
     const stage = stageRaw as VideoStage;
     if (!VIDEO_STAGES.includes(stage)) return;
     const v = videos.find((x) => x.id === id);
-    if (!v || v.stage === stage) return;
+    if (!v || v.stage === stage || v.is_listing !== isListing) return;
     moveStage.mutate({ id, stage });
   };
 
@@ -190,8 +186,9 @@ function VideosPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All brands</SelectItem>
-              <SelectItem value="MSREG">MSREG only</SelectItem>
-              <SelectItem value="AON">AON only</SelectItem>
+              {BRANDS.map((b) => (
+                <SelectItem key={b} value={b}>{b}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -239,40 +236,33 @@ function VideosPage() {
         </div>
       </div>
 
+      {/* Listings Pipeline */}
       <section className="mb-8">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold">Active Pipeline</h2>
-            <span className="text-xs text-muted-foreground">({filtered.length} videos)</span>
+            <h2 className="text-lg font-semibold">Listing Videos</h2>
+            <span className="text-xs text-muted-foreground">
+              ({filtered.filter((v) => v.is_listing).length} videos)
+            </span>
           </div>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setCreatingType("reel")}
-              className="border-gold/40 text-gold hover:bg-gold/10"
-            >
-              <Plus className="h-4 w-4 mr-1" /> New Reel
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => setCreatingType("horizontal")}
-              className="bg-gold text-gold-foreground hover:bg-gold/90"
-            >
-              <Plus className="h-4 w-4 mr-1" /> New Horizontal
-            </Button>
-          </div>
+          <Button
+            size="sm"
+            onClick={() => setCreatingListing(true)}
+            className="bg-gold text-gold-foreground hover:bg-gold/90"
+          >
+            <Plus className="h-4 w-4 mr-1" /> New Listing Video
+          </Button>
         </div>
         <DndContext
           sensors={sensors}
-          onDragEnd={handleDragEnd}
+          onDragEnd={makeDragHandler(true)}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             {VIDEO_STAGES.map((s) => (
               <StageColumn
                 key={s}
                 stage={s}
-                videos={filtered.filter((v) => v.stage === s)}
+                videos={filtered.filter((v) => v.stage === s && v.is_listing)}
                 onOpen={setEditing}
               />
             ))}
@@ -280,16 +270,50 @@ function VideosPage() {
         </DndContext>
       </section>
 
-      {(editing || creatingType) && (
+      {/* Non-Listings Pipeline */}
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">Brand / Non-Listing Videos</h2>
+            <span className="text-xs text-muted-foreground">
+              ({filtered.filter((v) => !v.is_listing).length} videos)
+            </span>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => setCreatingListing(false)}
+            className="bg-gold text-gold-foreground hover:bg-gold/90"
+          >
+            <Plus className="h-4 w-4 mr-1" /> New Brand Video
+          </Button>
+        </div>
+        <DndContext
+          sensors={sensors}
+          onDragEnd={makeDragHandler(false)}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            {VIDEO_STAGES.map((s) => (
+              <StageColumn
+                key={s}
+                stage={s}
+                videos={filtered.filter((v) => v.stage === s && !v.is_listing)}
+                onOpen={setEditing}
+              />
+            ))}
+          </div>
+        </DndContext>
+      </section>
+
+      {(editing || creatingListing !== null) && (
         <VideoFormDialog
-          key={editing?.id ?? `new-${creatingType}`}
+          key={editing?.id ?? `new-${creatingListing}`}
           video={editing}
-          defaultType={creatingType ?? "horizontal"}
-          open={!!editing || !!creatingType}
+          defaultIsListing={creatingListing ?? false}
+          open={!!editing || creatingListing !== null}
           onOpenChange={(o) => {
             if (!o) {
               setEditing(null);
-              setCreatingType(null);
+              setCreatingListing(null);
             }
           }}
           currentUserId={user?.id ?? null}
@@ -438,18 +462,17 @@ function VideoCard({
 
 interface FormProps {
   video: Video | null;
-  defaultType: VideoType;
+  defaultIsListing: boolean;
   open: boolean;
   onOpenChange: (o: boolean) => void;
   currentUserId: string | null;
 }
 
-function VideoFormDialog({ video, defaultType, open, onOpenChange, currentUserId }: FormProps) {
+function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentUserId }: FormProps) {
   const qc = useQueryClient();
   const [pushOpen, setPushOpen] = useState(false);
-  const initialType: VideoType = video?.video_type ?? defaultType;
-  const initialStage: VideoStage =
-    video?.stage ?? (initialType === "reel" ? "ready_to_edit" : "idea");
+  const initialType: VideoType = video?.video_type ?? "horizontal";
+  const initialStage: VideoStage = video?.stage ?? "idea";
   const toLocalInput = (iso: string | null) => {
     if (!iso) return "";
     const d = new Date(iso);
@@ -467,16 +490,15 @@ function VideoFormDialog({ video, defaultType, open, onOpenChange, currentUserId
     priority: (video?.priority ?? "normal") as Priority,
     stage: initialStage,
     video_type: initialType,
-    brand: (video?.brand ?? "MSREG") as Brand,
+    brand: (video?.brand ?? "MSREG ALL") as Brand,
+    is_listing: video?.is_listing ?? defaultIsListing,
   });
 
   const isReel = form.video_type === "reel";
   const stageOptions = VIDEO_STAGES as unknown as VideoStage[];
   const isReadyToPost = form.stage === "ready_to_post";
 
-  // Map video brand (MSREG/AON) to content_items.brand
-  const mapBrandForContent = (b: Brand): "LOZ" | "PP" | "AON" | "MSREG ALL" =>
-    b === "AON" ? "AON" : "MSREG ALL";
+
 
   const save = useMutation({
     mutationFn: async () => {
@@ -494,6 +516,7 @@ function VideoFormDialog({ video, defaultType, open, onOpenChange, currentUserId
         stage: form.stage,
         video_type: form.video_type,
         brand: form.brand,
+        is_listing: form.is_listing,
       };
 
       let videoId = video?.id ?? null;
@@ -517,7 +540,7 @@ function VideoFormDialog({ video, defaultType, open, onOpenChange, currentUserId
           title: form.title.trim(),
           link: form.drive_link || null,
           priority: form.priority,
-          brand: mapBrandForContent(form.brand),
+          brand: form.brand,
           status: "draft" as const,
           scheduled_at: publishIso,
           platforms: [] as string[],
@@ -608,17 +631,9 @@ function VideoFormDialog({ video, defaultType, open, onOpenChange, currentUserId
                 <Label>Type</Label>
                 <Select
                   value={form.video_type}
-                  onValueChange={(v) => {
-                    const t = v as VideoType;
-                    setForm((f) => ({
-                      ...f,
-                      video_type: t,
-                      stage:
-                        f.stage,
-                    }));
-                  }}
+                  onValueChange={(v) => setForm({ ...form, video_type: v as VideoType })}
                 >
-                  <SelectTrigger className="mt-1.5">
+                  <SelectTrigger className="mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -627,20 +642,53 @@ function VideoFormDialog({ video, defaultType, open, onOpenChange, currentUserId
                   </SelectContent>
                 </Select>
               </div>
+              <div className="flex-1">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Listing?</Label>
+                <div className="mt-1 flex items-center h-10 border border-input rounded-md px-3">
+                  <label className="flex items-center gap-2 cursor-pointer w-full">
+                    <Checkbox
+                      checked={form.is_listing}
+                      onCheckedChange={(c) => setForm({ ...form, is_listing: !!c })}
+                    />
+                    <span className="text-sm">Is for a Listing</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Brand</Label>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Brand
+                </Label>
                 <Select
                   value={form.brand}
                   onValueChange={(v) => setForm({ ...form, brand: v as Brand })}
                 >
-                  <SelectTrigger className="mt-1.5">
+                  <SelectTrigger className="mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="MSREG">MSREG</SelectItem>
-                    <SelectItem value="AON">AON (All Or Nothing)</SelectItem>
+                    {BRANDS.map((b) => (
+                      <SelectItem key={b} value={b}>{b}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Linked Content Item
+                </Label>
+                <div className="mt-1">
+                  {video?.linked_content_item_id ? (
+                    <Button variant="outline" className="w-full text-left justify-start px-3" disabled>
+                      <Link2 className="h-4 w-4 mr-2" /> Linked
+                    </Button>
+                  ) : (
+                    <div className="text-sm text-muted-foreground h-10 flex items-center px-3 border border-border/50 rounded-md bg-muted/50">
+                      Not linked
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             <div>
