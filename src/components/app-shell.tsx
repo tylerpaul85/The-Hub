@@ -111,21 +111,21 @@ function getPageTitle(pathname: string): string {
     "/archive": "Archive",
     "/my-availability": "My Availability",
   };
-  // Exact match first, then prefix match
   if (map[pathname]) return map[pathname];
   const prefix = Object.keys(map).find((k) => pathname.startsWith(k + "/"));
   if (prefix) return map[prefix];
   return "";
 }
 
+/* ─── Shared style tokens ─────────────────────────────────────────── */
 const navLinkClass =
-  "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200";
+  "flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] font-medium transition-colors duration-100";
 const navLinkActive =
-  "bg-gold/10 text-gold border-l-2 border-gold -ml-3 pl-2.5 rounded-r-md";
+  "bg-gold/10 text-gold border-l-2 border-gold -ml-[2px] pl-2 rounded-r-md rounded-l-none";
 const navLinkInactive =
-  "text-sidebar-foreground hover:bg-sidebar-accent hover:text-white";
+  "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-white";
 const sectionLabel =
-  "pt-5 pb-1.5 px-3 text-[9px] font-semibold uppercase tracking-[0.25em] text-muted-foreground/80";
+  "pt-4 pb-1 px-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/60";
 
 function NavLinks({
   pathname,
@@ -158,7 +158,7 @@ function NavLinks({
           onClick={onNavigate}
           className={cn(navLinkClass, isActive(item.to) ? navLinkActive : navLinkInactive)}
         >
-          <item.icon className="h-4 w-4" />
+          <item.icon className="h-4 w-4 shrink-0" />
           {item.label}
         </Link>
       ))}
@@ -174,7 +174,7 @@ function NavLinks({
               onClick={onNavigate}
               className={cn(navLinkClass, isActive(item.to) ? navLinkActive : navLinkInactive)}
             >
-              <item.icon className="h-4 w-4" />
+              <item.icon className="h-4 w-4 shrink-0" />
               {item.label}
             </Link>
           ))}
@@ -192,7 +192,7 @@ function NavLinks({
               onClick={onNavigate}
               className={cn(navLinkClass, isActive(item.to) ? navLinkActive : navLinkInactive)}
             >
-              <item.icon className="h-4 w-4" />
+              <item.icon className="h-4 w-4 shrink-0" />
               {item.label}
             </Link>
           ))}
@@ -210,7 +210,7 @@ function NavLinks({
               onClick={onNavigate}
               className={cn(navLinkClass, isActive(item.to) ? navLinkActive : navLinkInactive)}
             >
-              <item.icon className="h-4 w-4" />
+              <item.icon className="h-4 w-4 shrink-0" />
               {item.label}
             </Link>
           ))}
@@ -229,7 +229,7 @@ function NavLinks({
               pathname.startsWith("/experiments") ? navLinkActive : navLinkInactive,
             )}
           >
-            <FlaskConical className="h-4 w-4" />
+            <FlaskConical className="h-4 w-4 shrink-0" />
             Experiments
           </Link>
         </>
@@ -261,20 +261,20 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen flex bg-background">
       {/* ─── Desktop Sidebar ───────────────────────────────────────── */}
-      <aside className="hidden md:flex w-60 flex-col bg-sidebar border-r border-sidebar-border">
-        <div className="px-5 py-5 border-b border-sidebar-border flex items-center gap-3">
-          <img src={logo} alt="Matt Smith Real Estate Group" className="h-10 w-auto shrink-0" />
+      <aside className="hidden md:flex w-56 flex-col bg-sidebar border-r border-sidebar-border">
+        <div className="px-4 py-4 border-b border-sidebar-border flex items-center gap-2.5">
+          <img src={logo} alt="Matt Smith Real Estate Group" className="h-9 w-auto shrink-0" />
           <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-white truncate">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-white truncate">
               MSREG
             </p>
-            <p className="text-[9px] uppercase tracking-[0.15em] text-gold font-medium mt-0.5 truncate">
+            <p className="text-[10px] uppercase tracking-widest text-gold/70 font-medium mt-px truncate">
               The Hub
             </p>
           </div>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto">
           <NavLinks
             pathname={pathname}
             isAdmin={isAdmin}
@@ -284,52 +284,52 @@ export function AppShell({ children }: { children: ReactNode }) {
           />
         </nav>
 
-        <div className="p-3 border-t border-sidebar-border space-y-2 bg-sidebar/50">
-          <div className="px-2 py-1 text-xs">
-            <div className="text-white font-medium truncate">{userName}</div>
-            <div className="text-muted-foreground text-[11px] tracking-wider uppercase mt-0.5">
+        <div className="px-3 py-2.5 border-t border-sidebar-border">
+          <div className="px-1.5 py-1 text-xs">
+            <div className="text-white/90 font-medium truncate text-[13px]">{userName}</div>
+            <div className="text-muted-foreground text-[11px] tracking-widest uppercase mt-px">
               {role ?? "loading..."}
             </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
-            className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-white"
+            className="w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-white mt-1"
             onClick={signOut}
           >
-            <LogOut className="h-4 w-4 mr-2" /> Sign out
+            <LogOut className="h-4 w-4 mr-1.5" /> Sign out
           </Button>
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
         {/* ─── Header ──────────────────────────────────────────────── */}
-        <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-sidebar/60 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        <header className="flex items-center justify-between px-4 h-12 border-b border-border bg-sidebar/60 pt-[max(0px,env(safe-area-inset-top))]">
           {/* Mobile: hamburger + logo */}
           <div className="md:hidden flex items-center gap-2">
             <Button
-              size="sm"
+              size="icon"
               variant="ghost"
-              className="h-9 w-9 p-0"
+              className="h-8 w-8"
               onClick={() => setMobileNavOpen(true)}
               aria-label="Open navigation"
             >
-              <Menu className="h-5 w-5" />
+              <Menu className="h-4 w-4" />
             </Button>
-            <img src={logo} alt="MSREG" className="h-8 w-auto" />
+            <img src={logo} alt="MSREG" className="h-7 w-auto" />
           </div>
 
           {/* Desktop: page title */}
           <div className="hidden md:block">
             {pageTitle && (
-              <h2 className="text-sm font-medium text-foreground tracking-tight">{pageTitle}</h2>
+              <h2 className="text-[13px] font-medium text-foreground/80 tracking-tight">{pageTitle}</h2>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <QuickHeadlineButton />
             <NotificationBell />
-            <Button size="sm" variant="ghost" className="md:hidden" onClick={signOut}>
+            <Button size="icon" variant="ghost" className="md:hidden h-8 w-8" onClick={signOut}>
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
@@ -338,25 +338,25 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* ─── Mobile Nav Drawer ───────────────────────────────────── */}
         <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
           <SheetContent side="left" className="w-72 bg-sidebar p-0 border-sidebar-border">
-            <SheetHeader className="px-5 py-5 border-b border-sidebar-border">
-              <div className="flex items-center gap-3">
+            <SheetHeader className="px-4 py-4 border-b border-sidebar-border">
+              <div className="flex items-center gap-2.5">
                 <img
                   src={logo}
                   alt="Matt Smith Real Estate Group"
-                  className="h-10 w-auto shrink-0"
+                  className="h-9 w-auto shrink-0"
                 />
                 <div className="min-w-0">
-                  <SheetTitle className="text-xs font-bold uppercase tracking-[0.18em] text-white truncate text-left">
+                  <SheetTitle className="text-[11px] font-semibold uppercase tracking-widest text-white truncate text-left">
                     MSREG
                   </SheetTitle>
-                  <p className="text-[9px] uppercase tracking-[0.15em] text-gold font-medium mt-0.5 truncate">
+                  <p className="text-[10px] uppercase tracking-widest text-gold/70 font-medium mt-px truncate">
                     The Hub
                   </p>
                 </div>
               </div>
             </SheetHeader>
 
-            <nav className="flex-1 p-3 space-y-1 overflow-y-auto max-h-[calc(100vh-160px)]">
+            <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto max-h-[calc(100vh-160px)]">
               <NavLinks
                 pathname={pathname}
                 isAdmin={isAdmin}
@@ -367,23 +367,23 @@ export function AppShell({ children }: { children: ReactNode }) {
               />
             </nav>
 
-            <div className="p-3 border-t border-sidebar-border space-y-2 bg-sidebar/50">
-              <div className="px-2 py-1 text-xs">
-                <div className="text-white font-medium truncate">{userName}</div>
-                <div className="text-muted-foreground text-[11px] tracking-wider uppercase mt-0.5">
+            <div className="px-3 py-2.5 border-t border-sidebar-border">
+              <div className="px-1.5 py-1 text-xs">
+                <div className="text-white/90 font-medium truncate text-[13px]">{userName}</div>
+                <div className="text-muted-foreground text-[11px] tracking-widest uppercase mt-px">
                   {role ?? "loading..."}
                 </div>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-white"
+                className="w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-white mt-1"
                 onClick={() => {
                   setMobileNavOpen(false);
                   signOut();
                 }}
               >
-                <LogOut className="h-4 w-4 mr-2" /> Sign out
+                <LogOut className="h-4 w-4 mr-1.5" /> Sign out
               </Button>
             </div>
           </SheetContent>

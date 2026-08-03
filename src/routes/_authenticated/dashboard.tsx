@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useContentDetail } from "@/components/content-detail-provider";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import {
@@ -51,14 +52,13 @@ function Dashboard() {
 
   const approved = items.filter((i) => i.status === "approved");
 
-  // Detect if user is brand new (no items in any widget context)
   const isEmpty = !isLoading && actionItems.length === 0 && approved.length === 0;
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-8">
-      <header className="mb-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+    <div className="px-6 py-5 max-w-5xl mx-auto space-y-5">
+      <header>
+        <h1 className="text-lg font-semibold tracking-tight">Dashboard</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
           Welcome back, {(user?.user_metadata as any)?.first_name || user?.email}.
         </p>
       </header>
@@ -67,94 +67,93 @@ function Dashboard() {
 
       {isClientCare && <ClientCareClosingGifts />}
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-2 gap-4">
         <MyRocksWidget />
         <MyTasksWidget />
       </div>
 
-      {/* Onboarding card — shown when user has no action items or approved content */}
+      {/* Onboarding — shown when user has no action items or approved content */}
       {isEmpty && (
-        <section className="rounded-xl border border-gold/20 bg-card/60 p-6 shadow-sm">
-          <h2 className="text-base font-semibold mb-1">Get started</h2>
-          <p className="text-sm text-muted-foreground mb-4">
+        <section className="rounded-lg border border-border bg-card p-4">
+          <h2 className="text-sm font-semibold mb-1">Get started</h2>
+          <p className="text-sm text-muted-foreground mb-3">
             Here's what you can do in The Hub.
           </p>
-          <div className="grid sm:grid-cols-3 gap-3">
-            <Link
-              to="/calendar"
-              className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-gold/40 hover:bg-accent/30 transition-colors"
-            >
-              <Calendar className="h-5 w-5 text-gold shrink-0" />
-              <div className="min-w-0">
-                <div className="text-sm font-medium">Calendar</div>
-                <div className="text-xs text-muted-foreground">View content schedule</div>
-              </div>
-              <ArrowRight className="h-3.5 w-3.5 text-muted-foreground ml-auto shrink-0" />
-            </Link>
-            <Link
-              to="/listings"
-              className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-gold/40 hover:bg-accent/30 transition-colors"
-            >
-              <Home className="h-5 w-5 text-gold shrink-0" />
-              <div className="min-w-0">
-                <div className="text-sm font-medium">Listings</div>
-                <div className="text-xs text-muted-foreground">Manage properties</div>
-              </div>
-              <ArrowRight className="h-3.5 w-3.5 text-muted-foreground ml-auto shrink-0" />
-            </Link>
-            <Link
-              to="/requests"
-              className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-gold/40 hover:bg-accent/30 transition-colors"
-            >
-              <Inbox className="h-5 w-5 text-gold shrink-0" />
-              <div className="min-w-0">
-                <div className="text-sm font-medium">Requests</div>
-                <div className="text-xs text-muted-foreground">View marketing requests</div>
-              </div>
-              <ArrowRight className="h-3.5 w-3.5 text-muted-foreground ml-auto shrink-0" />
-            </Link>
+          <div className="grid sm:grid-cols-3 gap-2">
+            {[
+              { to: "/calendar" as const, icon: Calendar, label: "Calendar", desc: "View content schedule" },
+              { to: "/listings" as const, icon: Home, label: "Listings", desc: "Manage properties" },
+              { to: "/requests" as const, icon: Inbox, label: "Requests", desc: "View marketing requests" },
+            ].map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-md border border-border hover:bg-accent/40 transition-colors duration-100"
+              >
+                <link.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-sm font-medium">{link.label}</div>
+                  <div className="text-xs text-muted-foreground">{link.desc}</div>
+                </div>
+                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground ml-auto shrink-0" />
+              </Link>
+            ))}
           </div>
         </section>
       )}
 
-      <section
-        className={cn(
-          "bg-card border rounded-xl shadow-sm",
-          actionItems.length > 0 ? "border-gold/20 shadow-md shadow-black/10" : "border-border",
-        )}
-      >
-        <div className="flex items-center gap-2 p-5 border-b border-border">
-          <ListTodo className="h-5 w-5 text-gold" />
-          <h2 className="text-base font-semibold leading-tight">My Action Items</h2>
-          <span className="ml-auto text-xs text-muted-foreground">
-            {actionItems.length} requiring attention
-          </span>
+      {/* Action Items */}
+      <section className="bg-card border border-border rounded-lg">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+          <ListTodo className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold">My Action Items</h2>
+          {actionItems.length > 0 && (
+            <span className="ml-auto text-[11px] font-semibold text-gold tabular-nums">
+              {actionItems.length}
+            </span>
+          )}
         </div>
-        <div className="divide-y divide-border">
-          {actionItems.length === 0 && (
-            <div className="p-10 text-center text-muted-foreground text-sm">
-              Nothing needs your attention right now.
+        <div className="divide-y divide-border/50">
+          {isLoading && (
+            <div className="space-y-2.5 px-4 py-4">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-4 w-2/3" />
             </div>
           )}
-          {actionItems.map((item) => (
+          {!isLoading && actionItems.length === 0 && (
+            <div className="py-10 flex flex-col items-center text-center">
+              <ListTodo className="h-5 w-5 text-muted-foreground/40 mb-2" />
+              <p className="text-sm text-muted-foreground">Nothing needs your attention right now.</p>
+            </div>
+          )}
+          {!isLoading && actionItems.map((item) => (
             <Row key={item.id} item={item} onOpen={() => detail.open(item.id)} />
           ))}
         </div>
       </section>
 
-      <section className="bg-card border border-border/70 rounded-xl shadow-sm shadow-black/5">
-        <div className="flex items-center gap-2 p-5 border-b border-border">
-          <CheckCircle2 className="h-5 w-5 text-status-approved" />
-          <h2 className="text-base font-semibold leading-tight">Approved &amp; Ready</h2>
-          <span className="ml-auto text-xs text-muted-foreground">{approved.length} upcoming</span>
+      {/* Approved & Ready */}
+      <section className="bg-card border border-border rounded-lg">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+          <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold">Approved & Ready</h2>
+          <span className="ml-auto text-xs text-muted-foreground tabular-nums">{approved.length}</span>
         </div>
-        <div className="divide-y divide-border">
-          {approved.length === 0 && (
-            <div className="p-10 text-center text-muted-foreground text-sm">
-              No approved content waiting.
+        <div className="divide-y divide-border/50">
+          {isLoading && (
+            <div className="space-y-2.5 px-4 py-4">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
             </div>
           )}
-          {approved.map((item) => (
+          {!isLoading && approved.length === 0 && (
+            <div className="py-10 flex flex-col items-center text-center">
+              <CheckCircle2 className="h-5 w-5 text-muted-foreground/40 mb-2" />
+              <p className="text-sm text-muted-foreground">No approved content waiting.</p>
+            </div>
+          )}
+          {!isLoading && approved.map((item) => (
             <Row key={item.id} item={item} onOpen={() => detail.open(item.id)} />
           ))}
         </div>
@@ -165,7 +164,7 @@ function Dashboard() {
 
 function Row({ item, onOpen }: { item: ContentItem; onOpen: () => void }) {
   return (
-    <div className="p-4 flex items-center gap-4 hover:bg-accent/30 transition-colors">
+    <div className="px-4 py-2.5 flex items-center gap-3 hover:bg-accent/40 transition-colors duration-100">
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium truncate flex items-center gap-2">
           {item.title}
@@ -173,17 +172,17 @@ function Row({ item, onOpen }: { item: ContentItem; onOpen: () => void }) {
             {STATUS_LABEL[item.status as Status]}
           </StatusBadge>
         </div>
-        <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+        <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
           <span>{format(new Date(item.scheduled_at), "MMM d, yyyy · h:mm a")}</span>
           {item.platforms.map((p) => (
-            <span key={p} className="px-1.5 py-0.5 bg-muted rounded text-[11px]">
+            <span key={p} className="px-1.5 py-px bg-muted rounded text-[11px]">
               {p}
             </span>
           ))}
         </div>
       </div>
       <Button size="sm" variant="outline" onClick={onOpen}>
-        Open <ExternalLink className="h-3 w-3 ml-1.5" />
+        Open <ExternalLink className="h-3 w-3 ml-1" />
       </Button>
     </div>
   );

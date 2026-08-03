@@ -29,26 +29,29 @@ export function MyRocksWidget() {
   });
 
   return (
-    <section className="bg-card border border-border rounded-xl shadow-sm shadow-black/5">
-      <div className="flex items-center gap-2 p-5 border-b border-border">
-        <Target className="h-5 w-5 text-gold" />
-        <h2 className="text-base font-semibold leading-tight">My Rocks · {quarter}</h2>
-        <span className="ml-auto text-xs text-muted-foreground">{rocks.length} this quarter</span>
+    <section className="bg-card border border-border rounded-lg">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+        <Target className="h-4 w-4 text-muted-foreground" />
+        <h2 className="text-sm font-semibold">My Rocks · {quarter}</h2>
+        <span className="ml-auto text-xs text-muted-foreground tabular-nums">{rocks.length}</span>
       </div>
-      <div className="divide-y divide-border">
+      <div className="divide-y divide-border/50">
         {isLoading && (
-          <div className="space-y-3 p-5">
+          <div className="space-y-2.5 px-4 py-4">
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-4 w-1/2" />
             <Skeleton className="h-4 w-2/3" />
           </div>
         )}
         {!isLoading && rocks.length === 0 && (
-          <div className="p-10 text-center text-muted-foreground text-sm">
-            No rocks assigned to you this quarter.{" "}
-            <Link to="/eos/rocks" className="text-gold underline">
-              View all rocks
-            </Link>
+          <div className="py-10 flex flex-col items-center text-center">
+            <Target className="h-5 w-5 text-muted-foreground/40 mb-2" />
+            <p className="text-sm text-muted-foreground">
+              No rocks assigned this quarter.{" "}
+              <Link to="/eos/rocks" className="text-gold hover:underline">
+                View all
+              </Link>
+            </p>
           </div>
         )}
         {!isLoading &&
@@ -56,12 +59,12 @@ export function MyRocksWidget() {
             <Link
               key={r.id}
               to="/eos/rocks"
-              className="p-4 flex items-center gap-3 hover:bg-accent/30 transition-colors"
+              className="px-4 py-2.5 flex items-center gap-2.5 hover:bg-accent/40 transition-colors duration-100"
             >
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">{r.title}</div>
                 {r.due_date && (
-                  <div className="text-xs text-muted-foreground mt-0.5">Due {r.due_date}</div>
+                  <div className="text-xs text-muted-foreground mt-px">Due {r.due_date}</div>
                 )}
               </div>
               <StatusBadge className={ROCK_STATUS_CLASS[r.status]}>

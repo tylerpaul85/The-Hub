@@ -5,13 +5,13 @@ export function QuoteOfTheDay() {
   const quote = useMemo(() => getQuoteOfTheDay(), []);
   return (
     <aside
-      className="rounded-xl border border-gold/20 bg-card/60 px-6 py-5 shadow-sm"
+      className="rounded-lg border border-border bg-card px-4 py-3"
       aria-label="Quote of the day"
     >
-      <blockquote className="font-serif italic text-lg leading-relaxed text-foreground/90">
+      <blockquote className="italic text-sm leading-relaxed text-foreground/80">
         &ldquo;{quote.text}&rdquo;
       </blockquote>
-      <figcaption className="mt-3 text-xs uppercase tracking-[0.18em] text-gold/70">
+      <figcaption className="mt-1.5 text-[11px] uppercase tracking-widest text-muted-foreground">
         — {quote.author}
       </figcaption>
     </aside>

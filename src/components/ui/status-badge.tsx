@@ -1,20 +1,17 @@
 import { cn } from "@/lib/utils";
-import type { ReactNode } from "react";
 
-interface StatusBadgeProps {
+/** Standardised status pill — 11px, pill-shaped, composable via className for color. */
+export function StatusBadge({
+  className,
+  children,
+}: {
   className?: string;
-  children: ReactNode;
-}
-
-/**
- * Reusable status badge with consistent sizing across the app.
- * Replaces the ad-hoc `text-[10px] px-2 py-0.5 rounded border` pattern.
- */
-export function StatusBadge({ className, children }: StatusBadgeProps) {
+  children: React.ReactNode;
+}) {
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-medium border whitespace-nowrap",
+        "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold leading-none whitespace-nowrap",
         className,
       )}
     >

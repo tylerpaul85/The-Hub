@@ -48,16 +48,14 @@
   --color-status-published: var(--status-published);
 }
 
-/* MSREG Hub — Navy + Gold dark UI */
+/* ─── MSREG Hub — Navy + Gold ─────────────────────────────────────── */
 :root {
-  --radius: 0.5rem; /* Slightly smaller, more refined border radius */
+  --radius: 0.5rem;
 
-  /* Deeper, richer Navy base background for premium feel */
   --background: oklch(0.12 0.03 260);
   --foreground: oklch(0.97 0.01 90);
 
-  /* Solid cards without heavy gradients */
-  --card: oklch(0.15 0.03 260);
+  --card: oklch(0.14 0.025 260);
   --card-foreground: oklch(0.97 0.01 90);
 
   --popover: oklch(0.16 0.032 260);
@@ -66,7 +64,6 @@
   --navy: oklch(0.12 0.03 260);
   --navy-foreground: oklch(0.97 0.01 90);
 
-  /* Curated warm gold accent */
   --gold: oklch(0.78 0.11 85);
   --gold-foreground: oklch(0.12 0.03 260);
 
@@ -77,7 +74,7 @@
   --secondary-foreground: oklch(0.97 0.01 90);
 
   --muted: oklch(0.17 0.03 260);
-  --muted-foreground: oklch(0.68 0.02 250);
+  --muted-foreground: oklch(0.60 0.02 250);
 
   --accent: oklch(0.2 0.04 260);
   --accent-foreground: oklch(0.97 0.01 90);
@@ -85,17 +82,16 @@
   --destructive: oklch(0.6 0.2 25);
   --destructive-foreground: oklch(0.98 0.01 90);
 
-  /* Thinner, more subtle borders */
   --border: oklch(0.2 0.025 260);
   --input: oklch(0.22 0.03 260);
   --ring: oklch(0.78 0.11 85);
 
   /* Status colors */
-  --status-draft: oklch(0.65 0.02 260); /* gray */
-  --status-review: oklch(0.72 0.15 70); /* amber */
-  --status-approved: oklch(0.7 0.16 150); /* green */
-  --status-scheduled: oklch(0.68 0.14 230); /* blue */
-  --status-published: oklch(0.78 0.11 85); /* gold */
+  --status-draft: oklch(0.65 0.02 260);
+  --status-review: oklch(0.72 0.15 70);
+  --status-approved: oklch(0.7 0.16 150);
+  --status-scheduled: oklch(0.68 0.14 230);
+  --status-published: oklch(0.78 0.11 85);
 
   /* Sidebar */
   --sidebar: oklch(0.1 0.025 260);
@@ -133,25 +129,9 @@
     color-scheme: dark;
   }
 
-  /* Focus outline styling */
+  /* Focus outline */
   *:focus-visible {
     outline: 2px solid var(--color-gold);
     outline-offset: 2px;
   }
-}
-
-@keyframes page-enter {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Page transition animation */
-main > :first-child {
-  animation: page-enter 0.2s ease-out;
 }
