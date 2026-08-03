@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { Inbox, Check, X, FileText, ExternalLink, Copy } from "lucide-react";
+import { Inbox, Check, X, FileText, ExternalLink, Copy, Trash2 } from "lucide-react";
 import { QrCode } from "@/components/qr-code";
 import { publicUrl } from "@/lib/public-url";
 
@@ -136,6 +136,7 @@ function RequestsInbox() {
 
   const { data: requests = [], isLoading } = useQuery<Req[]>({
     queryKey: ["marketing-requests"],
+    refetchInterval: 5000,
     queryFn: async () => {
       // 1. Fetch marketing requests
       const { data: marketing, error: mErr } = await sb
@@ -188,6 +189,55 @@ function RequestsInbox() {
       return merged as Req[];
     },
   });
+
+  // Realtime subscription to receive new incoming requests instantly
+  useEffect(() => {
+    const channel = supabase
+      .channel("requests-realtime-sub")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "marketing_requests" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["marketing-requests"] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "closing_gift_requests" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["marketing-requests"] });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [qc]);
+
+  const deleteReq = useMutation({
+    mutationFn: async (req: Req) => {
+      if (req.is_closing_gift_request_table_row) {
+        const { error } = await sb.from("closing_gift_requests").delete().eq("id", req.id);
+        if (error) throw error;
+      } else {
+        const { error } = await sb.from("marketing_requests").delete().eq("id", req.id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success("Request deleted");
+      qc.invalidateQueries({ queryKey: ["marketing-requests"] });
+      setSelected(null);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const pendingCount = requests.filter((r) => r.status === "pending" && !r.closing_gift_completed_at).length;
+  const approvedCount = requests.filter((r) => r.status === "approved" && !r.closing_gift_completed_at).length;
+  const declinedCount = requests.filter((r) => r.status === "declined" && !r.closing_gift_completed_at).length;
+  const giftCompletedCount = requests.filter((r) => !!r.closing_gift_completed_at).length;
+  const activeAllCount = requests.filter((r) => !r.closing_gift_completed_at).length;
 
   const filtered = requests.filter((r) => {
     if (filter === "completed_gifts") return !!r.closing_gift_completed_at;
@@ -393,23 +443,46 @@ function RequestsInbox() {
     <div className="p-6 max-w-6xl mx-auto">
       <PublicLinkBanner path="/request" label="Marketing Request" />
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-2">
           <Inbox className="h-5 w-5 text-gold" />
           <h1 className="text-xl font-semibold">Marketing Requests</h1>
         </div>
-        <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="declined">Declined</SelectItem>
-            <SelectItem value="completed_gifts">Completed gifts</SelectItem>
-            <SelectItem value="all">All (active)</SelectItem>
-          </SelectContent>
-        </Select>
+
+        <div className="flex flex-wrap items-center gap-1.5 bg-muted/40 p-1 rounded-lg border border-border">
+          {[
+            { key: "pending", label: "Pending", count: pendingCount, highlight: true },
+            { key: "all", label: "All Active", count: activeAllCount },
+            { key: "approved", label: "Approved", count: approvedCount },
+            { key: "declined", label: "Declined", count: declinedCount },
+            { key: "completed_gifts", label: "Completed Gifts", count: giftCompletedCount },
+          ].map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setFilter(t.key as any)}
+              className={cn(
+                "px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5",
+                filter === t.key
+                  ? "bg-card text-foreground border border-border shadow-sm font-semibold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent/30",
+              )}
+            >
+              {t.label}
+              <span
+                className={cn(
+                  "px-1.5 py-0.2 rounded-full text-[10px] tabular-nums font-semibold",
+                  filter === t.key
+                    ? "bg-gold/20 text-gold"
+                    : t.highlight && t.count > 0
+                      ? "bg-gold text-navy font-bold"
+                      : "bg-muted text-muted-foreground",
+                )}
+              >
+                {t.count}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {isLoading ? (
@@ -450,8 +523,26 @@ function RequestsInbox() {
                     {r.scope === "listing" ? r.property_address : "Personal branding"}
                   </div>
                 </div>
-                <div className="text-xs text-muted-foreground whitespace-nowrap">
-                  {format(new Date(r.created_at), "MMM d, p")}
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="text-xs text-muted-foreground whitespace-nowrap">
+                    {format(new Date(r.created_at), "MMM d, p")}
+                  </div>
+                  {(isAdmin || isClientCare) && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      title="Delete request"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm(`Delete request from ${r.agent_name}?`)) {
+                          deleteReq.mutate(r);
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </button>
@@ -563,51 +654,69 @@ function RequestsInbox() {
                   </div>
                 )}
               </div>
-              {selected.closing_gift && (isAdmin || isClientCare) && (
-                <DialogFooter className="gap-2">
-                  {selected.closing_gift_completed_at ? (
-                    <Button
-                      variant="outline"
-                      className="border-gold/40 text-gold hover:bg-gold/10"
-                      disabled={reopenGift.isPending}
-                      onClick={() => reopenGift.mutate(selected.id)}
-                    >
-                      Reopen closing gift
-                    </Button>
-                  ) : (
-                    <Button
-                      className="bg-gold text-navy hover:bg-gold/90"
-                      disabled={completeGift.isPending}
-                      onClick={() => completeGift.mutate(selected.id)}
-                    >
-                      <Check className="h-4 w-4 mr-1" /> Mark closing gift completed
-                    </Button>
-                  )}
-                </DialogFooter>
-              )}
-              {isAdmin && selected.status === "pending" && !selected.closing_gift && (
-                <DialogFooter className="gap-2">
+              <DialogFooter className="gap-2 justify-between sm:justify-between w-full pt-4 border-t border-border mt-4">
+                {(isAdmin || isClientCare) && (
                   <Button
                     variant="outline"
+                    className="border-destructive/40 text-destructive hover:bg-destructive/10 mr-auto"
+                    disabled={deleteReq.isPending}
                     onClick={() => {
-                      setDeclineNote("");
-                      setDeclineOpen(true);
+                      if (confirm(`Delete this request from ${selected.agent_name}?`)) {
+                        deleteReq.mutate(selected);
+                      }
                     }}
                   >
-                    <X className="h-4 w-4 mr-1" /> Decline
+                    <Trash2 className="h-4 w-4 mr-1" /> Delete Request
                   </Button>
-                  <Button
-                    onClick={() => {
-                      setApproveTarget("task");
-                      setTaskOwner("none");
-                      setTaskDueDate(selected.deadline ?? "");
-                      setApproveOpen(true);
-                    }}
-                  >
-                    <Check className="h-4 w-4 mr-1" /> Approve
-                  </Button>
-                </DialogFooter>
-              )}
+                )}
+                <div className="flex items-center gap-2 ml-auto">
+                  {selected.closing_gift && (isAdmin || isClientCare) && (
+                    <>
+                      {selected.closing_gift_completed_at ? (
+                        <Button
+                          variant="outline"
+                          className="border-gold/40 text-gold hover:bg-gold/10"
+                          disabled={reopenGift.isPending}
+                          onClick={() => reopenGift.mutate(selected.id)}
+                        >
+                          Reopen closing gift
+                        </Button>
+                      ) : (
+                        <Button
+                          className="bg-gold text-navy hover:bg-gold/90"
+                          disabled={completeGift.isPending}
+                          onClick={() => completeGift.mutate(selected.id)}
+                        >
+                          <Check className="h-4 w-4 mr-1" /> Mark closing gift completed
+                        </Button>
+                      )}
+                    </>
+                  )}
+                  {isAdmin && selected.status === "pending" && !selected.closing_gift && (
+                    <>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setDeclineNote("");
+                          setDeclineOpen(true);
+                        }}
+                      >
+                        <X className="h-4 w-4 mr-1" /> Decline
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setApproveTarget("task");
+                          setTaskOwner("none");
+                          setTaskDueDate(selected.deadline ?? "");
+                          setApproveOpen(true);
+                        }}
+                      >
+                        <Check className="h-4 w-4 mr-1" /> Approve
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </DialogFooter>
             </>
           )}
         </DialogContent>

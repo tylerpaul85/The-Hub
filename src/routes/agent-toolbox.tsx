@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, getGoogleDrivePreviewUrl } from "@/lib/utils";
 import { isImageUrl } from "@/lib/sanitize-filename";
 import { DownloadPhotosButton } from "@/components/download-photos-button";
 import { verifyToolboxCode } from "@/lib/toolbox-public.functions";
@@ -270,16 +270,15 @@ function ListingsList({ token, onOpen }: { token: string; onOpen: (id: string) =
       if (ids.length) {
         const { data: assets, error: aErr } = await supabase
           .from("toolbox_assets")
-          .select("listing_id,thumbnail_url,file_url,asset_type,created_at")
+          .select("listing_id,thumbnail_url,file_url,drive_url,asset_type,created_at")
           .in("listing_id", ids)
           .order("created_at", { ascending: true });
         if (aErr) throw aErr;
 
         for (const a of (assets ?? []) as any[]) {
           if (thumbs[a.listing_id]) continue;
-          const candidate =
-            a.asset_type === "video" ? a.thumbnail_url : a.thumbnail_url || a.file_url;
-          if (candidate) thumbs[a.listing_id] = candidate;
+          const candidate = a.thumbnail_url || a.file_url || a.drive_url;
+          if (candidate) thumbs[a.listing_id] = getGoogleDrivePreviewUrl(candidate) ?? candidate;
         }
       }
       return {
@@ -575,7 +574,7 @@ function PhotoGallery({ photos, address }: { photos: any[]; address: string }) {
               className="block w-full aspect-square bg-muted"
             >
               <img
-                src={p.thumbnail_url || p.file_url}
+                src={getGoogleDrivePreviewUrl(p.thumbnail_url || p.file_url || p.drive_url) || ""}
                 alt=""
                 className="w-full h-full object-cover"
                 loading="lazy"
@@ -598,7 +597,7 @@ function PhotoGallery({ photos, address }: { photos: any[]; address: string }) {
           onClick={() => setLightbox(null)}
         >
           <img
-            src={photos[lightbox].file_url}
+            src={getGoogleDrivePreviewUrl(photos[lightbox].file_url || photos[lightbox].drive_url || photos[lightbox].thumbnail_url) || ""}
             alt=""
             className="max-w-full max-h-[80vh] object-contain"
           />

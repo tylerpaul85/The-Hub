@@ -56,15 +56,22 @@ export const listPublicListings = createServerFn({ method: "POST" })
     if (ids.length) {
       const { data: assets } = await sb
         .from("toolbox_assets")
-        .select("listing_id,thumbnail_url,file_url,asset_type,created_at")
+        .select("listing_id,thumbnail_url,file_url,drive_url,asset_type,created_at")
         .in("listing_id", ids)
         .order("created_at", { ascending: true });
       for (const a of (assets ?? []) as any[]) {
         if (thumbs[a.listing_id]) continue;
-        // Prefer an image asset; for videos use their thumbnail_url if present.
-        const candidate =
-          a.asset_type === "video" ? a.thumbnail_url : a.thumbnail_url || a.file_url;
-        if (candidate) thumbs[a.listing_id] = candidate;
+        const candidate = a.thumbnail_url || a.file_url || a.drive_url;
+        if (candidate) {
+          // Convert Google Drive links if needed
+          const fileIdMatch = candidate.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+            candidate.match(/\/open\?id=([a-zA-Z0-9_-]+)/) ||
+            candidate.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
+            candidate.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
+          thumbs[a.listing_id] = fileIdMatch && fileIdMatch[1]
+            ? `https://lh3.googleusercontent.com/d/${fileIdMatch[1]}`
+            : candidate;
+        }
       }
     }
     return {

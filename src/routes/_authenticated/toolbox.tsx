@@ -27,7 +27,7 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, getGoogleDrivePreviewUrl } from "@/lib/utils";
 import {
   Plus,
   Upload,
@@ -322,13 +322,14 @@ function ListingsTab({ onOpen, userId }: { onOpen: (id: string) => void; userId:
       if (ids.length === 0) return out;
       const { data } = await sb
         .from("toolbox_assets")
-        .select("listing_id,thumbnail_url,file_url,asset_type")
+        .select("listing_id,thumbnail_url,file_url,drive_url,asset_type")
         .in("listing_id", ids);
       for (const a of (data ?? []) as any[]) {
         if (!out[a.listing_id]) continue;
         out[a.listing_id].assets++;
-        if (!out[a.listing_id].thumb && (a.thumbnail_url || a.file_url)) {
-          out[a.listing_id].thumb = a.thumbnail_url || a.file_url;
+        const candidate = a.thumbnail_url || a.file_url || a.drive_url;
+        if (!out[a.listing_id].thumb && candidate) {
+          out[a.listing_id].thumb = getGoogleDrivePreviewUrl(candidate);
         }
       }
       return out;
@@ -737,7 +738,7 @@ function ListingSheet({
 /* ---------------- Asset sections ---------------- */
 
 function AssetTile({ asset, onDelete }: { asset: Asset; onDelete: () => void }) {
-  const thumb = asset.thumbnail_url || asset.file_url;
+  const thumb = getGoogleDrivePreviewUrl(asset.thumbnail_url || asset.file_url || asset.drive_url);
   return (
     <div className="relative group rounded-md overflow-hidden border border-border bg-muted aspect-square">
       {thumb ? (
