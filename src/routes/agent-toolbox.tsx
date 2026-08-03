@@ -1181,14 +1181,6 @@ function BrandedContentView({
     queryKey: ["public-toolbox-agent-content", agentId, token],
     queryFn: () => fetchContent({ data: { token, agentId } }),
   });
-          .select("*")
-          .eq("agent_id", agentId)
-          .order("created_at", { ascending: false }),
-      ]);
-      if (!agent) throw new Error("Agent not found");
-      return { agent, items: items ?? [] };
-    },
-  });
   const [filter, setFilter] = useState<string>("all");
   const [detailItem, setDetailItem] = useState<any | null>(null);
 
