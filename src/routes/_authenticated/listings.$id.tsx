@@ -244,7 +244,7 @@ function ListingDetailPage() {
       </div>
 
       {/* Section 1: Listing Info */}
-      <ListingInfoSection listing={listing} canManage={canManage} onSaved={invalidateAll} />
+      <ListingInfoSection listing={listing} userId={userId} canManage={canManage} onSaved={invalidateAll} />
 
       {/* Section 2: Graphics & Copy */}
       <GraphicsCopySection
@@ -374,10 +374,12 @@ function MarkUnderContractButton({
 
 function ListingInfoSection({
   listing,
+  userId,
   canManage,
   onSaved,
 }: {
   listing: Listing;
+  userId: string;
   canManage: boolean;
   onSaved: () => void;
 }) {
