@@ -71,7 +71,7 @@ interface Video {
   brand: Brand;
 }
 
-const REEL_STAGES: VideoStage[] = ["ready_to_edit", "ready_to_post"];
+
 
 const BRAND_STYLES: Record<Brand, string> = {
   MSREG: "bg-gold/15 text-gold border-gold/40",
@@ -99,8 +99,7 @@ function VideosPage() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const [brandFilter, setBrandFilter] = useState<"all" | Brand>("all");
-  const [showHorizontal, setShowHorizontal] = useState(true);
-  const [showReels, setShowReels] = useState(true);
+  const [typeFilter, setTypeFilter] = useState<"all" | "horizontal" | "reel">("all");
   const [dateSort, setDateSort] = useState<"none" | "soonest" | "latest">("soonest");
   const [dueWithin, setDueWithin] = useState<"all" | "2" | "7" | "30" | "overdue">("all");
 
@@ -125,18 +124,15 @@ function VideosPage() {
     onError: (e: any) => toast.error(e.message ?? "Move failed"),
   });
 
-  const makeDragHandler = (allowed: VideoStage[]) => (e: DragEndEvent) => {
+  const handleDragEnd = (e: DragEndEvent) => {
     const id = e.active.id as string;
     const overId = e.over?.id as string | undefined;
     if (!overId?.startsWith("stage|")) return;
-    const [, scope, stageRaw] = overId.split("|");
+    const [, stageRaw] = overId.split("|");
     const stage = stageRaw as VideoStage;
-    if (!allowed.includes(stage)) return;
+    if (!VIDEO_STAGES.includes(stage)) return;
     const v = videos.find((x) => x.id === id);
     if (!v || v.stage === stage) return;
-    // Prevent cross-pipeline drops
-    if (scope === "horizontal" && v.video_type !== "horizontal") return;
-    if (scope === "reel" && v.video_type !== "reel") return;
     moveStage.mutate({ id, stage });
   };
 
@@ -167,10 +163,11 @@ function VideosPage() {
         return dateSort === "soonest" ? ta - tb : tb - ta;
       });
     }
+    if (typeFilter !== "all") {
+      list = list.filter((v) => v.video_type === typeFilter);
+    }
     return list;
-  }, [videos, brandFilter, dueWithin, dateSort]);
-  const horizontal = filtered.filter((v) => v.video_type === "horizontal");
-  const reels = filtered.filter((v) => v.video_type === "reel");
+  }, [videos, brandFilter, dueWithin, dateSort, typeFilter]);
 
   return (
     <div className="p-4 lg:p-6 max-w-[1600px] mx-auto">
@@ -199,14 +196,19 @@ function VideosPage() {
           </Select>
         </div>
         <div className="h-6 w-px bg-border" />
-        <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <Checkbox checked={showHorizontal} onCheckedChange={(v) => setShowHorizontal(!!v)} />
-          Horizontal
-        </label>
-        <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <Checkbox checked={showReels} onCheckedChange={(v) => setShowReels(!!v)} />
-          Reels
-        </label>
+        <div className="flex items-center gap-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Type</Label>
+          <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+            <SelectTrigger className="h-8 w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="horizontal">Horizontal</SelectItem>
+              <SelectItem value="reel">Reels</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <div className="h-6 w-px bg-border" />
         <div className="flex items-center gap-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
@@ -237,73 +239,46 @@ function VideosPage() {
         </div>
       </div>
 
-      {/* Horizontal pipeline */}
-      {showHorizontal && (
-        <section className="mb-8">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold">Horizontal Video</h2>
-              <span className="text-xs text-muted-foreground">({horizontal.length})</span>
-            </div>
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">Active Pipeline</h2>
+            <span className="text-xs text-muted-foreground">({filtered.length} videos)</span>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setCreatingType("reel")}
+              className="border-gold/40 text-gold hover:bg-gold/10"
+            >
+              <Plus className="h-4 w-4 mr-1" /> New Reel
+            </Button>
             <Button
               size="sm"
               onClick={() => setCreatingType("horizontal")}
               className="bg-gold text-gold-foreground hover:bg-gold/90"
             >
-              <Plus className="h-4 w-4 mr-1" /> New Video
+              <Plus className="h-4 w-4 mr-1" /> New Horizontal
             </Button>
           </div>
-          <DndContext
-            sensors={sensors}
-            onDragEnd={makeDragHandler(VIDEO_STAGES as unknown as VideoStage[])}
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              {VIDEO_STAGES.map((s) => (
-                <StageColumn
-                  key={s}
-                  scope="horizontal"
-                  stage={s}
-                  videos={horizontal.filter((v) => v.stage === s)}
-                  onOpen={setEditing}
-                />
-              ))}
-            </div>
-          </DndContext>
-        </section>
-      )}
-
-      {/* Reels pipeline */}
-      {showReels && (
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold">Short-Form Reels</h2>
-              <span className="text-xs text-muted-foreground">({reels.length})</span>
-            </div>
-            <Button
-              size="sm"
-              onClick={() => setCreatingType("reel")}
-              className="bg-gold text-gold-foreground hover:bg-gold/90"
-            >
-              <Plus className="h-4 w-4 mr-1" /> New Reel
-            </Button>
+        </div>
+        <DndContext
+          sensors={sensors}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            {VIDEO_STAGES.map((s) => (
+              <StageColumn
+                key={s}
+                stage={s}
+                videos={filtered.filter((v) => v.stage === s)}
+                onOpen={setEditing}
+              />
+            ))}
           </div>
-          <DndContext sensors={sensors} onDragEnd={makeDragHandler(REEL_STAGES)}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {REEL_STAGES.map((s) => (
-                <StageColumn
-                  key={s}
-                  scope="reel"
-                  stage={s}
-                  videos={reels.filter((v) => v.stage === s)}
-                  onOpen={setEditing}
-                  isReel
-                />
-              ))}
-            </div>
-          </DndContext>
-        </section>
-      )}
+        </DndContext>
+      </section>
 
       {(editing || creatingType) && (
         <VideoFormDialog
@@ -325,19 +300,15 @@ function VideosPage() {
 }
 
 function StageColumn({
-  scope,
   stage,
   videos,
   onOpen,
-  isReel,
 }: {
-  scope: "horizontal" | "reel";
   stage: VideoStage;
   videos: Video[];
   onOpen: (v: Video) => void;
-  isReel?: boolean;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `stage|${scope}|${stage}` });
+  const { setNodeRef, isOver } = useDroppable({ id: `stage|${stage}` });
   return (
     <div
       ref={setNodeRef}
@@ -354,11 +325,11 @@ function StageColumn({
       </div>
       <div className="space-y-2 flex-1">
         {videos.map((v) => (
-          <VideoCard key={v.id} video={v} onOpen={() => onOpen(v)} isReel={isReel} />
+          <VideoCard key={v.id} video={v} onOpen={() => onOpen(v)} />
         ))}
         {videos.length === 0 && (
           <div className="text-xs text-muted-foreground text-center py-6">
-            Drop {isReel ? "reels" : "videos"} here
+            Drop videos here
           </div>
         )}
       </div>
@@ -403,11 +374,9 @@ function urgencyFor(video: Video) {
 function VideoCard({
   video,
   onOpen,
-  isReel,
 }: {
   video: Video;
   onOpen: () => void;
-  isReel?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({
     id: video.id,
@@ -431,12 +400,15 @@ function VideoCard({
         isDragging && "opacity-50",
       )}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="font-medium truncate flex-1">{video.title}</div>
+      <div className="flex flex-wrap gap-1 mb-1.5">
         <BrandBadge brand={video.brand} />
+        <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-muted text-muted-foreground border-border">
+          {video.video_type === "reel" ? "Reel" : "Horizontal"}
+        </span>
       </div>
-      <div className="text-[11px] text-muted-foreground mt-1 space-y-0.5">
-        {isReel && video.drive_link && (
+      <div className="font-medium line-clamp-2">{video.title}</div>
+      <div className="text-[11px] text-muted-foreground mt-2 space-y-0.5">
+        {video.video_type === "reel" && video.drive_link && (
           <div className="flex items-center gap-1 truncate">
             <Link2 className="h-3 w-3" /> <span className="truncate">{video.drive_link}</span>
           </div>
@@ -499,7 +471,7 @@ function VideoFormDialog({ video, defaultType, open, onOpenChange, currentUserId
   });
 
   const isReel = form.video_type === "reel";
-  const stageOptions = isReel ? REEL_STAGES : (VIDEO_STAGES as unknown as VideoStage[]);
+  const stageOptions = VIDEO_STAGES as unknown as VideoStage[];
   const isReadyToPost = form.stage === "ready_to_post";
 
   // Map video brand (MSREG/AON) to content_items.brand
@@ -642,7 +614,7 @@ function VideoFormDialog({ video, defaultType, open, onOpenChange, currentUserId
                       ...f,
                       video_type: t,
                       stage:
-                        t === "reel" && !REEL_STAGES.includes(f.stage) ? "ready_to_edit" : f.stage,
+                        f.stage,
                     }));
                   }}
                 >
