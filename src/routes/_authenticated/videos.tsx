@@ -849,8 +849,21 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => {
-                      setForm({ ...form, is_archived: !form.is_archived });
+                    onClick={async () => {
+                      const archiving = !form.is_archived;
+                      const { error } = await supabase
+                        .from("videos")
+                        .update({ is_archived: archiving } as any)
+                        .eq("id", video.id);
+                        
+                      if (error) {
+                        toast.error(error.message);
+                        return;
+                      }
+                      
+                      toast.success(archiving ? "Video archived" : "Video unarchived");
+                      qc.invalidateQueries({ queryKey: ["videos"] });
+                      onOpenChange(false);
                     }}
                   >
                     {form.is_archived ? "Unarchive" : "Archive"}
