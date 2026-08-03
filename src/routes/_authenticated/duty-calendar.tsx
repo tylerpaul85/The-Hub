@@ -40,7 +40,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/duty-calendar")({
   component: DutyCalendarPage,
-  head: () => ({ meta: [{ title: "Duty Calendar — MSREG" }] }),
+  head: () => ({ meta: [{ title: "Duty Calendar — MSREG Hub" }] }),
 });
 
 const OFFICES = [

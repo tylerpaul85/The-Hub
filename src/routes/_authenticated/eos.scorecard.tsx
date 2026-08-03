@@ -51,7 +51,7 @@ import { format } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/eos/scorecard")({
   component: ScorecardPage,
-  head: () => ({ meta: [{ title: "Scorecard — EOS — MSREG" }] }),
+  head: () => ({ meta: [{ title: "Scorecard — EOS — MSREG Hub" }] }),
 });
 
 const sb = supabase as any;

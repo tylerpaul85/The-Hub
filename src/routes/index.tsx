@@ -67,7 +67,7 @@ function RootSplash() {
 
         <div className="my-12 md:my-auto max-w-lg space-y-6">
           <p className="text-xs uppercase tracking-[0.3em] font-semibold text-gold/90">
-            Marketing & Operations Portal
+            MSREG Hub
           </p>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tight leading-tight text-white">
             The tools to guide <br />
@@ -89,7 +89,7 @@ function RootSplash() {
         <div className="max-w-md w-full mx-auto space-y-8">
           <div>
             <h2 className="text-xl font-medium tracking-tight text-white">
-              Choose Your Destination
+              What brings you here?
             </h2>
             <p className="text-xs text-muted-foreground mt-1">
               Select a portal below to sign in or access materials.
@@ -99,7 +99,7 @@ function RootSplash() {
           <div className="space-y-4">
             <Link
               to="/agents"
-              className="group flex items-start gap-4 rounded-lg border border-border bg-card/40 p-6 text-left hover:border-gold/50 hover:bg-card/75 transition-all duration-300 relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+              className="group flex items-start gap-4 rounded-lg border border-gold/25 bg-card/60 p-6 text-left hover:border-gold/50 hover:bg-card/75 transition-all duration-300 relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold shadow-[0_0_20px_oklch(0.78_0.11_85_/_0.06)]"
             >
               <div className="h-10 w-10 rounded-md bg-gold/10 text-gold flex items-center justify-center shrink-0 group-hover:bg-gold group-hover:text-navy transition-colors duration-300">
                 <Users className="h-5 w-5" />
@@ -128,7 +128,7 @@ function RootSplash() {
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-white flex items-center gap-1.5 group-hover:text-white transition-colors duration-200">
                   Team Sign In
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-normal">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 border border-white/20 font-normal">
                     Internal
                   </span>
                 </div>

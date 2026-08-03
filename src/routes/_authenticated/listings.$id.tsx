@@ -85,7 +85,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/listings/$id")({
   component: ListingDetailPage,
-  head: () => ({ meta: [{ title: "Listing Detail — MSREG Marketing Hub" }] }),
+  head: () => ({ meta: [{ title: "Listing Detail — MSREG Hub" }] }),
 });
 
 const sb = supabase as any;

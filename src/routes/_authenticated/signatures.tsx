@@ -39,7 +39,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/signatures")({
   component: SignaturesPage,
-  head: () => ({ meta: [{ title: "Email Signatures — MSREG" }] }),
+  head: () => ({ meta: [{ title: "Email Signatures — MSREG Hub" }] }),
 });
 
 // ----------------------------------------------------------------

@@ -41,7 +41,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/duty-agents")({
   component: DutyAgentsPage,
-  head: () => ({ meta: [{ title: "Duty Agents — MSREG" }] }),
+  head: () => ({ meta: [{ title: "Duty Agents — MSREG Hub" }] }),
 });
 
 const OFFICES = [

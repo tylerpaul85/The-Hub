@@ -61,7 +61,7 @@ export const Route = createFileRoute("/_authenticated/inventory")({
     return {};
   },
   component: InventoryPage,
-  head: () => ({ meta: [{ title: "Closing Gift Inventory — MSREG" }] }),
+  head: () => ({ meta: [{ title: "Closing Gift Inventory — MSREG Hub" }] }),
 });
 
 const sb = supabase as any;

@@ -46,7 +46,7 @@ export const Route = createFileRoute("/seller-net-proceeds")({
   component: SellerNetProceedsPage,
   head: () => ({
     meta: [
-      { title: "Seller Net Proceeds Calculator — MSREG" },
+      { title: "Seller Net Proceeds Calculator — MSREG Hub" },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),

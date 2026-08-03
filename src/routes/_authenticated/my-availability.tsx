@@ -39,7 +39,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/my-availability")({
   component: MyAvailabilityPage,
-  head: () => ({ meta: [{ title: "My Availability — MSREG" }] }),
+  head: () => ({ meta: [{ title: "My Availability — MSREG Hub" }] }),
 });
 
 const REASONS = [

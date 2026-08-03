@@ -9,7 +9,7 @@ import logo from "@/assets/msreg-logo.png";
 
 export const Route = createFileRoute("/reset-password")({
   component: ResetPasswordPage,
-  head: () => ({ meta: [{ title: "Set your password — Matt Smith Real Estate Group" }] }),
+  head: () => ({ meta: [{ title: "Set your password — MSREG Hub" }] }),
 });
 
 function ResetPasswordPage() {

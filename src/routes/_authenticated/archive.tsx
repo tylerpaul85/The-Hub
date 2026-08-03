@@ -56,7 +56,7 @@ import { BRANDS, BRAND_STYLES, PLATFORM_CHIP, type Brand } from "@/lib/content";
 
 export const Route = createFileRoute("/_authenticated/archive")({
   component: ArchivePage,
-  head: () => ({ meta: [{ title: "Content Archive — Marketing Department" }] }),
+  head: () => ({ meta: [{ title: "Content Archive — MSREG Hub" }] }),
 });
 
 interface Member {

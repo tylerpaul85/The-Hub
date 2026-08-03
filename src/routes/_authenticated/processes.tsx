@@ -30,7 +30,7 @@ import { Plus, Search, Pencil, Trash2, FileText, History, ListChecks, Play } fro
 
 export const Route = createFileRoute("/_authenticated/processes")({
   component: ProcessesPage,
-  head: () => ({ meta: [{ title: "Internal Processes — MSREG Content Hub" }] }),
+  head: () => ({ meta: [{ title: "Internal Processes — MSREG Hub" }] }),
 });
 
 type Category = { id: string; name: string };

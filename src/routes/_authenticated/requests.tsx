@@ -29,7 +29,7 @@ import { publicUrl } from "@/lib/public-url";
 
 export const Route = createFileRoute("/_authenticated/requests")({
   component: RequestsInbox,
-  head: () => ({ meta: [{ title: "Requests Inbox — MSREG" }] }),
+  head: () => ({ meta: [{ title: "Requests Inbox — MSREG Hub" }] }),
 });
 
 const sb = supabase as any;

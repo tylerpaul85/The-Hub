@@ -36,7 +36,7 @@ export const Route = createFileRoute("/agent-toolbox")({
   component: PublicToolboxPage,
   head: () => ({
     meta: [
-      { title: "Agent Toolbox — Matt Smith Real Estate Group" },
+      { title: "Agent Toolbox — MSREG Hub" },
       { name: "robots", content: "noindex, nofollow, noarchive, nosnippet" },
       { name: "googlebot", content: "noindex, nofollow" },
       { name: "description", content: "Private MSREG agent toolbox." },

@@ -19,7 +19,7 @@ import type { Meeting } from "@/lib/eos";
 
 export const Route = createFileRoute("/_authenticated/eos/l10/")({
   component: L10ListPage,
-  head: () => ({ meta: [{ title: "L10 Meetings — EOS — MSREG" }] }),
+  head: () => ({ meta: [{ title: "L10 Meetings — EOS — MSREG Hub" }] }),
 });
 
 const sb = supabase as any;

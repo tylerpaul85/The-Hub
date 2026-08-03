@@ -48,7 +48,7 @@ import { ReclassifyIssueMenu } from "@/components/reclassify-issue-menu";
 
 export const Route = createFileRoute("/_authenticated/eos/l10/$id")({
   component: L10DetailPage,
-  head: () => ({ meta: [{ title: "L10 Meeting — MSREG" }] }),
+  head: () => ({ meta: [{ title: "L10 Meeting — MSREG Hub" }] }),
 });
 
 const sb = supabase as any;

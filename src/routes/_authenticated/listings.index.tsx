@@ -45,6 +45,7 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StatusBadge } from "@/components/ui/status-badge";
 import {
   type Listing,
   type ListingStatus,
@@ -58,7 +59,7 @@ import { createListing, bulkImportListings } from "@/lib/listings.functions";
 
 export const Route = createFileRoute("/_authenticated/listings/")({
   component: ListingsPage,
-  head: () => ({ meta: [{ title: "Listings — MSREG Marketing Hub" }] }),
+  head: () => ({ meta: [{ title: "Listings — MSREG Hub" }] }),
 });
 
 const sb = supabase as any;
@@ -155,7 +156,7 @@ function ListingsPage() {
             <Home className="h-5 w-5 text-gold" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Listings</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Listings</h1>
             <p className="text-muted-foreground text-sm mt-0.5">
               Manage listing lifecycle, marketing, and scheduled posts.
             </p>
@@ -180,7 +181,7 @@ function ListingsPage() {
       {/* Filter + search bar */}
       <div className="mb-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
         <div className="flex gap-1 bg-card border border-border rounded-lg p-1">
-          {(["all", "active", "under_contract"] as const).map((s) => (
+          {(["all", "active", "under_contract", "sold"] as const).map((s) => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
@@ -253,7 +254,7 @@ function ListingsPage() {
               {filtered.map((listing) => (
                 <TableRow
                   key={listing.id}
-                  className="border-border hover:bg-accent/20 transition-colors"
+                  className="border-border hover:bg-accent/30 transition-colors"
                 >
                   <TableCell className="font-medium max-w-[220px]">
                     <Link
@@ -272,14 +273,9 @@ function ListingsPage() {
                   </TableCell>
                   <TableCell className="font-medium">{formatPrice(listing.list_price)}</TableCell>
                   <TableCell>
-                    <span
-                      className={cn(
-                        "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border",
-                        LISTING_STATUS_CLASS[listing.status],
-                      )}
-                    >
+                    <StatusBadge className={LISTING_STATUS_CLASS[listing.status]}>
                       {LISTING_STATUS_LABEL[listing.status]}
-                    </span>
+                    </StatusBadge>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {format(new Date(listing.list_date + "T00:00:00"), "MMM d, yyyy")}
@@ -491,9 +487,9 @@ function NewListingModal({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="PP">PP</SelectItem>
-                <SelectItem value="LOZ">LOZ</SelectItem>
-                <SelectItem value="MSREG ALL">MSREG ALL</SelectItem>
+                <SelectItem value="PP">PP — Pinnacle Point</SelectItem>
+                <SelectItem value="LOZ">LOZ — Lake of the Ozarks</SelectItem>
+                <SelectItem value="MSREG ALL">MSREG ALL — All Brands</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
@@ -772,14 +768,9 @@ function BulkImportModal({
                         <TableCell className="py-2">{formatPrice(row.list_price)}</TableCell>
                         <TableCell className="py-2">{row.list_date}</TableCell>
                         <TableCell className="py-2">
-                          <span
-                            className={cn(
-                              "px-1.5 py-0.5 rounded border text-[10px]",
-                              LISTING_STATUS_CLASS[row.status as ListingStatus],
-                            )}
-                          >
+                          <StatusBadge className={LISTING_STATUS_CLASS[row.status as ListingStatus]}>
                             {LISTING_STATUS_LABEL[row.status as ListingStatus]}
-                          </span>
+                          </StatusBadge>
                         </TableCell>
                       </TableRow>
                     ))}

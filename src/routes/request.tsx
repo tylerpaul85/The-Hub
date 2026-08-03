@@ -36,7 +36,7 @@ export const Route = createFileRoute("/request")({
   component: PublicRequestPage,
   head: () => ({
     meta: [
-      { title: "Marketing Request — Matt Smith Real Estate Group" },
+      { title: "Marketing Request — MSREG Hub" },
       {
         name: "description",
         content: "Submit a marketing request to the MSREG Marketing Department.",

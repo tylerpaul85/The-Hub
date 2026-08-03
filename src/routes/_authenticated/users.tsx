@@ -87,7 +87,7 @@ function formatLastActive(iso: string | null): string {
 
 export const Route = createFileRoute("/_authenticated/users")({
   component: UsersPage,
-  head: () => ({ meta: [{ title: "Users — MSREG Content Hub" }] }),
+  head: () => ({ meta: [{ title: "Users — MSREG Hub" }] }),
 });
 
 function UsersPage() {

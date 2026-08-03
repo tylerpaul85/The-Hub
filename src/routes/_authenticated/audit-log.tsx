@@ -21,7 +21,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/audit-log")({
   component: AuditLogPage,
-  head: () => ({ meta: [{ title: "Audit Log — MSREG" }] }),
+  head: () => ({ meta: [{ title: "Audit Log — MSREG Hub" }] }),
   errorComponent: ({ error }) => (
     <div className="p-6 text-sm text-destructive">{(error as Error).message}</div>
   ),

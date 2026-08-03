@@ -48,7 +48,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/videos")({
   component: VideosPage,
-  head: () => ({ meta: [{ title: "Video Pipeline — Matt Smith Real Estate Group Content Hub" }] }),
+  head: () => ({ meta: [{ title: "Video Pipeline — MSREG Hub" }] }),
 });
 
 type VideoType = "horizontal" | "reel";

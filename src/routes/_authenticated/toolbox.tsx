@@ -54,7 +54,7 @@ import { DownloadPhotosButton } from "@/components/download-photos-button";
 
 export const Route = createFileRoute("/_authenticated/toolbox")({
   component: ToolboxPage,
-  head: () => ({ meta: [{ title: "Agent Toolbox Manager — MSREG" }] }),
+  head: () => ({ meta: [{ title: "Agent Toolbox Manager — MSREG Hub" }] }),
 });
 
 const sb = supabase as any;

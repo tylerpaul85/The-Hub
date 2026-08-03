@@ -24,7 +24,7 @@ import { ReclassifyIssueMenu } from "@/components/reclassify-issue-menu";
 
 export const Route = createFileRoute("/_authenticated/eos/issues")({
   component: IssuesPage,
-  head: () => ({ meta: [{ title: "Issues — EOS — MSREG" }] }),
+  head: () => ({ meta: [{ title: "Issues — EOS — MSREG Hub" }] }),
 });
 
 const sb = supabase as any;

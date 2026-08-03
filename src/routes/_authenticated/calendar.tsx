@@ -67,7 +67,7 @@ type ViewMode = "daily" | "weekly" | "monthly" | "list";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
   component: CalendarPage,
-  head: () => ({ meta: [{ title: "Calendar — Matt Smith Real Estate Group Content Hub" }] }),
+  head: () => ({ meta: [{ title: "Calendar — MSREG Hub" }] }),
   validateSearch: (s: Record<string, unknown>) => ({
     prefillTitle: typeof s.prefillTitle === "string" ? s.prefillTitle : undefined,
     prefillThumb: typeof s.prefillThumb === "string" ? s.prefillThumb : undefined,
@@ -302,7 +302,7 @@ function CalendarPage() {
     <div className="p-3 sm:p-4 lg:p-6 max-w-[1400px] mx-auto">
       <header className="mb-4 space-y-3">
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate">
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight truncate">
             Content Calendar
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground truncate">{title}</p>
@@ -311,9 +311,18 @@ function CalendarPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Brand filter — own row, horizontal scroll on small screens */}
           <div className="flex gap-1 bg-muted rounded-md p-0.5 overflow-x-auto flex-nowrap w-full sm:w-fit">
-            {(["all", "LOZ", "PP", "AON", "MSREG ALL"] as const).map((b) => (
+            {(["all", "LOZ", "PP", "AON", "MSREG ALL"] as const).map((b) => {
+              const brandTitle: Record<string, string> = {
+                all: "Show all brands",
+                PP: "Pinnacle Point",
+                LOZ: "Lake of the Ozarks",
+                AON: "Agents of the Ozarks Network",
+                "MSREG ALL": "All MSREG Brands",
+              };
+              return (
               <button
                 key={b}
+                title={brandTitle[b]}
                 onClick={() => setBrandFilter(b)}
                 className={cn(
                   "shrink-0 px-2.5 py-1.5 text-xs font-semibold rounded transition-colors whitespace-nowrap",
@@ -332,7 +341,8 @@ function CalendarPage() {
               >
                 {b === "all" ? "All" : b}
               </button>
-            ))}
+              );
+            })}
           </div>
 
           {/* Hide 60/90/120 Reposts Checkbox */}

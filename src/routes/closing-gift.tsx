@@ -26,7 +26,7 @@ export const Route = createFileRoute("/closing-gift")({
   component: ClosingGiftRequestPage,
   head: () => ({
     meta: [
-      { title: "Closing Gift Request — MSREG" },
+      { title: "Closing Gift Request — MSREG Hub" },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),

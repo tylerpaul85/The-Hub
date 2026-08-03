@@ -217,7 +217,7 @@ export const Route = createFileRoute("/_authenticated/tasks")({
     open: typeof s.open === "string" ? s.open : undefined,
   }),
   component: TasksPage,
-  head: () => ({ meta: [{ title: "Tasks — MSREG Marketing" }] }),
+  head: () => ({ meta: [{ title: "Tasks — MSREG Hub" }] }),
 });
 
 function nameOf(u: any) {

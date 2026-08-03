@@ -2,9 +2,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { ClipboardCheck, Repeat } from "lucide-react";
+import { ClipboardCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const sb = supabase as any;
 
@@ -21,7 +22,7 @@ export function MyTasksWidget() {
   const { user } = useAuth();
   const qc = useQueryClient();
 
-  const { data: tasks = [] } = useQuery({
+  const { data: tasks = [], isLoading: loadingTasks } = useQuery({
     queryKey: ["my-tasks", user?.id],
     enabled: !!user,
     queryFn: async () => {
@@ -36,7 +37,7 @@ export function MyTasksWidget() {
     },
   });
 
-  const { data: todos = [] } = useQuery({
+  const { data: todos = [], isLoading: loadingTodos } = useQuery({
     queryKey: ["my-todos-widget", user?.id],
     enabled: !!user,
     queryFn: async () => {
@@ -50,6 +51,8 @@ export function MyTasksWidget() {
       return data ?? [];
     },
   });
+
+  const isLoading = loadingTasks || loadingTodos;
 
   const toggleTodo = useMutation({
     mutationFn: async (id: string) => {
@@ -82,22 +85,54 @@ export function MyTasksWidget() {
   const today = new Date().toISOString().slice(0, 10);
 
   return (
-    <section className="bg-card border border-border rounded-xl">
+    <section className="bg-card border border-border rounded-xl shadow-sm shadow-black/5">
       <div className="flex items-center gap-2 p-5 border-b border-border">
         <ClipboardCheck className="h-5 w-5 text-gold" />
-        <h2 className="font-semibold">My Tasks</h2>
+        <h2 className="text-base font-semibold leading-tight">My Tasks</h2>
         <span className="ml-auto text-xs text-muted-foreground">{items.length} open</span>
       </div>
       <div className="divide-y divide-border">
-        {items.length === 0 && (
-          <div className="p-10 text-center text-muted-foreground text-sm">No open tasks. 🎉</div>
+        {isLoading && (
+          <div className="space-y-3 p-5">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
         )}
-        {items.map((t) => {
-          const overdue = t.due_date && t.due_date < today;
-          if (t.kind === "todo") {
+        {!isLoading && items.length === 0 && (
+          <div className="p-10 text-center text-muted-foreground text-sm">No open tasks.</div>
+        )}
+        {!isLoading &&
+          items.map((t) => {
+            const overdue = t.due_date && t.due_date < today;
+            if (t.kind === "todo") {
+              return (
+                <div key={`todo-${t.id}`} className="p-3 flex items-center gap-3">
+                  <Checkbox checked={false} onCheckedChange={() => toggleTodo.mutate(t.id)} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm truncate">{t.title}</div>
+                    <div
+                      className={cn(
+                        "text-xs mt-0.5",
+                        overdue ? "text-destructive" : "text-muted-foreground",
+                      )}
+                    >
+                      {t.due_date
+                        ? `Due ${t.due_date}${overdue ? " · overdue" : ""}`
+                        : "No due date"}{" "}
+                      · L10 to-do
+                    </div>
+                  </div>
+                </div>
+              );
+            }
             return (
-              <div key={`todo-${t.id}`} className="p-3 flex items-center gap-3">
-                <Checkbox checked={false} onCheckedChange={() => toggleTodo.mutate(t.id)} />
+              <Link
+                key={`task-${t.id}`}
+                to="/tasks"
+                search={{ open: t.id } as any}
+                className="p-3 flex items-center gap-3 hover:bg-accent/30 transition-colors"
+              >
                 <div className="flex-1 min-w-0">
                   <div className="text-sm truncate">{t.title}</div>
                   <div
@@ -106,35 +141,15 @@ export function MyTasksWidget() {
                       overdue ? "text-destructive" : "text-muted-foreground",
                     )}
                   >
-                    {t.due_date ? `Due ${t.due_date}${overdue ? " · overdue" : ""}` : "No due date"}{" "}
-                    · L10 to-do
+                    {t.due_date
+                      ? `Due ${t.due_date}${overdue ? " · overdue" : ""}`
+                      : "No due date"}{" "}
+                    · {(t.status ?? "").replace("_", " ")}
                   </div>
                 </div>
-              </div>
+              </Link>
             );
-          }
-          return (
-            <Link
-              key={`task-${t.id}`}
-              to="/tasks"
-              search={{ open: t.id } as any}
-              className="p-3 flex items-center gap-3 hover:bg-muted/30"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="text-sm truncate">{t.title}</div>
-                <div
-                  className={cn(
-                    "text-xs mt-0.5",
-                    overdue ? "text-destructive" : "text-muted-foreground",
-                  )}
-                >
-                  {t.due_date ? `Due ${t.due_date}${overdue ? " · overdue" : ""}` : "No due date"} ·{" "}
-                  {(t.status ?? "").replace("_", " ")}
-                </div>
-              </div>
-            </Link>
-          );
-        })}
+          })}
       </div>
     </section>
   );

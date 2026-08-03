@@ -46,7 +46,7 @@ import { format } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/eos/rocks")({
   component: RocksPage,
-  head: () => ({ meta: [{ title: "Rocks — EOS — MSREG" }] }),
+  head: () => ({ meta: [{ title: "Rocks — EOS — MSREG Hub" }] }),
 });
 
 const sb = supabase as any;

@@ -13,7 +13,7 @@ import { generateSellerNetPdf } from "@/lib/generate-seller-net-pdf";
 export const Route = createFileRoute("/_authenticated/admin-net-sheets")({
   component: AdminNetSheetsPage,
   head: () => ({
-    meta: [{ title: "Agent Net Sheets — MSREG Admin" }],
+    meta: [{ title: "Agent Net Sheets — MSREG Hub" }],
   }),
 });
 

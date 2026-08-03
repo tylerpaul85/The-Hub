@@ -43,7 +43,7 @@ export const Route = createFileRoute("/availability")({
   component: PublicAvailabilityPage,
   head: () => ({
     meta: [
-      { title: "Submit Availability — MSREG" },
+      { title: "Submit Availability — MSREG Hub" },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
