@@ -44,7 +44,7 @@ import {
   BRAND_STYLES,
 } from "@/lib/content";
 import { ChatThread } from "@/components/chat-thread";
-import { Plus, AlertTriangle, Calendar, Send, Link2 } from "lucide-react";
+import { Plus, AlertTriangle, Calendar, Send, Link2, Archive } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -100,7 +100,6 @@ function VideosPage() {
   const [typeFilter, setTypeFilter] = useState<"all" | "horizontal" | "reel">("all");
   const [dateSort, setDateSort] = useState<"none" | "soonest" | "latest">("soonest");
   const [dueWithin, setDueWithin] = useState<"all" | "2" | "7" | "30" | "overdue">("all");
-  const [showArchived, setShowArchived] = useState(false);
 
   const { data: videos = [] } = useQuery({
     queryKey: ["videos"],
@@ -140,7 +139,7 @@ function VideosPage() {
     const dayMs = 86400000;
     const liveOf = (v: Video) => v.publish_at ?? v.estimated_publish_date ?? null;
     let list = videos.filter((v) => {
-      if (!showArchived && v.is_archived) return false;
+      if (v.is_archived) return false;
       if (brandFilter !== "all" && v.brand !== brandFilter) return false;
       return true;
     });
@@ -170,7 +169,7 @@ function VideosPage() {
       list = list.filter((v) => v.video_type === typeFilter);
     }
     return list;
-  }, [videos, brandFilter, dueWithin, dateSort, typeFilter, showArchived]);
+  }, [videos, brandFilter, dueWithin, dateSort, typeFilter]);
 
   return (
     <div className="p-4 lg:p-6 max-w-[1600px] mx-auto">
@@ -242,10 +241,12 @@ function VideosPage() {
           </Select>
         </div>
         <div className="h-6 w-px bg-border" />
-        <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <Checkbox checked={showArchived} onCheckedChange={(v) => setShowArchived(!!v)} />
-          Show Archived
-        </label>
+        <Link to="/videos-archive">
+          <Button variant="outline" size="sm" className="h-9">
+            <Archive className="w-4 h-4 mr-2 text-muted-foreground" />
+            View Archive
+          </Button>
+        </Link>
       </div>
 
       {/* Listings Pipeline */}
