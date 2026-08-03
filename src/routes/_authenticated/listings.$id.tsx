@@ -279,7 +279,10 @@ function ListingDetailPage() {
         onChanged={() => qc.invalidateQueries({ queryKey: ["listing-posts", id] })}
       />
 
-      {/* Section 4: Actions */}
+      {/* Section 5: Version History */}
+      <HistorySection listingId={id} />
+
+      {/* Section 6: Actions */}
       {canManage && (
         <ActionsSection
           listing={listing}
@@ -395,7 +398,7 @@ function ListingInfoSection({
 
   const mut = useMutation({
     mutationFn: () =>
-      updateListing(sb, listing.id, {
+      updateListing(sb, listing.id, userId, {
         address: form.address.trim() || undefined,
         agent_name: form.agent_name.trim() || null,
         mls_id: form.mls_id.trim() || null,
@@ -698,7 +701,7 @@ function GraphicsCopySection({
   const handleSaveCopy = async () => {
     setCopySaving(true);
     try {
-      await saveListingCopy(sb, listingId, copyText);
+      await saveListingCopy(sb, listingId, userId, copyText);
       toast.success("Copy saved");
       onCopyChanged();
     } catch (e: any) {
@@ -711,7 +714,7 @@ function GraphicsCopySection({
   const handleSaveCanva = async () => {
     setCanvaSaving(true);
     try {
-      await updateListing(sb, listingId, { canva_link: canvaValue.trim() || null });
+      await updateListing(sb, listingId, userId, { canva_link: canvaValue.trim() || null });
       toast.success("Canva link saved");
       onCanvaLinkSaved();
     } catch (e: any) {
@@ -1046,7 +1049,7 @@ function PostsSection({
   const [autoOpen, setAutoOpen] = useState(false);
 
   const cancelPost = useMutation({
-    mutationFn: (post: ListingPost) => cancelListingPost(sb, post.id, post.calendar_entry_id),
+    mutationFn: (post: ListingPost) => cancelListingPost(sb, post.id, listing.id, userId, post.calendar_entry_id),
     onSuccess: () => {
       toast.success("Post cancelled");
       onChanged();
@@ -1416,7 +1419,7 @@ function ActionsSection({
   const qc = useQueryClient();
 
   const archiveMut = useMutation({
-    mutationFn: () => archiveListing(sb, listing.id),
+    mutationFn: () => archiveListing(sb, listing.id, userId),
     onSuccess: () => {
       toast.success("Listing archived");
       setArchiveConfirm(false);
@@ -1613,4 +1616,90 @@ function ActionsSection({
       </Dialog>
     </section>
   );
+}
+
+// ─── Version History ──────────────────────────────────────────────────────────
+
+function HistorySection({ listingId }: { listingId: string }) {
+  const { data: history = [], isLoading } = useQuery({
+    queryKey: ["listing-history", listingId],
+    queryFn: async () => {
+      const { data, error } = await sb
+        .from("listing_history")
+        .select(`
+          *,
+          agent_accounts (
+            first_name,
+            last_name
+          )
+        `)
+        .eq("listing_id", listingId)
+        .order("created_at", { ascending: false });
+      
+      if (error) {
+        console.warn("[listing-history]", error.message);
+        return [];
+      }
+      return data;
+    },
+  });
+
+  return (
+    <section className="bg-card rounded-lg border border-border p-5 mb-8 shadow-sm">
+      <div className="flex items-center gap-2 mb-4">
+        <CalendarClock className="h-5 w-5 text-muted-foreground" />
+        <h2 className="text-lg font-semibold">Version History</h2>
+      </div>
+      
+      {isLoading ? (
+         <div className="flex justify-center p-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+      ) : history.length === 0 ? (
+        <p className="text-sm text-muted-foreground p-2 border border-dashed rounded text-center">No history recorded yet.</p>
+      ) : (
+        <div className="space-y-4">
+          {history.map((event: any) => (
+            <div key={event.id} className="flex gap-3 text-sm">
+              <div className="mt-1 flex flex-col items-center">
+                <div className="h-2 w-2 rounded-full bg-gold shadow-[0_0_0_2px_hsl(var(--background)),0_0_0_3px_#e5a93d]"></div>
+                <div className="w-px h-full bg-border mt-2" />
+              </div>
+              <div className="pb-2 flex-1 overflow-hidden">
+                <p className="font-medium text-foreground">
+                  {event.agent_accounts?.first_name 
+                    ? `${event.agent_accounts.first_name} ${event.agent_accounts.last_name || ""}` 
+                    : "System"}
+                  {" "}
+                  <span className="font-normal text-muted-foreground">
+                    {formatActionType(event.action_type)}
+                  </span>
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {format(new Date(event.created_at), "MMM d, yyyy 'at' h:mm a")}
+                </p>
+                {event.changes && Object.keys(event.changes).length > 0 && (
+                  <div className="mt-2 text-xs bg-muted/50 p-2.5 rounded-md overflow-x-auto max-w-full border border-border/50 text-muted-foreground">
+                    <pre className="font-mono leading-relaxed">{JSON.stringify(event.changes, null, 2)}</pre>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function formatActionType(action: string) {
+  switch (action) {
+    case "created": return "created the listing";
+    case "updated": return "updated listing details";
+    case "marked_under_contract": return "marked listing as Under Contract";
+    case "archived": return "archived the listing";
+    case "scheduled_manual_post": return "scheduled a manual post";
+    case "auto_scheduled_reposts": return "auto-scheduled reposts";
+    case "cancelled_post": return "cancelled a post";
+    case "updated_copy": return "updated the social media copy";
+    default: return action;
+  }
 }

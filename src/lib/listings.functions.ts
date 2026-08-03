@@ -13,6 +13,29 @@ const REPOST_OFFSETS: { days: number; type: PostType }[] = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+export async function logListingHistory(
+  sb: any,
+  listingId: string,
+  userId: string,
+  actionType: string,
+  changes: Record<string, any> = {}
+) {
+  try {
+    const { error } = await sb.from("listing_history").insert({
+      listing_id: listingId,
+      user_id: userId,
+      action_type: actionType,
+      changes,
+    });
+    if (error) {
+      console.error("[listings] History log error:", error);
+    }
+  } catch (err) {
+    console.error("[listings] History log exception:", err);
+  }
+}
+
+
 /** Insert a task for the content coordinator (used for Under Contract) */
 async function createCoordinatorTask(
   sb: any,
@@ -262,6 +285,8 @@ export async function createListing(
     null,
   );
 
+  await logListingHistory(sb, row.id, userId, "created", input);
+
   return { id: row.id };
 }
 
@@ -367,6 +392,7 @@ export async function bulkImportListings(
 export async function updateListing(
   sb: any,
   id: string,
+  userId: string,
   fields: Partial<{
     address: string;
     agent_name: string | null;
@@ -389,6 +415,8 @@ export async function updateListing(
 
   // Automatically synchronize Canva link, Website link, and Brand to all scheduled Content Calendar entries
   await syncListingAssets(sb, id);
+
+  await logListingHistory(sb, id, userId, "updated", fields);
 }
 
 // ─── Mark Under Contract ──────────────────────────────────────────────────────
@@ -443,17 +471,21 @@ export async function markUnderContract(
     `This listing is now under contract.${agentLine}\n\nSend the Under Contract graphic to the agent and post to social media.`,
   );
 
+  await logListingHistory(sb, listingId, userId, "marked_under_contract", { cancelledCount });
+
   return { agentName: listing.agent_name, cancelledCount };
 }
 
 // ─── Archive Listing ──────────────────────────────────────────────────────────
 
-export async function archiveListing(sb: any, listingId: string): Promise<void> {
+export async function archiveListing(sb: any, listingId: string, userId: string): Promise<void> {
   const { error } = await sb
     .from("listings")
     .update({ archived: true, updated_at: new Date().toISOString() })
     .eq("id", listingId);
   if (error) throw new Error(error.message);
+
+  await logListingHistory(sb, listingId, userId, "archived");
 }
 
 // ─── Schedule Manual Post ─────────────────────────────────────────────────────
@@ -500,6 +532,11 @@ export async function scheduleManualPost(
     status: "scheduled",
   });
   if (error) throw new Error(error.message);
+
+  await logListingHistory(sb, input.listing_id, userId, "scheduled_manual_post", {
+    scheduled_date: input.scheduled_date,
+    brand: input.brand,
+  });
 }
 
 // ─── Auto-Schedule 60/90/120 Reposts ─────────────────────────────────────────
@@ -560,6 +597,11 @@ export async function autoScheduleReposts(
     });
     created++;
   }
+  
+  if (created > 0) {
+    await logListingHistory(sb, listingId, userId, "auto_scheduled_reposts", { created });
+  }
+
   return { created, alreadyScheduled: existingTypes.size };
 }
 
@@ -568,12 +610,16 @@ export async function autoScheduleReposts(
 export async function cancelListingPost(
   sb: any,
   postId: string,
+  listingId: string,
+  userId: string,
   calendarEntryId: string | null,
 ): Promise<void> {
   if (calendarEntryId) {
     await sb.from("content_items").delete().eq("id", calendarEntryId);
   }
   await sb.from("listing_posts").update({ status: "cancelled" }).eq("id", postId);
+
+  await logListingHistory(sb, listingId, userId, "cancelled_post", { postId });
 }
 
 // ─── Save Listing Copy ────────────────────────────────────────────────────────
@@ -581,6 +627,7 @@ export async function cancelListingPost(
 export async function saveListingCopy(
   sb: any,
   listingId: string,
+  userId: string,
   socialMediaCopy: string,
 ): Promise<void> {
   const { data: existing } = await sb
@@ -599,6 +646,8 @@ export async function saveListingCopy(
       .from("listing_copy")
       .insert({ listing_id: listingId, social_media_copy: socialMediaCopy });
   }
+
+  await logListingHistory(sb, listingId, userId, "updated_copy");
 
   // Automatically propagate copy update to all scheduled posts on the calendar
   await syncListingAssets(sb, listingId);
