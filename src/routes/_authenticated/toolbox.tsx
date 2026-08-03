@@ -329,7 +329,7 @@ function ListingsTab({ onOpen, userId }: { onOpen: (id: string) => void; userId:
         out[a.listing_id].assets++;
         const candidate = a.thumbnail_url || a.file_url || a.drive_url;
         if (!out[a.listing_id].thumb && candidate) {
-          out[a.listing_id].thumb = getGoogleDrivePreviewUrl(candidate);
+          out[a.listing_id].thumb = getGoogleDrivePreviewUrl(candidate) || candidate;
         }
       }
       return out;

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import crypto from "crypto";
+import { isImageUrl } from "./sanitize-filename";
 
 // Forced build trigger to synchronize server function mapping IDs on Netlify after build regrouping
 
@@ -71,14 +72,14 @@ export const listPublicListings = createServerFn({ method: "POST" })
           : url;
       };
 
-      // Pass 1: prefer photo/graphic assets (these are actual images)
+      // Pass 1: prefer photo/graphic assets
       for (const a of (assets ?? []) as any[]) {
         if (thumbs[a.listing_id]) continue;
-        if (a.asset_type === "video") continue; // skip videos in first pass
+        if (a.asset_type !== "photo" && a.asset_type !== "graphic") continue;
         const candidate = a.thumbnail_url || a.file_url || a.drive_url;
         if (candidate) thumbs[a.listing_id] = toPreview(candidate);
       }
-      // Pass 2: fallback to any asset (including videos that might have thumbnails)
+      // Pass 2: fallback to any asset (including videos)
       for (const a of (assets ?? []) as any[]) {
         if (thumbs[a.listing_id]) continue;
         const candidate = a.thumbnail_url || a.file_url || a.drive_url;
