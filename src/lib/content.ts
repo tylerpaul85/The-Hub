@@ -113,10 +113,11 @@ export function snapTo15(date: Date): Date {
   return d;
 }
 
-export const VIDEO_STAGES = ["idea", "scheduled", "ready_to_edit", "ready_to_post"] as const;
+export const VIDEO_STAGES = ["backlog", "idea", "scheduled", "ready_to_edit", "ready_to_post"] as const;
 export type VideoStage = (typeof VIDEO_STAGES)[number];
 export const VIDEO_STAGE_LABEL: Record<VideoStage, string> = {
-  idea: "Idea / Backlog",
+  backlog: "Backlog",
+  idea: "Ideas",
   scheduled: "Filming",
   ready_to_edit: "In Editing",
   ready_to_post: "Ready to Publish",

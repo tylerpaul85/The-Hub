@@ -275,7 +275,7 @@ function VideosPage() {
               <Plus className="h-4 w-4 mr-1" /> New Listing Video
             </Button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
             {VIDEO_STAGES.map((s) => (
               <StageColumn
                 key={s}
@@ -305,7 +305,7 @@ function VideosPage() {
               <Plus className="h-4 w-4 mr-1" /> New Brand Video
             </Button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
             {VIDEO_STAGES.map((s) => (
               <StageColumn
                 key={s}
