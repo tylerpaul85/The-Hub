@@ -35,6 +35,7 @@ import {
   PRIORITIES,
   PRIORITY_BORDER,
   PRIORITY_LABEL,
+  VIDEO_STAGES,
   VIDEO_STAGE_LABEL,
   type VideoStage,
   type Priority,
