@@ -61,6 +61,7 @@ export const listPublicListings = createServerFn({ method: "POST" })
         .order("created_at", { ascending: true });
 
       const toPreview = (url: string): string => {
+        if (typeof url !== "string") return "";
         const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
           url.match(/\/open\?id=([a-zA-Z0-9_-]+)/) ||
           url.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
@@ -167,6 +168,7 @@ export const listPublicOpenHouses = createServerFn({ method: "POST" })
         !!u && (/\/file\/d\/|[?&]id=|lh3\.googleusercontent\.com/i.test(String(u)) || /\.(png|jpe?g|gif|webp|svg|avif|heic)(\?|#|$)/i.test(String(u).split("?")[0]));
       
       const getThumb = (u: string) => {
+        if (typeof u !== "string") return "";
         const fileIdMatch = u.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
           u.match(/\/open\?id=([a-zA-Z0-9_-]+)/) ||
           u.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||

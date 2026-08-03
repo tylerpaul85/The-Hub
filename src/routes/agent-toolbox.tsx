@@ -251,7 +251,7 @@ function Toolbox({ token, onLock }: { token: string; onLock: () => void }) {
               <EduList token={token} />
             </TabsContent>
             <TabsContent value="branded" className="mt-4">
-              <BrandedAgentSection token={token} />
+              <AgentBrandedContentList token={token} />
             </TabsContent>
           </Tabs>
         )}
