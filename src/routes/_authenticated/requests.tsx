@@ -149,6 +149,7 @@ function RequestsInbox() {
   const { data: requests = [], isLoading } = useQuery<Req[]>({
     queryKey: ["marketing-requests"],
     refetchInterval: 5000,
+    refetchIntervalInBackground: true,
     queryFn: async () => {
       // 1. Fetch marketing requests
       const { data: marketing, error: mErr } = await sb
@@ -542,7 +543,7 @@ function RequestsInbox() {
                   <div className="text-xs text-muted-foreground whitespace-nowrap">
                     {safeFmtDate(r.created_at, "MMM d, p")}
                   </div>
-                  {(isAdmin || isClientCare) && (
+                  {(isAdmin || isClientCare || isMarketing) && (
                     <Button
                       size="icon"
                       variant="ghost"
@@ -670,7 +671,7 @@ function RequestsInbox() {
                 )}
               </div>
               <DialogFooter className="gap-2 justify-between sm:justify-between w-full pt-4 border-t border-border mt-4">
-                {(isAdmin || isClientCare) && (
+                {(isAdmin || isClientCare || isMarketing) && (
                   <Button
                     variant="outline"
                     className="border-destructive/40 text-destructive hover:bg-destructive/10 mr-auto"
