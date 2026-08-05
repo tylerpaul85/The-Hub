@@ -514,7 +514,7 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
 
   const isReel = form.video_type === "reel";
   const stageOptions = VIDEO_STAGES as unknown as VideoStage[];
-  const isReadyToPost = form.stage === "ready_to_post";
+  const isReadyToPost = form.stage === "ready_to_post" || form.stage === "scheduled_post";
 
 
 
@@ -553,8 +553,8 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
         videoId = data?.id ?? null;
       }
 
-      // Auto-sync to calendar: only when stage is Ready to Publish AND a publish date is set
-      if (videoId && form.stage === "ready_to_post" && publishIso) {
+      // Auto-sync to calendar: only when stage is Ready to Publish/Scheduled AND a publish date is set
+      if (videoId && (form.stage === "ready_to_post" || form.stage === "scheduled_post") && publishIso) {
         const contentPayload = {
           title: form.title.trim(),
           link: form.drive_link || null,
