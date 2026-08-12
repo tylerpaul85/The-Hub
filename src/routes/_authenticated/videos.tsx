@@ -950,6 +950,7 @@ function PushToCalendarDialog({
         status: "scheduled",
         scheduled_at: scheduled.toISOString(),
         created_by: currentUserId,
+        post_type: "video",
       });
       if (error) throw error;
     },

@@ -44,6 +44,7 @@ export function ContentItemForm({ open, onOpenChange, initialDate, initial }: Pr
 
   const [form, setForm] = useState({
     title: initial?.title ?? "",
+    post_type: "post",
     platforms: (initial?.platforms ?? []).filter((p) => PLATFORM_VALUES.includes(p)),
     scheduled_at: toLocalInput(initialDate ?? new Date()),
     brand: (initial?.brand ?? "PP") as Brand,
@@ -83,6 +84,7 @@ export function ContentItemForm({ open, onOpenChange, initialDate, initial }: Pr
         meta_graphic_link: form.meta_graphic_link || null,
         meta_video_link: form.meta_video_link || null,
         meta_copy: form.meta_copy || null,
+        post_type: form.post_type,
       };
       const { error } = await (supabase as any).from("content_items").insert(payload);
       if (error) throw error;
@@ -139,6 +141,36 @@ export function ContentItemForm({ open, onOpenChange, initialDate, initial }: Pr
               className="mt-1.5"
               placeholder="Internal notes…"
             />
+          </div>
+
+          <div>
+            <Label>Post Type</Label>
+            <div className="mt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, post_type: "post" })}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                  form.post_type === "post"
+                    ? "bg-foreground text-background border-foreground"
+                    : "bg-background text-muted-foreground border-border hover:border-foreground/30",
+                )}
+              >
+                Post
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, post_type: "video" })}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                  form.post_type === "video"
+                    ? "bg-rose-500/10 text-rose-500 border-rose-500/30"
+                    : "bg-background text-muted-foreground border-border hover:border-foreground/30",
+                )}
+              >
+                🎥 Video
+              </button>
+            </div>
           </div>
 
           <div>

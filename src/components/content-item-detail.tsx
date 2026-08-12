@@ -186,6 +186,7 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
     meta_copy: "",
     revision_note: "",
     note_attachments: [],
+    post_type: "post",
   };
   const [form, setForm] = useState<FormShape>(emptyForm);
   const lastSavedRef = useRef<string>("");
@@ -235,6 +236,7 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
         note_attachments: Array.isArray((item as any).note_attachments)
           ? (item as any).note_attachments
           : [],
+        post_type: (item as any).post_type ?? "post",
       };
       setForm(next);
       lastSavedRef.current = JSON.stringify(next);
@@ -270,6 +272,7 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
     meta_copy: f.meta_copy || null,
     revision_note: f.revision_note || null,
     note_attachments: f.note_attachments,
+    post_type: f.post_type,
   });
 
   const autosave = async (f: FormShape) => {
@@ -460,6 +463,11 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
               >
                 {item.brand ?? "PP"}
               </span>
+              {item.post_type === "video" && (
+                <span className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/30">
+                  🎥 VIDEO
+                </span>
+              )}
               <span
                 className={cn("text-[10px] px-2 py-0.5 rounded border", STATUS_CLASS[item.status])}
               >
@@ -921,6 +929,38 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                     {b}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            <div>
+              <Label>Post Type</Label>
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  disabled={!canEditContent}
+                  onClick={() => canEditContent && setForm({ ...form, post_type: "post" })}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                    form.post_type === "post"
+                      ? "bg-foreground text-background border-foreground"
+                      : "border-border text-muted-foreground hover:bg-accent/40",
+                  )}
+                >
+                  Post
+                </button>
+                <button
+                  type="button"
+                  disabled={!canEditContent}
+                  onClick={() => canEditContent && setForm({ ...form, post_type: "video" })}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                    form.post_type === "video"
+                      ? "bg-rose-500/10 text-rose-500 border-rose-500/30"
+                      : "border-border text-muted-foreground hover:bg-accent/40",
+                  )}
+                >
+                  🎥 Video
+                </button>
               </div>
             </div>
 

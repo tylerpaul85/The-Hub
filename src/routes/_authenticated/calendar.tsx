@@ -95,6 +95,7 @@ function CalendarPage() {
   const [analyzeOpen, setAnalyzeOpen] = useState(false);
   const [brandFilter, setBrandFilter] = useState<"all" | Brand>("all");
   const [hideReposts, setHideReposts] = useState(false);
+  const [showOnlyVideos, setShowOnlyVideos] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -181,9 +182,12 @@ function CalendarPage() {
             return false;
           }
         }
+        if (showOnlyVideos && it.post_type !== "video") {
+          return false;
+        }
         return true;
       }),
-    [items, brandFilter, hideReposts],
+    [items, brandFilter, hideReposts, showOnlyVideos],
   );
 
   const reschedule = useMutation({
@@ -357,6 +361,20 @@ function CalendarPage() {
               className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer select-none"
             >
               Hide 60/90/120 Reposts
+            </label>
+          </div>
+          
+          <div className="flex items-center gap-2 px-1">
+            <Checkbox
+              id="show-only-videos-check"
+              checked={showOnlyVideos}
+              onCheckedChange={(checked) => setShowOnlyVideos(!!checked)}
+            />
+            <label
+              htmlFor="show-only-videos-check"
+              className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer select-none"
+            >
+              Show Only Videos
             </label>
           </div>
         </div>
@@ -614,6 +632,11 @@ function ContentCard({
         >
           {item.brand ?? "PP"}
         </span>
+        {item.post_type === "video" && (
+          <span className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/30 shrink-0">
+            🎥 VIDEO
+          </span>
+        )}
         {showTime && scheduledTime && (
           <span className="text-[10px] font-mono font-bold text-amber-500/90 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30 shrink-0">
             {scheduledTime}

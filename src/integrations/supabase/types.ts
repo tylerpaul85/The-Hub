@@ -293,6 +293,7 @@ export type Database = {
           note_attachments: Json;
           notes: string | null;
           platforms: string[];
+          post_type: string;
           priority: Database["public"]["Enums"]["content_priority"];
           revision_note: string | null;
           scheduled_at: string;
@@ -325,6 +326,7 @@ export type Database = {
           note_attachments?: Json;
           notes?: string | null;
           platforms?: string[];
+          post_type?: string;
           priority?: Database["public"]["Enums"]["content_priority"];
           revision_note?: string | null;
           scheduled_at: string;
@@ -357,6 +359,7 @@ export type Database = {
           note_attachments?: Json;
           notes?: string | null;
           platforms?: string[];
+          post_type?: string;
           priority?: Database["public"]["Enums"]["content_priority"];
           revision_note?: string | null;
           scheduled_at?: string;

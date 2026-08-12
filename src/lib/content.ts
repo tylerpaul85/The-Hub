@@ -101,6 +101,7 @@ export interface ContentItem {
   email_subject_line: string | null;
   meta_media_link: string | null;
   meta_copy: string | null;
+  post_type: string;
 }
 
 export const HOURS = Array.from({ length: 17 }, (_, i) => i + 6); // 6..22

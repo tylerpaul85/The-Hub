@@ -528,6 +528,11 @@ export function CalendarListView({ brandFilter = "all" }: { brandFilter?: "all" 
                             >
                               {it.brand ?? "PP"}
                             </span>
+                            {it.post_type === "video" && (
+                              <span className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/30 shrink-0">
+                                🎥 VIDEO
+                              </span>
+                            )}
                             <button
                               onClick={() => detail.open(it.id)}
                               className="text-left text-sm font-medium truncate hover:text-gold transition-colors min-w-0"
