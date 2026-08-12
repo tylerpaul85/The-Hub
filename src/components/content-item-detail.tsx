@@ -205,7 +205,7 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
       const next: FormShape = {
         title: item.title,
         caption: item.caption ?? "",
-        platforms: item.platforms,
+        platforms: item.platforms || [],
         status: item.status,
         scheduled_at: toLocalInput(new Date(item.scheduled_at)),
         link: item.link ?? "",
@@ -432,7 +432,7 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
 
   const isContributor = !!user && item?.created_by === user.id;
 
-  const hasPlatform = (p: string) => form.platforms.includes(p);
+  const hasPlatform = (p: string) => form.platforms?.includes(p) ?? false;
   const showMeta = META_PLATFORMS.some(hasPlatform);
 
   if (isLoading || !item) {

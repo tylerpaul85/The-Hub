@@ -417,7 +417,7 @@ function CalendarPage() {
       </header>
 
       {view === "list" ? (
-        <div className="flex-1 overflow-hidden min-h-0 relative">
+        <div className="flex-1 overflow-y-auto min-h-0 relative">
           <CalendarListView brandFilter={brandFilter} />
         </div>
       ) : (
