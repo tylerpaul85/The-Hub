@@ -368,25 +368,36 @@ function AttendeesEditor({
 }
 
 function ScorecardSection({ meetingDate, members }: { meetingDate: string; members: Member[] }) {
-  // Compute the most recently completed Mon–Sun week relative to the meeting date.
-  const { wk, rangeLabel } = (() => {
+  // Compute the 5 most recently completed Mon–Sun weeks relative to the meeting date.
+  const weeks = (() => {
     const d = new Date(meetingDate + "T00:00:00");
     d.setHours(0, 0, 0, 0);
     const day = (d.getDay() + 6) % 7; // Mon=0
     const thisMon = new Date(d);
     thisMon.setDate(d.getDate() - day);
-    const prevMon = new Date(thisMon);
-    prevMon.setDate(thisMon.getDate() - 7);
-    const sun = new Date(prevMon);
-    sun.setDate(prevMon.getDate() + 6);
-    const y = prevMon.getFullYear();
-    const m = String(prevMon.getMonth() + 1).padStart(2, "0");
-    const dd = String(prevMon.getDate()).padStart(2, "0");
-    return {
-      wk: `${y}-${m}-${dd}`,
-      rangeLabel: `${prevMon.getMonth() + 1}/${prevMon.getDate()}–${sun.getMonth() + 1}/${sun.getDate()}/${sun.getFullYear()}`,
-    };
+    
+    const wks = [];
+    for (let i = 4; i >= 0; i--) {
+      const wMon = new Date(thisMon);
+      wMon.setDate(thisMon.getDate() - 7 * (i + 1));
+      const sun = new Date(wMon);
+      sun.setDate(wMon.getDate() + 6);
+      
+      const y = wMon.getFullYear();
+      const m = String(wMon.getMonth() + 1).padStart(2, "0");
+      const dd = String(wMon.getDate()).padStart(2, "0");
+      
+      wks.push({
+        wk: `${y}-${m}-${dd}`,
+        label: i === 0 ? "Current" : `${wMon.getMonth() + 1}/${wMon.getDate()}`,
+        rangeLabel: `${wMon.getMonth() + 1}/${wMon.getDate()}–${sun.getMonth() + 1}/${sun.getDate()}/${sun.getFullYear()}`,
+        isCurrent: i === 0,
+      });
+    }
+    return wks;
   })();
+
+  const currentWk = weeks[weeks.length - 1];
 
   type FullMeasurable = Measurable & { source: string | null; owner_id: string | null };
 
@@ -404,12 +415,12 @@ function ScorecardSection({ meetingDate, members }: { meetingDate: string; membe
   });
 
   const { data: entries = [] } = useQuery({
-    queryKey: ["l10-scorecard-week", wk],
+    queryKey: ["l10-scorecard-5weeks", weeks[0].wk, currentWk.wk],
     queryFn: async () => {
       const { data, error } = await sb
         .from("scorecard_weekly_entries")
         .select("measurable_id, week_start, actual_value")
-        .eq("week_start", wk);
+        .in("week_start", weeks.map((w) => w.wk));
       if (error) throw error;
       return (data ?? []) as { measurable_id: string; week_start: string; actual_value: number }[];
     },
@@ -439,9 +450,12 @@ function ScorecardSection({ meetingDate, members }: { meetingDate: string; membe
   const groupNames = Object.keys(groups).sort();
 
   const entryMap = new Map<string, number>();
-  for (const e of entries) entryMap.set(e.measurable_id, Number(e.actual_value));
+  for (const e of entries) entryMap.set(`${e.measurable_id}|${e.week_start}`, Number(e.actual_value));
 
-  const submitted = entries.length;
+  let submitted = 0;
+  for (const m of measurables) {
+    if (entryMap.has(`${m.id}|${currentWk.wk}`)) submitted++;
+  }
   const total = measurables.length;
 
   return (
@@ -449,62 +463,94 @@ function ScorecardSection({ meetingDate, members }: { meetingDate: string; membe
       <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
         <div>
           <span className="text-xs uppercase tracking-wider text-muted-foreground">
-            Reviewing week of{" "}
+            Reviewing up to week of{" "}
           </span>
-          <span className="font-semibold">{rangeLabel}</span>
+          <span className="font-semibold">{currentWk.rangeLabel}</span>
         </div>
         <div className="text-xs text-muted-foreground">
-          {submitted}/{total} numbers submitted · pulled from Scorecard
+          {submitted}/{total} numbers submitted this week
         </div>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-5 overflow-x-auto pb-4">
         {groupNames.map((g) => (
-          <div key={g}>
+          <div key={g} className="min-w-[700px]">
             <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{g}</div>
             <table className="w-full text-sm table-fixed">
               <colgroup>
-                <col className="w-[44%]" />
-                <col className="w-[26%]" />
+                <col className="w-[25%]" />
                 <col className="w-[15%]" />
-                <col className="w-[15%]" />
+                <col className="w-[10%]" />
+                {weeks.map((_, i) => (
+                  <col key={i} className="w-[10%]" />
+                ))}
               </colgroup>
               <thead className="text-xs text-muted-foreground">
                 <tr>
                   <th className="text-left pb-2 pr-2 font-normal">Measurable</th>
                   <th className="text-left pb-2 pr-2 font-normal">Owner</th>
                   <th className="text-right pb-2 pr-2 font-normal">Goal</th>
-                  <th className="text-right pb-2 font-normal">Actual</th>
+                  {weeks.map((w) => (
+                    <th key={w.wk} className="text-right pb-2 pr-2 font-normal">
+                      {w.label}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {groups[g].map((m) => {
-                  const has = entryMap.has(m.id);
-                  const actual = entryMap.get(m.id);
-                  const hitResult = has
-                    ? isGoalHit(actual as number, m.weekly_target, m.goal_direction)
-                    : null;
-                  const comparable = hitResult !== null;
-                  const hit = hitResult === true;
                   return (
                     <tr key={m.id} className="border-t border-border">
-                      <td className="py-2 pr-2 truncate">{m.label}</td>
-                      <td className="py-2 pr-2 text-muted-foreground truncate">
+                      <td className="py-2 pr-2 truncate" title={m.label}>{m.label}</td>
+                      <td className="py-2 pr-2 text-muted-foreground truncate" title={nameOf(m.owner_id)}>
                         {nameOf(m.owner_id)}
                       </td>
                       <td className="py-2 pr-2 text-right text-muted-foreground tabular-nums">
                         {m.weekly_target}
                       </td>
-                      <td
-                        className={cn(
-                          "py-2 text-right font-medium tabular-nums",
-                          !has && "text-muted-foreground italic font-normal",
-                          has && comparable && hit && "text-emerald-400",
-                          has && comparable && !hit && "text-destructive",
-                        )}
-                      >
-                        {has ? actual : "not entered"}
-                      </td>
+                      {weeks.map((w, i) => {
+                        const has = entryMap.has(`${m.id}|${w.wk}`);
+                        const actual = entryMap.get(`${m.id}|${w.wk}`);
+                        
+                        let trendArrow = null;
+                        if (has && i > 0) {
+                          const prevWk = weeks[i - 1];
+                          const hasPrev = entryMap.has(`${m.id}|${prevWk.wk}`);
+                          const prevActual = entryMap.get(`${m.id}|${prevWk.wk}`);
+                          if (hasPrev && actual !== undefined && prevActual !== undefined) {
+                            if (actual === prevActual) {
+                              trendArrow = <span className="text-muted-foreground/50 ml-1 text-[10px] inline-block w-[12px] text-center">→</span>;
+                            } else {
+                              const improved = m.goal_direction === "lower_is_better" ? actual < prevActual : actual > prevActual;
+                              trendArrow = <span className={cn("ml-1 text-[10px] inline-block w-[12px] text-center", improved ? "text-emerald-400" : "text-destructive")}>{improved ? "↑" : "↓"}</span>;
+                            }
+                          }
+                        }
+
+                        if (!trendArrow) {
+                          trendArrow = <span className="ml-1 text-[10px] inline-block w-[12px]"></span>;
+                        }
+
+                        const hitResult = has ? isGoalHit(actual as number, m.weekly_target, m.goal_direction) : null;
+                        const comparable = hitResult !== null;
+                        const hit = hitResult === true;
+
+                        return (
+                          <td
+                            key={w.wk}
+                            className={cn(
+                              "py-2 pr-2 text-right tabular-nums whitespace-nowrap",
+                              !has && "text-muted-foreground/40 italic font-normal text-xs",
+                              has && comparable && hit && "text-emerald-400 font-medium",
+                              has && comparable && !hit && "text-destructive font-medium",
+                              has && !comparable && "text-foreground font-medium"
+                            )}
+                          >
+                            {has ? actual : "—"}
+                            {trendArrow}
+                          </td>
+                        );
+                      })}
                     </tr>
                   );
                 })}
