@@ -31,6 +31,8 @@ export function ChatThread({ parentId, kind, allowAttachments = false }: Props) 
   const [mentions, setMentions] = useState<string[]>([]);
   const [pendingImages, setPendingImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editBody, setEditBody] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const { table, fk } = cfg[kind];
 
@@ -61,7 +63,7 @@ export function ChatThread({ parentId, kind, allowAttachments = false }: Props) 
       .channel(`${kind}-${parentId}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table, filter: `${fk}=eq.${parentId}` },
+        { event: "*", schema: "public", table, filter: `${fk}=eq.${parentId}` },
         () => qc.invalidateQueries({ queryKey: ["chat", kind, parentId] }),
       )
       .subscribe();
@@ -123,6 +125,21 @@ export function ChatThread({ parentId, kind, allowAttachments = false }: Props) 
     onError: (e: any) => toast.error(e.message ?? "Failed to send"),
   });
 
+  const updatePost = useMutation({
+    mutationFn: async ({ id, newBody }: { id: string; newBody: string }) => {
+      if (!newBody.trim()) return;
+      const payload: any = { body: newBody.trim(), updated_at: new Date().toISOString() };
+      const { error } = await (supabase as any).from(table).update(payload).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setEditingId(null);
+      qc.invalidateQueries({ queryKey: ["chat", kind, parentId] });
+      toast.success("Comment updated");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to update"),
+  });
+
   const handleOf = (u: any) => {
     const full = [u.first_name, u.last_name].filter(Boolean).join("");
     if (full) return full.replace(/[^A-Za-z0-9]/g, "");
@@ -175,9 +192,61 @@ export function ChatThread({ parentId, kind, allowAttachments = false }: Props) 
                 <span className="text-muted-foreground">
                   {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
                 </span>
+                {m.updated_at && (
+                  <span className="text-muted-foreground italic text-[9px]">
+                    (edited)
+                  </span>
+                )}
+                {(user?.id === m.user_id || (user as any)?.role === "admin") && editingId !== m.id && (
+                  <button
+                    onClick={() => {
+                      setEditingId(m.id);
+                      setEditBody(m.body);
+                    }}
+                    className="ml-auto text-[10px] text-muted-foreground hover:text-foreground underline decoration-transparent hover:decoration-current transition-colors"
+                  >
+                    Edit
+                  </button>
+                )}
               </div>
-              {m.body && (
-                <div className="text-sm whitespace-pre-wrap break-words">{renderBody(m.body)}</div>
+              {editingId === m.id ? (
+                <div className="mt-1 flex flex-col gap-2">
+                  <MentionTextarea
+                    value={editBody}
+                    onChange={setEditBody}
+                    users={mentionUsers}
+                    onSelectMention={(u) => {
+                      const h = handleOf(u);
+                      if (!mentions.includes(h)) setMentions((prev) => [...prev, h]);
+                    }}
+                    placeholder="Edit comment..."
+                    autoFocus
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => setEditingId(null)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => updatePost.mutate({ id: m.id, newBody: editBody })}
+                      disabled={updatePost.isPending || !editBody.trim()}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {m.body && (
+                    <div className="text-sm whitespace-pre-wrap break-words">{renderBody(m.body)}</div>
+                  )}
+                </>
               )}
               {Array.isArray(m.image_urls) && m.image_urls.length > 0 && (
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
