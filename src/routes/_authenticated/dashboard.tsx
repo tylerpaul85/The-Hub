@@ -179,7 +179,7 @@ function Row({ item, onOpen }: { item: ContentItem; onOpen: () => void }) {
         </div>
         <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
           <span>{format(new Date(item.scheduled_at), "MMM d, yyyy · h:mm a")}</span>
-          {item.platforms.map((p) => (
+          {(item.platforms || []).map((p) => (
             <span key={p} className="px-1.5 py-px bg-muted rounded text-[11px]">
               {p}
             </span>

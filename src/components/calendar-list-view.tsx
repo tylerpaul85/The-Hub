@@ -578,7 +578,7 @@ export function CalendarListView({ brandFilter = "all" }: { brandFilter?: "all" 
                             </SelectContent>
                           </Select>
                           <div className="flex flex-wrap gap-1 min-w-0">
-                            {it.platforms.slice(0, 3).map((p) => (
+                            {(it.platforms || []).slice(0, 3).map((p) => (
                               <span
                                 key={p}
                                 className={cn(
@@ -589,9 +589,9 @@ export function CalendarListView({ brandFilter = "all" }: { brandFilter?: "all" 
                                 {p}
                               </span>
                             ))}
-                            {it.platforms.length > 3 && (
-                              <span className="text-[9px] text-muted-foreground">
-                                +{it.platforms.length - 3}
+                            {(it.platforms || []).length > 3 && (
+                              <span className="text-[9px] font-bold text-muted-foreground bg-muted/50 px-1 py-0.5 rounded border border-border/30">
+                                +{(it.platforms || []).length - 3}
                               </span>
                             )}
                           </div>
@@ -718,7 +718,7 @@ function matchesFilters(
   it: ContentItem,
   f: { platform: string; status: string; priority: string; owner: string },
 ) {
-  if (f.platform !== "all" && !it.platforms.includes(f.platform)) return false;
+  if (f.platform !== "all" && !(it.platforms || []).includes(f.platform)) return false;
   if (f.status !== "all" && it.status !== f.status) return false;
   if (f.priority !== "all" && it.priority !== f.priority) return false;
   if (f.owner !== "all") {

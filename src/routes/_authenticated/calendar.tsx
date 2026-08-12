@@ -649,7 +649,7 @@ function ContentCard({
         >
           {STATUS_LABEL[item.status as Status]}
         </span>
-        {item.platforms.slice(0, 3).map((p) => (
+        {(item.platforms || []).slice(0, 3).map((p) => (
           <span
             key={p}
             className="text-[9px] font-medium text-muted-foreground bg-muted/50 px-1 py-0.5 rounded border border-border/30"

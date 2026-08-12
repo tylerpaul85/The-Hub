@@ -142,7 +142,7 @@ function ArchivePage() {
         if (!hay.includes(q)) return false;
       }
       if (contentType !== "all" && i.content_type !== contentType) return false;
-      if (platform !== "all" && !i.platforms.includes(platform)) return false;
+      if (platform !== "all" && !(i.platforms || []).includes(platform)) return false;
       if (brand !== "all" && (i.brand ?? "PP") !== brand) return false;
       if (agent !== "all" && i.agent_name !== agent) return false;
       if (campaign !== "all" && i.campaign_tag !== campaign) return false;
@@ -430,9 +430,9 @@ function ArchiveCard({ item, onClick }: { item: ArchiveItem; onClick: () => void
       </div>
       <div className="p-3 space-y-1.5">
         <div className="font-medium text-sm line-clamp-2">{item.title}</div>
-        {item.platforms.length > 0 && (
+        {(item.platforms || []).length > 0 && (
           <div className="flex flex-wrap gap-1">
-            {item.platforms.slice(0, 3).map((p) => (
+            {(item.platforms || []).slice(0, 3).map((p) => (
               <Badge
                 key={p}
                 variant="outline"
@@ -441,9 +441,9 @@ function ArchiveCard({ item, onClick }: { item: ArchiveItem; onClick: () => void
                 {p}
               </Badge>
             ))}
-            {item.platforms.length > 3 && (
+            {(item.platforms || []).length > 3 && (
               <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                +{item.platforms.length - 3}
+                +{(item.platforms || []).length - 3}
               </Badge>
             )}
           </div>
@@ -995,9 +995,9 @@ function DetailDialog({
                   {item.drive_url ? "Google Drive" : formatBytes(item.file_size)}
                 </Meta>
                 <Meta label="Platforms" full>
-                  {item.platforms.length ? (
+                  {(item.platforms || []).length ? (
                     <div className="flex flex-wrap gap-1">
-                      {item.platforms.map((p) => (
+                      {(item.platforms || []).map((p) => (
                         <Badge key={p} variant="outline">
                           {p}
                         </Badge>
@@ -1040,7 +1040,7 @@ function DetailDialog({
                     search={{
                       prefillTitle: item.title,
                       prefillThumb: !item.drive_url && previewUrl ? previewUrl : undefined,
-                      prefillPlatforms: item.platforms.join(","),
+                      prefillPlatforms: (item.platforms || []).join(","),
                       prefillNotes: item.notes ?? undefined,
                     }}
                   >
