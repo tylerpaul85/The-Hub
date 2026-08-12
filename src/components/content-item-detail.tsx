@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Sheet,
@@ -98,6 +98,7 @@ type FormShape = {
   meta_copy: string;
   revision_note: string;
   note_attachments: NoteAttachment[];
+  post_type: string;
 };
 
 const META_PLATFORMS = ["Meta", "Meta PP", "Meta LOZ"];
@@ -114,7 +115,7 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
 
-  const { data: item, isLoading } = useQuery({
+  const { data: item, isLoading, isError } = useQuery({
     queryKey: ["content-item", itemId],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
