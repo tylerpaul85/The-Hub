@@ -95,7 +95,7 @@ CREATE OR REPLACE FUNCTION public.seller_login(p_email text, p_password text)
 RETURNS json
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   acc public.seller_proceeds_accounts;
@@ -107,7 +107,7 @@ BEGIN
     RETURN json_build_object('error', 'Invalid login credentials');
   END IF;
 
-  IF acc.password_hash = crypt(p_password, acc.password_hash) THEN
+  IF acc.password_hash = extensions.crypt(p_password, acc.password_hash) THEN
     -- Success
     INSERT INTO public.seller_sessions (account_id) VALUES (acc.id) RETURNING token INTO new_token;
     RETURN json_build_object(
@@ -133,7 +133,7 @@ CREATE OR REPLACE FUNCTION public.seller_signup(p_email text, p_password text, p
 RETURNS json
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   clean_email text := LOWER(trim(p_email));
@@ -149,7 +149,7 @@ BEGIN
   END IF;
 
   INSERT INTO public.seller_proceeds_accounts (email, password_hash, full_name, phone)
-  VALUES (clean_email, crypt(p_password, gen_salt('bf')), trim(p_full_name), p_phone)
+  VALUES (clean_email, extensions.crypt(p_password, extensions.gen_salt('bf')), trim(p_full_name), p_phone)
   RETURNING id INTO acc_id;
 
   INSERT INTO public.seller_sessions (account_id) VALUES (acc_id) RETURNING token INTO new_token;
