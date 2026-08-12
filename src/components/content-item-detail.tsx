@@ -435,6 +435,16 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
   const hasPlatform = (p: string) => form.platforms?.includes(p) ?? false;
   const showMeta = META_PLATFORMS.some(hasPlatform);
 
+  if (isError) {
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent className="flex flex-col h-[100dvh] p-0 gap-0 sm:max-w-2xl bg-background border-l border-border overflow-hidden">
+          <div className="p-6 text-destructive font-medium">Failed to load content item. It may have been deleted, or you don't have permission.</div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
   if (isLoading || !item) {
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
