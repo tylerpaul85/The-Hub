@@ -62,7 +62,7 @@ ALTER TABLE public.seller_net_sheets
 -- ----------------------------------------------------------------
 
 -- Read token from header
-CREATE OR REPLACE FUNCTION auth.seller_uid()
+CREATE OR REPLACE FUNCTION public.seller_uid()
 RETURNS uuid
 LANGUAGE plpgsql
 STABLE
@@ -223,34 +223,34 @@ DROP POLICY IF EXISTS "seller_net_sheets_select_policy" ON public.seller_net_she
 CREATE POLICY "seller_net_sheets_select_policy" ON public.seller_net_sheets
   FOR SELECT TO authenticated, anon
   USING (
-    agent_id = auth.seller_uid() OR
+    agent_id = public.seller_uid() OR
     public.has_role(auth.uid(), 'admin') -- Keep admin fallback if needed via standard auth
   );
 
 DROP POLICY IF EXISTS "seller_net_sheets_insert_policy" ON public.seller_net_sheets;
 CREATE POLICY "seller_net_sheets_insert_policy" ON public.seller_net_sheets
   FOR INSERT TO authenticated, anon
-  WITH CHECK (agent_id = auth.seller_uid());
+  WITH CHECK (agent_id = public.seller_uid());
 
 DROP POLICY IF EXISTS "seller_net_sheets_update_policy" ON public.seller_net_sheets;
 CREATE POLICY "seller_net_sheets_update_policy" ON public.seller_net_sheets
   FOR UPDATE TO authenticated, anon
-  USING (agent_id = auth.seller_uid())
-  WITH CHECK (agent_id = auth.seller_uid());
+  USING (agent_id = public.seller_uid())
+  WITH CHECK (agent_id = public.seller_uid());
 
 DROP POLICY IF EXISTS "seller_net_sheets_delete_policy" ON public.seller_net_sheets;
 CREATE POLICY "seller_net_sheets_delete_policy" ON public.seller_net_sheets
   FOR DELETE TO authenticated, anon
-  USING (agent_id = auth.seller_uid());
+  USING (agent_id = public.seller_uid());
 
--- RLS for seller_proceeds_accounts (Using auth.seller_uid())
+-- RLS for seller_proceeds_accounts (Using public.seller_uid())
 DROP POLICY IF EXISTS "seller_proceeds_accounts_select_policy" ON public.seller_proceeds_accounts;
 CREATE POLICY "seller_proceeds_accounts_select_policy" ON public.seller_proceeds_accounts
   FOR SELECT TO authenticated, anon
-  USING (id = auth.seller_uid());
+  USING (id = public.seller_uid());
 
 DROP POLICY IF EXISTS "seller_proceeds_accounts_update_policy" ON public.seller_proceeds_accounts;
 CREATE POLICY "seller_proceeds_accounts_update_policy" ON public.seller_proceeds_accounts
   FOR UPDATE TO authenticated, anon
-  USING (id = auth.seller_uid())
-  WITH CHECK (id = auth.seller_uid());
+  USING (id = public.seller_uid())
+  WITH CHECK (id = public.seller_uid());
