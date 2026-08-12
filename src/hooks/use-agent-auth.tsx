@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { createClient } from "@supabase/supabase-js";
 
 export interface AgentAccount {
   id: string;
@@ -18,8 +18,6 @@ export function isValidAgentEmail(email: string): boolean {
 }
 
 interface AgentAuthContextValue {
-  user: User | null;
-  session: Session | null;
   agent: AgentAccount | null;
   loading: boolean;
   signUpAgent: (email: string, password: string, fullName: string, phone?: string) => Promise<void>;
@@ -27,60 +25,38 @@ interface AgentAuthContextValue {
   signOutAgent: () => Promise<void>;
   resetAgentPassword: (email: string) => Promise<void>;
   refreshAgent: () => Promise<void>;
+  sellerSupabase: any;
 }
 
 const AgentAuthContext = createContext<AgentAuthContextValue | undefined>(undefined);
 
+// Base URLs for creating the custom client
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+
 export function AgentAuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
   const [agent, setAgent] = useState<AgentAccount | null>(null);
   const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(null);
 
-  const fetchAgentProfile = async (u: User) => {
+  // Initialize a custom client that passes the seller session token
+  const sellerSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: {
+      headers: token ? { "x-seller-session": token } : {},
+    },
+  });
+
+  const fetchAgentProfile = async (currentToken: string) => {
     try {
-      const { data, error } = await (supabase as any)
-        .from("agent_accounts")
-        .select("*")
-        .eq("id", u.id)
-        .maybeSingle();
-
-      if (data) {
-        setAgent(data as AgentAccount);
-      } else if (u.email && isValidAgentEmail(u.email)) {
-        // Auto-provision agent_accounts profile if missing for valid agent domain
-        const rawName =
-          (u.user_metadata as any)?.full_name || u.email.split("@")[0].replace(".", " ");
-        const fullName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
-        const newProfile = {
-          id: u.id,
-          email: u.email.toLowerCase(),
-          full_name: fullName,
-          office_location: "1043 Kingshighway, Rolla, MO 65401",
-          office_phone: "(573) 451-2020",
-        };
-        const { data: created } = await (supabase as any)
-          .from("agent_accounts")
-          .upsert(newProfile)
-          .select("*")
-          .maybeSingle();
-
-        if (created) {
-          setAgent(created as AgentAccount);
-        } else {
-          // Fallback in-memory profile
-          setAgent({
-            id: u.id,
-            email: u.email,
-            full_name: fullName,
-            phone: null,
-            office_location: "1043 Kingshighway, Rolla, MO 65401",
-            office_phone: "(573) 451-2020",
-            created_at: new Date().toISOString(),
-          });
-        }
-      } else {
+      const { data, error } = await supabase.rpc("seller_get_profile", {
+        p_token: currentToken,
+      });
+      if (error || (data as any)?.error) {
         setAgent(null);
+        setToken(null);
+        localStorage.removeItem("seller_session");
+      } else if (data && (data as any).account) {
+        setAgent((data as any).account);
       }
     } catch (e) {
       setAgent(null);
@@ -90,38 +66,18 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.user) {
-        fetchAgentProfile(s.user);
-      } else {
-        setAgent(null);
-        setLoading(false);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.user) {
-        fetchAgentProfile(s.user);
-      } else {
-        setAgent(null);
-        setLoading(false);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    const savedToken = localStorage.getItem("seller_session");
+    if (savedToken) {
+      setToken(savedToken);
+      fetchAgentProfile(savedToken);
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   const refreshAgent = async () => {
-    if (user) {
-      await fetchAgentProfile(user);
+    if (token) {
+      await fetchAgentProfile(token);
     }
   };
 
@@ -137,15 +93,11 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
       throw new Error("Please enter your full name.");
     }
 
-    const { data, error } = await supabase.auth.signUp({
-      email: cleanEmail,
-      password,
-      options: {
-        data: {
-          full_name: fullName.trim(),
-          is_agent: true,
-        },
-      },
+    const { data, error } = await supabase.rpc("seller_signup", {
+      p_email: cleanEmail,
+      p_password: password,
+      p_full_name: fullName.trim(),
+      p_phone: phone?.trim() || null,
     });
 
     if (error) {
@@ -153,23 +105,16 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
       throw error;
     }
 
-    if (data.user) {
-      // Upsert into agent_accounts table
-      const { error: dbErr } = await (supabase as any).from("agent_accounts").upsert({
-        id: data.user.id,
-        email: cleanEmail.toLowerCase(),
-        full_name: fullName.trim(),
-        phone: phone?.trim() || null,
-        office_location: "1043 Kingshighway, Rolla, MO 65401",
-        office_phone: "(573) 451-2020",
-      });
+    const resp = data as any;
+    if (resp.error) {
+      toast.error(resp.error);
+      throw new Error(resp.error);
+    }
 
-      if (dbErr) {
-        toast.error(dbErr.message || "Failed to create agent profile record.");
-        throw dbErr;
-      }
-
-      await fetchAgentProfile(data.user);
+    if (resp.token && resp.account) {
+      setToken(resp.token);
+      setAgent(resp.account);
+      localStorage.setItem("seller_session", resp.token);
       toast.success("Agent account created!");
     }
   };
@@ -181,9 +126,9 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
       throw new Error("Accounts are limited to @mattsmithrealestategroup.com email addresses.");
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: cleanEmail,
-      password,
+    const { data, error } = await supabase.rpc("seller_login", {
+      p_email: cleanEmail,
+      p_password: password,
     });
 
     if (error) {
@@ -191,45 +136,37 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
       throw error;
     }
 
-    if (data.user) {
-      await fetchAgentProfile(data.user);
+    const resp = data as any;
+    if (resp.error) {
+      toast.error(resp.error);
+      throw new Error(resp.error);
+    }
+
+    if (resp.token && resp.account) {
+      setToken(resp.token);
+      setAgent(resp.account);
+      localStorage.setItem("seller_session", resp.token);
       toast.success("Signed in successfully!");
     }
   };
 
   const signOutAgent = async () => {
-    await supabase.auth.signOut();
+    if (token) {
+      await supabase.rpc("seller_logout", { p_token: token });
+    }
     setAgent(null);
-    setUser(null);
-    setSession(null);
+    setToken(null);
+    localStorage.removeItem("seller_session");
     toast.success("Signed out");
   };
 
   const resetAgentPassword = async (email: string) => {
-    const cleanEmail = email.trim();
-    if (!isValidAgentEmail(cleanEmail)) {
-      toast.error("Accounts are limited to @mattsmithrealestategroup.com email addresses.");
-      throw new Error("Accounts are limited to @mattsmithrealestategroup.com email addresses.");
-    }
-
-    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
-      redirectTo:
-        typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined,
-    });
-
-    if (error) {
-      toast.error(error.message);
-      throw error;
-    }
-
-    toast.success("Password reset instructions sent to your email!");
+    toast.info("Password reset is currently being updated for the new Seller system. Please contact an admin for assistance.");
   };
 
   return (
     <AgentAuthContext.Provider
       value={{
-        user,
-        session,
         agent,
         loading,
         signUpAgent,
@@ -237,6 +174,7 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
         signOutAgent,
         resetAgentPassword,
         refreshAgent,
+        sellerSupabase,
       }}
     >
       {children}

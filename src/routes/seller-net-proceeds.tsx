@@ -24,7 +24,6 @@ import {
   FileText,
 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useAgentAuth, isValidAgentEmail, type AgentAccount } from "@/hooks/use-agent-auth";
 import logo from "@/assets/msreg-logo.png";
 import { Button } from "@/components/ui/button";
@@ -149,7 +148,7 @@ function formatCurrency(amount: number): string {
 }
 
 function SellerNetProceedsPage() {
-  const { agent, user, loading, signOutAgent } = useAgentAuth();
+  const { agent, loading, signOutAgent } = useAgentAuth();
   const [activeTab, setActiveTab] = useState<"dashboard" | "calculator">("dashboard");
   const [editingSheetId, setEditingSheetId] = useState<string | null>(null);
 
@@ -164,7 +163,7 @@ function SellerNetProceedsPage() {
     );
   }
 
-  if (!agent || !user) {
+  if (!agent) {
     return <AgentAuthView />;
   }
 
@@ -523,12 +522,13 @@ function DashboardView({
   onEditSheet: (sheet: NetSheetRecord) => void;
 }) {
   const qc = useQueryClient();
+  const { sellerSupabase } = useAgentAuth();
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: sheets = [], isLoading } = useQuery({
     queryKey: ["agent-net-sheets", agent.id],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await sellerSupabase
         .from("seller_net_sheets")
         .select("*")
         .eq("agent_id", agent.id)
@@ -541,7 +541,7 @@ function DashboardView({
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await (supabase as any).from("seller_net_sheets").delete().eq("id", id);
+      const { error } = await sellerSupabase.from("seller_net_sheets").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -705,6 +705,7 @@ function CalculatorView({
   onBackToDashboard: () => void;
 }) {
   const qc = useQueryClient();
+  const { sellerSupabase } = useAgentAuth();
   const printRef = useRef<HTMLDivElement>(null);
 
   // Initialize sheet data
@@ -747,7 +748,7 @@ function CalculatorView({
   // Fetch sheet data if editing existing ID
   useEffect(() => {
     if (!editingSheetId) return;
-    (supabase as any)
+    sellerSupabase
       .from("seller_net_sheets")
       .select("*")
       .eq("id", editingSheetId)
@@ -860,13 +861,13 @@ function CalculatorView({
       };
 
       if (editingSheetId) {
-        const { error } = await (supabase as any)
+        const { error } = await sellerSupabase
           .from("seller_net_sheets")
           .update(payload)
           .eq("id", editingSheetId);
         if (error) throw error;
       } else {
-        const { error } = await (supabase as any).from("seller_net_sheets").insert(payload);
+        const { error } = await sellerSupabase.from("seller_net_sheets").insert(payload);
         if (error) throw error;
       }
     },

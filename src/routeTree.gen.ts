@@ -37,6 +37,7 @@ import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedToolboxRouteImport } from './routes/_authenticated/toolbox'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
 import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated/videos'
+import { Route as AuthenticatedVideosArchiveRouteImport } from './routes/_authenticated/videos-archive'
 import { Route as AgentsIndexRouteImport } from './routes/agents.index'
 import { Route as AuthenticatedAdminAssistantRouteImport } from './routes/_authenticated/admin.assistant'
 import { Route as AuthenticatedAdminSwagCreditsRouteImport } from './routes/_authenticated/admin.swag-credits'
@@ -198,6 +199,12 @@ const AuthenticatedVideosRoute = AuthenticatedVideosRouteImport.update({
   path: '/videos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedVideosArchiveRoute =
+  AuthenticatedVideosArchiveRouteImport.update({
+    id: '/videos-archive',
+    path: '/videos-archive',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AgentsIndexRoute = AgentsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -323,6 +330,7 @@ export interface FileRoutesByFullPath {
   '/toolbox': typeof AuthenticatedToolboxRoute
   '/users': typeof AuthenticatedUsersRoute
   '/videos': typeof AuthenticatedVideosRoute
+  '/videos-archive': typeof AuthenticatedVideosArchiveRoute
   '/agents/': typeof AgentsIndexRoute
   '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
@@ -366,6 +374,7 @@ export interface FileRoutesByTo {
   '/toolbox': typeof AuthenticatedToolboxRoute
   '/users': typeof AuthenticatedUsersRoute
   '/videos': typeof AuthenticatedVideosRoute
+  '/videos-archive': typeof AuthenticatedVideosArchiveRoute
   '/agents': typeof AgentsIndexRoute
   '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
@@ -413,6 +422,7 @@ export interface FileRoutesById {
   '/_authenticated/toolbox': typeof AuthenticatedToolboxRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/_authenticated/videos': typeof AuthenticatedVideosRoute
+  '/_authenticated/videos-archive': typeof AuthenticatedVideosArchiveRoute
   '/agents/': typeof AgentsIndexRoute
   '/_authenticated/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/_authenticated/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
@@ -461,6 +471,7 @@ export interface FileRouteTypes {
     | '/toolbox'
     | '/users'
     | '/videos'
+    | '/videos-archive'
     | '/agents/'
     | '/admin/assistant'
     | '/admin/swag-credits'
@@ -504,6 +515,7 @@ export interface FileRouteTypes {
     | '/toolbox'
     | '/users'
     | '/videos'
+    | '/videos-archive'
     | '/agents'
     | '/admin/assistant'
     | '/admin/swag-credits'
@@ -550,6 +562,7 @@ export interface FileRouteTypes {
     | '/_authenticated/toolbox'
     | '/_authenticated/users'
     | '/_authenticated/videos'
+    | '/_authenticated/videos-archive'
     | '/agents/'
     | '/_authenticated/admin/assistant'
     | '/_authenticated/admin/swag-credits'
@@ -782,6 +795,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVideosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/videos-archive': {
+      id: '/_authenticated/videos-archive'
+      path: '/videos-archive'
+      fullPath: '/videos-archive'
+      preLoaderRoute: typeof AuthenticatedVideosArchiveRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/agents/': {
       id: '/agents/'
       path: '/'
@@ -974,6 +994,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedToolboxRoute: typeof AuthenticatedToolboxRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
   AuthenticatedVideosRoute: typeof AuthenticatedVideosRoute
+  AuthenticatedVideosArchiveRoute: typeof AuthenticatedVideosArchiveRoute
   AuthenticatedAdminAssistantRoute: typeof AuthenticatedAdminAssistantRoute
   AuthenticatedAdminSwagCreditsRoute: typeof AuthenticatedAdminSwagCreditsRoute
   AuthenticatedEosIssuesRoute: typeof AuthenticatedEosIssuesRoute
@@ -1001,6 +1022,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedToolboxRoute: AuthenticatedToolboxRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
   AuthenticatedVideosRoute: AuthenticatedVideosRoute,
+  AuthenticatedVideosArchiveRoute: AuthenticatedVideosArchiveRoute,
   AuthenticatedAdminAssistantRoute: AuthenticatedAdminAssistantRoute,
   AuthenticatedAdminSwagCreditsRoute: AuthenticatedAdminSwagCreditsRoute,
   AuthenticatedEosIssuesRoute: AuthenticatedEosIssuesRoute,
