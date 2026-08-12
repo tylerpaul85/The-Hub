@@ -199,16 +199,26 @@ function ToolboxPage() {
       </div>
       <PublicLinkBanner path="/agent-toolbox" label="Agent Toolbox" />
 
-      <Tabs value={tab} onValueChange={setTab} className="w-full">
-        <TabsList>
-          <TabsTrigger value="listings">Listings</TabsTrigger>
-          <TabsTrigger value="open_houses">Open Houses</TabsTrigger>
-          <TabsTrigger value="brand">Logos &amp; Branding</TabsTrigger>
-          <TabsTrigger value="edu">Educational Content</TabsTrigger>
-          <TabsTrigger value="branded">Agent Branded</TabsTrigger>
+      <Tabs value={tab} onValueChange={setTab} className="w-full mt-2">
+        <TabsList className="bg-transparent border-b border-border w-full justify-start rounded-none p-0 h-auto gap-6 mb-6">
+          {[
+            { value: "listings", label: "Listings" },
+            { value: "open_houses", label: "Open Houses" },
+            { value: "brand", label: "Logos & Branding" },
+            { value: "edu", label: "Educational Content" },
+            { value: "branded", label: "Agent Branded" },
+          ].map((t) => (
+            <TabsTrigger
+              key={t.value}
+              value={t.value}
+              className="rounded-none border-b-2 border-transparent px-1 py-3 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:border-gold data-[state=active]:text-foreground data-[state=active]:shadow-none bg-transparent data-[state=active]:bg-transparent transition-colors"
+            >
+              {t.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
-        <TabsContent value="listings" className="mt-6">
+        <TabsContent value="listings">
           <ListingsTab onOpen={setOpenListingId} userId={user?.id ?? null} />
         </TabsContent>
         <TabsContent value="open_houses" className="mt-6">
@@ -451,96 +461,109 @@ function ListingsTab({ onOpen, userId }: { onOpen: (id: string) => void; userId:
             : "No listings yet. Create one to start uploading assets."}
         </Card>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {listings.map((l) => {
             const c = counts[l.id] ?? { assets: 0, thumb: null };
             const isArchived = !!l.archived;
             return (
-              <Card
+              <div
                 key={l.id}
                 className={cn(
-                  "overflow-hidden cursor-pointer hover:border-gold/50 transition-colors group",
+                  "group relative overflow-hidden rounded-xl border border-border/60 bg-card hover:bg-accent/30 hover:border-gold/50 cursor-pointer transition-all duration-300 shadow-sm",
                   isArchived && "opacity-80",
                 )}
                 onClick={() => onOpen(l.id)}
               >
-                <div className="aspect-video bg-muted relative">
+                <div className="aspect-[4/3] bg-muted/50 relative overflow-hidden">
                   {c.thumb ? (
                     <img
                       src={c.thumb}
                       alt={l.address}
-                      className={cn("w-full h-full object-cover", isArchived && "grayscale")}
+                      className={cn("w-full h-full object-cover transition-transform duration-500 group-hover:scale-105", isArchived && "grayscale")}
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                      <Home className="h-8 w-8" />
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
+                      <Home className="h-10 w-10" />
                     </div>
                   )}
-                  <Badge className={cn("absolute top-2 left-2 border", STATUS_CLASS[l.status])}>
-                    {STATUS_LABEL[l.status] ?? l.status}
-                  </Badge>
+                  
+                  {/* Gradient Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  
+                  <div className="absolute top-3 left-3">
+                    <Badge className={cn("border border-background/20 font-medium tracking-wide shadow-sm backdrop-blur-sm bg-background/80", STATUS_CLASS[l.status])}>
+                      {STATUS_LABEL[l.status] ?? l.status}
+                    </Badge>
+                  </div>
+                  
                   {isArchived && (
-                    <Badge className="absolute top-2 right-2 border bg-navy/80 text-gold border-gold/40">
+                    <Badge className="absolute top-3 right-3 border border-gold/40 bg-navy/90 text-gold shadow-sm backdrop-blur-sm">
                       Archived
                     </Badge>
                   )}
-                </div>
-                <div className="p-3 space-y-1">
-                  <div className="font-medium truncate">{l.address}</div>
-                  <div className="text-xs text-muted-foreground truncate">
-                    {l.agent_name || "—"}
+                  
+                  <div className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md rounded-md px-2 py-1 text-[10px] font-medium text-white flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-sm border border-white/10">
+                    <ImageIcon className="h-3 w-3" />
+                    {c.assets}
                   </div>
-                  <div className="flex items-center justify-between pt-1 gap-1">
-                    <span className="text-xs text-gold">
-                      {c.assets} asset{c.assets === 1 ? "" : "s"}
+                </div>
+                
+                <div className="p-4 space-y-1.5">
+                  <h3 className="font-serif font-medium text-lg leading-tight truncate text-foreground group-hover:text-gold transition-colors">
+                    {l.address}
+                  </h3>
+                  <div className="text-xs text-muted-foreground flex items-center justify-between">
+                    <span className="truncate">{l.agent_name || "—"}</span>
+                    <span className="shrink-0 tabular-nums opacity-60">
+                      {new Date(l.created_at).toLocaleDateString()}
                     </span>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {isArchived ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs border-gold/50 text-gold hover:bg-gold/10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            archive.mutate({ id: l.id, archived: false });
-                          }}
-                        >
-                          <ArchiveRestore className="h-3.5 w-3.5 mr-1" /> Restore
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            archive.mutate({ id: l.id, archived: true });
-                          }}
-                          title="Archive (e.g. under contract)"
-                        >
-                          <Archive className="h-3.5 w-3.5 mr-1" /> Archive
-                        </Button>
-                      )}
+                  </div>
+                  <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {isArchived ? (
                       <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs border-gold/50 text-gold hover:bg-gold/10"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (
-                            confirm(
-                              "Delete this listing and all its assets? This cannot be undone — consider Archive instead.",
-                            )
-                          )
-                            del.mutate(l.id);
+                          archive.mutate({ id: l.id, archived: false });
                         }}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <ArchiveRestore className="h-3.5 w-3.5 mr-1" /> Restore
                       </Button>
-                    </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          archive.mutate({ id: l.id, archived: true });
+                        }}
+                        title="Archive (e.g. under contract)"
+                      >
+                        <Archive className="h-3.5 w-3.5 mr-1" /> Archive
+                      </Button>
+                    )}
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (
+                          confirm(
+                            "Delete this listing and all its assets? This cannot be undone — consider Archive instead.",
+                          )
+                        )
+                          del.mutate(l.id);
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </div>
-              </Card>
+              </div>
             );
           })}
         </div>

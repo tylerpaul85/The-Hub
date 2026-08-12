@@ -39,31 +39,30 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 
-const NAV = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, adminOnly: false },
-  { to: "/calendar", label: "Calendar", icon: Calendar, adminOnly: false },
-  { to: "/listings", label: "Listings", icon: Home, adminOnly: false },
-  { to: "/toolbox", label: "Agent Toolbox", icon: Wrench, adminOnly: false },
+const CONTENT_NAV = [
+  { to: "/calendar", label: "Content Calendar", icon: Calendar, adminOnly: false },
   { to: "/videos", label: "Video Pipeline", icon: Video, adminOnly: false },
   { to: "/requests", label: "Requests", icon: Inbox, adminOnly: false },
-  { to: "/tasks", label: "Projects & Tasks", icon: ClipboardCheck, adminOnly: false },
-  { to: "/processes", label: "Internal Processes", icon: BookOpen, adminOnly: false },
+  { to: "/listings", label: "Listings", icon: Home, adminOnly: false },
 ] as const;
 
-const EOS_NAV = [
+const OPS_NAV = [
+  { to: "/tasks", label: "Projects & Tasks", icon: ClipboardCheck, adminOnly: false },
+  { to: "/duty-calendar", label: "Duty Calendar", icon: CalendarDays, adminOnly: false },
+  { to: "/inventory", label: "Closing Gift Inventory", icon: Boxes, adminOnly: false },
+] as const;
+
+const TEAM_NAV = [
   { to: "/eos/l10", label: "L10 Meetings", icon: ClipboardList, adminOnly: false },
   { to: "/eos/rocks", label: "Rocks", icon: Target, adminOnly: false },
   { to: "/eos/issues", label: "Issues", icon: CircleAlert, adminOnly: false },
   { to: "/eos/scorecard", label: "Scorecard", icon: BarChart3, adminOnly: false },
+  { to: "/duty-agents", label: "Duty Agents", icon: Users, adminOnly: false },
 ] as const;
 
-const CLIENT_CARE_NAV = [
-  { to: "/inventory", label: "Closing Gift Inventory", icon: Boxes },
-  { to: "/duty-calendar", label: "Duty Calendar", icon: CalendarDays },
-  { to: "/duty-agents", label: "Duty Agents", icon: Users },
-] as const;
-
-const ADMIN_NAV = [
+const TOOLS_NAV = [
+  { to: "/toolbox", label: "Agent Toolbox", icon: Wrench, adminOnly: false },
+  { to: "/processes", label: "Internal Processes", icon: BookOpen, adminOnly: false },
   { to: "/users", label: "Users", icon: Users, adminOnly: true },
   { to: "/signatures", label: "Email Signatures", icon: Mail, adminOnly: true },
   { to: "/admin-net-sheets", label: "Agent Net Sheets", icon: Calculator, adminOnly: true },
@@ -151,7 +150,17 @@ function NavLinks({
 
   return (
     <>
-      {filterNav(NAV).map((item) => (
+      <Link
+        to="/dashboard"
+        onClick={onNavigate}
+        className={cn(navLinkClass, isActive("/dashboard") ? navLinkActive : navLinkInactive, "mb-4")}
+      >
+        <LayoutDashboard className="h-4 w-4 shrink-0" />
+        Dashboard
+      </Link>
+
+      <div className={sectionLabel}>Content & Marketing</div>
+      {filterNav(CONTENT_NAV).map((item) => (
         <Link
           key={item.to}
           to={item.to}
@@ -163,59 +172,44 @@ function NavLinks({
         </Link>
       ))}
 
-      {/* EOS Section */}
-      {!isClientCareOnly && (
-        <>
-          <div className={sectionLabel}>EOS Systems</div>
-          {EOS_NAV.filter((n) => !n.adminOnly || isAdmin).map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              onClick={onNavigate}
-              className={cn(navLinkClass, isActive(item.to) ? navLinkActive : navLinkInactive)}
-            >
-              <item.icon className="h-4 w-4 shrink-0" />
-              {item.label}
-            </Link>
-          ))}
-        </>
-      )}
+      <div className={sectionLabel}>Operations</div>
+      {filterNav(OPS_NAV).map((item) => (
+        <Link
+          key={item.to}
+          to={item.to}
+          onClick={onNavigate}
+          className={cn(navLinkClass, isActive(item.to) ? navLinkActive : navLinkInactive)}
+        >
+          <item.icon className="h-4 w-4 shrink-0" />
+          {item.label}
+        </Link>
+      ))}
 
-      {/* Client Care Section */}
-      {(isAdmin || roles.includes("client_care")) && (
-        <>
-          <div className={sectionLabel}>Client Care</div>
-          {CLIENT_CARE_NAV.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              onClick={onNavigate}
-              className={cn(navLinkClass, isActive(item.to) ? navLinkActive : navLinkInactive)}
-            >
-              <item.icon className="h-4 w-4 shrink-0" />
-              {item.label}
-            </Link>
-          ))}
-        </>
-      )}
+      <div className={sectionLabel}>Team & Performance</div>
+      {filterNav(TEAM_NAV).map((item) => (
+        <Link
+          key={item.to}
+          to={item.to}
+          onClick={onNavigate}
+          className={cn(navLinkClass, isActive(item.to) ? navLinkActive : navLinkInactive)}
+        >
+          <item.icon className="h-4 w-4 shrink-0" />
+          {item.label}
+        </Link>
+      ))}
 
-      {/* Admin Section */}
-      {(isAdmin || roles.includes("marketing_coordinator")) && (
-        <>
-          <div className={sectionLabel}>Admin Tools</div>
-          {ADMIN_NAV.filter((item) => !item.adminOnly || isAdmin).map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              onClick={onNavigate}
-              className={cn(navLinkClass, isActive(item.to) ? navLinkActive : navLinkInactive)}
-            >
-              <item.icon className="h-4 w-4 shrink-0" />
-              {item.label}
-            </Link>
-          ))}
-        </>
-      )}
+      <div className={sectionLabel}>Tools & Admin</div>
+      {filterNav(TOOLS_NAV).map((item) => (
+        <Link
+          key={item.to}
+          to={item.to}
+          onClick={onNavigate}
+          className={cn(navLinkClass, isActive(item.to) ? navLinkActive : navLinkInactive)}
+        >
+          <item.icon className="h-4 w-4 shrink-0" />
+          {item.label}
+        </Link>
+      ))}
 
       {/* Lab/Experiments Section */}
       {canSeeExperiments && (

@@ -97,7 +97,7 @@ export function HeadlinesSection({
           .insert({
             title: h.title,
             description: h.description,
-            submitted_by: h.submitted_by,
+            submitted_by: userId,
             status: "open",
             meeting_id: meetingId,
           })
@@ -162,7 +162,7 @@ export function HeadlinesSection({
         .insert({
           title: h.title,
           description: h.description,
-          submitted_by: h.submitted_by,
+          submitted_by: userId,
           status: "open",
           meeting_id: meetingId,
         })
@@ -214,7 +214,7 @@ export function HeadlinesSection({
           .insert({
             title: h.title,
             description: h.description,
-            submitted_by: h.submitted_by,
+            submitted_by: userId,
             status: "open",
             meeting_id: meetingId,
           })

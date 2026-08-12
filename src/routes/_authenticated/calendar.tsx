@@ -303,114 +303,16 @@ function CalendarPage() {
   };
 
   return (
-    <div className="p-3 sm:p-4 lg:p-6 max-w-[1400px] mx-auto">
-      <header className="mb-4 space-y-3">
-        <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight truncate">
-            Content Calendar
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground truncate">{title}</p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          {/* Brand filter — own row, horizontal scroll on small screens */}
-          <div className="flex gap-1 bg-muted rounded-md p-0.5 overflow-x-auto flex-nowrap w-full sm:w-fit">
-            {(["all", "LOZ", "PP", "AON", "MSREG ALL"] as const).map((b) => {
-              const brandTitle: Record<string, string> = {
-                all: "Show all brands",
-                PP: "Pinnacle Point",
-                LOZ: "Lake of the Ozarks",
-                AON: "Agents of the Ozarks Network",
-                "MSREG ALL": "All MSREG Brands",
-              };
-              return (
-              <button
-                key={b}
-                title={brandTitle[b]}
-                onClick={() => setBrandFilter(b)}
-                className={cn(
-                  "shrink-0 px-2.5 py-1.5 text-xs font-semibold rounded transition-colors whitespace-nowrap",
-                  brandFilter === b
-                    ? b === "PP"
-                      ? "bg-gold text-gold-foreground"
-                      : b === "LOZ"
-                        ? "bg-indigo-400 text-background"
-                        : b === "MSREG ALL"
-                          ? "bg-purple-400 text-background"
-                          : b === "AON"
-                            ? "bg-sky-500 text-white"
-                            : "bg-foreground text-background"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {b === "all" ? "All" : b}
-              </button>
-              );
-            })}
+    <div className="p-3 sm:p-4 lg:p-6 max-w-[1600px] mx-auto h-[calc(100vh-64px)] flex flex-col gap-4">
+      <header className="flex flex-col gap-4 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-3xl font-serif font-medium tracking-tight truncate">
+              Content Calendar
+            </h1>
           </div>
 
-          {/* Hide 60/90/120 Reposts Checkbox */}
-          <div className="flex items-center gap-2 px-1">
-            <Checkbox
-              id="hide-reposts-check"
-              checked={hideReposts}
-              onCheckedChange={(checked) => setHideReposts(!!checked)}
-            />
-            <label
-              htmlFor="hide-reposts-check"
-              className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer select-none"
-            >
-              Hide 60/90/120 Reposts
-            </label>
-          </div>
-          
-          <div className="flex items-center gap-2 px-1">
-            <Checkbox
-              id="show-only-videos-check"
-              checked={showOnlyVideos}
-              onCheckedChange={(checked) => setShowOnlyVideos(!!checked)}
-            />
-            <label
-              htmlFor="show-only-videos-check"
-              className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer select-none"
-            >
-              Show Only Videos
-            </label>
-          </div>
-        </div>
-
-        {/* Toolbar — wraps on mobile */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex bg-muted rounded-md p-0.5">
-            {(["list", "daily", "weekly", "monthly"] as const).map((v) => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                className={cn(
-                  "px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded capitalize transition-colors",
-                  view === v
-                    ? "bg-gold text-gold-foreground"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
-          {view !== "list" && (
-            <div className="flex items-center gap-1">
-              <Button size="sm" variant="outline" onClick={goPrev} className="px-2">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button size="sm" variant="outline" onClick={goToday}>
-                Today
-              </Button>
-              <Button size="sm" variant="outline" onClick={goNext} className="px-2">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-          <div className="flex flex-wrap items-center gap-2 ml-auto">
+          <div className="flex flex-wrap items-center gap-2">
             <Button size="sm" variant="outline" onClick={() => handleExport(view, filteredItems)}>
               <Download className="h-4 w-4 sm:mr-1" />{" "}
               <span className="hidden sm:inline">Export</span>
@@ -431,19 +333,97 @@ function CalendarPage() {
                 className="bg-gold text-gold-foreground hover:bg-gold/90"
                 onClick={() => openSlot(new Date())}
               >
-                <Plus className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">New</span>
+                <Plus className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">New Post</span>
               </Button>
             )}
+          </div>
+        </div>
+
+        {/* Visual Timeline Bar / Filter Row */}
+        <div className="bg-card border border-border p-3 rounded-lg shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            {view !== "list" && (
+              <div className="flex items-center gap-1.5 bg-background border border-border rounded-full px-1.5 py-1">
+                <Button size="icon" variant="ghost" onClick={goPrev} className="h-7 w-7 rounded-full hover:bg-accent">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button size="sm" variant="ghost" onClick={goToday} className="h-7 font-serif font-medium text-base tracking-tight hover:bg-accent rounded-full px-3">
+                  {title}
+                </Button>
+                <Button size="icon" variant="ghost" onClick={goNext} className="h-7 w-7 rounded-full hover:bg-accent">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            <div className="flex bg-muted rounded-full p-1 border border-border/50">
+              {(["list", "daily", "weekly", "monthly"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={cn(
+                    "px-3 py-1 text-xs font-semibold rounded-full capitalize transition-colors",
+                    view === v
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 lg:gap-4 ml-auto">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="hide-reposts-check"
+                checked={hideReposts}
+                onCheckedChange={(checked) => setHideReposts(!!checked)}
+              />
+              <label htmlFor="hide-reposts-check" className="text-xs font-medium cursor-pointer">
+                Hide Reposts
+              </label>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="show-only-videos-check"
+                checked={showOnlyVideos}
+                onCheckedChange={(checked) => setShowOnlyVideos(!!checked)}
+              />
+              <label htmlFor="show-only-videos-check" className="text-xs font-medium cursor-pointer">
+                Only Videos
+              </label>
+            </div>
+
+            <div className="flex gap-1 bg-background border border-border rounded-full p-0.5 ml-2">
+              {(["all", "LOZ", "PP", "AON", "MSREG ALL"] as const).map((b) => (
+                <button
+                  key={b}
+                  onClick={() => setBrandFilter(b)}
+                  className={cn(
+                    "px-2.5 py-1 text-[10px] font-bold rounded-full transition-colors whitespace-nowrap uppercase tracking-wider",
+                    brandFilter === b
+                      ? "bg-gold text-gold-foreground"
+                      : "text-muted-foreground hover:bg-accent",
+                  )}
+                >
+                  {b === "all" ? "ALL" : b}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </header>
 
       {view === "list" ? (
-        <CalendarListView brandFilter={brandFilter} />
+        <div className="flex-1 overflow-hidden min-h-0 relative">
+          <CalendarListView brandFilter={brandFilter} />
+        </div>
       ) : (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           <div
-            className="bg-card border border-border rounded-xl overflow-hidden"
+            className="flex-1 bg-card border border-border rounded-xl overflow-hidden min-h-0 flex flex-col relative"
             onClick={() => setSelectedId(null)}
           >
             {view === "daily" && (

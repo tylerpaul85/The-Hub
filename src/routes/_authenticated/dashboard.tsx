@@ -56,9 +56,9 @@ function Dashboard() {
 
   return (
     <div className="px-6 py-5 max-w-5xl mx-auto space-y-5">
-      <header>
-        <h1 className="text-lg font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
+      <header className="mb-8">
+        <h1 className="text-4xl font-serif font-medium tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground mt-2">
           Welcome back, {(user?.user_metadata as any)?.first_name || user?.email}.
         </p>
       </header>
@@ -103,61 +103,66 @@ function Dashboard() {
       )}
 
       {/* Action Items */}
-      <section className="bg-card border border-border rounded-lg">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-          <ListTodo className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold">My Action Items</h2>
-          {actionItems.length > 0 && (
-            <span className="ml-auto text-[11px] font-semibold text-gold tabular-nums">
-              {actionItems.length}
-            </span>
-          )}
-        </div>
-        <div className="divide-y divide-border/50">
-          {isLoading && (
-            <div className="space-y-2.5 px-4 py-4">
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-              <Skeleton className="h-4 w-2/3" />
+      {(isAdmin || roles?.includes("marketing_coordinator")) && (
+        <div className="grid lg:grid-cols-2 gap-4 mt-6">
+          <section className="bg-card border border-border rounded-lg shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+              <ListTodo className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">My Action Items</h2>
+              {actionItems.length > 0 && (
+                <span className="ml-auto text-[11px] font-semibold text-gold tabular-nums bg-gold/10 px-2 py-0.5 rounded-full">
+                  {actionItems.length}
+                </span>
+              )}
             </div>
-          )}
-          {!isLoading && actionItems.length === 0 && (
-            <div className="py-10 flex flex-col items-center text-center">
-              <ListTodo className="h-5 w-5 text-muted-foreground/40 mb-2" />
-              <p className="text-sm text-muted-foreground">Nothing needs your attention right now.</p>
+            <div className="divide-y divide-border/50">
+              {isLoading && (
+                <div className="space-y-2.5 px-5 py-5">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              )}
+              {!isLoading && actionItems.length === 0 && (
+                <div className="py-10 flex flex-col items-center text-center">
+                  <ListTodo className="h-5 w-5 text-muted-foreground/40 mb-2" />
+                  <p className="text-sm text-muted-foreground">Nothing needs your attention right now.</p>
+                </div>
+              )}
+              {!isLoading && actionItems.map((item) => (
+                <Row key={item.id} item={item} onOpen={() => detail.open(item.id)} />
+              ))}
             </div>
-          )}
-          {!isLoading && actionItems.map((item) => (
-            <Row key={item.id} item={item} onOpen={() => detail.open(item.id)} />
-          ))}
-        </div>
-      </section>
+          </section>
 
-      {/* Approved & Ready */}
-      <section className="bg-card border border-border rounded-lg">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-          <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold">Approved & Ready</h2>
-          <span className="ml-auto text-xs text-muted-foreground tabular-nums">{approved.length}</span>
-        </div>
-        <div className="divide-y divide-border/50">
-          {isLoading && (
-            <div className="space-y-2.5 px-4 py-4">
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
+          {/* Approved & Ready */}
+          <section className="bg-card border border-border rounded-lg shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Approved & Ready</h2>
+              <span className="ml-auto text-[11px] text-muted-foreground tabular-nums bg-muted px-2 py-0.5 rounded-full">
+                {approved.length}
+              </span>
             </div>
-          )}
-          {!isLoading && approved.length === 0 && (
-            <div className="py-10 flex flex-col items-center text-center">
-              <CheckCircle2 className="h-5 w-5 text-muted-foreground/40 mb-2" />
-              <p className="text-sm text-muted-foreground">No approved content waiting.</p>
+            <div className="divide-y divide-border/50">
+              {isLoading && (
+                <div className="space-y-2.5 px-5 py-5">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              )}
+              {!isLoading && approved.length === 0 && (
+                <div className="py-10 flex flex-col items-center text-center">
+                  <CheckCircle2 className="h-5 w-5 text-muted-foreground/40 mb-2" />
+                  <p className="text-sm text-muted-foreground">No approved content waiting.</p>
+                </div>
+              )}
+              {!isLoading && approved.map((item) => (
+                <Row key={item.id} item={item} onOpen={() => detail.open(item.id)} />
+              ))}
             </div>
-          )}
-          {!isLoading && approved.map((item) => (
-            <Row key={item.id} item={item} onOpen={() => detail.open(item.id)} />
-          ))}
+          </section>
         </div>
-      </section>
+      )}
     </div>
   );
 }

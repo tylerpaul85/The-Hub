@@ -193,14 +193,33 @@ function SubmitSection({ userId }: { userId: string }) {
     enabled: !!userId,
   });
 
+  const last5Weeks = useMemo(() => {
+    const wks = [];
+    for (let i = 4; i >= 0; i--) {
+      const idx = weekIdx - i;
+      if (idx >= 0 && idx < weeks.length) {
+        wks.push({
+          wk: ymd(weeks[idx]),
+          monday: weeks[idx],
+          label: i === 0 ? "Current" : `${weeks[idx].getMonth() + 1}/${weeks[idx].getDate()}`,
+          isCurrent: i === 0,
+        });
+      }
+    }
+    return wks;
+  }, [weeks, weekIdx]);
+
   const { data: entries = [] } = useQuery({
-    queryKey: ["my-week-entries", userId, wk],
+    queryKey: ["my-5week-entries", userId, wk],
     queryFn: async () => {
       if (!userId || mine.length === 0) return [];
       const { data, error } = await sb
         .from("scorecard_weekly_entries")
         .select("*")
-        .eq("week_start", wk)
+        .in(
+          "week_start",
+          last5Weeks.map((w) => w.wk),
+        )
         .in(
           "measurable_id",
           mine.map((m) => m.id),
@@ -214,21 +233,23 @@ function SubmitSection({ userId }: { userId: string }) {
   const upsert = useMutation({
     mutationFn: async ({
       measurable_id,
+      week_start,
       actual_value,
     }: {
       measurable_id: string;
+      week_start: string;
       actual_value: number;
     }) => {
       const { error } = await sb
         .from("scorecard_weekly_entries")
         .upsert(
-          { measurable_id, week_start: wk, actual_value, submitted_by: userId },
+          { measurable_id, week_start, actual_value, submitted_by: userId },
           { onConflict: "measurable_id,week_start" },
         );
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["my-week-entries", userId, wk] });
+      qc.invalidateQueries({ queryKey: ["my-5week-entries", userId, wk] });
       qc.invalidateQueries({ queryKey: ["all-weekly-entries"] });
       toast.success("Saved");
     },
@@ -278,83 +299,100 @@ function SubmitSection({ userId }: { userId: string }) {
 
       {mine.length === 0 ? (
         <div className="bg-card border border-border rounded-xl p-8 text-center text-muted-foreground">
-          You're not assigned to any scorecard metrics. An admin can assign metrics to you from
-          Settings.
+          You're not assigned to any scorecard metrics. An admin can assign metrics to you from Settings.
         </div>
       ) : (
-        <div className="bg-card border border-border rounded-xl">
-          <div className="px-5 py-3 border-b border-border flex items-center justify-between">
-            <div className="font-semibold">My metrics for this week</div>
-            <div className="text-xs text-muted-foreground">
-              {filled}/{total} submitted
-            </div>
+        <div className="bg-card border border-border rounded-xl overflow-x-auto">
+          <div className="px-5 py-3 border-b border-border flex items-center justify-between min-w-[700px]">
+            <div className="font-semibold">My metrics (Last 5 Weeks)</div>
           </div>
-          <div className="divide-y divide-border">
-            {mine.map((m) => {
-              const e = entries.find((x) => x.measurable_id === m.id);
-              const hitResult = e
-                ? isGoalHit(Number(e.actual_value), m.weekly_target, m.goal_direction)
-                : null;
-              const comparable = hitResult !== null;
-              const hit = hitResult === true;
-              return (
-                <div key={m.id} className="flex items-center gap-3 p-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{m.label}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {m.source || "Uncategorized"} · Goal {m.weekly_target} ·{" "}
-                      {m.goal_direction === "lower_is_better"
-                        ? "lower is better"
-                        : "higher is better"}
-                    </div>
-                  </div>
-                  {e ? (
-                    comparable ? (
-                      <span
-                        className={cn(
-                          "text-xs px-2 py-0.5 rounded-full border",
-                          hit
-                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                            : "bg-destructive/10 text-destructive border-destructive/30",
-                        )}
-                      >
-                        {hit ? "Goal hit" : "Off goal"}
-                      </span>
-                    ) : (
-                      <span className="text-xs px-2 py-0.5 rounded-full border bg-muted text-muted-foreground border-border">
-                        Submitted
-                      </span>
-                    )
-                  ) : (
-                    <span className="text-xs px-2 py-0.5 rounded-full border bg-muted text-muted-foreground border-border">
-                      Needs entry
-                    </span>
-                  )}
-                  <Input
-                    type="number"
-                    className={cn(
-                      "w-28 text-right",
-                      e &&
-                        comparable &&
-                        (hit
-                          ? "text-emerald-400 border-emerald-500/40"
-                          : "text-destructive border-destructive/40"),
-                    )}
-                    defaultValue={e?.actual_value ?? ""}
-                    placeholder="—"
-                    onBlur={(ev) => {
-                      const raw = ev.target.value;
-                      if (raw === "") return;
-                      const v = Number(raw);
-                      if (Number.isNaN(v)) return;
-                      if (e && v === Number(e.actual_value)) return;
-                      upsert.mutate({ measurable_id: m.id, actual_value: v });
-                    }}
-                  />
-                </div>
-              );
-            })}
-          </div>
+          <table className="w-full text-sm table-fixed min-w-[700px]">
+            <colgroup>
+              <col className="w-[30%]" />
+              <col className="w-[10%]" />
+              {last5Weeks.map((_, i) => (
+                <col key={i} className="w-[12%]" />
+              ))}
+            </colgroup>
+            <thead className="text-xs text-muted-foreground bg-muted/30">
+              <tr>
+                <th className="text-left py-2 px-4 font-normal">Measurable</th>
+                <th className="text-right py-2 px-4 font-normal">Goal</th>
+                {last5Weeks.map((w) => (
+                  <th key={w.wk} className="text-right py-2 px-4 font-normal">
+                    {w.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {mine.map((m) => {
+                return (
+                  <tr key={m.id} className="hover:bg-accent/10 transition-colors">
+                    <td className="py-3 px-4">
+                      <div className="font-medium truncate">{m.label}</div>
+                      <div className="text-[10px] text-muted-foreground truncate">
+                        {m.source || "Uncategorized"}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-right text-muted-foreground tabular-nums">
+                      {m.weekly_target}
+                    </td>
+                    {last5Weeks.map((w, i) => {
+                      const e = entries.find(x => x.measurable_id === m.id && x.week_start === w.wk);
+                      const actual = e ? Number(e.actual_value) : undefined;
+                      const has = actual !== undefined;
+                      
+                      let trendArrow = null;
+                      if (has && i > 0) {
+                        const prevWk = last5Weeks[i - 1];
+                        const prevE = entries.find(x => x.measurable_id === m.id && x.week_start === prevWk.wk);
+                        const prevActual = prevE ? Number(prevE.actual_value) : undefined;
+                        
+                        if (prevActual !== undefined) {
+                          if (actual === prevActual) {
+                            trendArrow = <span className="text-muted-foreground/50 ml-1 text-[10px] inline-block w-[12px] text-center">→</span>;
+                          } else {
+                            const improved = m.goal_direction === "lower_is_better" ? actual < prevActual : actual > prevActual;
+                            trendArrow = <span className={cn("ml-1 text-[10px] inline-block w-[12px] text-center", improved ? "text-emerald-400" : "text-destructive")}>{improved ? "↑" : "↓"}</span>;
+                          }
+                        }
+                      }
+                      
+                      const hitResult = has ? isGoalHit(actual as number, m.weekly_target, m.goal_direction) : null;
+                      const comparable = hitResult !== null;
+                      const hit = hitResult === true;
+                      
+                      return (
+                        <td key={w.wk} className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            {trendArrow}
+                            <Input
+                              type="number"
+                              className={cn(
+                                "w-20 text-right h-8 tabular-nums font-mono text-[13px]",
+                                has && comparable && (hit ? "text-emerald-400 border-emerald-500/40" : "text-destructive border-destructive/40")
+                              )}
+                              defaultValue={has ? actual : ""}
+                              placeholder="—"
+                              onBlur={(ev) => {
+                                const raw = ev.target.value;
+                                if (raw === "") return;
+                                const v = Number(raw);
+                                if (Number.isNaN(v)) return;
+                                if (has && v === actual) return;
+                                upsert.mutate({ measurable_id: m.id, week_start: w.wk, actual_value: v });
+                              }}
+                            />
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

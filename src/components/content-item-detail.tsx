@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -443,15 +442,22 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
           <div className="p-6 text-muted-foreground">Loading…</div>
         </DialogContent>
       </Dialog>
+        </SheetContent>
+      </Sheet>
     );
   }
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 flex-wrap text-sm">
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent className="flex flex-col h-[100dvh] p-0 gap-0 sm:max-w-2xl bg-background border-l border-border overflow-hidden">
+          <SheetHeader className="px-6 py-4 border-b border-border bg-card/50">
+            <SheetTitle className="text-xl font-serif font-medium flex items-center gap-2">
+              {item?.title ?? "Loading..."}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className="flex items-center gap-2 flex-wrap text-sm">
               <span className="text-base">
                 {canEditContent ? "Edit Content" : "Content Details"}
               </span>
@@ -491,595 +497,592 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                   <span className="opacity-60">Auto-save on</span>
                 )}
               </span>
-            </DialogTitle>
-          </DialogHeader>
-
-          {item.status === "needs_revision" && form.revision_note && (
-            <div className="rounded-md bg-destructive/15 border border-destructive/40 p-3">
-              <div className="flex items-center gap-2 text-destructive text-sm font-semibold mb-1">
-                <AlertTriangle className="h-4 w-4" /> Needs Revision
-              </div>
-              <div className="text-sm text-foreground whitespace-pre-wrap">
-                <Linkify text={form.revision_note} />
-              </div>
-              {isContributor && (
-                <Button
-                  size="sm"
-                  onClick={submitForReApproval}
-                  className="mt-3 bg-gold text-gold-foreground hover:bg-gold/90"
-                >
-                  <Send className="h-3.5 w-3.5 mr-1.5" /> Submit for Re-Approval
-                </Button>
-              )}
-            </div>
-          )}
-
-          {item.status === "pending_re_approval" && (
-            <div className="rounded-md bg-[oklch(0.72_0.18_55)]/10 border border-[oklch(0.72_0.18_55)]/40 p-3 text-sm">
-              <span className="font-semibold text-[oklch(0.82_0.18_55)]">Pending Re-Approval</span>{" "}
-              — awaiting admin review.
-            </div>
-          )}
-
-          {targetMissed && (
-            <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/15 border border-destructive/30 text-destructive text-sm">
-              <AlertTriangle className="h-4 w-4" /> Target publish date ({item.target_publish_date})
-              has passed without Published status.
-            </div>
-          )}
-
-          <fieldset disabled={!canEditContent} className="space-y-5 disabled:opacity-95">
-            {/* ===== TOP: Title, Notes, Chat ===== */}
-            <div>
-              <Label className="text-xs uppercase tracking-wide text-muted-foreground">Title</Label>
-              <Input
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="mt-1.5 text-lg font-semibold h-12 bg-background border-gold/30 focus-visible:border-gold"
-                maxLength={200}
-                placeholder="Content title"
-              />
             </div>
 
-            <div>
-              <Label className="text-xs uppercase tracking-wide text-muted-foreground">Notes</Label>
-              <Textarea
-                value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                rows={3}
-                maxLength={2000}
-                className="mt-1.5"
-                placeholder="Internal notes for the team…"
-              />
-              {form.notes && (
-                <div className="mt-1 text-[11px] text-muted-foreground">
-                  <Linkify text={form.notes} />
+            {item.status === "needs_revision" && form.revision_note && (
+              <div className="rounded-md bg-destructive/15 border border-destructive/40 p-3">
+                <div className="flex items-center gap-2 text-destructive text-sm font-semibold mb-1">
+                  <AlertTriangle className="h-4 w-4" /> Needs Revision
                 </div>
-              )}
+                <div className="text-sm text-foreground whitespace-pre-wrap">
+                  <Linkify text={form.revision_note} />
+                </div>
+                {isContributor && (
+                  <Button
+                    size="sm"
+                    onClick={submitForReApproval}
+                    className="mt-3 bg-gold text-gold-foreground hover:bg-gold/90"
+                  >
+                    <Send className="h-3.5 w-3.5 mr-1.5" /> Submit for Re-Approval
+                  </Button>
+                )}
+              </div>
+            )}
 
-              {/* Note attachments (photos + files) */}
-              <div className="mt-3 space-y-2">
-                {form.note_attachments.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {form.note_attachments.map((a, i) => {
-                      const isImg = a.type?.startsWith("image/");
-                      return (
-                        <div key={i} className="relative group">
-                          {isImg ? (
-                            <a
-                              href={a.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title={a.name}
-                            >
-                              <img
-                                src={a.url}
-                                alt={a.name}
-                                className="h-20 w-20 object-cover rounded-md border border-gold/30"
-                              />
-                            </a>
-                          ) : (
-                            <a
-                              href={a.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 px-2.5 py-2 rounded-md border border-gold/30 bg-card/50 text-xs hover:bg-accent/40 max-w-[220px]"
-                              title={a.name}
-                            >
-                              <FileText className="h-4 w-4 text-gold flex-shrink-0" />
-                              <span className="truncate">{a.name}</span>
-                              <Download className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                            </a>
-                          )}
+            {item.status === "pending_re_approval" && (
+              <div className="rounded-md bg-[oklch(0.72_0.18_55)]/10 border border-[oklch(0.72_0.18_55)]/40 p-3 text-sm">
+                <span className="font-semibold text-[oklch(0.82_0.18_55)]">Pending Re-Approval</span>{" "}
+                — awaiting admin review.
+              </div>
+            )}
+
+            {targetMissed && (
+              <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/15 border border-destructive/30 text-destructive text-sm">
+                <AlertTriangle className="h-4 w-4" /> Target publish date ({item.target_publish_date})
+                has passed without Published status.
+              </div>
+            )}
+
+            <fieldset disabled={!canEditContent} className="space-y-5 disabled:opacity-95">
+              {/* ===== TOP: Title, Notes, Chat ===== */}
+              <div>
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">Title</Label>
+                <Input
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  className="mt-1.5 text-lg font-semibold h-12 bg-background border-gold/30 focus-visible:border-gold"
+                  maxLength={200}
+                  placeholder="Content title"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">Notes</Label>
+                <Textarea
+                  value={form.notes}
+                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  rows={3}
+                  maxLength={2000}
+                  className="mt-1.5"
+                  placeholder="Internal notes for the team…"
+                />
+                {form.notes && (
+                  <div className="mt-1 text-[11px] text-muted-foreground">
+                    <Linkify text={form.notes} />
+                  </div>
+                )}
+
+                {/* Note attachments (photos + files) */}
+                <div className="mt-3 space-y-2">
+                  {form.note_attachments.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {form.note_attachments.map((a, i) => {
+                        const isImg = a.type?.startsWith("image/");
+                        return (
+                          <div key={i} className="relative group">
+                            {isImg ? (
+                              <a
+                                href={a.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title={a.name}
+                              >
+                                <img
+                                  src={a.url}
+                                  alt={a.name}
+                                  className="h-20 w-20 object-cover rounded-md border border-gold/30"
+                                />
+                              </a>
+                            ) : (
+                              <a
+                                href={a.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 px-2.5 py-2 rounded-md border border-gold/30 bg-card/50 text-xs hover:bg-accent/40 max-w-[220px]"
+                                title={a.name}
+                              >
+                                <FileText className="h-4 w-4 text-gold flex-shrink-0" />
+                                <span className="truncate">{a.name}</span>
+                                <Download className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                              </a>
+                            )}
+                            {canEditContent && (
+                              <button
+                                type="button"
+                                onClick={() => removeNoteAttachment(i)}
+                                className="absolute -top-1.5 -right-1.5 bg-black/80 hover:bg-destructive text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {canEditContent && (
+                    <>
+                      <input
+                        ref={noteFileRef}
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          const fs = e.target.files;
+                          if (fs && fs.length) handleNoteUpload(fs);
+                          if (noteFileRef.current) noteFileRef.current.value = "";
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={uploadingNote}
+                        onClick={() => noteFileRef.current?.click()}
+                      >
+                        <Paperclip className="h-3.5 w-3.5 mr-1.5" />{" "}
+                        {uploadingNote ? "Uploading…" : "Attach photos or files"}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <ChatThread parentId={itemId} kind="content" allowAttachments />
+
+              {/* ===== MIDDLE: Tasks ===== */}
+
+              <LinkedTasksPanel
+                contentItemId={itemId}
+                contentTitle={form.title}
+                profiles={profiles as any[]}
+                canEdit={!!canEditContent}
+              />
+
+              {/* ===== BELOW: Images, Caption, Platforms, Brand, Schedule, etc ===== */}
+              <div className="pt-3 border-t border-border">
+                <Label>Images</Label>
+                <div className="mt-1.5 space-y-3">
+                  {form.image_urls.length > 0 && (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                      {form.image_urls.map((url, i) => (
+                        <div
+                          key={i}
+                          className="relative group aspect-square rounded-md overflow-hidden border border-border bg-muted"
+                        >
+                          <img
+                            src={url}
+                            alt=""
+                            className="h-full w-full object-cover cursor-zoom-in"
+                            onClick={() => setLightbox(url)}
+                          />
                           {canEditContent && (
                             <button
                               type="button"
-                              onClick={() => removeNoteAttachment(i)}
-                              className="absolute -top-1.5 -right-1.5 bg-black/80 hover:bg-destructive text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeImage(i);
+                              }}
+                              className="absolute top-1 right-1 bg-black/70 hover:bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                             >
                               <X className="h-3 w-3" />
                             </button>
                           )}
+                          {i === 0 && (
+                            <span className="absolute bottom-1 left-1 text-[10px] bg-gold text-gold-foreground px-1.5 py-0.5 rounded">
+                              Cover
+                            </span>
+                          )}
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-                {canEditContent && (
-                  <>
-                    <input
-                      ref={noteFileRef}
-                      type="file"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => {
-                        const fs = e.target.files;
-                        if (fs && fs.length) handleNoteUpload(fs);
-                        if (noteFileRef.current) noteFileRef.current.value = "";
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={uploadingNote}
-                      onClick={() => noteFileRef.current?.click()}
-                    >
-                      <Paperclip className="h-3.5 w-3.5 mr-1.5" />{" "}
-                      {uploadingNote ? "Uploading…" : "Attach photos or files"}
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <ChatThread parentId={itemId} kind="content" allowAttachments />
-
-            {/* ===== MIDDLE: Tasks ===== */}
-
-            <LinkedTasksPanel
-              contentItemId={itemId}
-              contentTitle={form.title}
-              profiles={profiles as any[]}
-              canEdit={!!canEditContent}
-            />
-
-            {/* ===== BELOW: Images, Caption, Platforms, Brand, Schedule, etc ===== */}
-            <div className="pt-3 border-t border-border">
-              <Label>Images</Label>
-              <div className="mt-1.5 space-y-3">
-                {form.image_urls.length > 0 && (
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                    {form.image_urls.map((url, i) => (
-                      <div
-                        key={i}
-                        className="relative group aspect-square rounded-md overflow-hidden border border-border bg-muted"
+                      ))}
+                    </div>
+                  )}
+                  {form.image_urls.length === 0 && (
+                    <div className="text-xs text-muted-foreground">No images attached.</div>
+                  )}
+                  {canEditContent && (
+                    <>
+                      <input
+                        ref={fileRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          const fs = e.target.files;
+                          if (fs && fs.length) handleUpload(fs);
+                          if (fileRef.current) fileRef.current.value = "";
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={uploading}
+                        onClick={() => fileRef.current?.click()}
                       >
-                        <img
-                          src={url}
-                          alt=""
-                          className="h-full w-full object-cover cursor-zoom-in"
-                          onClick={() => setLightbox(url)}
-                        />
-                        {canEditContent && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeImage(i);
-                            }}
-                            className="absolute top-1 right-1 bg-black/70 hover:bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        )}
-                        {i === 0 && (
-                          <span className="absolute bottom-1 left-1 text-[10px] bg-gold text-gold-foreground px-1.5 py-0.5 rounded">
-                            Cover
-                          </span>
-                        )}
-                      </div>
-                    ))}
+                        <Upload className="h-3.5 w-3.5 mr-1.5" />{" "}
+                        {uploading ? "Uploading…" : "Upload images"}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <Label>Platforms</Label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {PLATFORMS.map((p) => (
+                    <label
+                      key={p}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-1.5 border rounded-md cursor-pointer text-sm",
+                        form.platforms.includes(p)
+                          ? PLATFORM_CHIP[p]
+                          : "border-border hover:bg-accent/40",
+                      )}
+                    >
+                      <Checkbox
+                        checked={form.platforms.includes(p)}
+                        onCheckedChange={() => togglePlatform(p)}
+                      />
+                      {p}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Platform-specific fields */}
+              {hasPlatform("Blog") && (
+                <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-3">
+                  <div className="text-xs font-semibold text-emerald-300 flex items-center gap-1.5">
+                    Blog details
                   </div>
-                )}
-                {form.image_urls.length === 0 && (
-                  <div className="text-xs text-muted-foreground">No images attached.</div>
-                )}
-                {canEditContent && (
-                  <>
-                    <input
-                      ref={fileRef}
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => {
-                        const fs = e.target.files;
-                        if (fs && fs.length) handleUpload(fs);
-                        if (fileRef.current) fileRef.current.value = "";
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={uploading}
-                      onClick={() => fileRef.current?.click()}
-                    >
-                      <Upload className="h-3.5 w-3.5 mr-1.5" />{" "}
-                      {uploading ? "Uploading…" : "Upload images"}
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <Label>Platforms</Label>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {PLATFORMS.map((p) => (
-                  <label
-                    key={p}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 border rounded-md cursor-pointer text-sm",
-                      form.platforms.includes(p)
-                        ? PLATFORM_CHIP[p]
-                        : "border-border hover:bg-accent/40",
-                    )}
-                  >
-                    <Checkbox
-                      checked={form.platforms.includes(p)}
-                      onCheckedChange={() => togglePlatform(p)}
-                    />
-                    {p}
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Platform-specific fields */}
-            {hasPlatform("Blog") && (
-              <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-3">
-                <div className="text-xs font-semibold text-emerald-300 flex items-center gap-1.5">
-                  Blog details
-                </div>
-                <div>
-                  <Label className="text-xs">Blog content (for review)</Label>
-                  <Textarea
-                    value={form.blog_content}
-                    onChange={(e) => setForm({ ...form, blog_content: e.target.value })}
-                    rows={5}
-                    className="mt-1.5"
-                    placeholder="Paste blog body here…"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Doc link</Label>
-                  <Input
-                    type="url"
-                    value={form.blog_doc_link}
-                    onChange={(e) => setForm({ ...form, blog_doc_link: e.target.value })}
-                    placeholder="https://docs.google.com/…"
-                    className="mt-1.5"
-                  />
-                  {form.blog_doc_link && (
-                    <a
-                      href={form.blog_doc_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1 inline-flex items-center gap-1 text-xs text-gold hover:underline"
-                    >
-                      <ExternalLink className="h-3 w-3" /> Open doc
-                    </a>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {hasPlatform("YouTube") && (
-              <div className="rounded-md border border-red-500/30 bg-red-500/5 p-3 space-y-3">
-                <div className="text-xs font-semibold text-red-300">YouTube details</div>
-                <div>
-                  <Label className="text-xs">Video title</Label>
-                  <Input
-                    value={form.youtube_video_title}
-                    onChange={(e) => setForm({ ...form, youtube_video_title: e.target.value })}
-                    className="mt-1.5"
-                    placeholder="YouTube video title"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Thumbnail link</Label>
-                  <Input
-                    type="url"
-                    value={form.youtube_thumbnail_url}
-                    onChange={(e) => setForm({ ...form, youtube_thumbnail_url: e.target.value })}
-                    placeholder="https://…"
-                    className="mt-1.5"
-                  />
-                  {form.youtube_thumbnail_url && (
-                    <a
-                      href={form.youtube_thumbnail_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1 inline-flex items-center gap-1 text-xs text-gold hover:underline"
-                    >
-                      <ExternalLink className="h-3 w-3" /> Open thumbnail
-                    </a>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {hasPlatform("Mailchimp") && (
-              <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 space-y-3">
-                <div className="text-xs font-semibold text-amber-300">
-                  Email (Mailchimp) details
-                </div>
-                <div>
-                  <Label className="text-xs">Subject line</Label>
-                  <Input
-                    value={form.email_subject_line}
-                    onChange={(e) => setForm({ ...form, email_subject_line: e.target.value })}
-                    className="mt-1.5"
-                    placeholder="Email subject"
-                    disabled={!canEditContent}
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Email body</Label>
-                  <Textarea
-                    value={form.email_body}
-                    onChange={(e) => setForm({ ...form, email_body: e.target.value })}
-                    rows={8}
-                    className="mt-1.5"
-                    placeholder="Email body content…"
-                    disabled={!canEditContent}
-                  />
-                </div>
-              </div>
-            )}
-
-            {showMeta && (
-              <div className="rounded-md border border-blue-500/30 bg-blue-500/5 p-3 space-y-3">
-                <div className="text-xs font-semibold text-blue-300">
-                  Meta (Facebook/Instagram) details
-                </div>
-                <div>
-                  <Label className="text-xs">Graphic link</Label>
-                  <Input
-                    type="url"
-                    value={form.meta_graphic_link}
-                    onChange={(e) => setForm({ ...form, meta_graphic_link: e.target.value })}
-                    placeholder="https://… (image / graphic)"
-                    className="mt-1.5"
-                  />
-                  {form.meta_graphic_link && (
-                    <a
-                      href={form.meta_graphic_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1 inline-flex items-center gap-1 text-xs text-gold hover:underline"
-                    >
-                      <ExternalLink className="h-3 w-3" /> Open graphic
-                    </a>
-                  )}
-                </div>
-                <div>
-                  <Label className="text-xs">Video link</Label>
-                  <Input
-                    type="url"
-                    value={form.meta_video_link}
-                    onChange={(e) => setForm({ ...form, meta_video_link: e.target.value })}
-                    placeholder="https://… (video)"
-                    className="mt-1.5"
-                  />
-                  {form.meta_video_link && (
-                    <a
-                      href={form.meta_video_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1 inline-flex items-center gap-1 text-xs text-gold hover:underline"
-                    >
-                      <ExternalLink className="h-3 w-3" /> Open video
-                    </a>
-                  )}
-                </div>
-                {form.meta_media_link && (
                   <div>
-                    <Label className="text-xs text-muted-foreground">Legacy media link</Label>
+                    <Label className="text-xs">Blog content (for review)</Label>
+                    <Textarea
+                      value={form.blog_content}
+                      onChange={(e) => setForm({ ...form, blog_content: e.target.value })}
+                      rows={5}
+                      className="mt-1.5"
+                      placeholder="Paste blog body here…"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Doc link</Label>
                     <Input
                       type="url"
-                      value={form.meta_media_link}
-                      onChange={(e) => setForm({ ...form, meta_media_link: e.target.value })}
+                      value={form.blog_doc_link}
+                      onChange={(e) => setForm({ ...form, blog_doc_link: e.target.value })}
+                      placeholder="https://docs.google.com/…"
+                      className="mt-1.5"
+                    />
+                    {form.blog_doc_link && (
+                      <a
+                        href={form.blog_doc_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-flex items-center gap-1 text-xs text-gold hover:underline"
+                      >
+                        <ExternalLink className="h-3 w-3" /> Open doc
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {hasPlatform("YouTube") && (
+                <div className="rounded-md border border-red-500/30 bg-red-500/5 p-3 space-y-3">
+                  <div className="text-xs font-semibold text-red-300">YouTube details</div>
+                  <div>
+                    <Label className="text-xs">Video title</Label>
+                    <Input
+                      value={form.youtube_video_title}
+                      onChange={(e) => setForm({ ...form, youtube_video_title: e.target.value })}
+                      className="mt-1.5"
+                      placeholder="YouTube video title"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Thumbnail link</Label>
+                    <Input
+                      type="url"
+                      value={form.youtube_thumbnail_url}
+                      onChange={(e) => setForm({ ...form, youtube_thumbnail_url: e.target.value })}
                       placeholder="https://…"
                       className="mt-1.5"
                     />
+                    {form.youtube_thumbnail_url && (
+                      <a
+                        href={form.youtube_thumbnail_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-flex items-center gap-1 text-xs text-gold hover:underline"
+                      >
+                        <ExternalLink className="h-3 w-3" /> Open thumbnail
+                      </a>
+                    )}
                   </div>
-                )}
-                <div>
-                  <Label className="text-xs">Copy</Label>
-                  <Textarea
-                    value={form.meta_copy}
-                    onChange={(e) => setForm({ ...form, meta_copy: e.target.value })}
-                    rows={4}
-                    className="mt-1.5"
-                    placeholder="Post copy…"
-                  />
+                </div>
+              )}
+
+              {hasPlatform("Mailchimp") && (
+                <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 space-y-3">
+                  <div className="text-xs font-semibold text-amber-300">
+                    Email (Mailchimp) details
+                  </div>
+                  <div>
+                    <Label className="text-xs">Subject line</Label>
+                    <Input
+                      value={form.email_subject_line}
+                      onChange={(e) => setForm({ ...form, email_subject_line: e.target.value })}
+                      className="mt-1.5"
+                      placeholder="Email subject"
+                      disabled={!canEditContent}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Email body</Label>
+                    <Textarea
+                      value={form.email_body}
+                      onChange={(e) => setForm({ ...form, email_body: e.target.value })}
+                      rows={8}
+                      className="mt-1.5"
+                      placeholder="Email body content…"
+                      disabled={!canEditContent}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {showMeta && (
+                <div className="rounded-md border border-blue-500/30 bg-blue-500/5 p-3 space-y-3">
+                  <div className="text-xs font-semibold text-blue-300">
+                    Meta (Facebook/Instagram) details
+                  </div>
+                  <div>
+                    <Label className="text-xs">Graphic link</Label>
+                    <Input
+                      type="url"
+                      value={form.meta_graphic_link}
+                      onChange={(e) => setForm({ ...form, meta_graphic_link: e.target.value })}
+                      placeholder="https://… (image / graphic)"
+                      className="mt-1.5"
+                    />
+                    {form.meta_graphic_link && (
+                      <a
+                        href={form.meta_graphic_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-flex items-center gap-1 text-xs text-gold hover:underline"
+                      >
+                        <ExternalLink className="h-3 w-3" /> Open graphic
+                      </a>
+                    )}
+                  </div>
+                  <div>
+                    <Label className="text-xs">Video link</Label>
+                    <Input
+                      type="url"
+                      value={form.meta_video_link}
+                      onChange={(e) => setForm({ ...form, meta_video_link: e.target.value })}
+                      placeholder="https://… (video)"
+                      className="mt-1.5"
+                    />
+                    {form.meta_video_link && (
+                      <a
+                        href={form.meta_video_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-flex items-center gap-1 text-xs text-gold hover:underline"
+                      >
+                        <ExternalLink className="h-3 w-3" /> Open video
+                      </a>
+                    )}
+                  </div>
+                  {form.meta_media_link && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Legacy media link</Label>
+                      <Input
+                        type="url"
+                        value={form.meta_media_link}
+                        onChange={(e) => setForm({ ...form, meta_media_link: e.target.value })}
+                        placeholder="https://…"
+                        className="mt-1.5"
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <Label className="text-xs">Copy</Label>
+                    <Textarea
+                      value={form.meta_copy}
+                      onChange={(e) => setForm({ ...form, meta_copy: e.target.value })}
+                      rows={4}
+                      className="mt-1.5"
+                      placeholder="Post copy…"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <Label>Brand</Label>
+                <div className="mt-2 flex gap-2">
+                  {BRANDS.map((b) => (
+                    <button
+                      type="button"
+                      key={b}
+                      disabled={!canEditContent}
+                      onClick={() => canEditContent && setForm({ ...form, brand: b })}
+                      className={cn(
+                        "px-3 py-1.5 border rounded-md text-sm font-semibold transition-colors",
+                        form.brand === b
+                          ? BRAND_STYLES[b]
+                          : "border-border text-muted-foreground hover:bg-accent/40",
+                      )}
+                    >
+                      {b}
+                    </button>
+                  ))}
                 </div>
               </div>
-            )}
 
-            <div>
-              <Label>Brand</Label>
-              <div className="mt-2 flex gap-2">
-                {BRANDS.map((b) => (
+              <div>
+                <Label>Post Type</Label>
+                <div className="mt-2 flex gap-2">
                   <button
                     type="button"
-                    key={b}
                     disabled={!canEditContent}
-                    onClick={() => canEditContent && setForm({ ...form, brand: b })}
+                    onClick={() => canEditContent && setForm({ ...form, post_type: "post" })}
                     className={cn(
-                      "px-3 py-1.5 border rounded-md text-sm font-semibold transition-colors",
-                      form.brand === b
-                        ? BRAND_STYLES[b]
+                      "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                      form.post_type === "post"
+                        ? "bg-foreground text-background border-foreground"
                         : "border-border text-muted-foreground hover:bg-accent/40",
                     )}
                   >
-                    {b}
+                    Post
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    disabled={!canEditContent}
+                    onClick={() => canEditContent && setForm({ ...form, post_type: "video" })}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                      form.post_type === "video"
+                        ? "bg-rose-500/10 text-rose-500 border-rose-500/30"
+                        : "border-border text-muted-foreground hover:bg-accent/40",
+                    )}
+                  >
+                    🎥 Video
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <Label>Post Type</Label>
-              <div className="mt-2 flex gap-2">
-                <button
-                  type="button"
-                  disabled={!canEditContent}
-                  onClick={() => canEditContent && setForm({ ...form, post_type: "post" })}
-                  className={cn(
-                    "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
-                    form.post_type === "post"
-                      ? "bg-foreground text-background border-foreground"
-                      : "border-border text-muted-foreground hover:bg-accent/40",
-                  )}
-                >
-                  Post
-                </button>
-                <button
-                  type="button"
-                  disabled={!canEditContent}
-                  onClick={() => canEditContent && setForm({ ...form, post_type: "video" })}
-                  className={cn(
-                    "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
-                    form.post_type === "video"
-                      ? "bg-rose-500/10 text-rose-500 border-rose-500/30"
-                      : "border-border text-muted-foreground hover:bg-accent/40",
-                  )}
-                >
-                  🎥 Video
-                </button>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Status</Label>
+                  <Select value={form.status} onValueChange={(v) => handleStatusChange(v as Status)}>
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUSES.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {STATUS_LABEL[s]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Priority</Label>
+                  <Select
+                    value={form.priority}
+                    onValueChange={(v) => setForm({ ...form, priority: v as Priority })}
+                  >
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRIORITIES.map((p) => (
+                        <SelectItem key={p} value={p} className="capitalize">
+                          {p}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Status</Label>
-                <Select value={form.status} onValueChange={(v) => handleStatusChange(v as Status)}>
-                  <SelectTrigger className="mt-1.5">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUSES.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {STATUS_LABEL[s]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Scheduled Date & Time</Label>
+                  <Input
+                    type="datetime-local"
+                    value={form.scheduled_at}
+                    onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })}
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label>Target Publish Date</Label>
+                  <Input
+                    type="date"
+                    value={form.target_publish_date}
+                    onChange={(e) => setForm({ ...form, target_publish_date: e.target.value })}
+                    className="mt-1.5"
+                  />
+                </div>
               </div>
-              <div>
-                <Label>Priority</Label>
-                <Select
-                  value={form.priority}
-                  onValueChange={(v) => setForm({ ...form, priority: v as Priority })}
-                >
-                  <SelectTrigger className="mt-1.5">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PRIORITIES.map((p) => (
-                      <SelectItem key={p} value={p} className="capitalize">
-                        {p}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            </fieldset>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Scheduled Date & Time</Label>
-                <Input
-                  type="datetime-local"
-                  value={form.scheduled_at}
-                  onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })}
-                  className="mt-1.5"
-                />
-              </div>
-              <div>
-                <Label>Target Publish Date</Label>
-                <Input
-                  type="date"
-                  value={form.target_publish_date}
-                  onChange={(e) => setForm({ ...form, target_publish_date: e.target.value })}
-                  className="mt-1.5"
-                />
-              </div>
-            </div>
-          </fieldset>
-
-          {(canEditContent || canDelete) && (
-            <div className="flex justify-between items-center pt-2 border-t border-border">
-              {canDelete ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive"
-                  onClick={() => {
-                    if (confirm("Delete this content item?")) del.mutate();
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 mr-1.5" /> Delete
-                </Button>
-              ) : (
-                <span />
-              )}
-              <Button variant="ghost" onClick={() => onOpenChange(false)}>
-                Close
-              </Button>
-            </div>
-          )}
-
-          {/* History */}
-          <section className="pt-4 border-t border-border">
-            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-              <History className="h-4 w-4" /> Version History
-            </h3>
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {history.length === 0 && (
-                <div className="text-xs text-muted-foreground">No changes recorded yet.</div>
-              )}
-              {(history as any[]).map((h) => (
-                <div
-                  key={h.id}
-                  className="text-xs flex items-start gap-2 py-1.5 border-b border-border/40"
-                >
-                  <span className="text-muted-foreground whitespace-nowrap">
-                    {format(new Date(h.created_at), "MMM d, h:mm a")}
-                  </span>
-                  <div className="flex-1">
-                    <span className="font-medium text-gold capitalize">
-                      {h.field.replace(/_/g, " ")}
+            {/* History */}
+            <section className="pt-4 border-t border-border">
+              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <History className="h-4 w-4" /> Version History
+              </h3>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {history.length === 0 && (
+                  <div className="text-xs text-muted-foreground">No changes recorded yet.</div>
+                )}
+                {(history as any[]).map((h) => (
+                  <div
+                    key={h.id}
+                    className="text-xs flex items-start gap-2 py-1.5 border-b border-border/40"
+                  >
+                    <span className="text-muted-foreground whitespace-nowrap">
+                      {format(new Date(h.created_at), "MMM d, h:mm a")}
                     </span>
-                    <span className="text-muted-foreground"> changed by </span>
-                    <span className="text-foreground">{nameOf(h.user_id)}</span>
-                    <div className="text-muted-foreground truncate">
-                      <span className="line-through">{h.old_value ?? "—"}</span>
-                      <span className="mx-1">→</span>
-                      <span className="text-foreground">{h.new_value ?? "—"}</span>
+                    <div className="flex-1">
+                      <span className="font-medium text-gold capitalize">
+                        {h.field.replace(/_/g, " ")}
+                      </span>
+                      <span className="text-muted-foreground"> changed by </span>
+                      <span className="text-foreground">{nameOf(h.user_id)}</span>
+                      <div className="text-muted-foreground truncate">
+                        <span className="line-through">{h.old_value ?? "—"}</span>
+                        <span className="mx-1">→</span>
+                        <span className="text-foreground">{h.new_value ?? "—"}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        </DialogContent>
-      </Dialog>
+                ))}
+              </div>
+            </section>
+          </div>
+          <div className="px-6 py-4 border-t border-border bg-card/50 flex justify-between items-center">
+            {canDelete ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-destructive"
+                onClick={() => {
+                  if (confirm("Delete this content item?")) del.mutate();
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-1.5" /> Delete
+              </Button>
+            ) : (
+              <span />
+            )}
+            <Button variant="ghost" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <Dialog open={revisionOpen} onOpenChange={setRevisionOpen}>
         <DialogContent className="max-w-md">

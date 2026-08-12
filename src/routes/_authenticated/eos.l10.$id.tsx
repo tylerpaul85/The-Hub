@@ -140,7 +140,7 @@ function L10DetailPage() {
           <ChevronLeft className="h-4 w-4" /> Back to meetings
         </Link>
         <div className="mt-2 flex flex-wrap items-center gap-3 justify-between">
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-4xl font-serif font-medium tracking-tight">
             L10 · {format(new Date(meeting.meeting_date + "T00:00:00"), "EEEE, MMMM d, yyyy")}
           </h1>
           <div className="flex items-center gap-2">
@@ -290,9 +290,11 @@ function L10DetailPage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="bg-card border border-border rounded-xl">
-      <div className="px-5 py-3 border-b border-border font-semibold">{title}</div>
-      <div className="p-5">{children}</div>
+    <section className="bg-card border border-border rounded-xl shadow-sm overflow-hidden mb-6">
+      <div className="px-6 py-4 border-b border-border bg-card/50">
+        <h2 className="text-2xl font-serif font-medium tracking-tight text-foreground">{title}</h2>
+      </div>
+      <div className="p-6">{children}</div>
     </section>
   );
 }
@@ -539,7 +541,7 @@ function ScorecardSection({ meetingDate, members }: { meetingDate: string; membe
                           <td
                             key={w.wk}
                             className={cn(
-                              "py-2 pr-2 text-right tabular-nums whitespace-nowrap",
+                              "py-2 pr-2 text-right tabular-nums whitespace-nowrap font-mono text-[13px]",
                               !has && "text-muted-foreground/40 italic font-normal text-xs",
                               has && comparable && hit && "text-emerald-400 font-medium",
                               has && comparable && !hit && "text-destructive font-medium",
