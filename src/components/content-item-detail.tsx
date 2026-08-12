@@ -437,11 +437,9 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
 
   if (isLoading || !item) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent className="flex flex-col h-[100dvh] p-0 gap-0 sm:max-w-2xl bg-background border-l border-border overflow-hidden">
           <div className="p-6 text-muted-foreground">Loading…</div>
-        </DialogContent>
-      </Dialog>
         </SheetContent>
       </Sheet>
     );
