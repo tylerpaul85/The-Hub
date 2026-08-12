@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { createClient } from "@supabase/supabase-js";
@@ -31,8 +31,8 @@ interface AgentAuthContextValue {
 const AgentAuthContext = createContext<AgentAuthContextValue | undefined>(undefined);
 
 // Base URLs for creating the custom client
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+const getSupabaseUrl = () => import.meta.env.VITE_SUPABASE_URL ?? (typeof process !== 'undefined' ? process.env.SUPABASE_URL : "");
+const getSupabaseKey = () => import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? (typeof process !== 'undefined' ? process.env.SUPABASE_PUBLISHABLE_KEY : "");
 
 export function AgentAuthProvider({ children }: { children: ReactNode }) {
   const [agent, setAgent] = useState<AgentAccount | null>(null);
@@ -40,11 +40,17 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
 
   // Initialize a custom client that passes the seller session token
-  const sellerSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    global: {
-      headers: token ? { "x-seller-session": token } : {},
-    },
-  });
+  const sellerSupabase = useMemo(() => {
+    const url = getSupabaseUrl();
+    const key = getSupabaseKey();
+    if (!url || !key) return null as any;
+    
+    return createClient(url, key, {
+      global: {
+        headers: token ? { "x-seller-session": token } : {},
+      },
+    });
+  }, [token]);
 
   const fetchAgentProfile = async (currentToken: string) => {
     try {
