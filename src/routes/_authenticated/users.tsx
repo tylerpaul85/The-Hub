@@ -15,8 +15,8 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Trash2, Mail } from "lucide-react";
-import { format } from "date-fns";
+import { Trash2, Mail, Clock, CheckCircle2, XCircle, UserCheck } from "lucide-react";
+import { format, formatDistanceToNow, isPast } from "date-fns";
 import { inviteUser, removeUser as removeUserFn } from "@/lib/user-admin.functions";
 
 type AppRole =
@@ -52,6 +52,69 @@ function pickRole(roles: AppRole[]): AppRole {
 
 function roleLabel(role: AppRole): string {
   return ROLE_OPTIONS.find((o) => o.value === role)?.label ?? role;
+}
+
+interface PendingUser {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  created_at: string;
+}
+
+function PendingUserRow({
+  u,
+  onApprove,
+  onRemove,
+  isPending,
+}: {
+  u: PendingUser;
+  onApprove: (userId: string, role: AppRole) => void;
+  onRemove: (userId: string) => void;
+  isPending: boolean;
+}) {
+  const [approveRole, setApproveRole] = useState<AppRole>("contributor");
+  return (
+    <div className="p-4 flex flex-wrap items-center gap-4">
+      <div className="flex-1 min-w-[220px]">
+        <div className="font-medium text-sm">
+          {[u.first_name, u.last_name].filter(Boolean).join(" ") || u.email}
+        </div>
+        <div className="text-xs text-muted-foreground">{u.email}</div>
+        <div className="text-xs text-muted-foreground">
+          Signed up {formatDistanceToNow(new Date(u.created_at), { addSuffix: true })}
+        </div>
+      </div>
+      <Select value={approveRole} onValueChange={(v) => setApproveRole(v as AppRole)}>
+        <SelectTrigger className="w-44">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {ROLE_OPTIONS.map((o) => (
+            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Button
+        size="sm"
+        onClick={() => onApprove(u.id, approveRole)}
+        disabled={isPending}
+        className="bg-gold text-gold-foreground hover:bg-gold/90"
+      >
+        <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> Approve
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => {
+          if (confirm(`Reject and remove ${u.email}?`)) onRemove(u.id);
+        }}
+        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
 }
 
 interface UserRow {
@@ -98,6 +161,84 @@ function UsersPage() {
   const [lastName, setLastName] = useState("");
   const [inviteRole, setInviteRole] = useState<AppRole>("contributor");
   const [inviting, setInviting] = useState(false);
+
+  // --- Pending invites ---
+  const { data: pendingInvites = [] } = useQuery({
+    queryKey: ["pending-invites"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("pending_invites")
+        .select("id, email, role, invited_by, created_at, expires_at, redeemed_at")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string;
+        email: string;
+        role: AppRole;
+        invited_by: string | null;
+        created_at: string;
+        expires_at: string;
+        redeemed_at: string | null;
+      }>;
+    },
+  });
+
+  const revokeInvite = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any).from("pending_invites").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Invite revoked");
+      qc.invalidateQueries({ queryKey: ["pending-invites"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  // --- Pending-approval users ---
+  const { data: pendingUsers = [] } = useQuery({
+    queryKey: ["pending-approval-users"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("profiles")
+        .select("id, email, first_name, last_name, created_at")
+        .eq("pending_approval", true)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string;
+        email: string;
+        first_name: string | null;
+        last_name: string | null;
+        created_at: string;
+      }>;
+    },
+  });
+
+  const approveUser = useMutation({
+    mutationFn: async ({ userId, role }: { userId: string; role: AppRole }) => {
+      // Clear pending flag
+      const { error: profErr } = await (supabase as any)
+        .from("profiles")
+        .update({ pending_approval: false })
+        .eq("id", userId);
+      if (profErr) throw profErr;
+      // Ensure correct role is set (remove old, insert new)
+      await (supabase as any).from("user_roles").delete().eq("user_id", userId);
+      const { error: roleErr } = await (supabase as any)
+        .from("user_roles")
+        .insert({ user_id: userId, role });
+      if (roleErr) throw roleErr;
+    },
+    onSuccess: () => {
+      toast.success("User approved");
+      qc.invalidateQueries({ queryKey: ["pending-approval-users"] });
+      qc.invalidateQueries({ queryKey: ["users-list"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["users-list"],
@@ -172,6 +313,12 @@ function UsersPage() {
     if (!email.trim() || !firstName.trim() || !lastName.trim()) return;
     setInviting(true);
     try {
+      // Create a pending_invite record so Google sign-in gets the right role
+      await (supabase as any).from("pending_invites").upsert(
+        { email: email.trim().toLowerCase(), role: inviteRole, invited_by: me?.id },
+        { onConflict: "email" },
+      );
+      // Also send the Supabase email invite (email/password flow)
       await inviteFn({
         data: {
           email: email.trim(),
@@ -181,7 +328,7 @@ function UsersPage() {
           redirectTo: `${window.location.origin}/reset-password`,
         },
       });
-      toast.success(`Invitation emailed to ${email}. They'll set a password and sign in.`, {
+      toast.success(`Invitation emailed to ${email}. They'll set a password or sign in with Google.`, {
         duration: 6000,
       });
       setEmail("");
@@ -189,6 +336,7 @@ function UsersPage() {
       setLastName("");
       setInviteRole("contributor");
       qc.invalidateQueries({ queryKey: ["users-list"] });
+      qc.invalidateQueries({ queryKey: ["pending-invites"] });
     } catch (err: any) {
       toast.error(err.message ?? "Invite failed");
     } finally {
@@ -265,10 +413,84 @@ function UsersPage() {
           </Button>
         </form>
         <p className="text-xs text-muted-foreground mt-3">
-          Invitees receive a confirmation email. After they confirm and sign in for the first time,
-          you can update their role below.
+          Invitees receive a confirmation email. After they confirm and sign in for the first time
+          (via email/password or Google), their role will be automatically assigned.
         </p>
       </section>
+
+      {/* ── Pending Invites ── */}
+      {pendingInvites.length > 0 && (
+        <section className="bg-card border border-border rounded-xl overflow-hidden mb-6">
+          <div className="p-5 border-b border-border flex items-center gap-2">
+            <Clock className="h-4 w-4 text-gold" />
+            <h2 className="font-semibold">Pending Invites ({pendingInvites.filter(i => !i.redeemed_at && !isPast(new Date(i.expires_at))).length})</h2>
+          </div>
+          <div className="divide-y divide-border">
+            {pendingInvites.map((inv) => {
+              const expired = isPast(new Date(inv.expires_at));
+              const redeemed = !!inv.redeemed_at;
+              return (
+                <div key={inv.id} className="p-4 flex flex-wrap items-center gap-4">
+                  <div className="flex-1 min-w-[220px]">
+                    <div className="font-medium text-sm">{inv.email}</div>
+                    <div className="text-xs text-muted-foreground capitalize">
+                      Role: {roleLabel(inv.role)}
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {redeemed ? (
+                      <span className="flex items-center gap-1 text-emerald-400">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Redeemed {format(new Date(inv.redeemed_at!), "MMM d")}
+                      </span>
+                    ) : expired ? (
+                      <span className="flex items-center gap-1 text-destructive">
+                        <XCircle className="h-3.5 w-3.5" /> Expired
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <Clock className="h-3.5 w-3.5" /> Expires {formatDistanceToNow(new Date(inv.expires_at), { addSuffix: true })}
+                      </span>
+                    )}
+                  </div>
+                  {!redeemed && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        if (confirm(`Revoke invite for ${inv.email}?`)) revokeInvite.mutate(inv.id);
+                      }}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ── Pending Approval Users ── */}
+      {pendingUsers.length > 0 && (
+        <section className="bg-card border border-amber-500/30 rounded-xl overflow-hidden mb-6">
+          <div className="p-5 border-b border-amber-500/30 flex items-center gap-2">
+            <UserCheck className="h-4 w-4 text-amber-400" />
+            <h2 className="font-semibold text-amber-300">Awaiting Approval ({pendingUsers.length})</h2>
+          </div>
+          <div className="divide-y divide-border">
+            {pendingUsers.map((u) => (
+              <PendingUserRow
+                key={u.id}
+                u={u}
+                onApprove={(userId, role) => approveUser.mutate({ userId, role })}
+                onRemove={(userId) => removeUser.mutate(userId)}
+                isPending={approveUser.isPending}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="p-5 border-b border-border">

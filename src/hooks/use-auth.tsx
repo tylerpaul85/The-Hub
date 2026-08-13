@@ -27,6 +27,7 @@ interface AuthContextValue {
   roles: AppRole[];
   loading: boolean;
   isAdmin: boolean;
+  isPendingApproval: boolean;
   canEditContent: boolean;
   canEditVideos: boolean;
   canDelete: boolean;
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const [isPendingApproval, setIsPendingApproval] = useState(false);
   const [loading, setLoading] = useState(true);
   const warnTimer = useRef<number | null>(null);
   const logoutTimer = useRef<number | null>(null);
@@ -86,6 +88,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       sessionStorage.setItem(cacheKey, JSON.stringify(list));
     } catch {}
+
+    // Fetch pending_approval flag
+    const { data: profile } = await (supabase as any)
+      .from("profiles")
+      .select("pending_approval")
+      .eq("id", uid)
+      .single();
+    setIsPendingApproval(profile?.pending_approval === true);
   };
 
   useEffect(() => {
@@ -210,6 +220,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setRole(null);
     setRoles([]);
+    setIsPendingApproval(false);
   };
 
   const refreshRole = async () => {
@@ -238,6 +249,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         roles,
         loading,
         isAdmin,
+        isPendingApproval,
         canEditContent,
         canEditVideos,
         canDelete,
