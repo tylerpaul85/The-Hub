@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AgentToolboxRouteImport } from './routes/agent-toolbox'
 import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AvailabilityRouteImport } from './routes/availability'
 import { Route as ClosingGiftRouteImport } from './routes/closing-gift'
 import { Route as RequestRouteImport } from './routes/request'
@@ -78,6 +79,11 @@ const AgentsRoute = AgentsRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AvailabilityRoute = AvailabilityRouteImport.update({
@@ -307,6 +313,7 @@ export interface FileRoutesByFullPath {
   '/agent-toolbox': typeof AgentToolboxRoute
   '/agents': typeof AgentsRouteWithChildren
   '/auth': typeof AuthRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/availability': typeof AvailabilityRoute
   '/closing-gift': typeof ClosingGiftRoute
   '/request': typeof RequestRoute
@@ -353,6 +360,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agent-toolbox': typeof AgentToolboxRoute
   '/auth': typeof AuthRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/availability': typeof AvailabilityRoute
   '/closing-gift': typeof ClosingGiftRoute
   '/request': typeof RequestRoute
@@ -399,6 +407,7 @@ export interface FileRoutesById {
   '/agent-toolbox': typeof AgentToolboxRoute
   '/agents': typeof AgentsRouteWithChildren
   '/auth': typeof AuthRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/availability': typeof AvailabilityRoute
   '/closing-gift': typeof ClosingGiftRoute
   '/request': typeof RequestRoute
@@ -448,6 +457,7 @@ export interface FileRouteTypes {
     | '/agent-toolbox'
     | '/agents'
     | '/auth'
+    | '/auth/callback'
     | '/availability'
     | '/closing-gift'
     | '/request'
@@ -588,6 +598,7 @@ export interface RootRouteChildren {
   AgentToolboxRoute: typeof AgentToolboxRoute
   AgentsRoute: typeof AgentsRouteWithChildren
   AuthRoute: typeof AuthRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   AvailabilityRoute: typeof AvailabilityRoute
   ClosingGiftRoute: typeof ClosingGiftRoute
   RequestRoute: typeof RequestRoute
@@ -632,6 +643,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/availability': {
@@ -1051,6 +1069,7 @@ const rootRouteChildren: RootRouteChildren = {
   AgentToolboxRoute: AgentToolboxRoute,
   AgentsRoute: AgentsRouteWithChildren,
   AuthRoute: AuthRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   AvailabilityRoute: AvailabilityRoute,
   ClosingGiftRoute: ClosingGiftRoute,
   RequestRoute: RequestRoute,
