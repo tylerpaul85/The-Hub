@@ -6,7 +6,11 @@ import { isImageUrl } from "./sanitize-filename";
 // Forced build trigger to synchronize server function mapping IDs on Netlify after build regrouping
 
 function getCode(): string {
-  return (process.env.TOOLBOX_ACCESS_CODE || "MSREG2026").trim();
+  const code = process.env.TOOLBOX_ACCESS_CODE?.trim();
+  if (!code) {
+    throw new Error("Server misconfiguration: TOOLBOX_ACCESS_CODE environment variable is required but not set.");
+  }
+  return code;
 }
 
 function expectedToken() {

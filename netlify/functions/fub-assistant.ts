@@ -935,6 +935,27 @@ ACTIVITY VS CONTACT DEFINITIONS:
       };
     }
 
+    // ── SECURITY: Sanitize messages before forwarding to Claude ──────────────
+    // Prevent prompt injection by stripping injected system turns, enforcing
+    // role allow-list, and capping message count and per-message length.
+    const MAX_MESSAGES = 40;
+    const MAX_MSG_CHARS = 8_000;
+    const ALLOWED_ROLES = new Set(["user", "assistant"]);
+
+    const sanitizedMessages = messages
+      .filter((m: any) => m && typeof m === "object" && ALLOWED_ROLES.has(m.role))
+      .slice(-MAX_MESSAGES)
+      .map((m: any) => {
+        // Flatten content to string for safety, then truncate
+        const text = typeof m.content === "string"
+          ? m.content
+          : Array.isArray(m.content)
+            ? m.content.map((c: any) => (typeof c === "string" ? c : c?.text ?? "")).join(" ")
+            : String(m.content ?? "");
+        return { role: m.role, content: text.slice(0, MAX_MSG_CHARS) };
+      });
+    // ─────────────────────────────────────────────────────────────────────────
+
     try {
       const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -948,7 +969,7 @@ ACTIVITY VS CONTACT DEFINITIONS:
           max_tokens: 1500,
           system: systemPrompt,
           tools: TOOLS,
-          messages: messages,
+          messages: sanitizedMessages,
         }),
       });
 
@@ -1023,7 +1044,20 @@ ACTIVITY VS CONTACT DEFINITIONS:
     };
   }
 
-  const currentMessages = [...messages];
+  // ── SECURITY: Sanitize messages in the fallback loop as well ─────────────
+  const _sanitizeMessages = (msgs: any[]) => msgs
+    .filter((m: any) => m && typeof m === "object" && ["user", "assistant"].includes(m.role))
+    .slice(-40)
+    .map((m: any) => {
+      const text = typeof m.content === "string"
+        ? m.content
+        : Array.isArray(m.content)
+          ? m.content.map((c: any) => (typeof c === "string" ? c : c?.text ?? "")).join(" ")
+          : String(m.content ?? "");
+      return { role: m.role, content: text.slice(0, 8_000) };
+    });
+
+  const currentMessages = [..._sanitizeMessages(messages)];
   let iterations = 0;
   let finalResponseText = "";
 

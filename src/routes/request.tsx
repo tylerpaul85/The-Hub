@@ -123,16 +123,37 @@ function PublicRequestPage() {
         return;
       }
       const fileUrls: string[] = [];
+
+      // SECURITY: Enforce server-side upload constraints
+      if (files.length > 5) {
+        toast.error("Maximum 5 files allowed per submission.");
+        setBusy(false);
+        return;
+      }
+      const totalBytes = files.reduce((s, f) => s + f.size, 0);
+      if (totalBytes > 50 * 1024 * 1024) {
+        toast.error("Total upload size must be under 50MB.");
+        setBusy(false);
+        return;
+      }
+
+      // Extension → safe MIME mapping (never trust browser-supplied file.type)
+      const EXT_TO_MIME: Record<string, string> = {
+        jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png",
+        webp: "image/webp", pdf: "application/pdf",
+        doc: "application/msword",
+        docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      };
+
       for (const file of files) {
         if (file.size > 25 * 1024 * 1024) {
           toast.error(`"${file.name}" is over 25MB`);
           setBusy(false);
           return;
         }
-        if (
-          !ALLOWED_UPLOAD_EXT.test(file.name) ||
-          (file.type && !ALLOWED_UPLOAD_MIME.has(file.type))
-        ) {
+        const ext = (file.name.split(".").pop() ?? "").toLowerCase();
+        const safeMime = EXT_TO_MIME[ext];
+        if (!safeMime || !ALLOWED_UPLOAD_EXT.test(file.name)) {
           toast.error(`"${file.name}" is not an allowed file type (JPG, PNG, WEBP, PDF, DOC).`);
           setBusy(false);
           return;
@@ -144,7 +165,8 @@ function PublicRequestPage() {
         const key = `incoming/${crypto.randomUUID()}-${safeName}`;
         const { error: upErr } = await supabase.storage
           .from("marketing-request-uploads")
-          .upload(key, file, { contentType: file.type || "application/octet-stream" });
+          // Use extension-derived MIME — never trust browser-supplied file.type
+          .upload(key, file, { contentType: safeMime });
         if (upErr) throw upErr;
         fileUrls.push(key);
       }

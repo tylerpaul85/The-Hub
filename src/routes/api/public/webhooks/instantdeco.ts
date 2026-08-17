@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import crypto from "crypto";
 
 /**
  * Webhook endpoint for InstantDecoAI async job completion.
@@ -12,6 +13,10 @@ import { createFileRoute } from "@tanstack/react-router";
  *
  * Always returns 200 so InstantDecoAI does not retry endlessly, even on
  * internal failures (those are logged and recorded on the job row).
+ *
+ * SECURITY: Set INSTANTDECO_WEBHOOK_SECRET in your hosting environment.
+ * InstantDecoAI should send an X-Signature header with the HMAC-SHA256
+ * of the raw body signed with this secret.
  */
 
 type AnyRecord = Record<string, unknown>;
@@ -83,6 +88,33 @@ export const Route = createFileRoute("/api/public/webhooks/instantdeco")({
         const url = new URL(request.url);
         const queryJobId = url.searchParams.get("job_id");
         const rawBody = await request.text();
+
+        // ── SECURITY: HMAC signature verification ────────────────────────────
+        // Set INSTANTDECO_WEBHOOK_SECRET in Netlify environment variables.
+        // InstantDecoAI must send X-Signature: sha256=<hmac-hex> on every POST.
+        const webhookSecret = process.env.INSTANTDECO_WEBHOOK_SECRET;
+        if (webhookSecret) {
+          const sigHeader = request.headers.get("x-signature") ?? request.headers.get("x-hub-signature-256") ?? "";
+          const expectedSig = "sha256=" + crypto
+            .createHmac("sha256", webhookSecret)
+            .update(rawBody)
+            .digest("hex");
+          // Use timing-safe comparison to prevent timing attacks
+          const sigBuf = Buffer.from(sigHeader.padEnd(expectedSig.length, "\0"));
+          const expBuf = Buffer.from(expectedSig);
+          const sigValid = sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf);
+          if (!sigValid) {
+            console.error("[instantdeco-webhook] SECURITY: Invalid or missing HMAC signature — request rejected", {
+              queryJobId,
+              sigHeader: sigHeader.slice(0, 20) + "...",
+            });
+            // Return 200 to avoid InstantDecoAI retry storms, but do NOT process the request
+            return new Response("ok", { status: 200 });
+          }
+        } else {
+          console.warn("[instantdeco-webhook] SECURITY WARNING: INSTANTDECO_WEBHOOK_SECRET is not set. Webhook is unauthenticated. Set this variable in Netlify environment settings.");
+        }
+        // ─────────────────────────────────────────────────────────────────────
 
         console.log("[instantdeco-webhook] FULL RAW BODY:", rawBody);
 

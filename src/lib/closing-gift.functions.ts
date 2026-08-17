@@ -18,7 +18,11 @@ async function assertAdmin(supabase: any, userId: string) {
 }
 
 function getSecurityCode(): string {
-  return (process.env.TOOLBOX_ACCESS_CODE || "MSREG2026").trim();
+  const code = process.env.TOOLBOX_ACCESS_CODE?.trim();
+  if (!code) {
+    throw new Error("Server misconfiguration: TOOLBOX_ACCESS_CODE environment variable is required but not set.");
+  }
+  return code;
 }
 
 const shirtSchema = z.object({

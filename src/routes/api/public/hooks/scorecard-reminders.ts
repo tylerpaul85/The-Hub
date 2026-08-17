@@ -6,27 +6,34 @@ export const Route = createFileRoute("/api/public/hooks/scorecard-reminders")({
     handlers: {
       POST: async ({ request }) => {
         // Verify shared secret to prevent unauthorized invocation.
-        // Set CRON_HOOK_SECRET in your hosting environment and pass it
+        // REQUIRED: Set CRON_HOOK_SECRET in your hosting environment and pass it
         // as an Authorization: Bearer <secret> header from your cron trigger.
         const hookSecret = process.env.CRON_HOOK_SECRET;
-        if (hookSecret) {
-          const authHeader = request.headers.get("authorization") ?? "";
-          const token = authHeader.replace(/^Bearer\s+/i, "");
-          if (!token) {
-            return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), {
-              status: 401,
-              headers: { "Content-Type": "application/json" },
-            });
-          }
-          // Timing-safe comparison to prevent timing attacks
-          const a = Buffer.from(token);
-          const b = Buffer.from(hookSecret);
-          if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-            return new Response(JSON.stringify({ ok: false, error: "Forbidden" }), {
-              status: 403,
-              headers: { "Content-Type": "application/json" },
-            });
-          }
+        if (!hookSecret) {
+          // Fail hard — running without a secret is a misconfiguration, not a graceful fallback
+          console.error("[scorecard-reminders] CRON_HOOK_SECRET is not set. Refusing to execute to prevent unauthenticated access.");
+          return new Response(JSON.stringify({ ok: false, error: "Server misconfiguration: CRON_HOOK_SECRET is required" }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        const authHeader = request.headers.get("authorization") ?? "";
+        const token = authHeader.replace(/^Bearer\s+/i, "");
+        if (!token) {
+          return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        // Timing-safe comparison to prevent timing attacks
+        const a = Buffer.from(token);
+        const b = Buffer.from(hookSecret);
+        if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+          return new Response(JSON.stringify({ ok: false, error: "Forbidden" }), {
+            status: 403,
+            headers: { "Content-Type": "application/json" },
+          });
         }
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
