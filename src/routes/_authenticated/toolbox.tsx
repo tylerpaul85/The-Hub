@@ -200,7 +200,7 @@ function ToolboxPage() {
       <PublicLinkBanner path="/agent-toolbox" label="Agent Toolbox" />
 
       <Tabs value={tab} onValueChange={setTab} className="w-full mt-2">
-        <TabsList className="bg-transparent border-b border-border w-full justify-start rounded-none p-0 h-auto gap-6 mb-6">
+        <TabsList className="bg-transparent border-b border-border w-full justify-start rounded-none p-0 h-auto gap-6 mb-6 overflow-x-auto max-w-full no-scrollbar flex whitespace-nowrap">
           {[
             { value: "listings", label: "Listings" },
             { value: "open_houses", label: "Open Houses" },

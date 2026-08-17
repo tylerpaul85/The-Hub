@@ -180,7 +180,7 @@ function ListingsPage() {
 
       {/* Filter + search bar */}
       <div className="mb-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-        <div className="flex gap-1 bg-card border border-border rounded-lg p-1">
+        <div className="flex gap-1 bg-card border border-border rounded-lg p-1 overflow-x-auto max-w-full no-scrollbar whitespace-nowrap">
           {(["all", "active", "under_contract", "sold"] as const).map((s) => (
             <button
               key={s}
