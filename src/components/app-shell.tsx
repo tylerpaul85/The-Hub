@@ -320,7 +320,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             <QuickHeadlineButton />
             <NotificationBell />
             <Button size="icon" variant="ghost" className="md:hidden h-8 w-8" onClick={signOut}>

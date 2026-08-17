@@ -101,9 +101,9 @@ export function QuickHeadlineButton({
 
   return (
     <>
-      <Button size={size} variant={variant} onClick={() => setOpen(true)} className="gap-1.5">
+      <Button size={size} variant={variant} onClick={() => setOpen(true)} className="gap-1.5 md:px-3 px-2">
         <Megaphone className="h-3.5 w-3.5" />
-        <span className={labelClassName ?? "hidden sm:inline"}>Add Headline</span>
+        <span className={labelClassName ?? "hidden md:inline"}>Add Headline</span>
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

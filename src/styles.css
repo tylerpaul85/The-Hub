@@ -157,6 +157,7 @@
   overflow-x: hidden;
 }
 
+header,
 main {
   width: 100%;
   max-width: 100%;
