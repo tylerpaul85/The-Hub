@@ -253,7 +253,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       : user?.email;
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-screen flex bg-background w-full max-w-full overflow-hidden">
       {/* ─── Desktop Sidebar ───────────────────────────────────────── */}
       <aside className="hidden md:flex w-56 flex-col bg-sidebar border-r border-sidebar-border">
         <div className="px-4 py-4 border-b border-sidebar-border flex items-center gap-2.5">
@@ -296,7 +296,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 w-full max-w-full overflow-hidden">
         {/* ─── Header ──────────────────────────────────────────────── */}
         <header className="flex items-center justify-between px-4 h-12 border-b border-border bg-sidebar/60 pt-[max(0px,env(safe-area-inset-top))]">
           {/* Mobile: hamburger + logo */}
