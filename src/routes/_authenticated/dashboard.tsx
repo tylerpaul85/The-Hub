@@ -55,7 +55,7 @@ function Dashboard() {
   const isEmpty = !isLoading && actionItems.length === 0 && approved.length === 0;
 
   return (
-    <div className="px-6 py-5 max-w-5xl mx-auto space-y-5">
+    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-5 space-y-5 overflow-hidden">
       <header className="mb-8">
         <h1 className="text-4xl font-serif font-medium tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground mt-2">
