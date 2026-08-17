@@ -145,3 +145,41 @@
     outline-offset: 2px;
   }
 }
+
+/* ─── Mobile Layout Containment ──────────────────────────────────────── */
+/* These rules use element/id selectors so Tailwind cannot purge them.   */
+/* They prevent the layout from rendering wider than the device viewport. */
+
+#root,
+#root > div {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+main {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* flex-1 children must shrink to fill, never push outward */
+.flex-1 {
+  min-width: 0;
+}
+
+/* Mobile: hard-cap text containers and allow word breaking */
+@media (max-width: 767px) {
+  .max-w-5xl,
+  .max-w-6xl,
+  .max-w-7xl {
+    max-width: 100% !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  p, span, a {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+}
