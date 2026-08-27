@@ -391,38 +391,6 @@ export async function bulkImportListings(
   return { imported, skipped };
 }
 
-// ─── Update Listing ───────────────────────────────────────────────────────────
-
-export async function updateListing(
-  sb: any,
-  id: string,
-  userId: string,
-  fields: Partial<{
-    address: string;
-    agent_name: string | null;
-    mls_id: string | null;
-    list_price: number | null;
-    list_date: string;
-    post_date: string;
-    post_time: string;
-    status: ListingStatus;
-    canva_link: string | null;
-    website_link: string | null;
-    brand: string | null;
-  }>,
-): Promise<void> {
-  const { error } = await sb
-    .from("listings")
-    .update({ ...fields, updated_at: new Date().toISOString() })
-    .eq("id", id);
-  if (error) throw new Error(error.message);
-
-  // Automatically synchronize Canva link, Website link, and Brand to all scheduled Content Calendar entries
-  await syncListingAssets(sb, id);
-
-  await logListingHistory(sb, id, userId, "updated", fields);
-}
-
 /** Cancel all future scheduled reposts (30, 60, 90-day) and delete their calendar entries */
 async function cancelFutureReposts(sb: any, listingId: string): Promise<number> {
   const today = new Date().toISOString().slice(0, 10);
