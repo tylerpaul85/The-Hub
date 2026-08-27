@@ -46,6 +46,7 @@ import { cn } from "@/lib/utils";
 import { ContentItemForm } from "@/components/content-item-form";
 import { CalendarListView } from "@/components/calendar-list-view";
 import { useContentDetail } from "@/components/content-detail-provider";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   HOURS,
   QUARTERS,
@@ -886,6 +887,67 @@ function WeeklyView({
   );
 }
 
+function MonthItemPill({
+  item,
+  onClick,
+  draggable,
+  selected,
+  onSelect,
+}: {
+  item: ContentItem;
+  onClick: () => void;
+  draggable: boolean;
+  selected?: boolean;
+  onSelect?: (id: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({
+    id: item.id,
+    disabled: !draggable,
+  });
+  const style = transform
+    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
+    : undefined;
+  const timeStr = item.scheduled_at ? format(new Date(item.scheduled_at), "h:mm a") : null;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      title={`${item.brand ?? "PP"} · ${timeStr ?? ""} · ${item.title}`}
+      className={cn(
+        "group/pill relative flex items-center gap-1.5 px-1.5 py-1 rounded-md text-[11px] font-medium border border-border/80 bg-background hover:bg-accent/70 hover:border-gold/50 transition-all cursor-pointer truncate shadow-xs select-none min-h-[24px]",
+        PRIORITY_BORDER[item.priority],
+        isDragging && "opacity-50 z-50 shadow-md scale-105",
+        draggable && "cursor-grab active:cursor-grabbing",
+        selected && "ring-1 ring-gold border-gold bg-gold/10",
+      )}
+    >
+      <span
+        className={cn(
+          "text-[8px] font-bold px-1 py-0.2 rounded border shrink-0 uppercase tracking-wider leading-none",
+          BRAND_STYLES[(item.brand ?? "PP") as Brand],
+        )}
+      >
+        {item.brand ?? "PP"}
+      </span>
+      {timeStr && (
+        <span className="text-[9px] font-mono font-bold text-amber-500/90 dark:text-amber-400 shrink-0 leading-none">
+          {timeStr}
+        </span>
+      )}
+      <span className="truncate text-foreground/90 font-medium leading-none flex-1">
+        {item.title}
+      </span>
+    </div>
+  );
+}
+
 function MonthlyView({
   cursor,
   start,
@@ -905,67 +967,125 @@ function MonthlyView({
   }
   const weeks: Date[][] = [];
   for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
+
   return (
-    <div>
-      <div className="grid grid-cols-7 bg-sidebar/60 border-b border-border">
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-          <div
-            key={d}
-            className="px-2 py-2 text-xs font-semibold text-center text-muted-foreground"
-          >
-            {d}
+    <div className="h-full flex flex-col min-h-0 select-none">
+      {/* Weekday Header Row */}
+      <div className="grid grid-cols-7 bg-sidebar/80 border-b border-border text-xs font-bold text-muted-foreground uppercase tracking-wider text-center py-2 shrink-0">
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((dayName) => (
+          <div key={dayName}>{dayName}</div>
+        ))}
+      </div>
+
+      {/* Grid of Weeks (Fills 100% remaining height equally for all 4-6 weeks) */}
+      <div
+        className="flex-1 grid min-h-0"
+        style={{ gridTemplateRows: `repeat(${weeks.length}, minmax(0, 1fr))` }}
+      >
+        {weeks.map((week, wi) => (
+          <div key={wi} className="grid grid-cols-7 min-h-0 border-b border-border/60 last:border-b-0">
+            {week.map((day) => {
+              const dayItems = items.filter((it: ContentItem) =>
+                isSameDay(new Date(it.scheduled_at), day),
+              );
+              const inMonth = isSameMonth(day, cursor);
+              const isToday = isSameDay(day, new Date());
+              const noon = new Date(day);
+              noon.setHours(12, 0, 0, 0);
+
+              const maxDisplay = weeks.length >= 6 ? 2 : 3;
+              const visibleItems = dayItems.slice(0, maxDisplay);
+              const extraCount = dayItems.length - maxDisplay;
+
+              return (
+                <MonthDayCell
+                  key={day.toISOString()}
+                  date={noon}
+                  inMonth={inMonth}
+                  isToday={isToday}
+                  onDayClick={onDayClick}
+                >
+                  {/* Top Header inside Cell: Date number + Holiday */}
+                  <div className="flex items-center justify-between mb-1 shrink-0">
+                    <span
+                      className={cn(
+                        "text-xs font-semibold px-1.5 py-0.5 rounded-full flex items-center justify-center min-w-[22px] min-h-[22px]",
+                        !inMonth && "text-muted-foreground/40",
+                        inMonth && !isToday && "text-foreground/80",
+                        isToday && "bg-gold text-navy font-black shadow-xs",
+                      )}
+                    >
+                      {format(day, "d")}
+                    </span>
+                    <HolidayBanner date={day} className="border-none py-0 px-0" />
+                  </div>
+
+                  {/* Pills List */}
+                  <div className="flex-1 min-h-0 space-y-1 overflow-hidden">
+                    {visibleItems.map((it: ContentItem) => (
+                      <MonthItemPill
+                        key={it.id}
+                        item={it}
+                        draggable={draggable}
+                        onClick={() => onItemClick(it.id)}
+                        selected={selectedId === it.id}
+                        onSelect={onSelect}
+                      />
+                    ))}
+                  </div>
+
+                  {/* "+N More" Popover if cell has extra items */}
+                  {extraCount > 0 && (
+                    <div className="mt-1 shrink-0">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full text-left text-[10px] font-bold text-gold hover:text-gold/80 bg-gold/10 hover:bg-gold/20 px-1.5 py-0.5 rounded transition-colors"
+                          >
+                            +{extraCount} more
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-72 p-3 bg-card border-border shadow-xl space-y-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                            <span className="text-xs font-bold text-foreground">
+                              {format(day, "EEEE, MMM d")}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 text-[10px] text-gold px-2"
+                              onClick={() => onDayClick(noon)}
+                            >
+                              + New Post
+                            </Button>
+                          </div>
+                          <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
+                            {dayItems.map((it: ContentItem) => (
+                              <MonthItemPill
+                                key={it.id}
+                                item={it}
+                                draggable={draggable}
+                                onClick={() => onItemClick(it.id)}
+                                selected={selectedId === it.id}
+                                onSelect={onSelect}
+                              />
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  )}
+                </MonthDayCell>
+              );
+            })}
           </div>
         ))}
       </div>
-      {weeks.map((week, wi) => (
-        <div key={wi} className="grid grid-cols-7">
-          {week.map((day) => {
-            const dayItems = items.filter((it: ContentItem) =>
-              isSameDay(new Date(it.scheduled_at), day),
-            );
-            const inMonth = isSameMonth(day, cursor);
-            const isToday = isSameDay(day, new Date());
-            const noon = new Date(day);
-            noon.setHours(12, 0, 0, 0);
-            return (
-              <MonthDayCell
-                key={day.toISOString()}
-                date={noon}
-                inMonth={inMonth}
-                isToday={isToday}
-                onDayClick={onDayClick}
-              >
-                <div
-                  className={cn(
-                    "text-xs font-medium mb-1",
-                    !inMonth && "text-muted-foreground/50",
-                    isToday && "text-gold",
-                  )}
-                >
-                  {format(day, "d")}
-                </div>
-                <div className="space-y-1">
-                  {dayItems.slice(0, 3).map((it: ContentItem) => (
-                    <ContentCard
-                      key={it.id}
-                      item={it}
-                      draggable={draggable}
-                      onClick={() => onItemClick(it.id)}
-                      selected={selectedId === it.id}
-                      onSelect={onSelect}
-                    />
-                  ))}
-                  {dayItems.length > 3 && (
-                    <div className="text-[10px] text-muted-foreground px-1">
-                      +{dayItems.length - 3} more
-                    </div>
-                  )}
-                </div>
-              </MonthDayCell>
-            );
-          })}
-        </div>
-      ))}
     </div>
   );
 }
@@ -989,10 +1109,10 @@ function MonthDayCell({
       ref={setNodeRef}
       onClick={() => onDayClick(date)}
       className={cn(
-        "border-b border-l border-border min-h-[110px] p-1.5 hover:bg-accent/20 cursor-pointer",
-        !inMonth && "bg-muted/20",
-        isOver && "bg-gold/15 border-gold",
-        isToday && "ring-1 ring-gold/40 ring-inset",
+        "border-l border-border/80 h-full p-1.5 hover:bg-accent/20 cursor-pointer flex flex-col min-h-0 overflow-hidden transition-colors group/cell",
+        !inMonth && "bg-muted/15",
+        isOver && "bg-gold/15 border-gold ring-1 ring-gold inset-0",
+        isToday && "bg-gold/5",
       )}
     >
       {children}
