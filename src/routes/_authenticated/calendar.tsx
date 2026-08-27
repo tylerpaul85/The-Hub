@@ -204,9 +204,16 @@ function CalendarPage() {
         .update({ scheduled_at: newDate.toISOString() })
         .eq("id", id);
       if (error) throw error;
+
+      await (supabase as any)
+        .from("listing_posts")
+        .update({ scheduled_date: newDate.toISOString().slice(0, 10) })
+        .eq("calendar_entry_id", id);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["content-items"] });
+      qc.invalidateQueries({ queryKey: ["content-items-list"] });
+      qc.invalidateQueries({ queryKey: ["listing-posts"] });
       toast.success("Rescheduled");
     },
     onError: (e: any) => toast.error(e.message ?? "Update failed"),
@@ -463,6 +470,7 @@ function CalendarPage() {
                 items={filteredItems}
                 onDayClick={openSlot}
                 onItemClick={detail.open}
+                onReschedule={(id: string, newDate: Date) => reschedule.mutate({ id, newDate })}
                 draggable={canEditContent}
                 selectedId={selectedId}
                 onSelect={setSelectedId}
@@ -955,6 +963,7 @@ function MonthlyView({
   items,
   onDayClick,
   onItemClick,
+  onReschedule,
   draggable,
   selectedId,
   onSelect,
@@ -1048,7 +1057,7 @@ function MonthlyView({
                           </button>
                         </PopoverTrigger>
                         <PopoverContent
-                          className="w-72 p-3 bg-card border-border shadow-xl space-y-2"
+                          className="w-80 p-3 bg-card border-border shadow-xl space-y-2"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <div className="flex items-center justify-between border-b border-border/60 pb-2">
@@ -1064,16 +1073,49 @@ function MonthlyView({
                               + New Post
                             </Button>
                           </div>
-                          <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
+                          <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
                             {dayItems.map((it: ContentItem) => (
-                              <MonthItemPill
+                              <div
                                 key={it.id}
-                                item={it}
-                                draggable={draggable}
-                                onClick={() => onItemClick(it.id)}
-                                selected={selectedId === it.id}
-                                onSelect={onSelect}
-                              />
+                                className="space-y-1 bg-muted/20 p-1.5 rounded-md border border-border/50"
+                              >
+                                <MonthItemPill
+                                  item={it}
+                                  draggable={draggable}
+                                  onClick={() => onItemClick(it.id)}
+                                  selected={selectedId === it.id}
+                                  onSelect={onSelect}
+                                />
+                                {draggable && onReschedule && (
+                                  <div className="flex items-center justify-end gap-1.5 pt-0.5">
+                                    <span className="text-[9px] text-muted-foreground mr-auto">
+                                      Shift:
+                                    </span>
+                                    <button
+                                      type="button"
+                                      title="Move post to tomorrow"
+                                      onClick={() => {
+                                        const cur = new Date(it.scheduled_at);
+                                        onReschedule(it.id, addDays(cur, 1));
+                                      }}
+                                      className="text-[9px] font-bold bg-background hover:bg-gold/20 text-gold border border-gold/40 px-1.5 py-0.5 rounded transition-colors"
+                                    >
+                                      +1d Tomorrow
+                                    </button>
+                                    <button
+                                      type="button"
+                                      title="Move post to next week"
+                                      onClick={() => {
+                                        const cur = new Date(it.scheduled_at);
+                                        onReschedule(it.id, addDays(cur, 7));
+                                      }}
+                                      className="text-[9px] font-bold bg-background hover:bg-gold/20 text-gold border border-gold/40 px-1.5 py-0.5 rounded transition-colors"
+                                    >
+                                      +7d Next Week
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             ))}
                           </div>
                         </PopoverContent>

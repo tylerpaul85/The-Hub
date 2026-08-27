@@ -96,10 +96,20 @@ function ListingsPage() {
       if (lErr) throw new Error(lErr.message);
       if (!allListings?.length) return { created: 0, listings: 0 };
 
-      // 2. Run autoScheduleReposts for ALL listings — it handles:
-      //    - Skipping entries that already have a calendar entry
-      //    - Creating missing repost types from scratch
-      //    - Fixing orphaned entries (listing_post exists but calendar_entry_id is null)
+      // 2. Fetch existing scheduled repost counts per date to balance post load (max 2 per day)
+      const { data: existingPosts } = await sb
+        .from("listing_posts")
+        .select("scheduled_date")
+        .eq("status", "scheduled");
+
+      const existingCounts = new Map<string, number>();
+      for (const p of existingPosts ?? []) {
+        if (p.scheduled_date) {
+          existingCounts.set(p.scheduled_date, (existingCounts.get(p.scheduled_date) ?? 0) + 1);
+        }
+      }
+
+      // 3. Run autoScheduleReposts with intelligent date spacing enabled
       let totalCreated = 0;
       for (const l of allListings) {
         const result = await autoScheduleReposts(
@@ -113,6 +123,8 @@ function ListingsPage() {
           l.website_link,
           l.brand,
           null,
+          true,
+          existingCounts,
         );
         totalCreated += result.created;
       }

@@ -569,6 +569,8 @@ export async function autoScheduleReposts(
   websiteLink: string | null,
   brand: string | null,
   socialCopy: string | null,
+  spaceOut: boolean = true,
+  existingCounts?: Map<string, number>,
 ): Promise<{ created: number; alreadyScheduled: number }> {
   // Fetch existing repost entries for this listing
   const { data: existing } = await sb
@@ -610,7 +612,17 @@ export async function autoScheduleReposts(
       continue;
     }
 
-    const scheduledDate = format(addDays(base, days), "yyyy-MM-dd");
+    let targetDateObj = addDays(base, days);
+    if (spaceOut && existingCounts) {
+      // If the target date already has 2 or more reposts scheduled, advance to the next day with < 2
+      while ((existingCounts.get(format(targetDateObj, "yyyy-MM-dd")) ?? 0) >= 2) {
+        targetDateObj = addDays(targetDateObj, 1);
+      }
+      const countKey = format(targetDateObj, "yyyy-MM-dd");
+      existingCounts.set(countKey, (existingCounts.get(countKey) ?? 0) + 1);
+    }
+
+    const scheduledDate = format(targetDateObj, "yyyy-MM-dd");
     const calTitle = `[Listing] ${address} — ${days}-Day Repost`;
     const localDateTimeStr = `${scheduledDate}T${timePart}:00`;
     const scheduledAt = new Date(localDateTimeStr).toISOString();
