@@ -82,7 +82,7 @@ function ListingsPage() {
   const [newOpen, setNewOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
 
-  // Backfill: create repost_30 for all active listings ≤30 days on market that don't have one yet
+  // Backfill: create repost_30 for ALL active listings that don't have one yet
   const backfillMut = useMutation({
     mutationFn: async () => {
       if (!user?.id) throw new Error("Not authenticated");
@@ -90,22 +90,28 @@ function ListingsPage() {
       // 1. Fetch all non-archived active listings
       const { data: allListings, error: lErr } = await sb
         .from("listings")
-        .select("id, address, post_date, list_date, post_time, canva_link, website_link, brand, status")
+        .select("id, address, post_date, list_date, post_time, canva_link, website_link, brand")
         .eq("archived", false)
         .eq("status", "active");
       if (lErr) throw new Error(lErr.message);
+      if (!allListings?.length) return { created: 0, listings: 0 };
 
-      // 2. Filter to listings ≤30 days on market (by post_date)
-      const today = new Date();
-      const eligible = (allListings ?? []).filter((l: any) => {
-        const base = new Date((l.post_date ?? l.list_date) + "T00:00:00");
-        const daysListed = Math.floor((today.getTime() - base.getTime()) / (1000 * 60 * 60 * 24));
-        return daysListed >= 0 && daysListed <= 30;
-      });
+      // 2. Find which listing IDs already have a repost_30 scheduled
+      const listingIds = allListings.map((l: any) => l.id);
+      const { data: existingReposts } = await sb
+        .from("listing_posts")
+        .select("listing_id")
+        .in("listing_id", listingIds)
+        .eq("post_type", "repost_30")
+        .neq("status", "cancelled");
 
-      if (eligible.length === 0) return { created: 0, listings: 0 };
+      const alreadyHas30 = new Set((existingReposts ?? []).map((r: any) => r.listing_id));
 
-      // 3. For each eligible listing, run autoScheduleReposts (skips existing ones automatically)
+      // 3. Only process listings that are missing their repost_30
+      const eligible = allListings.filter((l: any) => !alreadyHas30.has(l.id));
+      if (eligible.length === 0) return { created: 0, listings: allListings.length };
+
+      // 4. Schedule missing repost_30 entries (autoScheduleReposts skips existing types)
       let totalCreated = 0;
       for (const l of eligible) {
         const result = await autoScheduleReposts(
@@ -126,15 +132,21 @@ function ListingsPage() {
       return { created: totalCreated, listings: eligible.length };
     },
     onSuccess: (result) => {
+      // Invalidate all relevant caches so calendar + listing tracker both refresh
       qc.invalidateQueries({ queryKey: ["listings"] });
+      qc.invalidateQueries({ queryKey: ["listing-posts"] });
+      qc.invalidateQueries({ queryKey: ["content-items"] });
       if (result.created === 0) {
-        toast.info(`All 30-day reposts already scheduled for ${result.listings} eligible listing${result.listings !== 1 ? "s" : ""}.`);
+        toast.info("All active listings already have a 30-day repost scheduled.");
       } else {
-        toast.success(`Backfill complete — ${result.created} new repost${result.created !== 1 ? "s" : ""} scheduled across ${result.listings} listing${result.listings !== 1 ? "s" : ""}.`);
+        toast.success(
+          `Backfill complete — ${result.created} new 30-day repost${result.created !== 1 ? "s" : ""} scheduled across ${result.listings} listing${result.listings !== 1 ? "s" : ""}.`,
+        );
       }
     },
     onError: (e: any) => toast.error(e.message),
   });
+
 
   const { data: listings = [], isLoading } = useQuery({
     queryKey: ["listings"],
