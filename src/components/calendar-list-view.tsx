@@ -19,6 +19,8 @@ import {
   AlertTriangle,
   Trash2,
   User,
+  Sparkles,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 import {
   DndContext,
@@ -34,6 +36,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useContentDetail } from "@/components/content-detail-provider";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -64,6 +67,7 @@ import {
   PRIORITY_LABEL,
   BRANDS,
   BRAND_STYLES,
+  findRecommendedOpenDay,
   type Brand,
   type ContentItem,
   type Status,
@@ -215,10 +219,19 @@ export function CalendarListView({ brandFilter = "all" }: { brandFilter?: "all" 
     mutationFn: async ({ id, patch }: { id: string; patch: Record<string, unknown> }) => {
       const { error } = await (supabase as any).from("content_items").update(patch).eq("id", id);
       if (error) throw error;
+
+      if (patch.scheduled_at && typeof patch.scheduled_at === "string") {
+        const scheduledDate = patch.scheduled_at.slice(0, 10);
+        await (supabase as any)
+          .from("listing_posts")
+          .update({ scheduled_date: scheduledDate })
+          .eq("calendar_entry_id", id);
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["content-items"] });
       qc.invalidateQueries({ queryKey: ["content-items-list"] });
+      qc.invalidateQueries({ queryKey: ["listing-posts"] });
     },
     onError: (e: any) => toast.error(e.message ?? "Update failed"),
   });
@@ -648,7 +661,63 @@ export function CalendarListView({ brandFilter = "all" }: { brandFilter?: "all" 
                               ? format(new Date(it.target_publish_date), "MMM d")
                               : "—"}
                           </span>
-                          <div className="text-right">
+                          <div className="flex items-center justify-end gap-1.5 shrink-0">
+                            {isAdmin && (() => {
+                              const curDate = new Date(it.scheduled_at);
+                              const rec = findRecommendedOpenDay(curDate, filteredAll);
+                              return (
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 px-2 text-[10px] font-bold text-gold border-gold/40 hover:bg-gold/10"
+                                      title="Reschedule / Move item"
+                                    >
+                                      <CalendarIcon className="h-3 w-3 mr-1 text-gold" /> Shift
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-72 p-3 bg-card border-border shadow-xl space-y-2.5">
+                                    <div className="text-xs font-semibold text-foreground">
+                                      Reschedule Post
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newDateTimeStr = `${format(rec.date, "yyyy-MM-dd")}T09:00:00`;
+                                        updateField.mutate({
+                                          id: it.id,
+                                          patch: { scheduled_at: new Date(newDateTimeStr).toISOString() },
+                                        });
+                                      }}
+                                      className="w-full text-left text-[10px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 p-2 rounded transition-colors flex items-center gap-1.5"
+                                    >
+                                      <Sparkles className="h-3.5 w-3.5 text-gold shrink-0" />
+                                      <span>Move to {rec.label}</span>
+                                    </button>
+                                    <div className="space-y-1 pt-1 border-t border-border/50">
+                                      <span className="text-[10px] text-muted-foreground block">
+                                        Or pick exact target date:
+                                      </span>
+                                      <input
+                                        type="date"
+                                        value={format(new Date(it.scheduled_at), "yyyy-MM-dd")}
+                                        onChange={(e) => {
+                                          if (e.target.value) {
+                                            const newDateTimeStr = `${e.target.value}T09:00:00`;
+                                            updateField.mutate({
+                                              id: it.id,
+                                              patch: { scheduled_at: new Date(newDateTimeStr).toISOString() },
+                                            });
+                                          }
+                                        }}
+                                        className="w-full h-7 text-xs bg-background border border-border rounded px-2 text-foreground"
+                                      />
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                              );
+                            })()}
                             <Button
                               size="sm"
                               variant="ghost"

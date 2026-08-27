@@ -393,17 +393,15 @@ export async function bulkImportListings(
 
 /** Cancel all future scheduled reposts (30, 60, 90-day) and delete their calendar entries */
 async function cancelFutureReposts(sb: any, listingId: string): Promise<number> {
-  const today = new Date().toISOString().slice(0, 10);
-  const { data: futurePosts } = await sb
+  const { data: scheduledPosts } = await sb
     .from("listing_posts")
     .select("id, calendar_entry_id")
     .eq("listing_id", listingId)
     .eq("status", "scheduled")
-    .in("post_type", ["repost_30", "repost_60", "repost_90"])
-    .gte("scheduled_date", today);
+    .in("post_type", ["repost_30", "repost_60", "repost_90"]);
 
-  if (futurePosts && futurePosts.length > 0) {
-    const calIds = futurePosts.map((p: any) => p.calendar_entry_id).filter(Boolean);
+  if (scheduledPosts && scheduledPosts.length > 0) {
+    const calIds = scheduledPosts.map((p: any) => p.calendar_entry_id).filter(Boolean);
     if (calIds.length > 0) {
       await sb.from("content_items").delete().in("id", calIds);
     }
@@ -412,9 +410,9 @@ async function cancelFutureReposts(sb: any, listingId: string): Promise<number> 
       .update({ status: "cancelled" })
       .in(
         "id",
-        futurePosts.map((p: any) => p.id),
+        scheduledPosts.map((p: any) => p.id),
       );
-    return futurePosts.length;
+    return scheduledPosts.length;
   }
   return 0;
 }

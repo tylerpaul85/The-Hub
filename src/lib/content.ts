@@ -124,3 +124,40 @@ export const VIDEO_STAGE_LABEL: Record<VideoStage, string> = {
   ready_to_post: "Ready to Publish",
   scheduled_post: "Scheduled",
 };
+
+export function findRecommendedOpenDay(
+  currentDate: Date,
+  allItems: ContentItem[],
+): { date: Date; count: number; label: string } {
+  const countsByDay = new Map<string, number>();
+  for (const it of allItems) {
+    if (it.scheduled_at) {
+      const k = format(startOfDay(new Date(it.scheduled_at)), "yyyy-MM-dd");
+      countsByDay.set(k, (countsByDay.get(k) ?? 0) + 1);
+    }
+  }
+
+  let bestDate: Date | null = null;
+  let minCount = Infinity;
+
+  // Search forward up to 30 days starting from tomorrow
+  for (let i = 1; i <= 30; i++) {
+    const candidate = addDays(startOfDay(currentDate), i);
+    const k = format(candidate, "yyyy-MM-dd");
+    const count = countsByDay.get(k) ?? 0;
+    if (count < 2) {
+      bestDate = candidate;
+      minCount = count;
+      break;
+    }
+    if (count < minCount) {
+      minCount = count;
+      bestDate = candidate;
+    }
+  }
+
+  const target = bestDate ?? addDays(startOfDay(currentDate), 1);
+  const count = countsByDay.get(format(target, "yyyy-MM-dd")) ?? 0;
+  const label = `${format(target, "EEE, MMM d")} (${count} post${count !== 1 ? "s" : ""})`;
+  return { date: target, count, label };
+}

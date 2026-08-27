@@ -55,6 +55,7 @@ import {
   STATUS_LABEL,
   PRIORITY_BORDER,
   BRAND_STYLES,
+  findRecommendedOpenDay,
   type ContentItem,
   type Status,
   type Brand,
@@ -1086,35 +1087,57 @@ function MonthlyView({
                                   selected={selectedId === it.id}
                                   onSelect={onSelect}
                                 />
-                                {draggable && onReschedule && (
-                                  <div className="flex items-center justify-end gap-1.5 pt-0.5">
-                                    <span className="text-[9px] text-muted-foreground mr-auto">
-                                      Shift:
-                                    </span>
-                                    <button
-                                      type="button"
-                                      title="Move post to tomorrow"
-                                      onClick={() => {
-                                        const cur = new Date(it.scheduled_at);
-                                        onReschedule(it.id, addDays(cur, 1));
-                                      }}
-                                      className="text-[9px] font-bold bg-background hover:bg-gold/20 text-gold border border-gold/40 px-1.5 py-0.5 rounded transition-colors"
-                                    >
-                                      +1d Tomorrow
-                                    </button>
-                                    <button
-                                      type="button"
-                                      title="Move post to next week"
-                                      onClick={() => {
-                                        const cur = new Date(it.scheduled_at);
-                                        onReschedule(it.id, addDays(cur, 7));
-                                      }}
-                                      className="text-[9px] font-bold bg-background hover:bg-gold/20 text-gold border border-gold/40 px-1.5 py-0.5 rounded transition-colors"
-                                    >
-                                      +7d Next Week
-                                    </button>
-                                  </div>
-                                )}
+                                {draggable && onReschedule && (() => {
+                                  const curDate = new Date(it.scheduled_at);
+                                  const rec = findRecommendedOpenDay(curDate, items);
+                                  return (
+                                    <div className="flex flex-col gap-1 pt-1 border-t border-border/30">
+                                      <div className="flex items-center gap-1.5 justify-between">
+                                        <button
+                                          type="button"
+                                          title={`Move to recommended open date: ${rec.label}`}
+                                          onClick={() => onReschedule(it.id, rec.date)}
+                                          className="text-[9px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded transition-colors flex items-center gap-1"
+                                        >
+                                          <Sparkles className="h-3 w-3 text-gold shrink-0" />
+                                          <span>Move to {rec.label}</span>
+                                        </button>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                          <button
+                                            type="button"
+                                            title="Move to tomorrow"
+                                            onClick={() => onReschedule(it.id, addDays(curDate, 1))}
+                                            className="text-[9px] font-bold bg-background hover:bg-gold/20 text-gold border border-gold/40 px-1.5 py-0.5 rounded transition-colors"
+                                          >
+                                            +1d
+                                          </button>
+                                          <button
+                                            type="button"
+                                            title="Move to next week"
+                                            onClick={() => onReschedule(it.id, addDays(curDate, 7))}
+                                            className="text-[9px] font-bold bg-background hover:bg-gold/20 text-gold border border-gold/40 px-1.5 py-0.5 rounded transition-colors"
+                                          >
+                                            +7d
+                                          </button>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-1.5 justify-between">
+                                        <span className="text-[9px] text-muted-foreground">Or pick date:</span>
+                                        <input
+                                          type="date"
+                                          value={format(curDate, "yyyy-MM-dd")}
+                                          onChange={(e) => {
+                                            if (e.target.value) {
+                                              const newD = new Date(`${e.target.value}T09:00:00`);
+                                              onReschedule(it.id, newD);
+                                            }
+                                          }}
+                                          className="h-5 text-[10px] bg-background border border-border rounded px-1 text-foreground"
+                                        />
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             ))}
                           </div>
