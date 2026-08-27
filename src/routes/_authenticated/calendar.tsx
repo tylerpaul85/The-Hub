@@ -916,7 +916,10 @@ function MonthItemPill({
   const style = transform
     ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
     : undefined;
-  const timeStr = item.scheduled_at ? format(new Date(item.scheduled_at), "h:mm a") : null;
+  const timeStr =
+    item.scheduled_at && !isNaN(new Date(item.scheduled_at).getTime())
+      ? format(new Date(item.scheduled_at), "h:mm a")
+      : null;
 
   return (
     <div
@@ -950,9 +953,7 @@ function MonthItemPill({
           {timeStr}
         </span>
       )}
-      <span className="truncate text-foreground/90 font-medium leading-none flex-1">
-        {item.title}
-      </span>
+      <span className="truncate flex-1 text-left text-foreground/90">{item.title}</span>
     </div>
   );
 }
@@ -996,7 +997,9 @@ function MonthlyView({
           <div key={wi} className="grid grid-cols-7 min-h-0 border-b border-border/60 last:border-b-0">
             {week.map((day) => {
               const dayItems = items.filter((it: ContentItem) =>
-                isSameDay(new Date(it.scheduled_at), day),
+                it.scheduled_at && !isNaN(new Date(it.scheduled_at).getTime())
+                  ? isSameDay(new Date(it.scheduled_at), day)
+                  : false,
               );
               const inMonth = isSameMonth(day, cursor);
               const isToday = isSameDay(day, new Date());
@@ -1088,6 +1091,7 @@ function MonthlyView({
                                   onSelect={onSelect}
                                 />
                                 {draggable && onReschedule && (() => {
+                                  if (!it.scheduled_at || isNaN(new Date(it.scheduled_at).getTime())) return null;
                                   const curDate = new Date(it.scheduled_at);
                                   const rec = findRecommendedOpenDay(curDate, items);
                                   return (
