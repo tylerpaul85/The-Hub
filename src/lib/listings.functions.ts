@@ -83,7 +83,7 @@ async function createCalendarEntry(
     .single();
   if (error) {
     console.error("[listings] Calendar entry error:", error.message, error.code);
-    return null;
+    throw new Error(`Calendar entry failed: ${error.message}`);
   }
   return data?.id ?? null;
 } /**
