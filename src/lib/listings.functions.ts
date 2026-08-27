@@ -557,12 +557,23 @@ export async function autoScheduleReposts(
   brand: string | null,
   socialCopy: string | null,
 ): Promise<{ created: number; alreadyScheduled: number }> {
-  // Fetch existing repost entries (including ones that may be orphaned with null calendar_entry_id)
+  // Fetch existing repost entries for this listing
   const { data: existing } = await sb
     .from("listing_posts")
     .select("id, post_type, calendar_entry_id, status")
     .eq("listing_id", listingId)
     .in("post_type", ["repost_30", "repost_60", "repost_90"]);
+
+  // Verify which calendar_entry_ids actually exist in content_items table
+  const calIds = (existing ?? []).map((r: any) => r.calendar_entry_id).filter(Boolean);
+  let validCalIds = new Set<string>();
+  if (calIds.length > 0) {
+    const { data: calRows } = await sb
+      .from("content_items")
+      .select("id")
+      .in("id", calIds);
+    validCalIds = new Set((calRows ?? []).map((c: any) => c.id));
+  }
 
   const existingByType = new Map<string, any>();
   for (const row of existing ?? []) {
@@ -576,8 +587,13 @@ export async function autoScheduleReposts(
   for (const { days, type } of REPOST_OFFSETS) {
     const existingRow = existingByType.get(type);
 
-    // If a non-cancelled entry exists WITH a calendar entry, skip it
-    if (existingRow && existingRow.status !== "cancelled" && existingRow.calendar_entry_id) {
+    // Skip ONLY if a non-cancelled listing_post row exists AND its calendar_entry_id actually exists in content_items
+    if (
+      existingRow &&
+      existingRow.status !== "cancelled" &&
+      existingRow.calendar_entry_id &&
+      validCalIds.has(existingRow.calendar_entry_id)
+    ) {
       continue;
     }
 
@@ -603,11 +619,11 @@ export async function autoScheduleReposts(
       brand,
     );
 
-    if (existingRow && !existingRow.calendar_entry_id) {
-      // Orphaned entry: listing_post exists but has no calendar entry — update it
+    if (existingRow) {
+      // Update existing entry (whether it was cancelled or had a dead/missing calendar_entry_id)
       const { error: updateError } = await sb
         .from("listing_posts")
-        .update({ calendar_entry_id: calId, status: "scheduled" })
+        .update({ calendar_entry_id: calId, status: "scheduled", scheduled_date: scheduledDate })
         .eq("id", existingRow.id);
       if (updateError) {
         console.error(`[listings] listing_posts update error for ${type}:`, updateError.message);

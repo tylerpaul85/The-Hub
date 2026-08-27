@@ -124,6 +124,7 @@ function ListingsPage() {
       qc.invalidateQueries({ queryKey: ["listings"] });
       qc.invalidateQueries({ queryKey: ["listing-posts"] });
       qc.invalidateQueries({ queryKey: ["content-items"] });
+      qc.invalidateQueries({ queryKey: ["content-items-list"] });
       if (result.created === 0) {
         toast.info("All active listings already have a 30-day repost scheduled.");
       } else {

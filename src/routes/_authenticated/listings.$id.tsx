@@ -1318,6 +1318,9 @@ function AutoScheduleModal({
         null,
       ),
     onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: ["content-items"] });
+      qc.invalidateQueries({ queryKey: ["content-items-list"] });
+      qc.invalidateQueries({ queryKey: ["listing-posts", listing.id] });
       if (result.created === 0) toast.info("All 30/60/90-day reposts are already scheduled.");
       else
         toast.success(

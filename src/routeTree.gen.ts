@@ -14,7 +14,6 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AgentToolboxRouteImport } from './routes/agent-toolbox'
 import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AvailabilityRouteImport } from './routes/availability'
 import { Route as ClosingGiftRouteImport } from './routes/closing-gift'
 import { Route as RequestRouteImport } from './routes/request'
@@ -40,6 +39,7 @@ import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated/videos'
 import { Route as AuthenticatedVideosArchiveRouteImport } from './routes/_authenticated/videos-archive'
 import { Route as AgentsIndexRouteImport } from './routes/agents.index'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthenticatedAdminAssistantRouteImport } from './routes/_authenticated/admin.assistant'
 import { Route as AuthenticatedAdminSwagCreditsRouteImport } from './routes/_authenticated/admin.swag-credits'
 import { Route as AuthenticatedEosIssuesRouteImport } from './routes/_authenticated/eos.issues'
@@ -79,11 +79,6 @@ const AgentsRoute = AgentsRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/auth/callback',
-  path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AvailabilityRoute = AvailabilityRouteImport.update({
@@ -216,6 +211,11 @@ const AgentsIndexRoute = AgentsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AgentsRoute,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthenticatedAdminAssistantRoute =
   AuthenticatedAdminAssistantRouteImport.update({
     id: '/admin/assistant',
@@ -312,8 +312,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agent-toolbox': typeof AgentToolboxRoute
   '/agents': typeof AgentsRouteWithChildren
-  '/auth': typeof AuthRoute
-  '/auth/callback': typeof AuthCallbackRoute
+  '/auth': typeof AuthRouteWithChildren
   '/availability': typeof AvailabilityRoute
   '/closing-gift': typeof ClosingGiftRoute
   '/request': typeof RequestRoute
@@ -338,6 +337,7 @@ export interface FileRoutesByFullPath {
   '/users': typeof AuthenticatedUsersRoute
   '/videos': typeof AuthenticatedVideosRoute
   '/videos-archive': typeof AuthenticatedVideosArchiveRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/agents/': typeof AgentsIndexRoute
   '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
@@ -359,8 +359,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agent-toolbox': typeof AgentToolboxRoute
-  '/auth': typeof AuthRoute
-  '/auth/callback': typeof AuthCallbackRoute
+  '/auth': typeof AuthRouteWithChildren
   '/availability': typeof AvailabilityRoute
   '/closing-gift': typeof ClosingGiftRoute
   '/request': typeof RequestRoute
@@ -383,6 +382,7 @@ export interface FileRoutesByTo {
   '/users': typeof AuthenticatedUsersRoute
   '/videos': typeof AuthenticatedVideosRoute
   '/videos-archive': typeof AuthenticatedVideosArchiveRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/agents': typeof AgentsIndexRoute
   '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
@@ -406,8 +406,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/agent-toolbox': typeof AgentToolboxRoute
   '/agents': typeof AgentsRouteWithChildren
-  '/auth': typeof AuthRoute
-  '/auth/callback': typeof AuthCallbackRoute
+  '/auth': typeof AuthRouteWithChildren
   '/availability': typeof AvailabilityRoute
   '/closing-gift': typeof ClosingGiftRoute
   '/request': typeof RequestRoute
@@ -432,6 +431,7 @@ export interface FileRoutesById {
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/_authenticated/videos': typeof AuthenticatedVideosRoute
   '/_authenticated/videos-archive': typeof AuthenticatedVideosArchiveRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/agents/': typeof AgentsIndexRoute
   '/_authenticated/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/_authenticated/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
@@ -457,7 +457,6 @@ export interface FileRouteTypes {
     | '/agent-toolbox'
     | '/agents'
     | '/auth'
-    | '/auth/callback'
     | '/availability'
     | '/closing-gift'
     | '/request'
@@ -482,6 +481,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/videos'
     | '/videos-archive'
+    | '/auth/callback'
     | '/agents/'
     | '/admin/assistant'
     | '/admin/swag-credits'
@@ -526,6 +526,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/videos'
     | '/videos-archive'
+    | '/auth/callback'
     | '/agents'
     | '/admin/assistant'
     | '/admin/swag-credits'
@@ -573,6 +574,7 @@ export interface FileRouteTypes {
     | '/_authenticated/users'
     | '/_authenticated/videos'
     | '/_authenticated/videos-archive'
+    | '/auth/callback'
     | '/agents/'
     | '/_authenticated/admin/assistant'
     | '/_authenticated/admin/swag-credits'
@@ -597,8 +599,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AgentToolboxRoute: typeof AgentToolboxRoute
   AgentsRoute: typeof AgentsRouteWithChildren
-  AuthRoute: typeof AuthRoute
-  AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthRoute: typeof AuthRouteWithChildren
   AvailabilityRoute: typeof AvailabilityRoute
   ClosingGiftRoute: typeof ClosingGiftRoute
   RequestRoute: typeof RequestRoute
@@ -643,13 +644,6 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/auth/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/availability': {
@@ -826,6 +820,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/agents/'
       preLoaderRoute: typeof AgentsIndexRouteImport
       parentRoute: typeof AgentsRoute
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/_authenticated/admin/assistant': {
       id: '/_authenticated/admin/assistant'
@@ -1063,13 +1064,22 @@ const AgentsRouteChildren: AgentsRouteChildren = {
 const AgentsRouteWithChildren =
   AgentsRoute._addFileChildren(AgentsRouteChildren)
 
+interface AuthRouteChildren {
+  AuthCallbackRoute: typeof AuthCallbackRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthCallbackRoute: AuthCallbackRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AgentToolboxRoute: AgentToolboxRoute,
   AgentsRoute: AgentsRouteWithChildren,
-  AuthRoute: AuthRoute,
-  AuthCallbackRoute: AuthCallbackRoute,
+  AuthRoute: AuthRouteWithChildren,
   AvailabilityRoute: AvailabilityRoute,
   ClosingGiftRoute: ClosingGiftRoute,
   RequestRoute: RequestRoute,
