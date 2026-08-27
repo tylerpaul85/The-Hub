@@ -423,6 +423,70 @@ export async function updateListing(
   await logListingHistory(sb, id, userId, "updated", fields);
 }
 
+/** Cancel all future scheduled reposts (30, 60, 90-day) and delete their calendar entries */
+async function cancelFutureReposts(sb: any, listingId: string): Promise<number> {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: futurePosts } = await sb
+    .from("listing_posts")
+    .select("id, calendar_entry_id")
+    .eq("listing_id", listingId)
+    .eq("status", "scheduled")
+    .in("post_type", ["repost_30", "repost_60", "repost_90"])
+    .gte("scheduled_date", today);
+
+  if (futurePosts && futurePosts.length > 0) {
+    const calIds = futurePosts.map((p: any) => p.calendar_entry_id).filter(Boolean);
+    if (calIds.length > 0) {
+      await sb.from("content_items").delete().in("id", calIds);
+    }
+    await sb
+      .from("listing_posts")
+      .update({ status: "cancelled" })
+      .in(
+        "id",
+        futurePosts.map((p: any) => p.id),
+      );
+    return futurePosts.length;
+  }
+  return 0;
+}
+
+// ─── Update Listing ───────────────────────────────────────────────────────────
+
+export async function updateListing(
+  sb: any,
+  id: string,
+  userId: string,
+  fields: Partial<{
+    address: string;
+    agent_name: string | null;
+    mls_id: string | null;
+    list_price: number | null;
+    list_date: string;
+    post_date: string;
+    post_time: string;
+    status: ListingStatus;
+    canva_link: string | null;
+    website_link: string | null;
+    brand: string | null;
+  }>,
+): Promise<void> {
+  const { error } = await sb
+    .from("listings")
+    .update({ ...fields, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+
+  if (fields.status === "under_contract" || fields.status === "sold") {
+    await cancelFutureReposts(sb, id);
+  }
+
+  // Automatically synchronize Canva link, Website link, and Brand to all scheduled Content Calendar entries
+  await syncListingAssets(sb, id);
+
+  await logListingHistory(sb, id, userId, "updated", fields);
+}
+
 // ─── Mark Under Contract ──────────────────────────────────────────────────────
 // Does NOT create a calendar entry — creates a task for the content coordinator instead.
 
@@ -443,28 +507,7 @@ export async function markUnderContract(
     .update({ status: "under_contract", updated_at: new Date().toISOString() })
     .eq("id", listingId);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const { data: futurePosts } = await sb
-    .from("listing_posts")
-    .select("id, calendar_entry_id")
-    .eq("listing_id", listingId)
-    .eq("status", "scheduled")
-    .in("post_type", ["repost_60", "repost_90"])
-    .gte("scheduled_date", today);
-
-  let cancelledCount = 0;
-  if (futurePosts && futurePosts.length > 0) {
-    const calIds = futurePosts.map((p: any) => p.calendar_entry_id).filter(Boolean);
-    if (calIds.length > 0) await sb.from("content_items").delete().in("id", calIds);
-    await sb
-      .from("listing_posts")
-      .update({ status: "cancelled" })
-      .in(
-        "id",
-        futurePosts.map((p: any) => p.id),
-      );
-    cancelledCount = futurePosts.length;
-  }
+  const cancelledCount = await cancelFutureReposts(sb, listingId);
 
   // Create a task for content coordinator instead of a calendar entry
   const agentLine = listing.agent_name ? ` — Agent: ${listing.agent_name}` : "";
@@ -488,6 +531,8 @@ export async function archiveListing(sb: any, listingId: string, userId: string)
     .update({ archived: true, updated_at: new Date().toISOString() })
     .eq("id", listingId);
   if (error) throw new Error(error.message);
+
+  await cancelFutureReposts(sb, listingId);
 
   await logListingHistory(sb, listingId, userId, "archived");
 }
