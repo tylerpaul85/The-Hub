@@ -129,7 +129,7 @@ async function createRepostEntries(
       brand,
     );
 
-    await sb.from("listing_posts").insert({
+    const { error: postError } = await sb.from("listing_posts").insert({
       listing_id: listingId,
       scheduled_date: scheduledDate,
       post_type: type,
@@ -138,6 +138,9 @@ async function createRepostEntries(
       calendar_entry_id: calId,
       status: "scheduled",
     });
+    if (postError) {
+      console.error(`[listings] listing_posts insert error for ${type}:`, postError.message);
+    }
   }
 }
 
@@ -587,7 +590,7 @@ export async function autoScheduleReposts(
       websiteLink,
       brand,
     );
-    await sb.from("listing_posts").insert({
+    const { error: postError } = await sb.from("listing_posts").insert({
       listing_id: listingId,
       scheduled_date: scheduledDate,
       post_type: type,
@@ -596,6 +599,10 @@ export async function autoScheduleReposts(
       calendar_entry_id: calId,
       status: "scheduled",
     });
+    if (postError) {
+      console.error(`[listings] listing_posts insert error for ${type}:`, postError.message, postError);
+      throw new Error(`Failed to insert ${type}: ${postError.message}`);
+    }
     created++;
   }
   
