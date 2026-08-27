@@ -104,7 +104,7 @@ export interface ContentItem {
   post_type: string;
 }
 
-export const HOURS = Array.from({ length: 17 }, (_, i) => i + 6); // 6..22
+export const HOURS = Array.from({ length: 19 }, (_, i) => i + 5); // 5..23 (5 AM to 11 PM)
 export const QUARTERS = [0, 15, 30, 45] as const;
 export const SLOT_HEIGHT_PX = 14; // per 15-minute slot (compact)
 

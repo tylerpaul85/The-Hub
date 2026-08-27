@@ -104,9 +104,9 @@ async function createRepostEntries(
   socialCopy: string | null,
 ): Promise<void> {
   const base = new Date(baseDate + "T00:00:00");
+  const timePart = postTime?.slice(0, 5) || "09:00";
   for (const { days, type } of REPOST_OFFSETS) {
     const scheduledDate = format(addDays(base, days), "yyyy-MM-dd");
-    const timePart = "05:00";
 
     // Parse to local date object first, then call toISOString to guarantee correct offset formatting
     const localDateTimeStr = `${scheduledDate}T${timePart}:00`;
@@ -581,7 +581,7 @@ export async function autoScheduleReposts(
   }
 
   const base = new Date(postDate + "T00:00:00");
-  const timePart = "05:00";
+  const timePart = postTime?.slice(0, 5) || "09:00";
   let created = 0;
 
   for (const { days, type } of REPOST_OFFSETS) {
