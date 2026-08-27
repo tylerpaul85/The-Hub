@@ -129,11 +129,15 @@ export function findRecommendedOpenDay(
   currentDate: Date,
   allItems: ContentItem[],
 ): { date: Date; count: number; label: string } {
+  const safeDate = currentDate && !isNaN(new Date(currentDate).getTime()) ? new Date(currentDate) : new Date();
   const countsByDay = new Map<string, number>();
-  for (const it of allItems) {
-    if (it.scheduled_at) {
-      const k = format(startOfDay(new Date(it.scheduled_at)), "yyyy-MM-dd");
-      countsByDay.set(k, (countsByDay.get(k) ?? 0) + 1);
+  for (const it of allItems ?? []) {
+    if (it?.scheduled_at) {
+      const d = new Date(it.scheduled_at);
+      if (!isNaN(d.getTime())) {
+        const k = format(startOfDay(d), "yyyy-MM-dd");
+        countsByDay.set(k, (countsByDay.get(k) ?? 0) + 1);
+      }
     }
   }
 
@@ -142,7 +146,7 @@ export function findRecommendedOpenDay(
 
   // Search forward up to 30 days starting from tomorrow
   for (let i = 1; i <= 30; i++) {
-    const candidate = addDays(startOfDay(currentDate), i);
+    const candidate = addDays(startOfDay(safeDate), i);
     const k = format(candidate, "yyyy-MM-dd");
     const count = countsByDay.get(k) ?? 0;
     if (count < 2) {
@@ -156,7 +160,7 @@ export function findRecommendedOpenDay(
     }
   }
 
-  const target = bestDate ?? addDays(startOfDay(currentDate), 1);
+  const target = bestDate ?? addDays(startOfDay(safeDate), 1);
   const count = countsByDay.get(format(target, "yyyy-MM-dd")) ?? 0;
   const label = `${format(target, "EEE, MMM d")} (${count} post${count !== 1 ? "s" : ""})`;
   return { date: target, count, label };

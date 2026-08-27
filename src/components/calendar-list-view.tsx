@@ -184,7 +184,10 @@ export function CalendarListView({ brandFilter = "all" }: { brandFilter?: "all" 
   const monthCounts = useMemo(() => {
     const m = new Map<string, number>();
     filteredAll.forEach((it) => {
-      const k = format(startOfMonth(new Date(it.scheduled_at)), "yyyy-MM");
+      if (!it?.scheduled_at) return;
+      const d = new Date(it.scheduled_at);
+      if (isNaN(d.getTime())) return;
+      const k = format(startOfMonth(d), "yyyy-MM");
       m.set(k, (m.get(k) ?? 0) + 1);
     });
     return m;
@@ -199,7 +202,9 @@ export function CalendarListView({ brandFilter = "all" }: { brandFilter?: "all" 
   const itemsByDay = useMemo(() => {
     const m = new Map<string, ContentItem[]>();
     filteredAll.forEach((it) => {
+      if (!it?.scheduled_at) return;
       const d = new Date(it.scheduled_at);
+      if (isNaN(d.getTime())) return;
       const k = startOfDay(d).toDateString();
       const arr = m.get(k) ?? [];
       arr.push(it);
@@ -631,7 +636,9 @@ export function CalendarListView({ brandFilter = "all" }: { brandFilter?: "all" 
                             </SelectContent>
                           </Select>
                           <span className="text-xs text-muted-foreground">
-                            {format(new Date(it.scheduled_at), "h:mm a")}
+                            {it.scheduled_at && !isNaN(new Date(it.scheduled_at).getTime())
+                              ? format(new Date(it.scheduled_at), "h:mm a")
+                              : "—"}
                           </span>
                           <span
                             className="text-xs capitalize text-muted-foreground"
@@ -657,13 +664,16 @@ export function CalendarListView({ brandFilter = "all" }: { brandFilter?: "all" 
                             )}
                           >
                             {targetMissed && <AlertTriangle className="h-3 w-3" />}
-                            {it.target_publish_date
+                            {it.target_publish_date && !isNaN(new Date(it.target_publish_date).getTime())
                               ? format(new Date(it.target_publish_date), "MMM d")
                               : "—"}
                           </span>
                           <div className="flex items-center justify-end gap-1.5 shrink-0">
                             {isAdmin && (() => {
-                              const curDate = new Date(it.scheduled_at);
+                              const curDate =
+                                it.scheduled_at && !isNaN(new Date(it.scheduled_at).getTime())
+                                  ? new Date(it.scheduled_at)
+                                  : new Date();
                               const rec = findRecommendedOpenDay(curDate, filteredAll);
                               return (
                                 <Popover>
@@ -701,7 +711,11 @@ export function CalendarListView({ brandFilter = "all" }: { brandFilter?: "all" 
                                       </span>
                                       <input
                                         type="date"
-                                        value={format(new Date(it.scheduled_at), "yyyy-MM-dd")}
+                                        value={
+                                          it.scheduled_at && !isNaN(new Date(it.scheduled_at).getTime())
+                                            ? format(new Date(it.scheduled_at), "yyyy-MM-dd")
+                                            : format(new Date(), "yyyy-MM-dd")
+                                        }
                                         onChange={(e) => {
                                           if (e.target.value) {
                                             const newDateTimeStr = `${e.target.value}T09:00:00`;
