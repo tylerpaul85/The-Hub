@@ -557,19 +557,30 @@ export async function autoScheduleReposts(
   brand: string | null,
   socialCopy: string | null,
 ): Promise<{ created: number; alreadyScheduled: number }> {
+  // Fetch existing repost entries (including ones that may be orphaned with null calendar_entry_id)
   const { data: existing } = await sb
     .from("listing_posts")
-    .select("post_type")
+    .select("id, post_type, calendar_entry_id, status")
     .eq("listing_id", listingId)
     .in("post_type", ["repost_30", "repost_60", "repost_90"]);
 
-  const existingTypes = new Set((existing ?? []).map((p: any) => p.post_type));
+  const existingByType = new Map<string, any>();
+  for (const row of existing ?? []) {
+    existingByType.set(row.post_type, row);
+  }
 
   const base = new Date(postDate + "T00:00:00");
   const timePart = "05:00";
   let created = 0;
+
   for (const { days, type } of REPOST_OFFSETS) {
-    if (existingTypes.has(type)) continue;
+    const existingRow = existingByType.get(type);
+
+    // If a non-cancelled entry exists WITH a calendar entry, skip it
+    if (existingRow && existingRow.status !== "cancelled" && existingRow.calendar_entry_id) {
+      continue;
+    }
+
     const scheduledDate = format(addDays(base, days), "yyyy-MM-dd");
     const calTitle = `[Listing] ${address} — ${days}-Day Repost`;
     const localDateTimeStr = `${scheduledDate}T${timePart}:00`;
@@ -580,6 +591,7 @@ export async function autoScheduleReposts(
       socialCopy ? `Copy:\n${socialCopy}` : null,
     ].filter(Boolean);
 
+    // Create the calendar entry
     const calId = await createCalendarEntry(
       sb,
       userId,
@@ -590,18 +602,32 @@ export async function autoScheduleReposts(
       websiteLink,
       brand,
     );
-    const { error: postError } = await sb.from("listing_posts").insert({
-      listing_id: listingId,
-      scheduled_date: scheduledDate,
-      post_type: type,
-      graphic_url: null,
-      copy: socialCopy ?? null,
-      calendar_entry_id: calId,
-      status: "scheduled",
-    });
-    if (postError) {
-      console.error(`[listings] listing_posts insert error for ${type}:`, postError.message, postError);
-      throw new Error(`Failed to insert ${type}: ${postError.message}`);
+
+    if (existingRow && !existingRow.calendar_entry_id) {
+      // Orphaned entry: listing_post exists but has no calendar entry — update it
+      const { error: updateError } = await sb
+        .from("listing_posts")
+        .update({ calendar_entry_id: calId, status: "scheduled" })
+        .eq("id", existingRow.id);
+      if (updateError) {
+        console.error(`[listings] listing_posts update error for ${type}:`, updateError.message);
+        throw new Error(`Failed to update ${type}: ${updateError.message}`);
+      }
+    } else {
+      // New entry: create listing_post from scratch
+      const { error: postError } = await sb.from("listing_posts").insert({
+        listing_id: listingId,
+        scheduled_date: scheduledDate,
+        post_type: type,
+        graphic_url: null,
+        copy: socialCopy ?? null,
+        calendar_entry_id: calId,
+        status: "scheduled",
+      });
+      if (postError) {
+        console.error(`[listings] listing_posts insert error for ${type}:`, postError.message);
+        throw new Error(`Failed to insert ${type}: ${postError.message}`);
+      }
     }
     created++;
   }
@@ -610,7 +636,7 @@ export async function autoScheduleReposts(
     await logListingHistory(sb, listingId, userId, "auto_scheduled_reposts", { created });
   }
 
-  return { created, alreadyScheduled: existingTypes.size };
+  return { created, alreadyScheduled: existingByType.size - created };
 }
 
 // ─── Cancel Post ──────────────────────────────────────────────────────────────

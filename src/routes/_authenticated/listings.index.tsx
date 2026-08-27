@@ -82,7 +82,7 @@ function ListingsPage() {
   const [newOpen, setNewOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
 
-  // Backfill: create repost_30 for ALL active listings that don't have one yet
+  // Backfill: create or fix repost entries for ALL active listings
   const backfillMut = useMutation({
     mutationFn: async () => {
       if (!user?.id) throw new Error("Not authenticated");
@@ -96,24 +96,12 @@ function ListingsPage() {
       if (lErr) throw new Error(lErr.message);
       if (!allListings?.length) return { created: 0, listings: 0 };
 
-      // 2. Find which listing IDs already have a repost_30 scheduled
-      const listingIds = allListings.map((l: any) => l.id);
-      const { data: existingReposts } = await sb
-        .from("listing_posts")
-        .select("listing_id")
-        .in("listing_id", listingIds)
-        .eq("post_type", "repost_30")
-        .neq("status", "cancelled");
-
-      const alreadyHas30 = new Set((existingReposts ?? []).map((r: any) => r.listing_id));
-
-      // 3. Only process listings that are missing their repost_30
-      const eligible = allListings.filter((l: any) => !alreadyHas30.has(l.id));
-      if (eligible.length === 0) return { created: 0, listings: allListings.length };
-
-      // 4. Schedule missing repost_30 entries (autoScheduleReposts skips existing types)
+      // 2. Run autoScheduleReposts for ALL listings — it handles:
+      //    - Skipping entries that already have a calendar entry
+      //    - Creating missing repost types from scratch
+      //    - Fixing orphaned entries (listing_post exists but calendar_entry_id is null)
       let totalCreated = 0;
-      for (const l of eligible) {
+      for (const l of allListings) {
         const result = await autoScheduleReposts(
           sb,
           user.id,
@@ -129,7 +117,7 @@ function ListingsPage() {
         totalCreated += result.created;
       }
 
-      return { created: totalCreated, listings: eligible.length };
+      return { created: totalCreated, listings: allListings.length };
     },
     onSuccess: (result) => {
       // Invalidate all relevant caches so calendar + listing tracker both refresh
