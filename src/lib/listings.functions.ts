@@ -7,6 +7,7 @@ import { addDays, format } from "date-fns";
 import type { ListingStatus, ParsedListing, PostType } from "@/lib/listings";
 
 const REPOST_OFFSETS: { days: number; type: PostType }[] = [
+  { days: 30, type: "repost_30" },
   { days: 60, type: "repost_60" },
   { days: 90, type: "repost_90" },
 ];
@@ -86,9 +87,9 @@ async function createCalendarEntry(
   }
   return data?.id ?? null;
 } /**
- * Creates 60/90/120-day repost entries for a listing.
+ * Creates 30/60/90-day repost entries for a listing.
  * baseDate: the post_date (when listing went live), time: HH:MM string.
- * Note: 60/90/120-day reposts are automatically scheduled at 5:00 AM.
+ * Note: 30/60/90-day reposts are automatically scheduled at 5:00 AM.
  */
 async function createRepostEntries(
   sb: any,
@@ -271,7 +272,7 @@ export async function createListing(
     status: "scheduled",
   });
 
-  // 60/90/120 reposts calculated from post_date
+  // 30/60/90 reposts calculated from post_date
   await createRepostEntries(
     sb,
     userId,
@@ -539,7 +540,7 @@ export async function scheduleManualPost(
   });
 }
 
-// ─── Auto-Schedule 60/90/120 Reposts ─────────────────────────────────────────
+// ─── Auto-Schedule 30/60/90 Reposts ─────────────────────────────────────────
 
 export async function autoScheduleReposts(
   sb: any,
@@ -557,7 +558,7 @@ export async function autoScheduleReposts(
     .from("listing_posts")
     .select("post_type")
     .eq("listing_id", listingId)
-    .in("post_type", ["repost_60", "repost_90"]);
+    .in("post_type", ["repost_30", "repost_60", "repost_90"]);
 
   const existingTypes = new Set((existing ?? []).map((p: any) => p.post_type));
 

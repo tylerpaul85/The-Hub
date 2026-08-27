@@ -21,9 +21,9 @@ export const LISTING_STATUS_CLASS: Record<ListingStatus, string> = {
 
 export const POST_TYPES = [
   "active",
+  "repost_30",
   "repost_60",
   "repost_90",
-  "repost_120",
   "under_contract",
   "manual",
 ] as const;
@@ -31,18 +31,18 @@ export type PostType = (typeof POST_TYPES)[number];
 
 export const POST_TYPE_LABEL: Record<PostType, string> = {
   active: "Just Listed",
+  repost_30: "30-Day Repost",
   repost_60: "60-Day Repost",
   repost_90: "90-Day Repost",
-  repost_120: "120-Day Repost",
   under_contract: "Under Contract",
   manual: "Manual Post",
 };
 
 export const POST_TYPE_CLASS: Record<PostType, string> = {
   active: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+  repost_30: "bg-purple-500/15 text-purple-300 border-purple-500/30",
   repost_60: "bg-sky-500/15 text-sky-300 border-sky-500/30",
   repost_90: "bg-indigo-500/15 text-indigo-300 border-indigo-500/30",
-  repost_120: "bg-purple-500/15 text-purple-300 border-purple-500/30",
   under_contract: "bg-amber-500/15 text-amber-300 border-amber-500/30",
   manual: "bg-muted text-muted-foreground border-border",
 };

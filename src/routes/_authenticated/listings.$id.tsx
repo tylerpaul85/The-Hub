@@ -342,7 +342,7 @@ function MarkUnderContractButton({
             <ul className="space-y-1.5 pl-3">
               <li className="flex items-center gap-2">
                 <X className="h-3.5 w-3.5 text-rose-400 shrink-0" />
-                Cancel all future 60/90/120-day repost posts
+                Cancel all future 30/60/90-day repost posts
               </li>
               <li className="flex items-center gap-2">
                 <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
@@ -776,7 +776,7 @@ function GraphicsCopySection({
             )}
           </div>
           <p className="text-[11px] text-muted-foreground mt-1.5">
-            Auto-filled into all 60/90/120-day repost calendar entries.
+            Auto-filled into all 30/60/90-day repost calendar entries.
           </p>
         </div>
 
@@ -1071,7 +1071,7 @@ function PostsSection({
         {canManage && (
           <div className="ml-auto flex gap-2">
             <Button variant="outline" size="sm" onClick={() => setAutoOpen(true)}>
-              <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> 60/90/120-Day Reposts
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> 30/60/90-Day Reposts
             </Button>
             <Button variant="outline" size="sm" onClick={() => setManualOpen(true)}>
               <Plus className="h-3.5 w-3.5 mr-1.5" /> Schedule Post
@@ -1313,10 +1313,12 @@ function AutoScheduleModal({
         listing.post_date ?? listing.list_date,
         listing.post_time?.slice(0, 5) ?? "09:00",
         listing.canva_link,
+        listing.website_link,
+        listing.brand,
         null,
       ),
     onSuccess: (result) => {
-      if (result.created === 0) toast.info("All 60/90/120-day reposts are already scheduled.");
+      if (result.created === 0) toast.info("All 30/60/90-day reposts are already scheduled.");
       else
         toast.success(
           `${result.created} repost${result.created !== 1 ? "s" : ""} scheduled in Content Calendar.`,
@@ -1328,7 +1330,7 @@ function AutoScheduleModal({
 
   const baseDate = listing.post_date ?? listing.list_date;
   const base = new Date(baseDate + "T00:00:00");
-  const entries = [60, 90, 120].map((days) => {
+  const entries = [30, 60, 90].map((days) => {
     const type = `repost_${days}` as PostType;
     const d = addDays(base, days);
     return { days, type, date: format(d, "MMM d, yyyy"), exists: existingTypes.has(type) };
@@ -1345,7 +1347,7 @@ function AutoScheduleModal({
         </DialogHeader>
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Creates 60, 90, and 120-day repost entries in the Content Calendar calculated from the
+            Creates 30, 60, and 90-day repost entries in the Content Calendar calculated from the
             listing's post date ({baseDate}). Existing entries are skipped.
           </p>
           <div className="space-y-2">

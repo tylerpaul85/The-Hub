@@ -43,6 +43,7 @@ import {
   ChevronRight,
   ExternalLink,
   Link as LinkIcon,
+  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -55,7 +56,7 @@ import {
   formatPrice,
   parseCsvListings,
 } from "@/lib/listings";
-import { createListing, bulkImportListings } from "@/lib/listings.functions";
+import { createListing, bulkImportListings, autoScheduleReposts } from "@/lib/listings.functions";
 
 export const Route = createFileRoute("/_authenticated/listings/")({
   component: ListingsPage,
@@ -80,6 +81,60 @@ function ListingsPage() {
   const [search, setSearch] = useState("");
   const [newOpen, setNewOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+
+  // Backfill: create repost_30 for all active listings ≤30 days on market that don't have one yet
+  const backfillMut = useMutation({
+    mutationFn: async () => {
+      if (!user?.id) throw new Error("Not authenticated");
+
+      // 1. Fetch all non-archived active listings
+      const { data: allListings, error: lErr } = await sb
+        .from("listings")
+        .select("id, address, post_date, list_date, post_time, canva_link, website_link, brand, status")
+        .eq("archived", false)
+        .eq("status", "active");
+      if (lErr) throw new Error(lErr.message);
+
+      // 2. Filter to listings ≤30 days on market (by post_date)
+      const today = new Date();
+      const eligible = (allListings ?? []).filter((l: any) => {
+        const base = new Date((l.post_date ?? l.list_date) + "T00:00:00");
+        const daysListed = Math.floor((today.getTime() - base.getTime()) / (1000 * 60 * 60 * 24));
+        return daysListed >= 0 && daysListed <= 30;
+      });
+
+      if (eligible.length === 0) return { created: 0, listings: 0 };
+
+      // 3. For each eligible listing, run autoScheduleReposts (skips existing ones automatically)
+      let totalCreated = 0;
+      for (const l of eligible) {
+        const result = await autoScheduleReposts(
+          sb,
+          user.id,
+          l.id,
+          l.address,
+          l.post_date ?? l.list_date,
+          l.post_time?.slice(0, 5) ?? "09:00",
+          l.canva_link,
+          l.website_link,
+          l.brand,
+          null,
+        );
+        totalCreated += result.created;
+      }
+
+      return { created: totalCreated, listings: eligible.length };
+    },
+    onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: ["listings"] });
+      if (result.created === 0) {
+        toast.info(`All 30-day reposts already scheduled for ${result.listings} eligible listing${result.listings !== 1 ? "s" : ""}.`);
+      } else {
+        toast.success(`Backfill complete — ${result.created} new repost${result.created !== 1 ? "s" : ""} scheduled across ${result.listings} listing${result.listings !== 1 ? "s" : ""}.`);
+      }
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   const { data: listings = [], isLoading } = useQuery({
     queryKey: ["listings"],
@@ -164,6 +219,20 @@ function ListingsPage() {
         </div>
         {canManage && (
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => backfillMut.mutate()}
+              disabled={backfillMut.isPending}
+              title="Schedule missing 30-day reposts for all active listings ≤30 days on market"
+            >
+              {backfillMut.isPending ? (
+                <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-1.5" />
+              )}
+              Backfill 30-Day Reposts
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
               <Upload className="h-4 w-4 mr-1.5" /> Bulk Import
             </Button>
@@ -372,7 +441,7 @@ function NewListingModal({
       });
     },
     onSuccess: () => {
-      toast.success("Listing created! Just Listed + 60/90/120-day reposts scheduled.");
+      toast.success("Listing created! Just Listed + 30/60/90-day reposts scheduled.");
       setForm({
         address: "",
         agent_name: "",
@@ -502,7 +571,7 @@ function NewListingModal({
             <div>
               <p className="text-xs font-semibold text-gold mb-0.5">📅 Listing Post Schedule</p>
               <p className="text-xs text-muted-foreground">
-                When is this listing going live on social? The Just Listed, 60, 90, and 120-day
+                When is this listing going live on social? The Just Listed, 30, 60, and 90-day
                 reposts are all scheduled from this date and time.
               </p>
             </div>
@@ -530,7 +599,7 @@ function NewListingModal({
             </div>
             {form.post_date && (
               <div className="text-[11px] text-muted-foreground space-y-0.5">
-                {[60, 90, 120].map((d) => {
+                {[30, 60, 90].map((d) => {
                   const dt = new Date(form.post_date + "T00:00:00");
                   dt.setDate(dt.getDate() + d);
                   return (
@@ -565,7 +634,7 @@ function NewListingModal({
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Will be auto-filled into all 60/90/120-day repost calendar entries.
+              Will be auto-filled into all 30/60/90-day repost calendar entries.
             </p>
           </div>
 
@@ -778,7 +847,7 @@ function BulkImportModal({
                 </Table>
               </div>
               <p className="text-xs text-muted-foreground">
-                Each listing will automatically have 60, 90, and 120-day repost posts scheduled in
+                Each listing will automatically have 30, 60, and 90-day repost posts scheduled in
                 the Content Calendar.
               </p>
             </div>
