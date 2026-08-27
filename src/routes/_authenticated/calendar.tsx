@@ -175,6 +175,7 @@ function CalendarPage() {
         if (hideReposts) {
           const titleLower = (it.title ?? "").toLowerCase();
           if (
+            titleLower.includes("30-day") ||
             titleLower.includes("60-day") ||
             titleLower.includes("90-day") ||
             titleLower.includes("120-day")
