@@ -167,3 +167,27 @@ export function findRecommendedOpenDay(
   const label = `${format(target, "EEE, MMM d")} (${count} post${count !== 1 ? "s" : ""})`;
   return { date: target, count, label };
 }
+
+export function isRepostContentItem(it: {
+  title?: string | null;
+  notes?: string | null;
+  post_type?: string | null;
+}): boolean {
+  const title = (it.title ?? "").toLowerCase();
+  const notes = (it.notes ?? "").toLowerCase();
+  return (
+    title.includes("30-day") ||
+    title.includes("30 day") ||
+    title.includes("60-day") ||
+    title.includes("60 day") ||
+    title.includes("90-day") ||
+    title.includes("90 day") ||
+    title.includes("120-day") ||
+    title.includes("120 day") ||
+    title.includes("repost") ||
+    title.includes("[listing]") ||
+    title.startsWith("listing:") ||
+    notes.includes("auto-scheduled") ||
+    notes.includes("repost")
+  );
+}

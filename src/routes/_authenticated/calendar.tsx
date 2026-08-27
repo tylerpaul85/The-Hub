@@ -56,6 +56,7 @@ import {
   PRIORITY_BORDER,
   BRAND_STYLES,
   findRecommendedOpenDay,
+  isRepostContentItem,
   type ContentItem,
   type Status,
   type Brand,
@@ -174,21 +175,8 @@ function CalendarPage() {
         if (brandFilter !== "all" && (it.brand ?? "PP") !== brandFilter) {
           return false;
         }
-        if (hideReposts) {
-          const titleLower = (it.title ?? "").toLowerCase();
-          if (
-            titleLower.includes("30-day") ||
-            titleLower.includes("30 day") ||
-            titleLower.includes("60-day") ||
-            titleLower.includes("60 day") ||
-            titleLower.includes("90-day") ||
-            titleLower.includes("90 day") ||
-            titleLower.includes("120-day") ||
-            titleLower.includes("120 day") ||
-            titleLower.includes("repost")
-          ) {
-            return false;
-          }
+        if (hideReposts && isRepostContentItem(it)) {
+          return false;
         }
         if (showOnlyVideos && it.post_type !== "video") {
           return false;
@@ -433,7 +421,11 @@ function CalendarPage() {
 
       {view === "list" ? (
         <div className="flex-1 overflow-y-auto min-h-0 relative">
-          <CalendarListView brandFilter={brandFilter} />
+          <CalendarListView
+            brandFilter={brandFilter}
+            hideReposts={hideReposts}
+            showOnlyVideos={showOnlyVideos}
+          />
         </div>
       ) : (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>

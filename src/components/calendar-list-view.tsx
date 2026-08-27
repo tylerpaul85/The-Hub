@@ -68,6 +68,7 @@ import {
   BRANDS,
   BRAND_STYLES,
   findRecommendedOpenDay,
+  isRepostContentItem,
   type Brand,
   type ContentItem,
   type Status,
@@ -94,7 +95,15 @@ function profileInitials(p?: Profile | null) {
   return (f || p.email?.[0] || "?").toUpperCase();
 }
 
-export function CalendarListView({ brandFilter = "all" }: { brandFilter?: "all" | Brand } = {}) {
+export function CalendarListView({
+  brandFilter = "all",
+  hideReposts = false,
+  showOnlyVideos = false,
+}: {
+  brandFilter?: "all" | Brand;
+  hideReposts?: boolean;
+  showOnlyVideos?: boolean;
+} = {}) {
   const { isAdmin } = useAuth();
   const qc = useQueryClient();
   const detail = useContentDetail();
@@ -174,12 +183,14 @@ export function CalendarListView({ brandFilter = "all" }: { brandFilter?: "all" 
   // Month badge counts (respect filters)
   const filteredAll = useMemo(
     () =>
-      allItems.filter(
-        (it) =>
-          matchesFilters(it, filters) &&
-          (brandFilter === "all" || (it.brand ?? "PP") === brandFilter),
-      ),
-    [allItems, filters, brandFilter],
+      allItems.filter((it) => {
+        if (!matchesFilters(it, filters)) return false;
+        if (brandFilter !== "all" && (it.brand ?? "PP") !== brandFilter) return false;
+        if (showOnlyVideos && it.post_type !== "video") return false;
+        if (hideReposts && isRepostContentItem(it)) return false;
+        return true;
+      }),
+    [allItems, filters, brandFilter, hideReposts, showOnlyVideos],
   );
   const monthCounts = useMemo(() => {
     const m = new Map<string, number>();
