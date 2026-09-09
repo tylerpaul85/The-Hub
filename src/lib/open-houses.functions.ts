@@ -26,7 +26,7 @@ const signinDetailsInput = z.object({
 });
 
 export const getPublicOpenHouseForSignin = createServerFn({ method: "POST" })
-  .validator((d: { id: string }) => signinDetailsInput.parse(d))
+  .inputValidator((d: { id: string }) => signinDetailsInput.parse(d))
   .handler(async ({ data }) => {
     const sb = await admin();
     const { data: oh, error } = await sb
@@ -90,7 +90,7 @@ const visitorSigninSchema = z.object({
 });
 
 export const submitPublicOpenHouseSignin = createServerFn({ method: "POST" })
-  .validator((d: z.infer<typeof visitorSigninSchema>) => visitorSigninSchema.parse(d))
+  .inputValidator((d: z.infer<typeof visitorSigninSchema>) => visitorSigninSchema.parse(d))
   .handler(async ({ data }) => {
     const sb = await admin();
     const { data: inserted, error } = await sb
@@ -123,7 +123,7 @@ export const submitPublicOpenHouseSignin = createServerFn({ method: "POST" })
 // -------------------------------------------------------------
 
 export const listAgentOpenHouses = createServerFn({ method: "POST" })
-  .validator(tokenInput.parse)
+  .inputValidator(tokenInput)
   .handler(async ({ data }) => {
     assertToken(data.token);
     const sb = await admin();
@@ -204,7 +204,7 @@ const agentOHManagementInput = z.object({
 });
 
 export const getAgentOpenHouseManagement = createServerFn({ method: "POST" })
-  .validator((d: z.infer<typeof agentOHManagementInput>) => agentOHManagementInput.parse(d))
+  .inputValidator((d: z.infer<typeof agentOHManagementInput>) => agentOHManagementInput.parse(d))
   .handler(async ({ data }) => {
     assertToken(data.token);
     const sb = await admin();
@@ -272,7 +272,7 @@ const createAgentOHInput = z.object({
 });
 
 export const createAgentOpenHouse = createServerFn({ method: "POST" })
-  .validator((d: z.infer<typeof createAgentOHInput>) => createAgentOHInput.parse(d))
+  .inputValidator((d: z.infer<typeof createAgentOHInput>) => createAgentOHInput.parse(d))
   .handler(async ({ data }) => {
     assertToken(data.token);
     const sb = await admin();
@@ -348,7 +348,7 @@ const toggleAgentChecklistInput = z.object({
 });
 
 export const toggleAgentChecklistItem = createServerFn({ method: "POST" })
-  .validator((d: z.infer<typeof toggleAgentChecklistInput>) => toggleAgentChecklistInput.parse(d))
+  .inputValidator((d: z.infer<typeof toggleAgentChecklistInput>) => toggleAgentChecklistInput.parse(d))
   .handler(async ({ data }) => {
     assertToken(data.token);
     const sb = await admin();
@@ -371,7 +371,7 @@ const archiveAgentOHInput = z.object({
 });
 
 export const archiveAgentOpenHouse = createServerFn({ method: "POST" })
-  .validator((d: z.infer<typeof archiveAgentOHInput>) => archiveAgentOHInput.parse(d))
+  .inputValidator((d: z.infer<typeof archiveAgentOHInput>) => archiveAgentOHInput.parse(d))
   .handler(async ({ data }) => {
     assertToken(data.token);
     const sb = await admin();
@@ -390,7 +390,7 @@ export const archiveAgentOpenHouse = createServerFn({ method: "POST" })
 
 export const getOpenHouseSignins = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: { openHouseId: string }) => z.object({ openHouseId: z.string().min(1) }).parse(d))
+  .inputValidator((d: { openHouseId: string }) => z.object({ openHouseId: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {
     const sb = await admin();
     const { data: rows, error } = await sb
@@ -405,7 +405,7 @@ export const getOpenHouseSignins = createServerFn({ method: "POST" })
 
 export const getOpenHouseChecklist = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: { openHouseId: string }) => z.object({ openHouseId: z.string().min(1) }).parse(d))
+  .inputValidator((d: { openHouseId: string }) => z.object({ openHouseId: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {
     const sb = await admin();
 
@@ -453,7 +453,7 @@ export const getOpenHouseChecklist = createServerFn({ method: "POST" })
 
 export const toggleOpenHouseChecklistItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: { itemId: string; completed: boolean }) =>
+  .inputValidator((d: { itemId: string; completed: boolean }) =>
     z.object({ itemId: z.string().min(1), completed: z.boolean() }).parse(d)
   )
   .handler(async ({ data, context }) => {
@@ -500,7 +500,7 @@ const saveTemplateSchema = z.object({
 
 export const updateChecklistTemplates = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: z.infer<typeof saveTemplateSchema>) => saveTemplateSchema.parse(d))
+  .inputValidator((d: z.infer<typeof saveTemplateSchema>) => saveTemplateSchema.parse(d))
   .handler(async ({ data }) => {
     const sb = await admin();
 
@@ -522,7 +522,7 @@ export const updateChecklistTemplates = createServerFn({ method: "POST" })
 
 export const cloneListingAssetsToOpenHouse = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: { listingId: string; openHouseId: string }) =>
+  .inputValidator((d: { listingId: string; openHouseId: string }) =>
     z.object({ listingId: z.string().min(1), openHouseId: z.string().min(1) }).parse(d)
   )
   .handler(async ({ data, context }) => {
