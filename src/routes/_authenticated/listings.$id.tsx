@@ -314,7 +314,7 @@ function MarkUnderContractButton({
     mutationFn: () => markUnderContract(sb, userId, listingId),
     onSuccess: (result) => {
       toast.success(
-        `${result.cancelledCount} future repost${result.cancelledCount !== 1 ? "s" : ""} cancelled. A task has been created for the content coordinator.`,
+        `${result.cancelledCount} future repost${result.cancelledCount !== 1 ? "s" : ""} cancelled. A task has been created and assigned to Regine.`,
       );
       setConfirm(false);
       onSuccess();
@@ -346,7 +346,7 @@ function MarkUnderContractButton({
               </li>
               <li className="flex items-center gap-2">
                 <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                Create a to-do task for the content coordinator to send the Under Contract graphic
+                Create a to-do task assigned to Regine to send the Under Contract graphic
                 to the agent
               </li>
             </ul>

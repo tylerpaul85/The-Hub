@@ -281,6 +281,29 @@ function TasksPage() {
     onSettled: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
   });
 
+  const toggleTaskStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: TaskStatus }) => {
+      const { error } = await sb.from("tasks").update({ status }).eq("id", id);
+      if (error) throw error;
+    },
+    onMutate: async ({ id, status }) => {
+      await qc.cancelQueries({ queryKey: ["tasks"] });
+      const prev = qc.getQueryData<Task[]>(["tasks"]);
+      qc.setQueryData<Task[]>(["tasks"], (old) =>
+        (old ?? []).map((t) => (t.id === id ? { ...t, status } : t)),
+      );
+      return { prev };
+    },
+    onError: (e: any, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["tasks"], ctx.prev);
+      toast.error(e.message);
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["my-tasks"] });
+    },
+  });
+
   const { data: todos = [] } = useQuery({
     queryKey: ["todos-in-tasks"],
     queryFn: async () => {
@@ -448,7 +471,8 @@ function TasksPage() {
     navigate({ to: "/tasks", search: id ? { open: id } : {} });
 
   const renderTaskRow = (t: Task) => {
-    const overdue = t.due_date && t.due_date < today && t.status !== "complete";
+    const isComplete = t.status === "complete";
+    const overdue = t.due_date && t.due_date < today && !isComplete;
     const owner = profileById(t.owner);
     const proj = projectById(t.project_id);
     const evt = eventById(t.event_id);
@@ -460,85 +484,108 @@ function TasksPage() {
       <div
         key={t.id}
         onClick={() => openTask(t.id)}
-        className="w-full text-left bg-card border border-border rounded-lg p-4 hover:border-gold/50 transition-colors cursor-pointer"
+        className="w-full text-left bg-card border border-border rounded-lg p-4 hover:border-gold/50 transition-colors cursor-pointer flex items-start gap-3"
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              {t.recurring_template_id && (
-                <span title="Recurring task" className="inline-flex items-center text-gold">
-                  <Repeat className="h-3.5 w-3.5" />
-                </span>
-              )}
-              <span className="font-medium truncate">{t.title}</span>
-              <Badge variant="outline" className={STATUS_CLASS[t.status]}>
-                {STATUS_LABEL[t.status]}
-              </Badge>
-              <Badge variant="outline" className={PRIORITY_CLASS[t.priority]}>
-                {t.priority}
-              </Badge>
-              {t.recurring_template_id && (
-                <Badge
-                  variant="outline"
-                  className="text-[10px] bg-gold/10 text-gold border-gold/30"
-                >
-                  Recurring
-                </Badge>
-              )}
-              {proj && (
-                <Badge
-                  variant="outline"
-                  className="text-[10px] bg-navy-700/40 text-gold border-gold/30 flex items-center gap-1"
-                >
-                  <FolderKanban className="h-3 w-3" />
-                  {proj.name}
-                </Badge>
-              )}
-              {evt && (
-                <Badge
-                  variant="outline"
+        <input
+          type="checkbox"
+          checked={isComplete}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => {
+            e.stopPropagation();
+            toggleTaskStatus.mutate({
+              id: t.id,
+              status: e.target.checked ? "complete" : "todo",
+            });
+          }}
+          className="mt-1 h-4 w-4 accent-gold cursor-pointer shrink-0"
+          title={isComplete ? "Mark as to do" : "Mark as complete"}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                {t.recurring_template_id && (
+                  <span title="Recurring task" className="inline-flex items-center text-gold">
+                    <Repeat className="h-3.5 w-3.5" />
+                  </span>
+                )}
+                <span
                   className={cn(
-                    "text-[10px] flex items-center gap-1",
-                    EVENT_TYPE_CLASS[evt.type as EventType] ?? "",
+                    "font-medium truncate",
+                    isComplete && "line-through text-muted-foreground",
                   )}
                 >
-                  <Ticket className="h-3 w-3" />
-                  {evt.name}
+                  {t.title}
+                </span>
+                <Badge variant="outline" className={STATUS_CLASS[t.status]}>
+                  {STATUS_LABEL[t.status]}
                 </Badge>
-              )}
-              {requesterLabel && (
-                <Badge variant="secondary" className="text-[10px]">
-                  From: {requesterLabel}
+                <Badge variant="outline" className={PRIORITY_CLASS[t.priority]}>
+                  {t.priority}
                 </Badge>
-              )}
+                {t.recurring_template_id && (
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] bg-gold/10 text-gold border-gold/30"
+                  >
+                    Recurring
+                  </Badge>
+                )}
+                {proj && (
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] bg-navy-700/40 text-gold border-gold/30 flex items-center gap-1"
+                  >
+                    <FolderKanban className="h-3 w-3" />
+                    {proj.name}
+                  </Badge>
+                )}
+                {evt && (
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "text-[10px] flex items-center gap-1",
+                      EVENT_TYPE_CLASS[evt.type as EventType] ?? "",
+                    )}
+                  >
+                    <Ticket className="h-3 w-3" />
+                    {evt.name}
+                  </Badge>
+                )}
+                {requesterLabel && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    From: {requesterLabel}
+                  </Badge>
+                )}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {owner ? `Owner: ${nameOf(owner)}` : "Unassigned"}
+                {t.due_date && (
+                  <>
+                    {" · "}
+                    <span className={overdue ? "text-destructive font-medium" : ""}>
+                      Due {t.due_date}
+                      {overdue ? " (overdue)" : ""}
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              {owner ? `Owner: ${nameOf(owner)}` : "Unassigned"}
-              {t.due_date && (
-                <>
-                  {" · "}
-                  <span className={overdue ? "text-destructive font-medium" : ""}>
-                    Due {t.due_date}
-                    {overdue ? " (overdue)" : ""}
-                  </span>
-                </>
+            <button
+              type="button"
+              title={t.starred ? "Remove from Top 5" : "Star (Top 5)"}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleStar.mutate({ id: t.id, starred: !t.starred });
+              }}
+              className={cn(
+                "shrink-0 p-1 rounded hover:bg-muted transition-colors",
+                t.starred ? "text-gold" : "text-muted-foreground hover:text-gold",
               )}
-            </div>
+            >
+              <Star className={cn("h-4 w-4", t.starred && "fill-current")} />
+            </button>
           </div>
-          <button
-            type="button"
-            title={t.starred ? "Remove from Top 5" : "Star (Top 5)"}
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleStar.mutate({ id: t.id, starred: !t.starred });
-            }}
-            className={cn(
-              "shrink-0 p-1 rounded hover:bg-muted transition-colors",
-              t.starred ? "text-gold" : "text-muted-foreground hover:text-gold",
-            )}
-          >
-            <Star className={cn("h-4 w-4", t.starred && "fill-current")} />
-          </button>
         </div>
       </div>
     );
@@ -2488,6 +2535,19 @@ function ProjectDetailDialog({
     });
   }, [tasks, project?.id]);
 
+  const toggleTaskStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: TaskStatus }) => {
+      const { error } = await sb.from("tasks").update({ status }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["my-tasks"] });
+      onChanged();
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const [localOrder, setLocalOrder] = useState<string[] | null>(null);
   useEffect(() => {
     setLocalOrder(null);
@@ -2647,6 +2707,7 @@ function ProjectDetailDialog({
                         owner={profileById(t.owner)}
                         today={today}
                         onOpen={() => onOpenTask(t.id)}
+                        onToggleStatus={(status) => toggleTaskStatus.mutate({ id: t.id, status })}
                       />
                     ))}
                   </div>
@@ -2793,11 +2854,13 @@ function SortableProjectTaskRow({
   owner,
   today,
   onOpen,
+  onToggleStatus,
 }: {
   task: Task;
   owner: any;
   today: string;
   onOpen: () => void;
+  onToggleStatus?: (status: TaskStatus) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
@@ -2807,26 +2870,47 @@ function SortableProjectTaskRow({
     transition,
     opacity: isDragging ? 0.6 : 1,
   };
-  const overdue = task.due_date && task.due_date < today && task.status !== "complete";
+  const isComplete = task.status === "complete";
+  const overdue = task.due_date && task.due_date < today && !isComplete;
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-stretch gap-2 bg-muted/30 hover:bg-muted/50 border border-border hover:border-gold/40 rounded-md transition-colors"
+      className="flex items-center gap-2 bg-muted/30 hover:bg-muted/50 border border-border hover:border-gold/40 rounded-md transition-colors px-2 py-1"
     >
       <button
         type="button"
         {...attributes}
         {...listeners}
-        className="px-2 flex items-center text-muted-foreground hover:text-gold cursor-grab active:cursor-grabbing"
+        className="px-1 flex items-center text-muted-foreground hover:text-gold cursor-grab active:cursor-grabbing"
         title="Drag to reorder"
         aria-label="Drag to reorder"
       >
         <GripVertical className="h-4 w-4" />
       </button>
-      <button type="button" onClick={onOpen} className="flex-1 text-left py-3 pr-3 min-w-0">
+      {onToggleStatus && (
+        <input
+          type="checkbox"
+          checked={isComplete}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => {
+            e.stopPropagation();
+            onToggleStatus(e.target.checked ? "complete" : "todo");
+          }}
+          className="h-4 w-4 accent-gold cursor-pointer shrink-0"
+          title={isComplete ? "Mark as to do" : "Mark as complete"}
+        />
+      )}
+      <button type="button" onClick={onOpen} className="flex-1 text-left py-2 pr-2 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-medium truncate">{task.title}</span>
+          <span
+            className={cn(
+              "font-medium truncate",
+              isComplete && "line-through text-muted-foreground",
+            )}
+          >
+            {task.title}
+          </span>
           <Badge variant="outline" className={STATUS_CLASS[task.status]}>
             {STATUS_LABEL[task.status]}
           </Badge>

@@ -37,6 +37,36 @@ export async function logListingHistory(
 }
 
 
+/** Find Regine or marketing coordinator user ID */
+async function findRegineUserId(sb: any): Promise<string | null> {
+  try {
+    const { data: regineProfile } = await sb
+      .from("profiles")
+      .select("id")
+      .or("first_name.ilike.%Regine%,email.ilike.%regine%")
+      .limit(1)
+      .maybeSingle();
+
+    if (regineProfile?.id) {
+      return regineProfile.id;
+    }
+
+    const { data: coordRole } = await sb
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "marketing_coordinator")
+      .limit(1)
+      .maybeSingle();
+
+    if (coordRole?.user_id) {
+      return coordRole.user_id;
+    }
+  } catch (err) {
+    console.error("[listings] Failed to lookup Regine user ID:", err);
+  }
+  return null;
+}
+
 /** Insert a task for the content coordinator (used for Under Contract) */
 async function createCoordinatorTask(
   sb: any,
@@ -44,13 +74,14 @@ async function createCoordinatorTask(
   title: string,
   description: string,
 ): Promise<void> {
+  const regineId = await findRegineUserId(sb);
   await sb.from("tasks").insert({
     title,
     description,
     status: "todo",
     priority: "normal",
     created_by: userId,
-    owner: null,
+    owner: regineId,
   });
 }
 
@@ -743,7 +774,7 @@ export async function pushToToolbox(
 ): Promise<{ toolboxListingId: string }> {
   // Automatically save copy to listing_copy database table first so it doesn't get lost
   if (input.social_copy) {
-    await saveListingCopy(sb, input.listing_id, input.social_copy);
+    await saveListingCopy(sb, input.listing_id, userId, input.social_copy);
   }
 
   // Create toolbox listing

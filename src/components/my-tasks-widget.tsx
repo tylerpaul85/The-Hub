@@ -62,6 +62,17 @@ export function MyTasksWidget() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["my-todos-widget"] }),
   });
 
+  const toggleTask = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await sb.from("tasks").update({ status: "complete" }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my-tasks"] });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
+
   const items: Item[] = [
     ...tasks.map((t: any) => ({
       kind: "task" as const,
@@ -130,14 +141,21 @@ export function MyTasksWidget() {
               );
             }
             return (
-              <Link
+              <div
                 key={`task-${t.id}`}
-                to="/tasks"
-                search={{ open: t.id } as any}
-                className="px-4 py-2.5 flex items-center gap-2.5 hover:bg-accent/40 transition-colors duration-100"
+                className="px-4 py-2.5 flex items-center gap-2.5 hover:bg-accent/40 transition-colors duration-100 group"
               >
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm truncate">{t.title}</div>
+                <Checkbox
+                  checked={false}
+                  onCheckedChange={() => toggleTask.mutate(t.id)}
+                  aria-label="Mark task complete"
+                />
+                <Link
+                  to="/tasks"
+                  search={{ open: t.id } as any}
+                  className="flex-1 min-w-0"
+                >
+                  <div className="text-sm truncate group-hover:text-gold transition-colors">{t.title}</div>
                   <div
                     className={cn(
                       "text-xs mt-px",
@@ -149,8 +167,8 @@ export function MyTasksWidget() {
                       : "No due date"}{" "}
                     · {(t.status ?? "").replace("_", " ")}
                   </div>
-                </div>
-              </Link>
+                </Link>
+              </div>
             );
           })}
       </div>
