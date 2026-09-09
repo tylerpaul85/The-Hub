@@ -128,24 +128,26 @@ export const listAgentOpenHouses = createServerFn({ method: "POST" })
     assertToken(data.token);
     const sb = await admin();
 
-    const [
-      { data: rows, error },
-      { data: assets },
-      { data: signins },
-      { data: checklistItems },
-    ] = await Promise.all([
-      sb
-        .from("toolbox_open_houses")
-        .select("id, address, agent_name, status, open_house_at, description, created_at, archived")
-        .order("open_house_at", { ascending: true, nullsFirst: false }),
-      sb
-        .from("toolbox_open_house_assets")
-        .select("open_house_id, thumbnail_url, file_url, asset_type, category"),
-      sb.from("open_house_signins").select("open_house_id"),
-      sb.from("open_house_checklist_items").select("open_house_id, completed"),
+    const { data: rows, error } = await sb
+      .from("toolbox_open_houses")
+      .select("*")
+      .order("open_house_at", { ascending: true, nullsFirst: false });
+
+    if (error) {
+      console.error("Error loading open houses:", error);
+      throw error;
+    }
+
+    // Safely query auxiliary tables without crashing if migrations haven't run yet
+    const [assetsRes, signinsRes, checklistRes] = await Promise.all([
+      sb.from("toolbox_open_house_assets").select("open_house_id, thumbnail_url, file_url, asset_type, category").then((r: any) => r.data || []).catch(() => []),
+      sb.from("open_house_signins").select("open_house_id").then((r: any) => r.data || []).catch(() => []),
+      sb.from("open_house_checklist_items").select("open_house_id, completed").then((r: any) => r.data || []).catch(() => []),
     ]);
 
-    if (error) throw error;
+    const assets = assetsRes || [];
+    const signins = signinsRes || [];
+    const checklistItems = checklistRes || [];
 
     const isImg = (u: string | null | undefined) =>
       !!u && (/\/file\/d\/|[?&]id=|lh3\.googleusercontent\.com/i.test(String(u)) || /\.(png|jpe?g|gif|webp|svg|avif|heic)(\?|#|$)/i.test(String(u).split("?")[0]));

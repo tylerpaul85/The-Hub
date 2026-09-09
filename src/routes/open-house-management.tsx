@@ -237,7 +237,7 @@ function OpenHouseManagerMain({ token, onLock }: { token: string; onLock: () => 
   const qc = useQueryClient();
   const fetchOpenHouses = useServerFn(listAgentOpenHouses);
 
-  const [timeFilter, setTimeFilter] = useState<"weekend" | "upcoming" | "all" | "archived">("upcoming");
+  const [timeFilter, setTimeFilter] = useState<"weekend" | "upcoming" | "all" | "archived">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [agentFilter, setAgentFilter] = useState("all");
 
