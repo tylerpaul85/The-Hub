@@ -61,6 +61,17 @@ export const VENDOR_REGIONS: { key: string; label: string; shortLabel: string }[
   { key: "lake_of_the_ozarks", label: "Lake of the Ozarks Region", shortLabel: "Lake of the Ozarks" },
 ];
 
+export const MSREG_CORE_VALUES: string[] = [
+  "Believe",
+  "Go the Extra Mile",
+  "Relationships",
+  "Education",
+  "Accept Responsibility",
+  "Discipline",
+  "Initiative",
+  "InteGRITy",
+];
+
 export function getRegionLabel(regionKey: string): string {
   const match = VENDOR_REGIONS.find((r) => r.key === regionKey);
   return match ? match.label : regionKey;

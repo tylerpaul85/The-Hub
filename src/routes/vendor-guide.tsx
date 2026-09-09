@@ -57,6 +57,7 @@ import {
 import type { Vendor, VendorCategory } from "@/lib/vendors";
 import {
   VENDOR_REGIONS,
+  MSREG_CORE_VALUES,
   getRegionShortLabel,
   formatPhoneNumber,
   filterVendors,
@@ -659,15 +660,7 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
                 What core values do they represent? *
               </label>
               <div className="flex flex-wrap gap-1.5 pb-0.5">
-                {[
-                  "Extreme Ownership",
-                  "Client-First Service",
-                  "Excellence & Quality",
-                  "Integrity & Honesty",
-                  "Clear Communication",
-                  "Reliability & Punctuality",
-                  "Problem Solver",
-                ].map((val) => {
+                {MSREG_CORE_VALUES.map((val) => {
                   const isSelected = recCoreValues.includes(val);
                   return (
                     <button
@@ -684,13 +677,13 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
                         }
                       }}
                       className={cn(
-                        "text-[11px] px-2 py-0.5 rounded-md border transition-all",
+                        "text-[11px] px-2.5 py-1 rounded-md border transition-all cursor-pointer font-medium",
                         isSelected
                           ? "bg-gold text-navy font-semibold border-gold shadow-sm"
                           : "bg-muted/40 border-border text-muted-foreground hover:text-foreground hover:border-gold/50"
                       )}
                     >
-                      + {val}
+                      {isSelected ? "✓ " : "+ "}{val}
                     </button>
                   );
                 })}
@@ -698,7 +691,7 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
               <Textarea
                 value={recCoreValues}
                 onChange={(e) => setRecCoreValues(e.target.value)}
-                placeholder="Select values above or describe how they embody our core values (e.g. Extreme Ownership, Client-First, Integrity)..."
+                placeholder="Click the core value chips above or add specific notes on how they embody these values..."
                 className="text-xs h-14"
               />
             </div>
