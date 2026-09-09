@@ -221,43 +221,108 @@ export const bulkImportVendors = createServerFn({ method: "POST" })
       .from("vendor_categories")
       .select("id, name, slug");
 
-    const categoryMap = new Map<string, string>();
-    for (const c of existingCategories as any[]) {
-      categoryMap.set(c.name.toLowerCase().trim(), c.id);
-      categoryMap.set(c.slug.toLowerCase().trim(), c.id);
+    const categoriesList = [...(existingCategories as any[])];
+    const categoryByName = new Map<string, string>();
+    const categoryBySlug = new Map<string, string>();
+
+    const indexCategory = (c: { id: string; name: string; slug: string }) => {
+      categoryByName.set(c.name.toLowerCase().trim(), c.id);
+      categoryBySlug.set(c.slug.toLowerCase().trim(), c.id);
+    };
+
+    for (const c of categoriesList) {
+      indexCategory(c);
     }
 
-    let nextSortOrder = (existingCategories.length + 1) * 10;
+    let nextSortOrder = (categoriesList.length + 1) * 10;
     const recordsToInsert: any[] = [];
 
     for (const item of data.vendors) {
       const cleanCatName = item.category_name.trim();
-      let catId = categoryMap.get(cleanCatName.toLowerCase());
+      const rawSlug = cleanCatName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const lowerCatName = cleanCatName.toLowerCase();
 
+      // 1. Exact name match
+      let catId = categoryByName.get(lowerCatName);
+
+      // 2. Exact slug match
+      if (!catId && rawSlug) {
+        catId = categoryBySlug.get(rawSlug);
+      }
+
+      // 3. Smart fuzzy prefix/partial match against existing categories
       if (!catId) {
-        // Auto-create category if missing
-        const slug = cleanCatName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+        const matched = categoriesList.find((c) => {
+          const cLower = c.name.toLowerCase();
+          const cSlug = c.slug.toLowerCase();
+          // e.g. "Appliance Repair" matches "Appliance Repair & Installation"
+          // e.g. "Roofing" matches "Roofing & Gutters"
+          // e.g. "HVAC" matches "HVAC Heating & Cooling"
+          // e.g. "Inspectors" matches "Home Inspectors"
+          return (
+            cLower.includes(lowerCatName) ||
+            lowerCatName.includes(cLower) ||
+            (rawSlug && (cSlug.startsWith(rawSlug) || rawSlug.startsWith(cSlug)))
+          );
+        });
+
+        if (matched) {
+          catId = matched.id;
+        }
+      }
+
+      // 4. Auto-create category if not found
+      if (!catId) {
+        // Ensure slug is unique
+        let uniqueSlug = rawSlug || "category";
+        if (categoryBySlug.has(uniqueSlug)) {
+          uniqueSlug = `${uniqueSlug}-${Math.random().toString(36).substring(2, 6)}`;
+        }
+
         const { data: newCat, error: catErr } = await sb
           .from("vendor_categories")
           .insert({
             name: cleanCatName,
-            slug,
+            slug: uniqueSlug,
             icon: "Wrench",
             sort_order: nextSortOrder,
           })
-          .select("id")
+          .select("id, name, slug")
           .single();
 
-        if (catErr || !newCat) throw new Error(`Could not create category "${cleanCatName}"`);
-        catId = newCat.id;
-        categoryMap.set(cleanCatName.toLowerCase(), catId);
-        nextSortOrder += 10;
+        if (catErr || !newCat) {
+          // If insert conflicted on unique constraint, query by slug or name as last resort
+          const { data: fallbackCat } = await sb
+            .from("vendor_categories")
+            .select("id, name, slug")
+            .or(`slug.eq."${uniqueSlug}",name.ilike."${cleanCatName}"`)
+            .maybeSingle();
+
+          if (fallbackCat) {
+            catId = fallbackCat.id;
+            indexCategory(fallbackCat);
+            categoriesList.push(fallbackCat);
+          } else {
+            throw new Error(`Could not create or find category "${cleanCatName}": ${catErr?.message || "Unknown error"}`);
+          }
+        } else {
+          catId = newCat.id;
+          indexCategory(newCat);
+          categoriesList.push(newCat);
+          nextSortOrder += 10;
+        }
       }
 
       // Normalize region
       let normalizedRegion = "st_robert_rolla";
-      const rLower = item.region.toLowerCase();
-      if (rLower.includes("lake") || rLower.includes("ozark") || rLower === "lake_of_the_ozarks") {
+      const rLower = (item.region || "").toLowerCase();
+      if (
+        rLower.includes("lake") ||
+        rLower.includes("ozark") ||
+        rLower.includes("osage") ||
+        rLower.includes("camdenton") ||
+        rLower === "lake_of_the_ozarks"
+      ) {
         normalizedRegion = "lake_of_the_ozarks";
       }
 
