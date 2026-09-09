@@ -159,6 +159,7 @@ export const listPublicOpenHouses = createServerFn({ method: "POST" })
     const { data: rows, error } = await sb
       .from("toolbox_open_houses")
       .select("id,address,agent_name,status,open_house_at,description,created_at")
+      .eq("archived", false)
       .order("open_house_at", { ascending: true, nullsFirst: false });
     if (error) throw error;
     const ids = (rows ?? []).map((r: any) => r.id);
@@ -212,6 +213,7 @@ export const getPublicOpenHouse = createServerFn({ method: "POST" })
         .from("toolbox_open_houses")
         .select("id,address,agent_name,status,open_house_at,description")
         .eq("id", data.id)
+        .eq("archived", false)
         .maybeSingle(),
       sb
         .from("toolbox_open_house_assets")

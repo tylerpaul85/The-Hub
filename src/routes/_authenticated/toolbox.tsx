@@ -1491,6 +1491,7 @@ type OpenHouse = {
   open_house_at: string | null;
   description: string | null;
   created_at: string;
+  archived?: boolean;
 };
 type OHAsset = {
   id: string;
@@ -1559,6 +1560,8 @@ function OpenHousesTab({
 }) {
   const qc = useQueryClient();
   const [creating, setCreating] = useState(false);
+  const [view, setView] = useState<"active" | "archived">("active");
+  const [searchQuery, setSearchQuery] = useState("");
   const [form, setForm] = useState({
     address: "",
     agent_name: "",
@@ -1567,7 +1570,7 @@ function OpenHousesTab({
     description: "",
   });
 
-  const { data: items = [], isLoading } = useQuery<OpenHouse[]>({
+  const { data: allOpenHouses = [], isLoading } = useQuery<OpenHouse[]>({
     queryKey: ["toolbox-open-houses"],
     queryFn: async () => {
       const { data, error } = await sb
@@ -1579,9 +1582,23 @@ function OpenHousesTab({
     },
   });
 
+  const items = allOpenHouses
+    .filter((l) => (view === "archived" ? l.archived : !l.archived))
+    .filter((l) => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        (l.address ?? "").toLowerCase().includes(q) ||
+        (l.agent_name ?? "").toLowerCase().includes(q) ||
+        (l.description ?? "").toLowerCase().includes(q)
+      );
+    });
+  const activeCount = allOpenHouses.filter((l) => !l.archived).length;
+  const archivedCount = allOpenHouses.filter((l) => l.archived).length;
+
   const { data: counts = {} } = useQuery<Record<string, { assets: number; thumb: string | null }>>({
-    queryKey: ["toolbox-oh-counts", items.map((l) => l.id).join(",")],
-    enabled: items.length > 0,
+    queryKey: ["toolbox-oh-counts", allOpenHouses.map((l) => l.id).join(",")],
+    enabled: allOpenHouses.length > 0,
     queryFn: async () => {
       const { data } = await sb
         .from("toolbox_open_house_assets")
@@ -1589,7 +1606,7 @@ function OpenHousesTab({
       const isImg = (u: string | null | undefined) =>
         !!u && /\.(png|jpe?g|gif|webp|svg|avif|heic)(\?|#|$)/i.test(String(u).split("?")[0]);
       const out: Record<string, { assets: number; thumb: string | null }> = {};
-      for (const l of items) out[l.id] = { assets: 0, thumb: null };
+      for (const l of allOpenHouses) out[l.id] = { assets: 0, thumb: null };
       for (const a of (data ?? []) as any[]) {
         if (!out[a.open_house_id]) continue;
         out[a.open_house_id].assets++;
@@ -1658,10 +1675,67 @@ function OpenHousesTab({
     },
   });
 
+  const archive = useMutation({
+    mutationFn: async ({ id, archived }: { id: string; archived: boolean }) => {
+      const { error } = await sb.from("toolbox_open_houses").update({ archived }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      toast.success(vars.archived ? "Open house archived" : "Open house restored");
+      qc.invalidateQueries({ queryKey: ["toolbox-open-houses"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button onClick={() => setCreating(true)} className="bg-gold text-navy hover:bg-gold/90">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap flex-1 min-w-[280px]">
+          <div className="inline-flex rounded-md border border-border overflow-hidden shrink-0">
+            <button
+              type="button"
+              onClick={() => setView("active")}
+              className={cn(
+                "px-3 py-1.5 text-sm transition-colors",
+                view === "active"
+                  ? "bg-gold text-navy font-medium"
+                  : "bg-transparent text-foreground hover:bg-accent/40",
+              )}
+            >
+              Active <span className="ml-1 text-xs opacity-70">({activeCount})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("archived")}
+              className={cn(
+                "px-3 py-1.5 text-sm border-l border-border transition-colors",
+                view === "archived"
+                  ? "bg-gold text-navy font-medium"
+                  : "bg-transparent text-foreground hover:bg-accent/40",
+              )}
+            >
+              Archived <span className="ml-1 text-xs opacity-70">({archivedCount})</span>
+            </button>
+          </div>
+          <div className="relative flex-1 max-w-sm min-w-[200px]">
+            <Input
+              type="search"
+              placeholder="Search open houses..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-3 pr-8"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+        <Button onClick={() => setCreating(true)} className="bg-gold text-navy hover:bg-gold/90 shrink-0">
           <Plus className="h-4 w-4 mr-2" /> New Open House
         </Button>
       </div>
@@ -1670,21 +1744,31 @@ function OpenHousesTab({
         <div className="text-muted-foreground text-sm">Loading…</div>
       ) : items.length === 0 ? (
         <Card className="p-10 text-center text-muted-foreground border-dashed">
-          No open houses yet. Create one to start uploading assets.
+          {view === "archived"
+            ? "No archived open houses. Archive an open house to preserve it without deleting."
+            : "No open houses yet. Create one to start uploading assets."}
         </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {items.map((l) => {
             const c = counts[l.id] ?? { assets: 0, thumb: null };
+            const isArchived = !!l.archived;
             return (
               <Card
                 key={l.id}
-                className="overflow-hidden cursor-pointer hover:border-gold/50 transition-colors group"
+                className={cn(
+                  "overflow-hidden cursor-pointer hover:border-gold/50 transition-colors group",
+                  isArchived && "opacity-80",
+                )}
                 onClick={() => onOpen(l.id)}
               >
                 <div className="aspect-video bg-muted relative">
                   {c.thumb ? (
-                    <img src={c.thumb} alt={l.address} className="w-full h-full object-cover" />
+                    <img
+                      src={c.thumb}
+                      alt={l.address}
+                      className={cn("w-full h-full object-cover", isArchived && "grayscale")}
+                    />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                       <Home className="h-8 w-8" />
@@ -1693,6 +1777,11 @@ function OpenHousesTab({
                   <Badge className={cn("absolute top-2 left-2 border", OH_STATUS_CLASS[l.status])}>
                     {OH_STATUS_LABEL[l.status] ?? l.status}
                   </Badge>
+                  {isArchived && (
+                    <Badge className="absolute top-2 right-2 border border-gold/40 bg-navy/90 text-gold shadow-sm backdrop-blur-sm">
+                      Archived
+                    </Badge>
+                  )}
                 </div>
                 <div className="p-3 space-y-1">
                   <div className="font-medium truncate">{l.address}</div>
@@ -1706,17 +1795,45 @@ function OpenHousesTab({
                     <span className="text-xs text-gold">
                       {c.assets} asset{c.assets === 1 ? "" : "s"}
                     </span>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 opacity-0 group-hover:opacity-100"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (confirm("Delete this open house and all its assets?")) del.mutate(l.id);
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {isArchived ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs border-gold/50 text-gold hover:bg-gold/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            archive.mutate({ id: l.id, archived: false });
+                          }}
+                        >
+                          <ArchiveRestore className="h-3.5 w-3.5 mr-1" /> Restore
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            archive.mutate({ id: l.id, archived: true });
+                          }}
+                          title="Archive open house"
+                        >
+                          <Archive className="h-3.5 w-3.5 mr-1" /> Archive
+                        </Button>
+                      )}
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm("Delete this open house and all its assets?")) del.mutate(l.id);
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -1900,6 +2017,20 @@ function OpenHouseSheet({
     onError: (e: any) => toast.error(e.message),
   });
 
+  const archive = useMutation({
+    mutationFn: async (archived: boolean) => {
+      if (!oh) return;
+      const { error } = await sb.from("toolbox_open_houses").update({ archived }).eq("id", oh.id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, archived) => {
+      toast.success(archived ? "Open house archived" : "Open house restored");
+      qc.invalidateQueries({ queryKey: ["toolbox-open-house", openHouseId] });
+      qc.invalidateQueries({ queryKey: ["toolbox-open-houses"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const ohPhotos = assets.filter((a) => {
     const u = a.file_url || a.thumbnail_url || "";
     if (!u) return false;
@@ -1919,6 +2050,11 @@ function OpenHouseSheet({
                 {OH_STATUS_LABEL[oh.status]}
               </Badge>
             )}
+            {oh?.archived && (
+              <Badge className="border border-gold/40 bg-navy/90 text-gold shadow-sm">
+                Archived
+              </Badge>
+            )}
             {oh?.open_house_at && (
               <span className="text-gold">{fmtDateTime(oh.open_house_at)}</span>
             )}
@@ -1926,6 +2062,25 @@ function OpenHouseSheet({
               <div className="ml-auto flex items-center gap-2">
                 {ohPhotos.length > 0 && (
                   <DownloadPhotosButton photos={ohPhotos} address={oh.address} />
+                )}
+                {oh.archived ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs border-gold/50 text-gold hover:bg-gold/10"
+                    onClick={() => archive.mutate(false)}
+                  >
+                    <ArchiveRestore className="h-3.5 w-3.5 mr-1" /> Restore
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => archive.mutate(true)}
+                  >
+                    <Archive className="h-3.5 w-3.5 mr-1" /> Archive
+                  </Button>
                 )}
                 <Button variant="ghost" size="sm" className="h-7" onClick={beginEdit}>
                   Edit details
