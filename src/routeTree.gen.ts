@@ -16,6 +16,7 @@ import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AvailabilityRouteImport } from './routes/availability'
 import { Route as ClosingGiftRouteImport } from './routes/closing-gift'
+import { Route as OpenHouseManagementRouteImport } from './routes/open-house-management'
 import { Route as RequestRouteImport } from './routes/request'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SellerNetProceedsRouteImport } from './routes/seller-net-proceeds'
@@ -94,6 +95,11 @@ const AvailabilityRoute = AvailabilityRouteImport.update({
 const ClosingGiftRoute = ClosingGiftRouteImport.update({
   id: '/closing-gift',
   path: '/closing-gift',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpenHouseManagementRoute = OpenHouseManagementRouteImport.update({
+  id: '/open-house-management',
+  path: '/open-house-management',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RequestRoute = RequestRouteImport.update({
@@ -346,6 +352,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteWithChildren
   '/availability': typeof AvailabilityRoute
   '/closing-gift': typeof ClosingGiftRoute
+  '/open-house-management': typeof OpenHouseManagementRoute
   '/request': typeof RequestRoute
   '/reset-password': typeof ResetPasswordRoute
   '/seller-net-proceeds': typeof SellerNetProceedsRoute
@@ -398,6 +405,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRouteWithChildren
   '/availability': typeof AvailabilityRoute
   '/closing-gift': typeof ClosingGiftRoute
+  '/open-house-management': typeof OpenHouseManagementRoute
   '/request': typeof RequestRoute
   '/reset-password': typeof ResetPasswordRoute
   '/seller-net-proceeds': typeof SellerNetProceedsRoute
@@ -450,6 +458,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteWithChildren
   '/availability': typeof AvailabilityRoute
   '/closing-gift': typeof ClosingGiftRoute
+  '/open-house-management': typeof OpenHouseManagementRoute
   '/request': typeof RequestRoute
   '/reset-password': typeof ResetPasswordRoute
   '/seller-net-proceeds': typeof SellerNetProceedsRoute
@@ -505,6 +514,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/availability'
     | '/closing-gift'
+    | '/open-house-management'
     | '/request'
     | '/reset-password'
     | '/seller-net-proceeds'
@@ -557,6 +567,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/availability'
     | '/closing-gift'
+    | '/open-house-management'
     | '/request'
     | '/reset-password'
     | '/seller-net-proceeds'
@@ -608,6 +619,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/availability'
     | '/closing-gift'
+    | '/open-house-management'
     | '/request'
     | '/reset-password'
     | '/seller-net-proceeds'
@@ -663,6 +675,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   AvailabilityRoute: typeof AvailabilityRoute
   ClosingGiftRoute: typeof ClosingGiftRoute
+  OpenHouseManagementRoute: typeof OpenHouseManagementRoute
   RequestRoute: typeof RequestRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SellerNetProceedsRoute: typeof SellerNetProceedsRoute
@@ -721,6 +734,13 @@ declare module '@tanstack/react-router' {
       path: '/closing-gift'
       fullPath: '/closing-gift'
       preLoaderRoute: typeof ClosingGiftRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/open-house-management': {
+      id: '/open-house-management'
+      path: '/open-house-management'
+      fullPath: '/open-house-management'
+      preLoaderRoute: typeof OpenHouseManagementRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/request': {
@@ -1186,6 +1206,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   AvailabilityRoute: AvailabilityRoute,
   ClosingGiftRoute: ClosingGiftRoute,
+  OpenHouseManagementRoute: OpenHouseManagementRoute,
   RequestRoute: RequestRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SellerNetProceedsRoute: SellerNetProceedsRoute,

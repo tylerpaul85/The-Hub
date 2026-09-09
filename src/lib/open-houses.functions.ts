@@ -2,17 +2,27 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+const tokenInput = z.object({
+  token: z.string().min(1).max(200),
+});
+
+function assertToken(token: string) {
+  if (token !== "msreg2026") {
+    throw new Error("Invalid access token");
+  }
+}
+
 async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return supabaseAdmin as any;
 }
 
 // -------------------------------------------------------------
-// 1. PUBLIC VISITOR SIGN-IN ENDPOINTS
+// 1. PUBLIC VISITOR SIGN-IN ENDPOINTS (No Login Required)
 // -------------------------------------------------------------
 
 const signinDetailsInput = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1),
 });
 
 export const getPublicOpenHouseForSignin = createServerFn({ method: "POST" })
@@ -21,12 +31,13 @@ export const getPublicOpenHouseForSignin = createServerFn({ method: "POST" })
     const sb = await admin();
     const { data: oh, error } = await sb
       .from("toolbox_open_houses")
-      .select("id, address, agent_name, status, open_house_at, start_time, end_time, description, archived, is_completed")
+      .select("id, address, agent_name, status, open_house_at, description, archived")
       .eq("id", data.id)
       .maybeSingle();
 
     if (error || !oh) {
-      throw new Error("Open house not found");
+      console.error("Open house query error:", error, "ID:", data.id);
+      throw new Error("Open house not found or has concluded");
     }
 
     // Also get hero photo / thumbnail
@@ -66,7 +77,7 @@ export const getPublicOpenHouseForSignin = createServerFn({ method: "POST" })
   });
 
 const visitorSigninSchema = z.object({
-  openHouseId: z.string().uuid(),
+  openHouseId: z.string().min(1),
   firstName: z.string().trim().min(1, "First name is required"),
   lastName: z.string().trim().default(""),
   phone: z.string().trim().min(7, "Valid phone number is required"),
@@ -108,12 +119,276 @@ export const submitPublicOpenHouseSignin = createServerFn({ method: "POST" })
   });
 
 // -------------------------------------------------------------
-// 2. AUTHENTICATED MANAGEMENT ENDPOINTS
+// 2. AGENT HUB OPEN HOUSE ENDPOINTS (Passcode or Authenticated)
+// -------------------------------------------------------------
+
+export const listAgentOpenHouses = createServerFn({ method: "POST" })
+  .validator(tokenInput.parse)
+  .handler(async ({ data }) => {
+    assertToken(data.token);
+    const sb = await admin();
+
+    const [
+      { data: rows, error },
+      { data: assets },
+      { data: signins },
+      { data: checklistItems },
+    ] = await Promise.all([
+      sb
+        .from("toolbox_open_houses")
+        .select("id, address, agent_name, status, open_house_at, description, created_at, archived")
+        .order("open_house_at", { ascending: true, nullsFirst: false }),
+      sb
+        .from("toolbox_open_house_assets")
+        .select("open_house_id, thumbnail_url, file_url, asset_type, category"),
+      sb.from("open_house_signins").select("open_house_id"),
+      sb.from("open_house_checklist_items").select("open_house_id, completed"),
+    ]);
+
+    if (error) throw error;
+
+    const isImg = (u: string | null | undefined) =>
+      !!u && (/\/file\/d\/|[?&]id=|lh3\.googleusercontent\.com/i.test(String(u)) || /\.(png|jpe?g|gif|webp|svg|avif|heic)(\?|#|$)/i.test(String(u).split("?")[0]));
+
+    const getThumb = (u: string) => {
+      if (typeof u !== "string") return "";
+      const fileIdMatch = u.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+        u.match(/\/open\?id=([a-zA-Z0-9_-]+)/) ||
+        u.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
+        u.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
+      return fileIdMatch && fileIdMatch[1] ? `https://lh3.googleusercontent.com/d/${fileIdMatch[1]}` : u;
+    };
+
+    // Calculate thumbnails and counts
+    const thumbs: Record<string, string> = {};
+    const assetCounts: Record<string, number> = {};
+    for (const a of (assets ?? []) as any[]) {
+      assetCounts[a.open_house_id] = (assetCounts[a.open_house_id] || 0) + 1;
+      if (!thumbs[a.open_house_id]) {
+        const c = a.thumbnail_url || a.file_url;
+        if (isImg(c)) thumbs[a.open_house_id] = getThumb(c!);
+      }
+    }
+
+    const signinCounts: Record<string, number> = {};
+    for (const s of (signins ?? []) as any[]) {
+      signinCounts[s.open_house_id] = (signinCounts[s.open_house_id] || 0) + 1;
+    }
+
+    const checklistCounts: Record<string, { total: number; completed: number }> = {};
+    for (const c of (checklistItems ?? []) as any[]) {
+      if (!checklistCounts[c.open_house_id]) {
+        checklistCounts[c.open_house_id] = { total: 0, completed: 0 };
+      }
+      checklistCounts[c.open_house_id].total += 1;
+      if (c.completed) checklistCounts[c.open_house_id].completed += 1;
+    }
+
+    const formatted = (rows ?? []).map((r: any) => ({
+      ...r,
+      thumbnail: thumbs[r.id] ?? null,
+      assetCount: assetCounts[r.id] ?? 0,
+      signinCount: signinCounts[r.id] ?? 0,
+      checklistTotal: checklistCounts[r.id]?.total ?? 0,
+      checklistCompleted: checklistCounts[r.id]?.completed ?? 0,
+    }));
+
+    return { openHouses: formatted };
+  });
+
+const agentOHManagementInput = z.object({
+  token: z.string().min(1),
+  openHouseId: z.string().min(1),
+});
+
+export const getAgentOpenHouseManagement = createServerFn({ method: "POST" })
+  .validator((d: z.infer<typeof agentOHManagementInput>) => agentOHManagementInput.parse(d))
+  .handler(async ({ data }) => {
+    assertToken(data.token);
+    const sb = await admin();
+
+    const [
+      { data: openHouse },
+      { data: assets },
+      { data: captions },
+      { data: signins },
+    ] = await Promise.all([
+      sb.from("toolbox_open_houses").select("*").eq("id", data.openHouseId).maybeSingle(),
+      sb.from("toolbox_open_house_assets").select("*").eq("open_house_id", data.openHouseId).order("created_at", { ascending: false }),
+      sb.from("toolbox_open_house_captions").select("*").eq("open_house_id", data.openHouseId).order("created_at", { ascending: true }),
+      sb.from("open_house_signins").select("*").eq("open_house_id", data.openHouseId).order("created_at", { ascending: false }),
+    ]);
+
+    if (!openHouse) throw new Error("Open house not found");
+
+    // Checklist items
+    let { data: checklist } = await sb
+      .from("open_house_checklist_items")
+      .select("*")
+      .eq("open_house_id", data.openHouseId)
+      .order("phase_order", { ascending: true })
+      .order("task_order", { ascending: true });
+
+    if (!checklist || checklist.length === 0) {
+      // Auto-clone from templates
+      const { data: templates } = await sb
+        .from("open_house_checklist_templates")
+        .select("*")
+        .order("phase_order", { ascending: true })
+        .order("task_order", { ascending: true });
+
+      if (templates && templates.length > 0) {
+        const items = templates.map((t: any) => ({
+          open_house_id: data.openHouseId,
+          phase: t.phase,
+          phase_order: t.phase_order,
+          task_text: t.task_text,
+          task_order: t.task_order,
+          completed: false,
+        }));
+        const { data: seeded } = await sb.from("open_house_checklist_items").insert(items).select("*");
+        checklist = seeded ?? [];
+      }
+    }
+
+    return {
+      openHouse,
+      assets: assets ?? [],
+      captions: captions ?? [],
+      signins: signins ?? [],
+      checklist: checklist ?? [],
+    };
+  });
+
+const createAgentOHInput = z.object({
+  token: z.string().min(1),
+  address: z.string().trim().min(1),
+  agent_name: z.string().trim().optional(),
+  listing_id: z.string().optional(),
+  open_house_at: z.string().optional(),
+  description: z.string().trim().optional(),
+});
+
+export const createAgentOpenHouse = createServerFn({ method: "POST" })
+  .validator((d: z.infer<typeof createAgentOHInput>) => createAgentOHInput.parse(d))
+  .handler(async ({ data }) => {
+    assertToken(data.token);
+    const sb = await admin();
+
+    const { data: newOH, error } = await sb
+      .from("toolbox_open_houses")
+      .insert({
+        address: data.address,
+        agent_name: data.agent_name || null,
+        listing_id: data.listing_id && data.listing_id !== "none" ? data.listing_id : null,
+        status: "upcoming",
+        open_house_at: data.open_house_at ? new Date(data.open_house_at).toISOString() : null,
+        description: data.description || null,
+      })
+      .select("id")
+      .single();
+
+    if (error) throw error;
+    const ohId = newOH.id;
+
+    // Auto-clone listing assets if listing was selected
+    if (data.listing_id && data.listing_id !== "none") {
+      const { data: assets } = await sb
+        .from("toolbox_assets")
+        .select("*")
+        .eq("listing_id", data.listing_id);
+
+      if (assets && assets.length > 0) {
+        const ohAssets = assets.map((a: any) => {
+          let category = "Other";
+          if (a.asset_type === "photo" || a.asset_type === "photos") category = "Branded Photos and Copy";
+          else if (a.asset_type === "graphic" || a.asset_type === "flyer") category = "Flyer";
+          return {
+            open_house_id: ohId,
+            asset_type: a.asset_type,
+            file_url: a.file_url,
+            drive_url: a.drive_url,
+            thumbnail_url: a.thumbnail_url,
+            name: a.name,
+            category,
+          };
+        });
+        await sb.from("toolbox_open_house_assets").insert(ohAssets);
+      }
+    }
+
+    // Seed default checklist items
+    const { data: templates } = await sb
+      .from("open_house_checklist_templates")
+      .select("*")
+      .order("phase_order", { ascending: true })
+      .order("task_order", { ascending: true });
+
+    if (templates && templates.length > 0) {
+      const items = templates.map((t: any) => ({
+        open_house_id: ohId,
+        phase: t.phase,
+        phase_order: t.phase_order,
+        task_text: t.task_text,
+        task_order: t.task_order,
+        completed: false,
+      }));
+      await sb.from("open_house_checklist_items").insert(items);
+    }
+
+    return { success: true, id: ohId };
+  });
+
+const toggleAgentChecklistInput = z.object({
+  token: z.string().min(1),
+  itemId: z.string().min(1),
+  completed: z.boolean(),
+});
+
+export const toggleAgentChecklistItem = createServerFn({ method: "POST" })
+  .validator((d: z.infer<typeof toggleAgentChecklistInput>) => toggleAgentChecklistInput.parse(d))
+  .handler(async ({ data }) => {
+    assertToken(data.token);
+    const sb = await admin();
+    const { error } = await sb
+      .from("open_house_checklist_items")
+      .update({
+        completed: data.completed,
+        completed_at: data.completed ? new Date().toISOString() : null,
+      })
+      .eq("id", data.itemId);
+
+    if (error) throw error;
+    return { success: true };
+  });
+
+const archiveAgentOHInput = z.object({
+  token: z.string().min(1),
+  openHouseId: z.string().min(1),
+  archived: z.boolean(),
+});
+
+export const archiveAgentOpenHouse = createServerFn({ method: "POST" })
+  .validator((d: z.infer<typeof archiveAgentOHInput>) => archiveAgentOHInput.parse(d))
+  .handler(async ({ data }) => {
+    assertToken(data.token);
+    const sb = await admin();
+    const { error } = await sb
+      .from("toolbox_open_houses")
+      .update({ archived: data.archived })
+      .eq("id", data.openHouseId);
+
+    if (error) throw error;
+    return { success: true };
+  });
+
+// -------------------------------------------------------------
+// 3. AUTHENTICATED OPS MANAGEMENT ENDPOINTS
 // -------------------------------------------------------------
 
 export const getOpenHouseSignins = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: { openHouseId: string }) => z.object({ openHouseId: z.string().uuid() }).parse(d))
+  .validator((d: { openHouseId: string }) => z.object({ openHouseId: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {
     const sb = await admin();
     const { data: rows, error } = await sb
@@ -128,11 +403,10 @@ export const getOpenHouseSignins = createServerFn({ method: "POST" })
 
 export const getOpenHouseChecklist = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: { openHouseId: string }) => z.object({ openHouseId: z.string().uuid() }).parse(d))
+  .validator((d: { openHouseId: string }) => z.object({ openHouseId: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {
     const sb = await admin();
 
-    // Check if items already exist for this open house
     const { data: existing, error } = await sb
       .from("open_house_checklist_items")
       .select("*")
@@ -146,7 +420,6 @@ export const getOpenHouseChecklist = createServerFn({ method: "POST" })
       return { items: existing };
     }
 
-    // Otherwise, clone from checklist templates
     const { data: templates } = await sb
       .from("open_house_checklist_templates")
       .select("*")
@@ -163,17 +436,12 @@ export const getOpenHouseChecklist = createServerFn({ method: "POST" })
         completed: false,
       }));
 
-      const { data: inserted, error: insErr } = await sb
+      const { data: inserted } = await sb
         .from("open_house_checklist_items")
         .insert(itemsToInsert)
         .select("*")
         .order("phase_order", { ascending: true })
         .order("task_order", { ascending: true });
-
-      if (insErr) {
-        console.error("Error seeding checklist items:", insErr);
-        return { items: [] };
-      }
 
       return { items: inserted ?? [] };
     }
@@ -184,7 +452,7 @@ export const getOpenHouseChecklist = createServerFn({ method: "POST" })
 export const toggleOpenHouseChecklistItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: { itemId: string; completed: boolean }) =>
-    z.object({ itemId: z.string().uuid(), completed: z.boolean() }).parse(d)
+    z.object({ itemId: z.string().min(1), completed: z.boolean() }).parse(d)
   )
   .handler(async ({ data, context }) => {
     const sb = await admin();
@@ -218,7 +486,7 @@ export const getChecklistTemplates = createServerFn({ method: "GET" })
 const saveTemplateSchema = z.object({
   templates: z.array(
     z.object({
-      id: z.string().uuid().optional(),
+      id: z.string().optional(),
       phase: z.string().min(1),
       phase_order: z.number().int(),
       task_text: z.string().min(1),
@@ -234,7 +502,6 @@ export const updateChecklistTemplates = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const sb = await admin();
 
-    // Delete existing and re-insert or upsert
     await sb.from("open_house_checklist_templates").delete().neq("id", "00000000-0000-0000-0000-000000000000");
 
     const toInsert = data.templates.map((t, idx) => ({
@@ -254,12 +521,11 @@ export const updateChecklistTemplates = createServerFn({ method: "POST" })
 export const cloneListingAssetsToOpenHouse = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: { listingId: string; openHouseId: string }) =>
-    z.object({ listingId: z.string().uuid(), openHouseId: z.string().uuid() }).parse(d)
+    z.object({ listingId: z.string().min(1), openHouseId: z.string().min(1) }).parse(d)
   )
   .handler(async ({ data, context }) => {
     const sb = await admin();
 
-    // 1. Get all assets from listing
     const { data: assets, error: aErr } = await sb
       .from("toolbox_assets")
       .select("*")
@@ -281,28 +547,11 @@ export const cloneListingAssetsToOpenHouse = createServerFn({ method: "POST" })
           thumbnail_url: a.thumbnail_url,
           name: a.name,
           category,
-          created_by: context.userId,
+          created_by: context?.userId || null,
         };
       });
 
       await sb.from("toolbox_open_house_assets").insert(ohAssets);
-    }
-
-    // 2. Clone captions if available
-    const { data: captions } = await sb
-      .from("toolbox_captions")
-      .select("*")
-      .eq("listing_id", data.listingId);
-
-    if (captions && captions.length > 0) {
-      const ohCaptions = captions.map((c: any) => ({
-        open_house_id: data.openHouseId,
-        caption_text: c.caption_text,
-        category: "Branded Photos and Copy",
-        created_by: context.userId,
-      }));
-
-      await sb.from("toolbox_open_house_captions").insert(ohCaptions);
     }
 
     return { success: true, count: (assets?.length ?? 0) };
@@ -317,12 +566,10 @@ export const getOpenHousesAnalytics = createServerFn({ method: "GET" })
       { data: openHouses },
       { data: signins },
       { data: checklistItems },
-      { data: users },
     ] = await Promise.all([
-      sb.from("toolbox_open_houses").select("id, address, agent_name, host_agent_id, open_house_at, is_completed, archived, created_at"),
+      sb.from("toolbox_open_houses").select("id, address, agent_name, open_house_at, archived, created_at"),
       sb.from("open_house_signins").select("id, open_house_id, buying_or_selling, working_with_agent, created_at"),
       sb.from("open_house_checklist_items").select("id, open_house_id, task_text, phase, completed"),
-      sb.from("profiles").select("id, full_name, email"),
     ]);
 
     const totalOpenHouses = (openHouses ?? []).length;
@@ -331,7 +578,6 @@ export const getOpenHousesAnalytics = createServerFn({ method: "GET" })
     const totalSellers = (signins ?? []).filter((s: any) => s.buying_or_selling === "selling" || s.buying_or_selling === "both").length;
     const unrepresentedLeads = (signins ?? []).filter((s: any) => !s.working_with_agent).length;
 
-    // Leads by agent
     const leadsByAgent: Record<string, { count: number; openHouses: number; name: string }> = {};
     for (const oh of (openHouses ?? []) as any[]) {
       const name = oh.agent_name || "Unassigned";
@@ -345,20 +591,6 @@ export const getOpenHousesAnalytics = createServerFn({ method: "GET" })
       leadsByAgent[name].count += 1;
     }
 
-    // Checklist compliance rates
-    const ohChecklistStats: Record<string, { total: number; completed: number; skippedTasks: string[] }> = {};
-    for (const item of (checklistItems ?? []) as any[]) {
-      if (!ohChecklistStats[item.open_house_id]) {
-        ohChecklistStats[item.open_house_id] = { total: 0, completed: 0, skippedTasks: [] };
-      }
-      ohChecklistStats[item.open_house_id].total += 1;
-      if (item.completed) {
-        ohChecklistStats[item.open_house_id].completed += 1;
-      } else {
-        ohChecklistStats[item.open_house_id].skippedTasks.push(item.task_text);
-      }
-    }
-
     return {
       totalOpenHouses,
       totalSignins,
@@ -366,6 +598,5 @@ export const getOpenHousesAnalytics = createServerFn({ method: "GET" })
       totalSellers,
       unrepresentedLeads,
       leadsByAgent: Object.values(leadsByAgent),
-      ohChecklistStats,
     };
   });

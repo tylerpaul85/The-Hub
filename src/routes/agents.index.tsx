@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Send, Images, ChevronRight, Share, Plus, Gift, Signpost, Calculator, CalendarDays, Store } from "lucide-react";
+import { Send, Images, ChevronRight, Share, Plus, Gift, Signpost, Calculator, CalendarDays, Store, DoorOpen } from "lucide-react";
 import logo from "@/assets/msreg-logo.png";
 import { Button } from "@/components/ui/button";
 
@@ -9,7 +9,7 @@ export const Route = createFileRoute("/agents/")({
   head: () => ({
     meta: [
       { title: "MSREG Agent Hub" },
-      { name: "description", content: "Submit requests, view upcoming events, grab marketing materials, and access trusted local vendors." },
+      { name: "description", content: "Submit requests, manage open houses, view upcoming events, grab marketing materials, and access trusted local vendors." },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -54,6 +54,12 @@ function AgentsHome() {
         </header>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <HubCard
+            to="/open-house-management"
+            icon={<DoorOpen className="h-8 w-8" />}
+            title="Open House Management"
+            subtitle="Schedule open houses, live QR sign-ins & placards, FUB lead exports, and 5-phase checklist"
+          />
           <HubCard
             to="/vendor-guide"
             icon={<Store className="h-8 w-8" />}
