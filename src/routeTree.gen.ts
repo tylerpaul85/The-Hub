@@ -33,6 +33,7 @@ import { Route as AuthenticatedMyAvailabilityRouteImport } from './routes/_authe
 import { Route as AuthenticatedProcessesRouteImport } from './routes/_authenticated/processes'
 import { Route as AuthenticatedRequestsRouteImport } from './routes/_authenticated/requests'
 import { Route as AuthenticatedSignaturesRouteImport } from './routes/_authenticated/signatures'
+import { Route as AuthenticatedSpecialEventsRouteImport } from './routes/_authenticated/special-events'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedToolboxRouteImport } from './routes/_authenticated/toolbox'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
@@ -180,6 +181,12 @@ const AuthenticatedSignaturesRoute = AuthenticatedSignaturesRouteImport.update({
   path: '/signatures',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSpecialEventsRoute =
+  AuthenticatedSpecialEventsRouteImport.update({
+    id: '/special-events',
+    path: '/special-events',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
@@ -332,6 +339,7 @@ export interface FileRoutesByFullPath {
   '/processes': typeof AuthenticatedProcessesRoute
   '/requests': typeof AuthenticatedRequestsRoute
   '/signatures': typeof AuthenticatedSignaturesRoute
+  '/special-events': typeof AuthenticatedSpecialEventsRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/toolbox': typeof AuthenticatedToolboxRoute
   '/users': typeof AuthenticatedUsersRoute
@@ -377,6 +385,7 @@ export interface FileRoutesByTo {
   '/processes': typeof AuthenticatedProcessesRoute
   '/requests': typeof AuthenticatedRequestsRoute
   '/signatures': typeof AuthenticatedSignaturesRoute
+  '/special-events': typeof AuthenticatedSpecialEventsRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/toolbox': typeof AuthenticatedToolboxRoute
   '/users': typeof AuthenticatedUsersRoute
@@ -426,6 +435,7 @@ export interface FileRoutesById {
   '/_authenticated/processes': typeof AuthenticatedProcessesRoute
   '/_authenticated/requests': typeof AuthenticatedRequestsRoute
   '/_authenticated/signatures': typeof AuthenticatedSignaturesRoute
+  '/_authenticated/special-events': typeof AuthenticatedSpecialEventsRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/toolbox': typeof AuthenticatedToolboxRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
@@ -476,6 +486,7 @@ export interface FileRouteTypes {
     | '/processes'
     | '/requests'
     | '/signatures'
+    | '/special-events'
     | '/tasks'
     | '/toolbox'
     | '/users'
@@ -521,6 +532,7 @@ export interface FileRouteTypes {
     | '/processes'
     | '/requests'
     | '/signatures'
+    | '/special-events'
     | '/tasks'
     | '/toolbox'
     | '/users'
@@ -569,6 +581,7 @@ export interface FileRouteTypes {
     | '/_authenticated/processes'
     | '/_authenticated/requests'
     | '/_authenticated/signatures'
+    | '/_authenticated/special-events'
     | '/_authenticated/tasks'
     | '/_authenticated/toolbox'
     | '/_authenticated/users'
@@ -777,6 +790,13 @@ declare module '@tanstack/react-router' {
       path: '/signatures'
       fullPath: '/signatures'
       preLoaderRoute: typeof AuthenticatedSignaturesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/special-events': {
+      id: '/_authenticated/special-events'
+      path: '/special-events'
+      fullPath: '/special-events'
+      preLoaderRoute: typeof AuthenticatedSpecialEventsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/tasks': {
@@ -1009,6 +1029,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProcessesRoute: typeof AuthenticatedProcessesRoute
   AuthenticatedRequestsRoute: typeof AuthenticatedRequestsRoute
   AuthenticatedSignaturesRoute: typeof AuthenticatedSignaturesRoute
+  AuthenticatedSpecialEventsRoute: typeof AuthenticatedSpecialEventsRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedToolboxRoute: typeof AuthenticatedToolboxRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
@@ -1037,6 +1058,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProcessesRoute: AuthenticatedProcessesRoute,
   AuthenticatedRequestsRoute: AuthenticatedRequestsRoute,
   AuthenticatedSignaturesRoute: AuthenticatedSignaturesRoute,
+  AuthenticatedSpecialEventsRoute: AuthenticatedSpecialEventsRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedToolboxRoute: AuthenticatedToolboxRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,

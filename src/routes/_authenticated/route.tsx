@@ -11,6 +11,7 @@ export const Route = createFileRoute("/_authenticated")({
 
 const CLIENT_CARE_ALLOWED_PREFIXES = [
   "/dashboard",
+  "/special-events",
   "/tasks",
   "/requests",
   "/inventory",

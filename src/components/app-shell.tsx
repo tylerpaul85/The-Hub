@@ -24,6 +24,7 @@ import {
   Mail,
   Calculator,
   Menu,
+  Sparkles,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -41,6 +42,7 @@ import {
 
 const CONTENT_NAV = [
   { to: "/calendar", label: "Content Calendar", icon: Calendar, adminOnly: false },
+  { to: "/special-events", label: "Special Events", icon: Sparkles, adminOnly: false },
   { to: "/videos", label: "Video Pipeline", icon: Video, adminOnly: false },
   { to: "/requests", label: "Requests", icon: Inbox, adminOnly: false },
   { to: "/listings", label: "Listings", icon: Home, adminOnly: false },
@@ -87,6 +89,7 @@ function getPageTitle(pathname: string): string {
   const map: Record<string, string> = {
     "/dashboard": "Dashboard",
     "/calendar": "Calendar",
+    "/special-events": "Special Events",
     "/listings": "Listings",
     "/toolbox": "Agent Toolbox",
     "/videos": "Video Pipeline",
