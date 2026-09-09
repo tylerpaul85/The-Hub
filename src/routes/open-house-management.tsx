@@ -31,6 +31,7 @@ import {
   ArrowLeft,
   Store,
   Layers,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,6 +74,7 @@ import {
   createAgentOpenHouse,
   toggleAgentChecklistItem,
   archiveAgentOpenHouse,
+  setAgentOpenHouseCoverPhoto,
 } from "@/lib/open-houses.functions";
 
 export const Route = createFileRoute("/open-house-management")({
@@ -780,6 +782,7 @@ function AgentOpenHouseWorkspace({
   const fetchDetail = useServerFn(getAgentOpenHouseManagement);
   const toggleItemFn = useServerFn(toggleAgentChecklistItem);
   const archiveFn = useServerFn(archiveAgentOpenHouse);
+  const setCoverPhotoFn = useServerFn(setAgentOpenHouseCoverPhoto);
 
   const [activeTab, setActiveTab] = useState<"leads" | "qrcode" | "checklist" | "marketing" | "settings">("leads");
   const [kioskOpen, setKioskOpen] = useState(false);
@@ -798,6 +801,20 @@ function AgentOpenHouseWorkspace({
   const signinUrl = typeof window !== "undefined"
     ? `${window.location.origin}/open-house-signin/${openHouseId}`
     : `https://thehub.mattsmithrealestate.com/open-house-signin/${openHouseId}`;
+
+  const setCoverMutation = useMutation({
+    mutationFn: async (coverUrl: string | null) => {
+      await setCoverPhotoFn({ data: { token, openHouseId, coverPhotoUrl: coverUrl } });
+    },
+    onSuccess: () => {
+      toast.success("Cover photo updated! This photo is now featured across all open house views.");
+      refetch();
+      qc.invalidateQueries({ queryKey: ["agent-open-houses"] });
+      qc.invalidateQueries({ queryKey: ["public-toolbox-open-houses"] });
+      qc.invalidateQueries({ queryKey: ["all-open-houses"] });
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to update cover photo"),
+  });
 
   const toggleMutation = useMutation({
     mutationFn: async ({ itemId, completed }: { itemId: string; completed: boolean }) => {
@@ -1278,13 +1295,26 @@ function AgentOpenHouseWorkspace({
           {/* TAB 4: MARKETING MATERIALS */}
           {activeTab === "marketing" && (
             <div className="space-y-4">
-              <div>
-                <h3 className="font-serif font-bold text-base text-foreground">
-                  Attached Marketing Materials
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Flyers, social graphics, and photos auto-attached from the listing.
-                </p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-muted/30 p-3 rounded-xl border border-border">
+                <div>
+                  <h3 className="font-serif font-bold text-base text-foreground flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4 text-gold" /> Attached Marketing Materials &amp; Cover Photo
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Click the star <Star className="inline h-3 w-3 text-gold fill-gold" /> on any photo below to set it as the primary cover image across all open house listings &amp; sign-in pages.
+                  </p>
+                </div>
+                {oh?.cover_photo_url && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setCoverMutation.mutate(null)}
+                    disabled={setCoverMutation.isPending}
+                    className="text-[11px] h-7 shrink-0 text-muted-foreground hover:text-foreground"
+                  >
+                    Reset to Auto
+                  </Button>
+                )}
               </div>
 
               {assets.length === 0 ? (
@@ -1292,16 +1322,25 @@ function AgentOpenHouseWorkspace({
                   <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
                   <div className="font-medium text-sm text-foreground">No marketing assets attached</div>
                   <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-                    Assets uploaded to the listing or open house appear here for instant download.
+                    Assets uploaded to the listing or open house appear here for instant download and cover photo selection.
                   </p>
                 </Card>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {assets.map((a: any) => {
                     const u = a.file_url || a.thumbnail_url || a.drive_url;
+                    const isImg = u && /\.(png|jpe?g|gif|webp|svg|avif|heic)(\?|#|$)/i.test(String(u).split("?")[0]);
+                    const isStarredCover = oh?.cover_photo_url ? (oh.cover_photo_url === u) : false;
+
                     return (
-                      <Card key={a.id} className="overflow-hidden border border-border group bg-card">
-                        <div className="aspect-square bg-muted relative">
+                      <Card
+                        key={a.id}
+                        className={cn(
+                          "overflow-hidden border transition-all duration-200 group bg-card flex flex-col justify-between",
+                          isStarredCover ? "border-gold ring-1 ring-gold shadow-md" : "border-border hover:border-border/80"
+                        )}
+                      >
+                        <div className="aspect-[16/10] bg-muted relative overflow-hidden">
                           {u ? (
                             <img src={u} alt={a.name || "Asset"} className="w-full h-full object-cover" />
                           ) : (
@@ -1309,23 +1348,56 @@ function AgentOpenHouseWorkspace({
                               <ImageIcon className="h-8 w-8" />
                             </div>
                           )}
+
                           <Badge className="absolute top-2 left-2 text-[10px] bg-background/80 backdrop-blur-sm border">
                             {a.category || a.asset_type}
                           </Badge>
-                        </div>
-                        <div className="p-2.5 flex items-center justify-between">
-                          <span className="text-xs font-medium truncate flex-1">{a.name || "Marketing Asset"}</span>
-                          {u && (
-                            <a
-                              href={u}
-                              target="_blank"
-                              rel="noreferrer"
-                              download
-                              className="p-1 text-muted-foreground hover:text-gold"
-                            >
-                              <Download className="h-3.5 w-3.5" />
-                            </a>
+
+                          {isStarredCover && (
+                            <Badge className="absolute top-2 right-2 text-[10px] bg-gold text-navy font-bold shadow-md flex items-center gap-1">
+                              <Star className="h-3 w-3 fill-navy" /> Featured Cover
+                            </Badge>
                           )}
+                        </div>
+
+                        <div className="p-2.5 flex items-center justify-between gap-2 border-t border-border/60">
+                          <span className="text-xs font-medium truncate flex-1" title={a.name}>
+                            {a.name || "Marketing Asset"}
+                          </span>
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            {isImg && (
+                              <Button
+                                size="sm"
+                                variant={isStarredCover ? "default" : "outline"}
+                                onClick={() => setCoverMutation.mutate(isStarredCover ? null : u)}
+                                disabled={setCoverMutation.isPending}
+                                className={cn(
+                                  "h-7 px-2 text-[11px] gap-1 font-medium transition-colors",
+                                  isStarredCover
+                                    ? "bg-gold text-navy hover:bg-gold/90 font-bold"
+                                    : "text-muted-foreground hover:text-gold border-border"
+                                )}
+                                title={isStarredCover ? "Remove as featured cover" : "Set as primary cover photo"}
+                              >
+                                <Star className={cn("h-3 w-3", isStarredCover && "fill-navy")} />
+                                <span>{isStarredCover ? "Starred" : "Set Cover"}</span>
+                              </Button>
+                            )}
+
+                            {u && (
+                              <a
+                                href={u}
+                                target="_blank"
+                                rel="noreferrer"
+                                download
+                                className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-gold transition-colors"
+                                title="Download Asset"
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                              </a>
+                            )}
+                          </div>
                         </div>
                       </Card>
                     );

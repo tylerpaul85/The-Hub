@@ -64,6 +64,7 @@ import {
   ArrowUpDown,
   FileText,
   Copy,
+  Star,
 } from "lucide-react";
 import { QrCode } from "@/components/qr-code";
 import logo from "@/assets/msreg-logo.png";
@@ -75,6 +76,7 @@ import {
   updateChecklistTemplates,
   cloneListingAssetsToOpenHouse,
   getOpenHousesAnalytics,
+  pickHouseThumbnail,
 } from "@/lib/open-houses.functions";
 
 export const Route = createFileRoute("/_authenticated/open-houses")({
@@ -181,20 +183,20 @@ export function OpenHousesPage() {
     queryFn: async () => {
       const { data } = await sb
         .from("toolbox_open_house_assets")
-        .select("open_house_id,thumbnail_url,file_url,asset_type,category");
-      const isImg = (u: string | null | undefined) =>
-        !!u && /\.(png|jpe?g|gif|webp|svg|avif|heic)(\?|#|$)/i.test(String(u).split("?")[0]);
+        .select("open_house_id,thumbnail_url,file_url,asset_type,category,name");
       const out: Record<string, { assets: number; thumb: string | null }> = {};
-      for (const l of allOpenHouses) out[l.id] = { assets: 0, thumb: null };
-      for (const a of (data ?? []) as any[]) {
-        if (!out[a.open_house_id]) continue;
-        out[a.open_house_id].assets++;
+      const assetsByOH: Record<string, any[]> = {};
+      for (const l of allOpenHouses) {
+        out[l.id] = { assets: 0, thumb: null };
+        assetsByOH[l.id] = [];
       }
       for (const a of (data ?? []) as any[]) {
         if (!out[a.open_house_id]) continue;
-        if (out[a.open_house_id].thumb) continue;
-        const c = a.thumbnail_url || a.file_url;
-        if (isImg(c)) out[a.open_house_id].thumb = c;
+        out[a.open_house_id].assets++;
+        assetsByOH[a.open_house_id].push(a);
+      }
+      for (const l of allOpenHouses) {
+        out[l.id].thumb = pickHouseThumbnail(l as any, assetsByOH[l.id]);
       }
       return out;
     },

@@ -158,7 +158,7 @@ export const listPublicOpenHouses = createServerFn({ method: "POST" })
     const sb = await admin();
     const { data: rows, error } = await sb
       .from("toolbox_open_houses")
-      .select("id,address,agent_name,status,open_house_at,description,created_at")
+      .select("id,address,agent_name,status,open_house_at,description,created_at,cover_photo_url")
       .eq("archived", false)
       .order("open_house_at", { ascending: true, nullsFirst: false });
     if (error) throw error;
@@ -167,37 +167,22 @@ export const listPublicOpenHouses = createServerFn({ method: "POST" })
     if (ids.length) {
       const { data: assets } = await sb
         .from("toolbox_open_house_assets")
-        .select("open_house_id,thumbnail_url,file_url,asset_type,category,created_at")
+        .select("open_house_id,thumbnail_url,file_url,asset_type,category,name,created_at")
         .in("open_house_id", ids)
         .order("created_at", { ascending: true });
-      const isImg = (u: string | null | undefined) =>
-        !!u && (/\/file\/d\/|[?&]id=|lh3\.googleusercontent\.com/i.test(String(u)) || /\.(png|jpe?g|gif|webp|svg|avif|heic)(\?|#|$)/i.test(String(u).split("?")[0]));
       
-      const getThumb = (u: string) => {
-        if (typeof u !== "string") return "";
-        const fileIdMatch = u.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
-          u.match(/\/open\?id=([a-zA-Z0-9_-]+)/) ||
-          u.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
-          u.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
-        return fileIdMatch && fileIdMatch[1] ? `https://lh3.googleusercontent.com/d/${fileIdMatch[1]}` : u;
-      };
-
-      // Prefer images in "Branded Photos and Copy"
+      const { pickHouseThumbnail } = await import("./open-houses.functions");
+      const assetsByOH: Record<string, any[]> = {};
       for (const a of (assets ?? []) as any[]) {
-        if (thumbs[a.open_house_id]) continue;
-        if (a.category !== "Branded Photos and Copy") continue;
-        const c = a.thumbnail_url || a.file_url;
-        if (isImg(c)) thumbs[a.open_house_id] = getThumb(c!);
+        if (!assetsByOH[a.open_house_id]) assetsByOH[a.open_house_id] = [];
+        assetsByOH[a.open_house_id].push(a);
       }
-      // Fallback: any image
-      for (const a of (assets ?? []) as any[]) {
-        if (thumbs[a.open_house_id]) continue;
-        const c = a.thumbnail_url || a.file_url;
-        if (isImg(c)) thumbs[a.open_house_id] = getThumb(c!);
+      for (const r of (rows ?? []) as any[]) {
+        thumbs[r.id] = pickHouseThumbnail(r, assetsByOH[r.id] ?? []) || "";
       }
     }
     return {
-      openHouses: (rows ?? []).map((r: any) => ({ ...r, thumbnail: thumbs[r.id] ?? null })),
+      openHouses: (rows ?? []).map((r: any) => ({ ...r, thumbnail: thumbs[r.id] || null })),
     };
   });
 

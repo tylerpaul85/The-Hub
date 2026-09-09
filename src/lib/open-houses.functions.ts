@@ -38,6 +38,90 @@ async function admin() {
 }
 
 // -------------------------------------------------------------
+// HELPER: SMART HOUSE PHOTO CANDIDATE FILTER & THUMBNAIL PICKER
+// -------------------------------------------------------------
+
+export function isHousePhotoCandidate(a: {
+  category?: string | null;
+  name?: string | null;
+  asset_type?: string | null;
+  file_url?: string | null;
+  thumbnail_url?: string | null;
+}) {
+  const cat = (a.category || "").toLowerCase();
+  const name = (a.name || "").toLowerCase();
+  const type = (a.asset_type || "").toLowerCase();
+  const url = (a.file_url || a.thumbnail_url || "").toLowerCase();
+
+  // Exclude QR codes explicitly
+  if (cat.includes("qr") || cat.includes("code")) return false;
+  if (name.includes("qr") || name.includes("qrcode") || name.includes("code")) return false;
+  if (type.includes("qr")) return false;
+  if (url.includes("qrcode") || url.includes("qr-code")) return false;
+
+  // Exclude coloring pages, flyers, placards, printouts
+  if (cat.includes("coloring") || cat.includes("flyer") || cat.includes("placard") || cat.includes("sign")) return false;
+  if (name.includes("coloring") || name.includes("flyer") || name.includes("placard") || name.includes("sign-in") || name.includes("signin")) return false;
+
+  return true;
+}
+
+export function pickHouseThumbnail(oh: { cover_photo_url?: string | null } | null | undefined, assets: any[]): string | null {
+  const isImg = (u: string | null | undefined) =>
+    !!u && (/\/file\/d\/|[?&]id=|lh3\.googleusercontent\.com/i.test(String(u)) || /\.(png|jpe?g|gif|webp|svg|avif|heic)(\?|#|$)/i.test(String(u).split("?")[0]));
+
+  const getThumb = (u: string) => {
+    if (typeof u !== "string") return "";
+    const fileIdMatch = u.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+      u.match(/\/open\?id=([a-zA-Z0-9_-]+)/) ||
+      u.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
+      u.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
+    return fileIdMatch && fileIdMatch[1] ? `https://lh3.googleusercontent.com/d/${fileIdMatch[1]}` : u;
+  };
+
+  // 1. Explicit starred cover photo if set
+  if (oh?.cover_photo_url && isImg(oh.cover_photo_url)) {
+    return getThumb(oh.cover_photo_url);
+  }
+
+  const validAssets = (assets ?? []).filter((a) => isImg(a.thumbnail_url || a.file_url));
+
+  // 2. High Priority: "Branded Photos and Copy" or "Photos" that are house photo candidates
+  for (const a of validAssets) {
+    const cat = (a.category || "").toLowerCase();
+    if ((cat.includes("photo") || cat.includes("branded")) && isHousePhotoCandidate(a)) {
+      const c = a.thumbnail_url || a.file_url;
+      return getThumb(c!);
+    }
+  }
+
+  // 3. Medium Priority: asset_type === "photo" that is house candidate
+  for (const a of validAssets) {
+    const type = (a.asset_type || "").toLowerCase();
+    if (type.includes("photo") && isHousePhotoCandidate(a)) {
+      const c = a.thumbnail_url || a.file_url;
+      return getThumb(c!);
+    }
+  }
+
+  // 4. Any asset that is a house photo candidate (not a QR or flyer)
+  for (const a of validAssets) {
+    if (isHousePhotoCandidate(a)) {
+      const c = a.thumbnail_url || a.file_url;
+      return getThumb(c!);
+    }
+  }
+
+  // 5. Fallback only if no valid house photo candidates exist
+  if (validAssets.length > 0) {
+    const c = validAssets[0].thumbnail_url || validAssets[0].file_url;
+    return getThumb(c!);
+  }
+
+  return null;
+}
+
+// -------------------------------------------------------------
 // 1. PUBLIC VISITOR SIGN-IN ENDPOINTS (No Login Required)
 // -------------------------------------------------------------
 
@@ -51,7 +135,7 @@ export const getPublicOpenHouseForSignin = createServerFn({ method: "POST" })
     const sb = await admin();
     const { data: oh, error } = await sb
       .from("toolbox_open_houses")
-      .select("id, address, agent_name, status, open_house_at, description, archived")
+      .select("id, address, agent_name, status, open_house_at, description, archived, cover_photo_url")
       .eq("id", data.id)
       .maybeSingle();
 
@@ -63,30 +147,11 @@ export const getPublicOpenHouseForSignin = createServerFn({ method: "POST" })
     // Also get hero photo / thumbnail
     const { data: assets } = await sb
       .from("toolbox_open_house_assets")
-      .select("thumbnail_url, file_url, category, created_at")
+      .select("thumbnail_url, file_url, category, name, asset_type, created_at")
       .eq("open_house_id", data.id)
       .order("created_at", { ascending: true });
 
-    let thumbnail: string | null = null;
-    const isImg = (u: string | null | undefined) =>
-      !!u && (/\/file\/d\/|[?&]id=|lh3\.googleusercontent\.com/i.test(String(u)) || /\.(png|jpe?g|gif|webp|svg|avif|heic)(\?|#|$)/i.test(String(u).split("?")[0]));
-
-    const getThumb = (u: string) => {
-      if (typeof u !== "string") return "";
-      const fileIdMatch = u.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
-        u.match(/\/open\?id=([a-zA-Z0-9_-]+)/) ||
-        u.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
-        u.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
-      return fileIdMatch && fileIdMatch[1] ? `https://lh3.googleusercontent.com/d/${fileIdMatch[1]}` : u;
-    };
-
-    for (const a of (assets ?? []) as any[]) {
-      const c = a.thumbnail_url || a.file_url;
-      if (isImg(c)) {
-        thumbnail = getThumb(c!);
-        break;
-      }
-    }
+    const thumbnail = pickHouseThumbnail(oh, assets ?? []);
 
     return {
       openHouse: {
@@ -160,7 +225,7 @@ export const listAgentOpenHouses = createServerFn({ method: "POST" })
 
     // Safely query auxiliary tables without crashing if migrations haven't run yet
     const [assetsRes, signinsRes, checklistRes] = await Promise.all([
-      sb.from("toolbox_open_house_assets").select("open_house_id, thumbnail_url, file_url, asset_type, category").then((r: any) => r.data || []).catch(() => []),
+      sb.from("toolbox_open_house_assets").select("open_house_id, thumbnail_url, file_url, asset_type, category, name").then((r: any) => r.data || []).catch(() => []),
       sb.from("open_house_signins").select("open_house_id").then((r: any) => r.data || []).catch(() => []),
       sb.from("open_house_checklist_items").select("open_house_id, completed").then((r: any) => r.data || []).catch(() => []),
     ]);
@@ -169,33 +234,13 @@ export const listAgentOpenHouses = createServerFn({ method: "POST" })
     const signins = signinsRes || [];
     const checklistItems = checklistRes || [];
 
-    const isImg = (u: string | null | undefined) =>
-      !!u && (/\/file\/d\/|[?&]id=|lh3\.googleusercontent\.com/i.test(String(u)) || /\.(png|jpe?g|gif|webp|svg|avif|heic)(\?|#|$)/i.test(String(u).split("?")[0]));
-
-    const getThumb = (u: string) => {
-      if (typeof u !== "string") return "";
-      const fileIdMatch = u.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
-        u.match(/\/open\?id=([a-zA-Z0-9_-]+)/) ||
-        u.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
-        u.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
-      return fileIdMatch && fileIdMatch[1] ? `https://lh3.googleusercontent.com/d/${fileIdMatch[1]}` : u;
-    };
-
-    // Calculate thumbnails and counts (prefer "Branded Photos and Copy")
-    const thumbs: Record<string, string> = {};
+    // Group assets by open_house_id
+    const assetsByOH: Record<string, any[]> = {};
     const assetCounts: Record<string, number> = {};
     for (const a of (assets ?? []) as any[]) {
       assetCounts[a.open_house_id] = (assetCounts[a.open_house_id] || 0) + 1;
-      if (thumbs[a.open_house_id]) continue;
-      if (a.category === "Branded Photos and Copy") {
-        const c = a.thumbnail_url || a.file_url;
-        if (isImg(c)) thumbs[a.open_house_id] = getThumb(c!);
-      }
-    }
-    for (const a of (assets ?? []) as any[]) {
-      if (thumbs[a.open_house_id]) continue;
-      const c = a.thumbnail_url || a.file_url;
-      if (isImg(c)) thumbs[a.open_house_id] = getThumb(c!);
+      if (!assetsByOH[a.open_house_id]) assetsByOH[a.open_house_id] = [];
+      assetsByOH[a.open_house_id].push(a);
     }
 
     const signinCounts: Record<string, number> = {};
@@ -214,7 +259,7 @@ export const listAgentOpenHouses = createServerFn({ method: "POST" })
 
     const formatted = (rows ?? []).map((r: any) => ({
       ...r,
-      thumbnail: thumbs[r.id] ?? null,
+      thumbnail: pickHouseThumbnail(r, assetsByOH[r.id] ?? []),
       assetCount: assetCounts[r.id] ?? 0,
       signinCount: signinCounts[r.id] ?? 0,
       checklistTotal: checklistCounts[r.id]?.total ?? 0,
@@ -222,6 +267,29 @@ export const listAgentOpenHouses = createServerFn({ method: "POST" })
     }));
 
     return { openHouses: formatted };
+  });
+
+const setCoverPhotoInput = z.object({
+  token: z.string().min(1),
+  openHouseId: z.string().min(1),
+  coverPhotoUrl: z.string().nullable(),
+});
+
+export const setAgentOpenHouseCoverPhoto = createServerFn({ method: "POST" })
+  .inputValidator((d: z.infer<typeof setCoverPhotoInput>) => setCoverPhotoInput.parse(d))
+  .handler(async ({ data }) => {
+    assertToken(data.token);
+    const sb = await admin();
+    const { error } = await sb
+      .from("toolbox_open_houses")
+      .update({ cover_photo_url: data.coverPhotoUrl })
+      .eq("id", data.openHouseId);
+
+    if (error) {
+      console.error("Error setting cover photo:", error);
+      throw error;
+    }
+    return { success: true };
   });
 
 const agentOHManagementInput = z.object({
