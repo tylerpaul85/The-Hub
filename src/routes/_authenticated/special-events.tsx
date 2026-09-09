@@ -1193,10 +1193,10 @@ function GroupSignupDialog({
                           <span className="italic">Empty group</span>
                         ) : (
                           groupMembers.map((m, idx) => {
-                            const p = profileMap.get(m.user_id);
+                            const p = m.user_id ? profileMap.get(m.user_id) : undefined;
                             const name = p
                               ? [p.first_name, p.last_name].filter(Boolean).join(" ") || p.email
-                              : "Player";
+                              : m.agent_name || m.agent_email || "Player";
                             return (
                               <span key={m.id}>
                                 {idx > 0 && ", "}
@@ -1853,10 +1853,11 @@ function EventRosterDialog({
             ) : (
               <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
                 {signups.map((s) => {
-                  const p = profileMap.get(s.user_id);
+                  const p = s.user_id ? profileMap.get(s.user_id) : undefined;
                   const name = p
                     ? [p.first_name, p.last_name].filter(Boolean).join(" ") || p.email
-                    : "Unknown User";
+                    : s.agent_name || s.agent_email || "Unknown User";
+                  const email = p?.email || s.agent_email || "";
                   const groupName = s.group_id ? groupMap.get(s.group_id) : null;
 
                   return (
@@ -1867,9 +1868,11 @@ function EventRosterDialog({
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold text-foreground truncate">{name}</span>
-                          <span className="text-muted-foreground text-[11px] truncate">
-                            {p?.email}
-                          </span>
+                          {email && (
+                            <span className="text-muted-foreground text-[11px] truncate">
+                              {email}
+                            </span>
+                          )}
                           <Badge
                             variant="outline"
                             className={cn(
@@ -1942,10 +1945,11 @@ function EventRosterDialog({
             ) : (
               <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
                 {committee.map((c) => {
-                  const p = profileMap.get(c.user_id);
+                  const p = c.user_id ? profileMap.get(c.user_id) : undefined;
                   const name = p
                     ? [p.first_name, p.last_name].filter(Boolean).join(" ") || p.email
-                    : "Unknown User";
+                    : c.agent_name || c.agent_email || "Unknown User";
+                  const email = p?.email || c.agent_email || "";
 
                   return (
                     <div
@@ -1955,7 +1959,7 @@ function EventRosterDialog({
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-foreground">{name}</span>
-                          <span className="text-muted-foreground text-[11px]">{p?.email}</span>
+                          {email && <span className="text-muted-foreground text-[11px]">{email}</span>}
                           <Badge variant="outline" className="text-[10px] bg-gold/10 text-gold border-gold/30 flex items-center gap-1">
                             <Star className="h-2.5 w-2.5 fill-current" /> Committee Member
                           </Badge>

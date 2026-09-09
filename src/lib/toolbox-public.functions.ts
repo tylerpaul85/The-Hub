@@ -271,3 +271,290 @@ export const listPublicAgentBrandedContent = createServerFn({ method: "POST" })
     if (!agent) throw new Error("Not found");
     return { agent, items: items ?? [] };
   });
+
+/* -------- Public Special Events -------- */
+
+export const listPublicSpecialEvents = createServerFn({ method: "POST" })
+  .inputValidator(tokenInput)
+  .handler(async ({ data }) => {
+    assertToken(data.token);
+    const sb = await admin();
+
+    const [
+      { data: events, error: evErr },
+      { data: groups, error: grpErr },
+      { data: signups, error: sgnErr },
+      { data: committee, error: comErr },
+    ] = await Promise.all([
+      sb
+        .from("special_events")
+        .select("*")
+        .eq("archived", false)
+        .order("event_date", { ascending: true }),
+      sb.from("special_event_groups").select("*").order("name", { ascending: true }),
+      sb.from("special_event_signups").select("id,event_id,user_id,agent_name,agent_email,group_id,status,notes,created_at"),
+      sb.from("special_event_committee").select("id,event_id,user_id,agent_name,agent_email,notes,created_at"),
+    ]);
+
+    if (evErr) throw evErr;
+
+    return {
+      events: events ?? [],
+      groups: groups ?? [],
+      signups: signups ?? [],
+      committee: committee ?? [],
+    };
+  });
+
+export const rsvpPublicSpecialEvent = createServerFn({ method: "POST" })
+  .inputValidator((d: {
+    token: string;
+    eventId: string;
+    agentName: string;
+    agentEmail: string;
+    groupId?: string | null;
+    notes?: string | null;
+  }) =>
+    z
+      .object({
+        token: z.string().min(1).max(200),
+        eventId: z.string().uuid(),
+        agentName: z.string().trim().min(1, "Name is required").max(150),
+        agentEmail: z.string().trim().email("Valid email required").max(255),
+        groupId: z.string().uuid().nullable().optional(),
+        notes: z.string().trim().max(1000).nullable().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    assertToken(data.token);
+    const sb = await admin();
+    const cleanEmail = data.agentEmail.trim().toLowerCase();
+
+    // 1. Fetch event
+    const { data: event, error: evErr } = await sb
+      .from("special_events")
+      .select("*")
+      .eq("id", data.eventId)
+      .single();
+    if (evErr || !event) throw new Error(evErr?.message || "Event not found");
+    if (event.archived) throw new Error("This event is closed or archived.");
+
+    // 2. Fetch existing signups for event
+    const { data: existingSignups = [] } = await sb
+      .from("special_event_signups")
+      .select("*")
+      .eq("event_id", data.eventId);
+
+    const activeSignups = existingSignups.filter((s: any) => s.status !== "cancelled");
+    const mySignup = existingSignups.find(
+      (s: any) => (s.agent_email ?? "").toLowerCase() === cleanEmail,
+    );
+
+    let status: "confirmed" | "waitlist" = "confirmed";
+
+    // 3. Group capacity check
+    if (event.capacity_mode === "group" && data.groupId) {
+      const groupSignups = activeSignups.filter(
+        (s: any) => s.group_id === data.groupId && s.id !== mySignup?.id,
+      );
+      const maxPerGroup = event.max_per_group || 4;
+      if (groupSignups.length >= maxPerGroup) {
+        throw new Error(`This team/group is full (${maxPerGroup}/${maxPerGroup} spots taken). Please choose another team.`);
+      }
+    }
+
+    // 4. Simple capacity check
+    if (event.capacity_mode === "simple" && event.max_capacity) {
+      const confirmedOtherCount = activeSignups.filter(
+        (s: any) => s.status === "confirmed" && s.id !== mySignup?.id,
+      ).length;
+
+      if (confirmedOtherCount >= event.max_capacity) {
+        if (event.enable_waitlist) {
+          status = "waitlist";
+        } else {
+          throw new Error("This event has reached full attendee capacity.");
+        }
+      }
+    }
+
+    // Try to match a user_id from profiles
+    const { data: matchedProfile } = await sb
+      .from("profiles")
+      .select("id")
+      .ilike("email", cleanEmail)
+      .maybeSingle();
+
+    const payload = {
+      event_id: data.eventId,
+      user_id: matchedProfile?.id || null,
+      agent_name: data.agentName.trim(),
+      agent_email: cleanEmail,
+      group_id: data.groupId || null,
+      status,
+      notes: data.notes?.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (mySignup) {
+      const { data: updated, error: updErr } = await sb
+        .from("special_event_signups")
+        .update(payload)
+        .eq("id", mySignup.id)
+        .select()
+        .single();
+      if (updErr) throw updErr;
+      return { ok: true, status, signup: updated };
+    } else {
+      const { data: inserted, error: insErr } = await sb
+        .from("special_event_signups")
+        .insert(payload)
+        .select()
+        .single();
+      if (insErr) throw insErr;
+      return { ok: true, status, signup: inserted };
+    }
+  });
+
+export const cancelPublicSpecialEventRsvp = createServerFn({ method: "POST" })
+  .inputValidator((d: { token: string; eventId: string; agentEmail: string }) =>
+    z
+      .object({
+        token: z.string().min(1).max(200),
+        eventId: z.string().uuid(),
+        agentEmail: z.string().trim().email().max(255),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    assertToken(data.token);
+    const sb = await admin();
+    const cleanEmail = data.agentEmail.trim().toLowerCase();
+
+    const { error } = await sb
+      .from("special_event_signups")
+      .delete()
+      .eq("event_id", data.eventId)
+      .ilike("agent_email", cleanEmail);
+
+    if (error) throw error;
+    return { ok: true };
+  });
+
+export const togglePublicSpecialEventCommittee = createServerFn({ method: "POST" })
+  .inputValidator((d: {
+    token: string;
+    eventId: string;
+    agentName: string;
+    agentEmail: string;
+    isJoining: boolean;
+    notes?: string | null;
+  }) =>
+    z
+      .object({
+        token: z.string().min(1).max(200),
+        eventId: z.string().uuid(),
+        agentName: z.string().trim().min(1).max(150),
+        agentEmail: z.string().trim().email().max(255),
+        isJoining: z.boolean(),
+        notes: z.string().trim().max(1000).nullable().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    assertToken(data.token);
+    const sb = await admin();
+    const cleanEmail = data.agentEmail.trim().toLowerCase();
+
+    if (!data.isJoining) {
+      const { error } = await sb
+        .from("special_event_committee")
+        .delete()
+        .eq("event_id", data.eventId)
+        .ilike("agent_email", cleanEmail);
+      if (error) throw error;
+      return { ok: true, joined: false };
+    }
+
+    const { data: matchedProfile } = await sb
+      .from("profiles")
+      .select("id")
+      .ilike("email", cleanEmail)
+      .maybeSingle();
+
+    const { data: existing } = await sb
+      .from("special_event_committee")
+      .select("id")
+      .eq("event_id", data.eventId)
+      .ilike("agent_email", cleanEmail)
+      .maybeSingle();
+
+    if (existing) {
+      await sb
+        .from("special_event_committee")
+        .update({
+          agent_name: data.agentName.trim(),
+          notes: data.notes?.trim() || null,
+        })
+        .eq("id", existing.id);
+    } else {
+      const { error: insErr } = await sb.from("special_event_committee").insert({
+        event_id: data.eventId,
+        user_id: matchedProfile?.id || null,
+        agent_name: data.agentName.trim(),
+        agent_email: cleanEmail,
+        notes: data.notes?.trim() || null,
+      });
+      if (insErr) throw insErr;
+    }
+
+    return { ok: true, joined: true };
+  });
+
+export const createPublicSpecialEventGroup = createServerFn({ method: "POST" })
+  .inputValidator((d: { token: string; eventId: string; name: string }) =>
+    z
+      .object({
+        token: z.string().min(1).max(200),
+        eventId: z.string().uuid(),
+        name: z.string().trim().min(1, "Group name required").max(100),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    assertToken(data.token);
+    const sb = await admin();
+
+    // Check event max_groups
+    const { data: event, error: evErr } = await sb
+      .from("special_events")
+      .select("max_groups")
+      .eq("id", data.eventId)
+      .single();
+    if (evErr || !event) throw new Error("Event not found");
+
+    if (event.max_groups) {
+      const { count } = await sb
+        .from("special_event_groups")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", data.eventId);
+
+      if ((count ?? 0) >= event.max_groups) {
+        throw new Error(`Maximum group limit reached (${event.max_groups} teams max).`);
+      }
+    }
+
+    const { data: group, error } = await sb
+      .from("special_event_groups")
+      .insert({
+        event_id: data.eventId,
+        name: data.name.trim(),
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { ok: true, group };
+  });
+

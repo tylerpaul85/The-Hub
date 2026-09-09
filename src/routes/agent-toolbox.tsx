@@ -23,6 +23,7 @@ import {
   listPublicBrandedAgents,
   listPublicAgentBrandedContent,
 } from "@/lib/toolbox-public.functions";
+import { SpecialEventsAgentView } from "@/components/special-events-agent-view";
 import logo from "@/assets/msreg-logo.png";
 import {
   Search,
@@ -188,9 +189,26 @@ function Gate({ onUnlock }: { onUnlock: (token: string) => void }) {
 /* -------- Main toolbox -------- */
 
 function Toolbox({ token, onLock }: { token: string; onLock: () => void }) {
-  const [tab, setTab] = useState("listings");
+  const [tab, setTab] = useState(() => {
+    if (typeof window !== "undefined") {
+      const p = new URLSearchParams(window.location.search).get("tab");
+      if (p === "events" || p === "special-events") return "events";
+      if (p && ["listings", "open_houses", "events", "brand", "edu", "branded"].includes(p)) return p;
+    }
+    return "listings";
+  });
   const [openListing, setOpenListing] = useState<string | null>(null);
   const [openOpenHouse, setOpenOpenHouse] = useState<string | null>(null);
+
+  // Synchronize tab changes to URL search query for easy sharing and bookmarking
+  const handleTabChange = (newTab: string) => {
+    setTab(newTab);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", newTab);
+      window.history.replaceState({}, "", url.toString());
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -220,21 +238,27 @@ function Toolbox({ token, onLock }: { token: string; onLock: () => void }) {
         ) : openOpenHouse ? (
           <OpenHouseView token={token} id={openOpenHouse} onBack={() => setOpenOpenHouse(null)} />
         ) : (
-          <Tabs value={tab} onValueChange={setTab} className="w-full">
-            <TabsList className="w-full h-11 grid grid-cols-5">
-              <TabsTrigger value="listings" className="text-xs sm:text-sm">
+          <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
+            <TabsList className="w-full h-auto p-1 grid grid-cols-3 sm:grid-cols-6 gap-1 bg-muted/60">
+              <TabsTrigger value="listings" className="text-xs sm:text-sm py-2">
                 Listings
               </TabsTrigger>
-              <TabsTrigger value="open_houses" className="text-xs sm:text-sm">
+              <TabsTrigger value="open_houses" className="text-xs sm:text-sm py-2">
                 Open Houses
               </TabsTrigger>
-              <TabsTrigger value="brand" className="text-xs sm:text-sm">
+              <TabsTrigger
+                value="events"
+                className="text-xs sm:text-sm py-2 data-[state=active]:text-gold font-semibold"
+              >
+                Special Events
+              </TabsTrigger>
+              <TabsTrigger value="brand" className="text-xs sm:text-sm py-2">
                 Branding
               </TabsTrigger>
-              <TabsTrigger value="edu" className="text-xs sm:text-sm">
+              <TabsTrigger value="edu" className="text-xs sm:text-sm py-2">
                 Education
               </TabsTrigger>
-              <TabsTrigger value="branded" className="text-xs sm:text-sm">
+              <TabsTrigger value="branded" className="text-xs sm:text-sm py-2">
                 Agent Branded
               </TabsTrigger>
             </TabsList>
@@ -243,6 +267,9 @@ function Toolbox({ token, onLock }: { token: string; onLock: () => void }) {
             </TabsContent>
             <TabsContent value="open_houses" className="mt-4">
               <OpenHousesList token={token} onOpen={setOpenOpenHouse} />
+            </TabsContent>
+            <TabsContent value="events" className="mt-4">
+              <SpecialEventsAgentView token={token} />
             </TabsContent>
             <TabsContent value="brand" className="mt-4">
               <BrandList token={token} />

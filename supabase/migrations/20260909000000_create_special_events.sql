@@ -52,25 +52,37 @@ CREATE TABLE IF NOT EXISTS public.special_event_groups (
 CREATE TABLE IF NOT EXISTS public.special_event_signups (
   id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id                UUID NOT NULL REFERENCES public.special_events(id) ON DELETE CASCADE,
-  user_id                 UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id                 UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  agent_name              TEXT,
+  agent_email             TEXT,
   group_id                UUID REFERENCES public.special_event_groups(id) ON DELETE SET NULL,
   status                  TEXT NOT NULL DEFAULT 'confirmed', -- 'confirmed' | 'waitlist' | 'cancelled'
   notes                   TEXT,
   google_calendar_synced  BOOLEAN NOT NULL DEFAULT false,
   created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE(event_id, user_id)
+  updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Ensure columns exist if table was previously created
+ALTER TABLE public.special_event_signups ALTER COLUMN user_id DROP NOT NULL;
+ALTER TABLE public.special_event_signups ADD COLUMN IF NOT EXISTS agent_name TEXT;
+ALTER TABLE public.special_event_signups ADD COLUMN IF NOT EXISTS agent_email TEXT;
 
 -- 4. Create special_event_committee table
 CREATE TABLE IF NOT EXISTS public.special_event_committee (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id    UUID NOT NULL REFERENCES public.special_events(id) ON DELETE CASCADE,
-  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id     UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  agent_name  TEXT,
+  agent_email TEXT,
   notes       TEXT,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE(event_id, user_id)
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Ensure columns exist if table was previously created
+ALTER TABLE public.special_event_committee ALTER COLUMN user_id DROP NOT NULL;
+ALTER TABLE public.special_event_committee ADD COLUMN IF NOT EXISTS agent_name TEXT;
+ALTER TABLE public.special_event_committee ADD COLUMN IF NOT EXISTS agent_email TEXT;
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS special_events_date_idx ON public.special_events (event_date);
@@ -79,9 +91,11 @@ CREATE INDEX IF NOT EXISTS special_events_archived_idx ON public.special_events 
 CREATE INDEX IF NOT EXISTS special_event_groups_event_id_idx ON public.special_event_groups (event_id);
 CREATE INDEX IF NOT EXISTS special_event_signups_event_id_idx ON public.special_event_signups (event_id);
 CREATE INDEX IF NOT EXISTS special_event_signups_user_id_idx ON public.special_event_signups (user_id);
+CREATE INDEX IF NOT EXISTS special_event_signups_email_idx ON public.special_event_signups (agent_email);
 CREATE INDEX IF NOT EXISTS special_event_signups_group_id_idx ON public.special_event_signups (group_id);
 CREATE INDEX IF NOT EXISTS special_event_committee_event_id_idx ON public.special_event_committee (event_id);
 CREATE INDEX IF NOT EXISTS special_event_committee_user_id_idx ON public.special_event_committee (user_id);
+CREATE INDEX IF NOT EXISTS special_event_committee_email_idx ON public.special_event_committee (agent_email);
 
 -- Enable RLS
 ALTER TABLE public.special_events ENABLE ROW LEVEL SECURITY;

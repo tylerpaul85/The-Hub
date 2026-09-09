@@ -41,7 +41,9 @@ export type SpecialEventGroup = {
 export type SpecialEventSignup = {
   id: string;
   event_id: string;
-  user_id: string;
+  user_id: string | null;
+  agent_name?: string | null;
+  agent_email?: string | null;
   group_id: string | null;
   status: SignupStatus;
   notes: string | null;
@@ -53,7 +55,9 @@ export type SpecialEventSignup = {
 export type SpecialEventCommittee = {
   id: string;
   event_id: string;
-  user_id: string;
+  user_id: string | null;
+  agent_name?: string | null;
+  agent_email?: string | null;
   notes: string | null;
   created_at: string;
 };
@@ -218,11 +222,11 @@ export function exportAttendeesCsv(
   ];
 
   const rows = signups.map((s) => {
-    const p = profileMap.get(s.user_id);
+    const p = s.user_id ? profileMap.get(s.user_id) : undefined;
     const name = p
       ? [p.first_name, p.last_name].filter(Boolean).join(" ") || p.email
-      : "Unknown";
-    const email = p?.email || "";
+      : s.agent_name || s.agent_email || "Unknown";
+    const email = p?.email || s.agent_email || "";
     const groupName = s.group_id ? groupMap.get(s.group_id) || "Assigned Group" : "—";
     const status = s.status === "confirmed" ? "Confirmed" : s.status === "waitlist" ? "Waitlist" : "Cancelled";
     const notes = s.notes || "";
@@ -269,11 +273,11 @@ export function exportCommitteeCsv(
   const headers = ["Volunteer Name", "Email", "Notes", "Joined Committee At"];
 
   const rows = committee.map((c) => {
-    const p = profileMap.get(c.user_id);
+    const p = c.user_id ? profileMap.get(c.user_id) : undefined;
     const name = p
       ? [p.first_name, p.last_name].filter(Boolean).join(" ") || p.email
-      : "Unknown";
-    const email = p?.email || "";
+      : c.agent_name || c.agent_email || "Unknown";
+    const email = p?.email || c.agent_email || "";
     const notes = c.notes || "";
     const joinedAt = c.created_at ? format(new Date(c.created_at), "yyyy-MM-dd HH:mm") : "";
 
