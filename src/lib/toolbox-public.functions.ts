@@ -591,6 +591,7 @@ export const submitPublicVendorRequest = createServerFn({ method: "POST" })
     email?: string | null;
     website?: string | null;
     specialtyNotes?: string | null;
+    coreValues?: string | null;
     reason: string;
     agentName: string;
     agentEmail: string;
@@ -608,6 +609,7 @@ export const submitPublicVendorRequest = createServerFn({ method: "POST" })
         email: z.string().trim().email().nullable().optional().or(z.literal("")),
         website: z.string().trim().max(255).nullable().optional().or(z.literal("")),
         specialtyNotes: z.string().trim().max(2000).nullable().optional(),
+        coreValues: z.string().trim().max(2000).nullable().optional(),
         reason: z.string().trim().min(1, "Reason is required").max(2000),
         agentName: z.string().trim().min(1, "Your name is required").max(150),
         agentEmail: z.string().trim().email("Valid email required").max(255),
@@ -626,25 +628,31 @@ export const submitPublicVendorRequest = createServerFn({ method: "POST" })
       .ilike("email", cleanEmail)
       .maybeSingle();
 
+    const formattedReason = data.coreValues
+      ? `${data.reason.trim()}\n\n[Core Values Represented]: ${data.coreValues.trim()}`
+      : data.reason.trim();
+
+    const insertPayload: any = {
+      request_type: data.requestType,
+      status: "pending",
+      vendor_id: data.vendorId || null,
+      vendor_name: data.vendorName.trim(),
+      region: data.region || "st_robert_rolla",
+      category_id: data.categoryId || null,
+      primary_contact: data.primaryContact?.trim() || null,
+      phone: data.phone?.trim() || null,
+      email: data.email?.trim() || null,
+      website: data.website?.trim() || null,
+      specialty_notes: data.specialtyNotes?.trim() || null,
+      reason: formattedReason,
+      agent_name: data.agentName.trim(),
+      agent_email: cleanEmail,
+      user_id: matchedProfile?.id || null,
+    };
+
     const { data: request, error } = await sb
       .from("vendor_requests")
-      .insert({
-        request_type: data.requestType,
-        status: "pending",
-        vendor_id: data.vendorId || null,
-        vendor_name: data.vendorName.trim(),
-        region: data.region || "st_robert_rolla",
-        category_id: data.categoryId || null,
-        primary_contact: data.primaryContact?.trim() || null,
-        phone: data.phone?.trim() || null,
-        email: data.email?.trim() || null,
-        website: data.website?.trim() || null,
-        specialty_notes: data.specialtyNotes?.trim() || null,
-        reason: data.reason.trim(),
-        agent_name: data.agentName.trim(),
-        agent_email: cleanEmail,
-        user_id: matchedProfile?.id || null,
-      })
+      .insert(insertPayload)
       .select()
       .single();
 

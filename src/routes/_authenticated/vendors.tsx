@@ -690,11 +690,41 @@ export function AdminVendorsPage() {
                       </div>
 
                       <div className="space-y-2 bg-card p-3 rounded-lg border border-border flex flex-col justify-between">
-                        <div>
-                          <div className="font-semibold text-rose-400">Agent Reason / Feedback:</div>
-                          <p className="text-xs text-foreground mt-1 whitespace-pre-wrap leading-relaxed">
-                            "{req.reason}"
-                          </p>
+                        <div className="space-y-2.5">
+                          {(() => {
+                            const coreValuesMarker = "[Core Values Represented]:";
+                            const hasCoreValues = req.reason.includes(coreValuesMarker);
+                            let mainReason = req.reason;
+                            let coreValuesText = "";
+
+                            if (hasCoreValues) {
+                              const parts = req.reason.split(coreValuesMarker);
+                              mainReason = parts[0]?.trim() || "";
+                              coreValuesText = parts[1]?.trim() || "";
+                            }
+
+                            return (
+                              <>
+                                {coreValuesText && (
+                                  <div className="bg-gold/10 border border-gold/30 rounded-md p-2.5 space-y-1">
+                                    <div className="text-[11px] font-bold text-gold uppercase tracking-wider flex items-center gap-1.5">
+                                      <Star className="h-3 w-3 fill-gold" />
+                                      Core Values Represented
+                                    </div>
+                                    <p className="text-xs font-medium text-white">
+                                      {coreValuesText}
+                                    </p>
+                                  </div>
+                                )}
+                                <div>
+                                  <div className="font-semibold text-muted-foreground">Agent Recommendation / Reason:</div>
+                                  <p className="text-xs text-foreground mt-1 whitespace-pre-wrap leading-relaxed">
+                                    "{mainReason}"
+                                  </p>
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
 
                         <div className="flex items-center justify-end gap-2 pt-3 border-t border-border mt-3">

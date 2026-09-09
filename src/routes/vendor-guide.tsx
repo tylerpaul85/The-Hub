@@ -224,6 +224,7 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
   const [recWebsite, setRecWebsite] = useState("");
   const [recNotes, setRecNotes] = useState("");
   const [recReason, setRecReason] = useState("");
+  const [recCoreValues, setRecCoreValues] = useState("");
   const [recAgentName, setRecAgentName] = useState("");
   const [recAgentEmail, setRecAgentEmail] = useState("");
 
@@ -652,6 +653,56 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
               />
             </div>
 
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                <Star className="h-3.5 w-3.5 text-gold fill-gold" />
+                What core values do they represent? *
+              </label>
+              <div className="flex flex-wrap gap-1.5 pb-0.5">
+                {[
+                  "Extreme Ownership",
+                  "Client-First Service",
+                  "Excellence & Quality",
+                  "Integrity & Honesty",
+                  "Clear Communication",
+                  "Reliability & Punctuality",
+                  "Problem Solver",
+                ].map((val) => {
+                  const isSelected = recCoreValues.includes(val);
+                  return (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => {
+                        if (isSelected) {
+                          const parts = recCoreValues.split(", ").filter((x) => x.trim() && x.trim() !== val);
+                          setRecCoreValues(parts.join(", "));
+                        } else {
+                          const parts = recCoreValues ? recCoreValues.split(", ").filter(Boolean) : [];
+                          parts.push(val);
+                          setRecCoreValues(parts.join(", "));
+                        }
+                      }}
+                      className={cn(
+                        "text-[11px] px-2 py-0.5 rounded-md border transition-all",
+                        isSelected
+                          ? "bg-gold text-navy font-semibold border-gold shadow-sm"
+                          : "bg-muted/40 border-border text-muted-foreground hover:text-foreground hover:border-gold/50"
+                      )}
+                    >
+                      + {val}
+                    </button>
+                  );
+                })}
+              </div>
+              <Textarea
+                value={recCoreValues}
+                onChange={(e) => setRecCoreValues(e.target.value)}
+                placeholder="Select values above or describe how they embody our core values (e.g. Extreme Ownership, Client-First, Integrity)..."
+                className="text-xs h-14"
+              />
+            </div>
+
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">
                 Why do you recommend them? *
@@ -660,7 +711,7 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
                 value={recReason}
                 onChange={(e) => setRecReason(e.target.value)}
                 placeholder="e.g. Used them for 3 client transactions, always on time, very fair pricing."
-                className="text-xs h-16"
+                className="text-xs h-14"
               />
             </div>
 
@@ -701,6 +752,7 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
               onClick={() => {
                 if (!recName.trim()) return toast.error("Please enter a vendor name");
                 if (!recPhone.trim()) return toast.error("Please enter a phone number");
+                if (!recCoreValues.trim()) return toast.error("Please answer what core values this vendor represents");
                 if (!recReason.trim()) return toast.error("Please state why you recommend them");
                 if (!recAgentName.trim() || !recAgentEmail.trim()) {
                   return toast.error("Please enter your name and email");
@@ -716,6 +768,7 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
                   email: recEmail.trim() || null,
                   website: recWebsite.trim() || null,
                   specialtyNotes: recNotes.trim() || null,
+                  coreValues: recCoreValues.trim(),
                   reason: recReason.trim(),
                   agentName: recAgentName.trim(),
                   agentEmail: recAgentEmail.trim().toLowerCase(),
