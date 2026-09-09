@@ -31,6 +31,7 @@ import { Route as AuthenticatedExperimentsRouteImport } from './routes/_authenti
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
 import { Route as AuthenticatedListingsRouteImport } from './routes/_authenticated/listings'
 import { Route as AuthenticatedMyAvailabilityRouteImport } from './routes/_authenticated/my-availability'
+import { Route as AuthenticatedOpenHousesRouteImport } from './routes/_authenticated/open-houses'
 import { Route as AuthenticatedProcessesRouteImport } from './routes/_authenticated/processes'
 import { Route as AuthenticatedRequestsRouteImport } from './routes/_authenticated/requests'
 import { Route as AuthenticatedSignaturesRouteImport } from './routes/_authenticated/signatures'
@@ -43,6 +44,7 @@ import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedVideosArchiveRouteImport } from './routes/_authenticated/videos-archive'
 import { Route as AgentsIndexRouteImport } from './routes/agents.index'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as OpenHouseSigninIdRouteImport } from './routes/open-house-signin.$id'
 import { Route as AuthenticatedAdminAssistantRouteImport } from './routes/_authenticated/admin.assistant'
 import { Route as AuthenticatedAdminSwagCreditsRouteImport } from './routes/_authenticated/admin.swag-credits'
 import { Route as AuthenticatedEosIssuesRouteImport } from './routes/_authenticated/eos.issues'
@@ -173,6 +175,11 @@ const AuthenticatedMyAvailabilityRoute =
     path: '/my-availability',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOpenHousesRoute = AuthenticatedOpenHousesRouteImport.update({
+  id: '/open-houses',
+  path: '/open-houses',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedProcessesRoute = AuthenticatedProcessesRouteImport.update({
   id: '/processes',
   path: '/processes',
@@ -234,6 +241,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/callback',
   path: '/callback',
   getParentRoute: () => AuthRoute,
+} as any)
+const OpenHouseSigninIdRoute = OpenHouseSigninIdRouteImport.update({
+  id: '/open-house-signin/$id',
+  path: '/open-house-signin/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminAssistantRoute =
   AuthenticatedAdminAssistantRouteImport.update({
@@ -349,6 +361,7 @@ export interface FileRoutesByFullPath {
   '/inventory': typeof AuthenticatedInventoryRoute
   '/listings': typeof AuthenticatedListingsRouteWithChildren
   '/my-availability': typeof AuthenticatedMyAvailabilityRoute
+  '/open-houses': typeof AuthenticatedOpenHousesRoute
   '/processes': typeof AuthenticatedProcessesRoute
   '/requests': typeof AuthenticatedRequestsRoute
   '/signatures': typeof AuthenticatedSignaturesRoute
@@ -360,6 +373,7 @@ export interface FileRoutesByFullPath {
   '/videos': typeof AuthenticatedVideosRoute
   '/videos-archive': typeof AuthenticatedVideosArchiveRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/open-house-signin/$id': typeof OpenHouseSigninIdRoute
   '/agents/': typeof AgentsIndexRoute
   '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
@@ -397,6 +411,7 @@ export interface FileRoutesByTo {
   '/duty-calendar': typeof AuthenticatedDutyCalendarRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/my-availability': typeof AuthenticatedMyAvailabilityRoute
+  '/open-houses': typeof AuthenticatedOpenHousesRoute
   '/processes': typeof AuthenticatedProcessesRoute
   '/requests': typeof AuthenticatedRequestsRoute
   '/signatures': typeof AuthenticatedSignaturesRoute
@@ -408,6 +423,7 @@ export interface FileRoutesByTo {
   '/videos': typeof AuthenticatedVideosRoute
   '/videos-archive': typeof AuthenticatedVideosArchiveRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/open-house-signin/$id': typeof OpenHouseSigninIdRoute
   '/agents': typeof AgentsIndexRoute
   '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
@@ -449,6 +465,7 @@ export interface FileRoutesById {
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
   '/_authenticated/listings': typeof AuthenticatedListingsRouteWithChildren
   '/_authenticated/my-availability': typeof AuthenticatedMyAvailabilityRoute
+  '/_authenticated/open-houses': typeof AuthenticatedOpenHousesRoute
   '/_authenticated/processes': typeof AuthenticatedProcessesRoute
   '/_authenticated/requests': typeof AuthenticatedRequestsRoute
   '/_authenticated/signatures': typeof AuthenticatedSignaturesRoute
@@ -460,6 +477,7 @@ export interface FileRoutesById {
   '/_authenticated/videos': typeof AuthenticatedVideosRoute
   '/_authenticated/videos-archive': typeof AuthenticatedVideosArchiveRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/open-house-signin/$id': typeof OpenHouseSigninIdRoute
   '/agents/': typeof AgentsIndexRoute
   '/_authenticated/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/_authenticated/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
@@ -502,6 +520,7 @@ export interface FileRouteTypes {
     | '/inventory'
     | '/listings'
     | '/my-availability'
+    | '/open-houses'
     | '/processes'
     | '/requests'
     | '/signatures'
@@ -513,6 +532,7 @@ export interface FileRouteTypes {
     | '/videos'
     | '/videos-archive'
     | '/auth/callback'
+    | '/open-house-signin/$id'
     | '/agents/'
     | '/admin/assistant'
     | '/admin/swag-credits'
@@ -550,6 +570,7 @@ export interface FileRouteTypes {
     | '/duty-calendar'
     | '/inventory'
     | '/my-availability'
+    | '/open-houses'
     | '/processes'
     | '/requests'
     | '/signatures'
@@ -561,6 +582,7 @@ export interface FileRouteTypes {
     | '/videos'
     | '/videos-archive'
     | '/auth/callback'
+    | '/open-house-signin/$id'
     | '/agents'
     | '/admin/assistant'
     | '/admin/swag-credits'
@@ -601,6 +623,7 @@ export interface FileRouteTypes {
     | '/_authenticated/inventory'
     | '/_authenticated/listings'
     | '/_authenticated/my-availability'
+    | '/_authenticated/open-houses'
     | '/_authenticated/processes'
     | '/_authenticated/requests'
     | '/_authenticated/signatures'
@@ -612,6 +635,7 @@ export interface FileRouteTypes {
     | '/_authenticated/videos'
     | '/_authenticated/videos-archive'
     | '/auth/callback'
+    | '/open-house-signin/$id'
     | '/agents/'
     | '/_authenticated/admin/assistant'
     | '/_authenticated/admin/swag-credits'
@@ -643,6 +667,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SellerNetProceedsRoute: typeof SellerNetProceedsRoute
   VendorGuideRoute: typeof VendorGuideRoute
+  OpenHouseSigninIdRoute: typeof OpenHouseSigninIdRoute
   ApiPublicHooksScorecardRemindersRoute: typeof ApiPublicHooksScorecardRemindersRoute
   ApiPublicWebhooksInstantdecoRoute: typeof ApiPublicWebhooksInstantdecoRoute
 }
@@ -803,6 +828,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMyAvailabilityRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/open-houses': {
+      id: '/_authenticated/open-houses'
+      path: '/open-houses'
+      fullPath: '/open-houses'
+      preLoaderRoute: typeof AuthenticatedOpenHousesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/processes': {
       id: '/_authenticated/processes'
       path: '/processes'
@@ -886,6 +918,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/open-house-signin/$id': {
+      id: '/open-house-signin/$id'
+      path: '/open-house-signin/$id'
+      fullPath: '/open-house-signin/$id'
+      preLoaderRoute: typeof OpenHouseSigninIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/assistant': {
       id: '/_authenticated/admin/assistant'
@@ -1065,6 +1104,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
   AuthenticatedListingsRoute: typeof AuthenticatedListingsRouteWithChildren
   AuthenticatedMyAvailabilityRoute: typeof AuthenticatedMyAvailabilityRoute
+  AuthenticatedOpenHousesRoute: typeof AuthenticatedOpenHousesRoute
   AuthenticatedProcessesRoute: typeof AuthenticatedProcessesRoute
   AuthenticatedRequestsRoute: typeof AuthenticatedRequestsRoute
   AuthenticatedSignaturesRoute: typeof AuthenticatedSignaturesRoute
@@ -1095,6 +1135,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
   AuthenticatedListingsRoute: AuthenticatedListingsRouteWithChildren,
   AuthenticatedMyAvailabilityRoute: AuthenticatedMyAvailabilityRoute,
+  AuthenticatedOpenHousesRoute: AuthenticatedOpenHousesRoute,
   AuthenticatedProcessesRoute: AuthenticatedProcessesRoute,
   AuthenticatedRequestsRoute: AuthenticatedRequestsRoute,
   AuthenticatedSignaturesRoute: AuthenticatedSignaturesRoute,
@@ -1149,6 +1190,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SellerNetProceedsRoute: SellerNetProceedsRoute,
   VendorGuideRoute: VendorGuideRoute,
+  OpenHouseSigninIdRoute: OpenHouseSigninIdRoute,
   ApiPublicHooksScorecardRemindersRoute: ApiPublicHooksScorecardRemindersRoute,
   ApiPublicWebhooksInstantdecoRoute: ApiPublicWebhooksInstantdecoRoute,
 }

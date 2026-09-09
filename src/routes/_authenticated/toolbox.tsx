@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { cloneListingAssetsToOpenHouse } from "@/lib/open-houses.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -1559,9 +1561,11 @@ function OpenHousesTab({
   userId: string | null;
 }) {
   const qc = useQueryClient();
+  const cloneAssets = useServerFn(cloneListingAssetsToOpenHouse);
   const [creating, setCreating] = useState(false);
   const [view, setView] = useState<"active" | "archived">("active");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedListingId, setSelectedListingId] = useState<string>("none");
   const [form, setForm] = useState({
     address: "",
     agent_name: "",
@@ -1581,6 +1585,34 @@ function OpenHousesTab({
       return data as OpenHouse[];
     },
   });
+
+  // Active listings to select from
+  const { data: activeListings = [] } = useQuery<{ id: string; address: string; agent_name: string | null; description: string | null }[]>({
+    queryKey: ["active-listings-for-oh"],
+    enabled: creating,
+    queryFn: async () => {
+      const { data } = await sb
+        .from("toolbox_listings")
+        .select("id, address, agent_name, description")
+        .eq("archived", false)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+
+  const handleListingSelect = (listingId: string) => {
+    setSelectedListingId(listingId);
+    if (listingId === "none") return;
+    const l = activeListings.find((x) => x.id === listingId);
+    if (l) {
+      setForm((prev) => ({
+        ...prev,
+        address: l.address || prev.address,
+        agent_name: l.agent_name || prev.agent_name,
+        description: l.description || prev.description,
+      }));
+    }
+  };
 
   const items = allOpenHouses
     .filter((l) => (view === "archived" ? l.archived : !l.archived))
@@ -1638,6 +1670,7 @@ function OpenHousesTab({
         .insert({
           address: form.address.trim(),
           agent_name: form.agent_name.trim() || null,
+          listing_id: selectedListingId !== "none" ? selectedListingId : null,
           status: form.status,
           open_house_at: form.open_house_at ? new Date(form.open_house_at).toISOString() : null,
           description: form.description.trim() || null,
@@ -1646,11 +1679,42 @@ function OpenHousesTab({
         .select("id")
         .single();
       if (error) throw error;
-      return data.id as string;
+      const ohId = data.id as string;
+
+      // Auto-clone listing assets if listing was selected
+      if (selectedListingId && selectedListingId !== "none") {
+        try {
+          await cloneAssets({ data: { listingId: selectedListingId, openHouseId: ohId } });
+        } catch (e) {
+          console.error("Asset clone warning:", e);
+        }
+      }
+
+      // Seed default checklist items
+      const { data: templates } = await sb
+        .from("open_house_checklist_templates")
+        .select("*")
+        .order("phase_order", { ascending: true })
+        .order("task_order", { ascending: true });
+
+      if (templates && templates.length > 0) {
+        const items = templates.map((t: any) => ({
+          open_house_id: ohId,
+          phase: t.phase,
+          phase_order: t.phase_order,
+          task_text: t.task_text,
+          task_order: t.task_order,
+          completed: false,
+        }));
+        await sb.from("open_house_checklist_items").insert(items);
+      }
+
+      return ohId;
     },
     onSuccess: (id) => {
-      toast.success("Open house created");
+      toast.success("Open house created & marketing assets initialized");
       setCreating(false);
+      setSelectedListingId("none");
       setForm({
         address: "",
         agent_name: "",
@@ -1848,6 +1912,23 @@ function OpenHousesTab({
             <DialogTitle>New Open House</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
+            <div className="space-y-1 bg-muted/40 p-2.5 rounded-lg border border-border">
+              <Label className="text-xs font-semibold text-foreground">Select from Existing Listing (Auto-Attaches Materials)</Label>
+              <Select value={selectedListingId} onValueChange={handleListingSelect}>
+                <SelectTrigger className="text-xs bg-card">
+                  <SelectValue placeholder="Choose a listing..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">-- Enter Manually --</SelectItem>
+                  {activeListings.map((l) => (
+                    <SelectItem key={l.id} value={l.id}>
+                      {l.address} {l.agent_name ? `(${l.agent_name})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div>
               <Label>Property Address</Label>
               <Input

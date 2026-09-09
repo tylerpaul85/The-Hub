@@ -40,6 +40,7 @@ import {
   Loader2,
   Package,
   User,
+  QrCode,
 } from "lucide-react";
 
 export const Route = createFileRoute("/agent-toolbox")({
@@ -1004,14 +1005,33 @@ function OpenHouseView({ token, id, onBack }: { token: string; id: string; onBac
         {openHouse.description && (
           <p className="text-sm text-muted-foreground mt-2">{openHouse.description}</p>
         )}
-        {(() => {
-          const ohPhotos = assets.filter((a: any) => isImageUrl(a.file_url));
-          return ohPhotos.length > 0 ? (
-            <div className="mt-3">
+        <div className="flex flex-wrap items-center gap-2 mt-3">
+          <Button
+            asChild
+            size="sm"
+            className="bg-gold text-navy hover:bg-gold/90 font-semibold text-xs h-8"
+          >
+            <a href={`/open-house-signin/${openHouse.id}`} target="_blank" rel="noreferrer">
+              <QrCode className="h-3.5 w-3.5 mr-1.5" /> Visitor Sign-In Page
+            </a>
+          </Button>
+          <Button
+            asChild
+            size="sm"
+            variant="outline"
+            className="text-xs h-8"
+          >
+            <a href={`/open-houses?id=${openHouse.id}`} target="_blank" rel="noreferrer">
+              <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> Open Management Hub
+            </a>
+          </Button>
+          {(() => {
+            const ohPhotos = assets.filter((a: any) => isImageUrl(a.file_url));
+            return ohPhotos.length > 0 ? (
               <DownloadPhotosButton photos={ohPhotos} address={openHouse.address} />
-            </div>
-          ) : null;
-        })()}
+            ) : null;
+          })()}
+        </div>
       </div>
 
       {OH_CATEGORIES.map((cat) => {
