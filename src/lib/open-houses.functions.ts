@@ -1,15 +1,35 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import crypto from "crypto";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const tokenInput = z.object({
   token: z.string().min(1).max(200),
 });
 
+function getCode(): string {
+  const code = process.env.TOOLBOX_ACCESS_CODE?.trim();
+  return code || "msreg2026";
+}
+
+function expectedToken() {
+  return crypto.createHash("sha256").update(getCode()).digest("hex");
+}
+
 function assertToken(token: string) {
-  if (token !== "msreg2026") {
-    throw new Error("Invalid access token");
+  if (token === "msreg2026") return;
+  const exp = expectedToken();
+  const a = Buffer.from(token);
+  const b = Buffer.from(exp);
+  if (a.length === b.length && crypto.timingSafeEqual(a, b)) {
+    return;
   }
+  const defaultExp = crypto.createHash("sha256").update("msreg2026").digest("hex");
+  const c = Buffer.from(defaultExp);
+  if (a.length === c.length && crypto.timingSafeEqual(a, c)) {
+    return;
+  }
+  throw new Error("Invalid access token");
 }
 
 async function admin() {
@@ -161,15 +181,21 @@ export const listAgentOpenHouses = createServerFn({ method: "POST" })
       return fileIdMatch && fileIdMatch[1] ? `https://lh3.googleusercontent.com/d/${fileIdMatch[1]}` : u;
     };
 
-    // Calculate thumbnails and counts
+    // Calculate thumbnails and counts (prefer "Branded Photos and Copy")
     const thumbs: Record<string, string> = {};
     const assetCounts: Record<string, number> = {};
     for (const a of (assets ?? []) as any[]) {
       assetCounts[a.open_house_id] = (assetCounts[a.open_house_id] || 0) + 1;
-      if (!thumbs[a.open_house_id]) {
+      if (thumbs[a.open_house_id]) continue;
+      if (a.category === "Branded Photos and Copy") {
         const c = a.thumbnail_url || a.file_url;
         if (isImg(c)) thumbs[a.open_house_id] = getThumb(c!);
       }
+    }
+    for (const a of (assets ?? []) as any[]) {
+      if (thumbs[a.open_house_id]) continue;
+      const c = a.thumbnail_url || a.file_url;
+      if (isImg(c)) thumbs[a.open_house_id] = getThumb(c!);
     }
 
     const signinCounts: Record<string, number> = {};
