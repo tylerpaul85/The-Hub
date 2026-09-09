@@ -25,6 +25,7 @@ import {
   Calculator,
   Menu,
   Sparkles,
+  Store,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -52,6 +53,7 @@ const OPS_NAV = [
   { to: "/tasks", label: "Projects & Tasks", icon: ClipboardCheck, adminOnly: false },
   { to: "/duty-calendar", label: "Duty Calendar", icon: CalendarDays, adminOnly: false },
   { to: "/inventory", label: "Closing Gift Inventory", icon: Boxes, adminOnly: false },
+  { to: "/vendors", label: "Vendor Guide", icon: Store, adminOnly: false },
 ] as const;
 
 const TEAM_NAV = [

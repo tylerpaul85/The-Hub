@@ -19,6 +19,7 @@ import { Route as ClosingGiftRouteImport } from './routes/closing-gift'
 import { Route as RequestRouteImport } from './routes/request'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SellerNetProceedsRouteImport } from './routes/seller-net-proceeds'
+import { Route as VendorGuideRouteImport } from './routes/vendor-guide'
 import { Route as AuthenticatedAdminNetSheetsRouteImport } from './routes/_authenticated/admin-net-sheets'
 import { Route as AuthenticatedArchiveRouteImport } from './routes/_authenticated/archive'
 import { Route as AuthenticatedAuditLogRouteImport } from './routes/_authenticated/audit-log'
@@ -37,6 +38,7 @@ import { Route as AuthenticatedSpecialEventsRouteImport } from './routes/_authen
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedToolboxRouteImport } from './routes/_authenticated/toolbox'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
+import { Route as AuthenticatedVendorsRouteImport } from './routes/_authenticated/vendors'
 import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated/videos'
 import { Route as AuthenticatedVideosArchiveRouteImport } from './routes/_authenticated/videos-archive'
 import { Route as AgentsIndexRouteImport } from './routes/agents.index'
@@ -105,6 +107,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const SellerNetProceedsRoute = SellerNetProceedsRouteImport.update({
   id: '/seller-net-proceeds',
   path: '/seller-net-proceeds',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorGuideRoute = VendorGuideRouteImport.update({
+  id: '/vendor-guide',
+  path: '/vendor-guide',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminNetSheetsRoute =
@@ -200,6 +207,11 @@ const AuthenticatedToolboxRoute = AuthenticatedToolboxRouteImport.update({
 const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedVendorsRoute = AuthenticatedVendorsRouteImport.update({
+  id: '/vendors',
+  path: '/vendors',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedVideosRoute = AuthenticatedVideosRouteImport.update({
@@ -325,6 +337,7 @@ export interface FileRoutesByFullPath {
   '/request': typeof RequestRoute
   '/reset-password': typeof ResetPasswordRoute
   '/seller-net-proceeds': typeof SellerNetProceedsRoute
+  '/vendor-guide': typeof VendorGuideRoute
   '/admin-net-sheets': typeof AuthenticatedAdminNetSheetsRoute
   '/archive': typeof AuthenticatedArchiveRoute
   '/audit-log': typeof AuthenticatedAuditLogRoute
@@ -343,6 +356,7 @@ export interface FileRoutesByFullPath {
   '/tasks': typeof AuthenticatedTasksRoute
   '/toolbox': typeof AuthenticatedToolboxRoute
   '/users': typeof AuthenticatedUsersRoute
+  '/vendors': typeof AuthenticatedVendorsRoute
   '/videos': typeof AuthenticatedVideosRoute
   '/videos-archive': typeof AuthenticatedVideosArchiveRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -373,6 +387,7 @@ export interface FileRoutesByTo {
   '/request': typeof RequestRoute
   '/reset-password': typeof ResetPasswordRoute
   '/seller-net-proceeds': typeof SellerNetProceedsRoute
+  '/vendor-guide': typeof VendorGuideRoute
   '/admin-net-sheets': typeof AuthenticatedAdminNetSheetsRoute
   '/archive': typeof AuthenticatedArchiveRoute
   '/audit-log': typeof AuthenticatedAuditLogRoute
@@ -389,6 +404,7 @@ export interface FileRoutesByTo {
   '/tasks': typeof AuthenticatedTasksRoute
   '/toolbox': typeof AuthenticatedToolboxRoute
   '/users': typeof AuthenticatedUsersRoute
+  '/vendors': typeof AuthenticatedVendorsRoute
   '/videos': typeof AuthenticatedVideosRoute
   '/videos-archive': typeof AuthenticatedVideosArchiveRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -421,6 +437,7 @@ export interface FileRoutesById {
   '/request': typeof RequestRoute
   '/reset-password': typeof ResetPasswordRoute
   '/seller-net-proceeds': typeof SellerNetProceedsRoute
+  '/vendor-guide': typeof VendorGuideRoute
   '/_authenticated/admin-net-sheets': typeof AuthenticatedAdminNetSheetsRoute
   '/_authenticated/archive': typeof AuthenticatedArchiveRoute
   '/_authenticated/audit-log': typeof AuthenticatedAuditLogRoute
@@ -439,6 +456,7 @@ export interface FileRoutesById {
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/toolbox': typeof AuthenticatedToolboxRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
+  '/_authenticated/vendors': typeof AuthenticatedVendorsRoute
   '/_authenticated/videos': typeof AuthenticatedVideosRoute
   '/_authenticated/videos-archive': typeof AuthenticatedVideosArchiveRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -472,6 +490,7 @@ export interface FileRouteTypes {
     | '/request'
     | '/reset-password'
     | '/seller-net-proceeds'
+    | '/vendor-guide'
     | '/admin-net-sheets'
     | '/archive'
     | '/audit-log'
@@ -490,6 +509,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/toolbox'
     | '/users'
+    | '/vendors'
     | '/videos'
     | '/videos-archive'
     | '/auth/callback'
@@ -520,6 +540,7 @@ export interface FileRouteTypes {
     | '/request'
     | '/reset-password'
     | '/seller-net-proceeds'
+    | '/vendor-guide'
     | '/admin-net-sheets'
     | '/archive'
     | '/audit-log'
@@ -536,6 +557,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/toolbox'
     | '/users'
+    | '/vendors'
     | '/videos'
     | '/videos-archive'
     | '/auth/callback'
@@ -567,6 +589,7 @@ export interface FileRouteTypes {
     | '/request'
     | '/reset-password'
     | '/seller-net-proceeds'
+    | '/vendor-guide'
     | '/_authenticated/admin-net-sheets'
     | '/_authenticated/archive'
     | '/_authenticated/audit-log'
@@ -585,6 +608,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tasks'
     | '/_authenticated/toolbox'
     | '/_authenticated/users'
+    | '/_authenticated/vendors'
     | '/_authenticated/videos'
     | '/_authenticated/videos-archive'
     | '/auth/callback'
@@ -618,6 +642,7 @@ export interface RootRouteChildren {
   RequestRoute: typeof RequestRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SellerNetProceedsRoute: typeof SellerNetProceedsRoute
+  VendorGuideRoute: typeof VendorGuideRoute
   ApiPublicHooksScorecardRemindersRoute: typeof ApiPublicHooksScorecardRemindersRoute
   ApiPublicWebhooksInstantdecoRoute: typeof ApiPublicWebhooksInstantdecoRoute
 }
@@ -692,6 +717,13 @@ declare module '@tanstack/react-router' {
       path: '/seller-net-proceeds'
       fullPath: '/seller-net-proceeds'
       preLoaderRoute: typeof SellerNetProceedsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendor-guide': {
+      id: '/vendor-guide'
+      path: '/vendor-guide'
+      fullPath: '/vendor-guide'
+      preLoaderRoute: typeof VendorGuideRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin-net-sheets': {
@@ -818,6 +850,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof AuthenticatedUsersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/vendors': {
+      id: '/_authenticated/vendors'
+      path: '/vendors'
+      fullPath: '/vendors'
+      preLoaderRoute: typeof AuthenticatedVendorsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/videos': {
@@ -1033,6 +1072,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedToolboxRoute: typeof AuthenticatedToolboxRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
+  AuthenticatedVendorsRoute: typeof AuthenticatedVendorsRoute
   AuthenticatedVideosRoute: typeof AuthenticatedVideosRoute
   AuthenticatedVideosArchiveRoute: typeof AuthenticatedVideosArchiveRoute
   AuthenticatedAdminAssistantRoute: typeof AuthenticatedAdminAssistantRoute
@@ -1062,6 +1102,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedToolboxRoute: AuthenticatedToolboxRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
+  AuthenticatedVendorsRoute: AuthenticatedVendorsRoute,
   AuthenticatedVideosRoute: AuthenticatedVideosRoute,
   AuthenticatedVideosArchiveRoute: AuthenticatedVideosArchiveRoute,
   AuthenticatedAdminAssistantRoute: AuthenticatedAdminAssistantRoute,
@@ -1107,6 +1148,7 @@ const rootRouteChildren: RootRouteChildren = {
   RequestRoute: RequestRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SellerNetProceedsRoute: SellerNetProceedsRoute,
+  VendorGuideRoute: VendorGuideRoute,
   ApiPublicHooksScorecardRemindersRoute: ApiPublicHooksScorecardRemindersRoute,
   ApiPublicWebhooksInstantdecoRoute: ApiPublicWebhooksInstantdecoRoute,
 }

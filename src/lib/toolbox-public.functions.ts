@@ -558,3 +558,111 @@ export const createPublicSpecialEventGroup = createServerFn({ method: "POST" })
     return { ok: true, group };
   });
 
+/* -------- Public Vendor Directory -------- */
+
+export const listPublicVendors = createServerFn({ method: "POST" })
+  .inputValidator(tokenInput)
+  .handler(async ({ data }) => {
+    assertToken(data.token);
+    const sb = await admin();
+
+    const [
+      { data: categories, error: cErr },
+      { data: vendors, error: vErr },
+    ] = await Promise.all([
+      sb
+        .from("vendor_categories")
+        .select("*")
+        .order("sort_order", { ascending: true })
+        .order("name", { ascending: true }),
+      sb
+        .from("vendors")
+        .select("*, category:vendor_categories(*)")
+        .eq("status", "active")
+        .order("name", { ascending: true }),
+    ]);
+
+    if (cErr) throw cErr;
+    if (vErr) throw vErr;
+
+    return {
+      categories: categories ?? [],
+      vendors: vendors ?? [],
+    };
+  });
+
+export const submitPublicVendorRequest = createServerFn({ method: "POST" })
+  .inputValidator((d: {
+    token: string;
+    requestType: "add" | "remove" | "flag";
+    vendorId?: string | null;
+    vendorName: string;
+    region?: string | null;
+    categoryId?: string | null;
+    primaryContact?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    website?: string | null;
+    specialtyNotes?: string | null;
+    reason: string;
+    agentName: string;
+    agentEmail: string;
+  }) =>
+    z
+      .object({
+        token: z.string().min(1).max(200),
+        requestType: z.enum(["add", "remove", "flag"]),
+        vendorId: z.string().uuid().nullable().optional(),
+        vendorName: z.string().trim().min(1, "Vendor name is required").max(200),
+        region: z.string().trim().nullable().optional(),
+        categoryId: z.string().uuid().nullable().optional(),
+        primaryContact: z.string().trim().max(150).nullable().optional(),
+        phone: z.string().trim().max(50).nullable().optional(),
+        email: z.string().trim().email().nullable().optional().or(z.literal("")),
+        website: z.string().trim().max(255).nullable().optional().or(z.literal("")),
+        specialtyNotes: z.string().trim().max(2000).nullable().optional(),
+        reason: z.string().trim().min(1, "Reason is required").max(2000),
+        agentName: z.string().trim().min(1, "Your name is required").max(150),
+        agentEmail: z.string().trim().email("Valid email required").max(255),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    assertToken(data.token);
+    const sb = await admin();
+    const cleanEmail = data.agentEmail.trim().toLowerCase();
+
+    // Check if user has an auth profile
+    const { data: matchedProfile } = await sb
+      .from("profiles")
+      .select("id")
+      .ilike("email", cleanEmail)
+      .maybeSingle();
+
+    const { data: request, error } = await sb
+      .from("vendor_requests")
+      .insert({
+        request_type: data.requestType,
+        status: "pending",
+        vendor_id: data.vendorId || null,
+        vendor_name: data.vendorName.trim(),
+        region: data.region || "st_robert_rolla",
+        category_id: data.categoryId || null,
+        primary_contact: data.primaryContact?.trim() || null,
+        phone: data.phone?.trim() || null,
+        email: data.email?.trim() || null,
+        website: data.website?.trim() || null,
+        specialty_notes: data.specialtyNotes?.trim() || null,
+        reason: data.reason.trim(),
+        agent_name: data.agentName.trim(),
+        agent_email: cleanEmail,
+        user_id: matchedProfile?.id || null,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { ok: true, request };
+  });
+
+
