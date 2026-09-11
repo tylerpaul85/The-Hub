@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Send, Images, ChevronRight, Share, Plus, Gift, Signpost, Calculator, CalendarDays, Store, DoorOpen, ShoppingBag } from "lucide-react";
+import { Send, Images, ChevronRight, Share, Plus, Gift, Signpost, Calculator, CalendarDays, Store, DoorOpen, ShoppingBag, LogIn } from "lucide-react";
 import logo from "@/assets/msreg-logo.png";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/agents/")({
   component: AgentsHome,
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/agents/")({
 const IOS_TIP_KEY = "msreg-agent-hub-ios-tip-dismissed";
 
 function AgentsHome() {
+  const { user } = useAuth();
   const [showIosTip, setShowIosTip] = useState(false);
 
   useEffect(() => {
@@ -41,7 +43,17 @@ function AgentsHome() {
 
   return (
     <div className="min-h-screen bg-background px-4 py-8 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-3xl mx-auto relative">
+        <div className="flex justify-end mb-3 sm:mb-0 sm:absolute sm:top-0 sm:right-0 z-10">
+          <Link
+            to={user ? "/dashboard" : "/auth"}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-border/70 bg-card/60 hover:bg-card hover:border-gold/50 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-all shadow-sm group"
+          >
+            <LogIn className="h-3 w-3 text-muted-foreground group-hover:text-gold transition-colors" />
+            <span>{user ? "Internal Dashboard" : "Internal Login"}</span>
+          </Link>
+        </div>
+
         <header className="text-center mb-8 sm:mb-12">
           <img
             src={logo}

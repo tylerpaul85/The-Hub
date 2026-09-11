@@ -208,7 +208,7 @@ function ClosingGiftRequestPage() {
           </p>
           <div className="mt-8 flex justify-center gap-3">
             <Button asChild variant="outline">
-              <Link to="/">Back to Home</Link>
+              <Link to="/agents">Back to Home</Link>
             </Button>
             <Button
               className="bg-gold text-navy hover:bg-gold/90"
@@ -421,7 +421,7 @@ function ClosingGiftRequestPage() {
 
         <div className="flex items-center justify-between pt-4 border-t border-border">
           <Button asChild variant="ghost">
-            <Link to="/">
+            <Link to="/agents">
               <ChevronLeft className="h-4 w-4 mr-1" /> Cancel
             </Link>
           </Button>

@@ -1,11 +1,11 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Lock, Loader2 } from "lucide-react";
+import { Lock, Loader2, LogIn } from "lucide-react";
 import logo from "@/assets/msreg-logo.png";
 import { verifyToolboxCode } from "@/lib/toolbox-public.functions";
 
@@ -108,7 +108,17 @@ function Gate({ onUnlock }: { onUnlock: (token: string) => void }) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 pt-[max(1rem,env(safe-area-inset-top))]">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-8 relative pt-[max(1rem,env(safe-area-inset-top))]">
+      <div className="absolute top-4 right-4 pt-[max(0.5rem,env(safe-area-inset-top))] z-10">
+        <Link
+          to="/auth"
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-border/70 bg-card/60 hover:bg-card hover:border-gold/50 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-all shadow-sm group"
+        >
+          <LogIn className="h-3 w-3 text-muted-foreground group-hover:text-gold transition-colors" />
+          <span>Internal Login</span>
+        </Link>
+      </div>
+
       <Card className="w-full max-w-sm p-6 space-y-5 border-gold/20">
         <div className="flex flex-col items-center text-center gap-3">
           <img src={logo} alt="Matt Smith Real Estate Group" className="h-24 w-auto" />
