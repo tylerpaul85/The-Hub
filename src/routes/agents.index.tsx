@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Send, Images, ChevronRight, Share, Plus, Gift, Signpost, Calculator, CalendarDays, Store, DoorOpen } from "lucide-react";
+import { Send, Images, ChevronRight, Share, Plus, Gift, Signpost, Calculator, CalendarDays, Store, DoorOpen, ShoppingBag } from "lucide-react";
 import logo from "@/assets/msreg-logo.png";
 import { Button } from "@/components/ui/button";
 
@@ -9,7 +9,7 @@ export const Route = createFileRoute("/agents/")({
   head: () => ({
     meta: [
       { title: "MSREG Agent Hub" },
-      { name: "description", content: "Submit requests, manage open houses, view upcoming events, grab marketing materials, and access trusted local vendors." },
+      { name: "description", content: "Submit requests, manage open houses, view upcoming events, grab marketing materials, order swag, and access trusted local vendors." },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -101,6 +101,12 @@ function AgentsHome() {
             icon={<Signpost className="h-8 w-8" />}
             title="Listing Signs"
             subtitle="Check in or check out signs"
+          />
+          <HubCard
+            href="https://msregswag.com/"
+            icon={<ShoppingBag className="h-8 w-8" />}
+            title="Order Swag"
+            subtitle="Shop official MSREG gear, apparel, and team merchandise"
           />
         </div>
 
