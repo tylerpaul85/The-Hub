@@ -53,6 +53,8 @@ import {
   Paperclip,
   FileText,
   Download,
+  MailCheck,
+  Mail,
 } from "lucide-react";
 import { makeStorageKey } from "@/lib/sanitize-filename";
 import { cn } from "@/lib/utils";
@@ -139,6 +141,19 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
       if (error) throw error;
       return data ?? [];
     },
+  });
+
+  const { data: notificationLogs = [] } = useQuery({
+    queryKey: ["agent-notification-logs", itemId],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("agent_notification_logs")
+        .select("*")
+        .eq("content_item_id", itemId)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!itemId,
   });
 
   const { data: profiles = [] } = useQuery({
@@ -293,6 +308,7 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
     lastSavedRef.current = JSON.stringify(f);
     setSaveState("saved");
     qc.invalidateQueries({ queryKey: ["content-item", itemId] });
+    qc.invalidateQueries({ queryKey: ["agent-notification-logs", itemId] });
     qc.invalidateQueries({ queryKey: ["content-items"] });
     qc.invalidateQueries({ queryKey: ["content-items-list"] });
     qc.invalidateQueries({ queryKey: ["content-history", itemId] });
@@ -408,6 +424,11 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
       setRevisionNoteDraft(form.revision_note ?? "");
       setRevisionOpen(true);
       return;
+    }
+    if (v === "scheduled" || v === "published") {
+      toast.info(`Status set to ${STATUS_LABEL[v]}`, {
+        description: "Listing agent will be automatically notified via email once saved.",
+      });
     }
     setForm({ ...form, status: v });
   };
@@ -994,6 +1015,33 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                       ))}
                     </SelectContent>
                   </Select>
+
+                  {item?.agent_notified_at ? (
+                    <div className="mt-2 flex items-start gap-1.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 p-2 text-xs text-emerald-400">
+                      <MailCheck className="w-3.5 h-3.5 shrink-0 mt-0.5 text-emerald-400" />
+                      <div className="leading-tight">
+                        <div className="font-semibold text-emerald-300">Agent Notified</div>
+                        <div className="text-[10px] text-emerald-400/80">
+                          {notificationLogs[0]?.agent_name ? `${notificationLogs[0].agent_name}` : "Listing agent"} emailed {format(new Date(item.agent_notified_at), "MMM d, h:mm a")}
+                        </div>
+                      </div>
+                    </div>
+                  ) : notificationLogs[0]?.status === "failed" ? (
+                    <div className="mt-2 flex items-start gap-1.5 rounded-md bg-amber-500/10 border border-amber-500/25 p-2 text-xs text-amber-300">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-400" />
+                      <div className="leading-tight">
+                        <div className="font-semibold text-amber-200">Email Pending / Failed</div>
+                        <div className="text-[10px] text-amber-300/80 line-clamp-2">
+                          {notificationLogs[0].error_message || "Could not deliver email to agent"}
+                        </div>
+                      </div>
+                    </div>
+                  ) : form.status === "scheduled" || form.status === "published" ? (
+                    <div className="mt-2 flex items-center gap-1.5 rounded-md bg-sky-500/10 border border-sky-500/20 p-1.5 text-[11px] text-sky-300">
+                      <Mail className="w-3 h-3 shrink-0 text-sky-400" />
+                      <span>Agent will be emailed once saved</span>
+                    </div>
+                  ) : null}
                 </div>
                 <div>
                   <Label>Priority</Label>

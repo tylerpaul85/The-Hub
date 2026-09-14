@@ -460,7 +460,7 @@ Deno.serve(async (req: Request) => {
 
     const fromEmail =
       Deno.env.get("RESEND_FROM_EMAIL") ||
-      "MSREG Hub <notifications@mattsmithrealestategroup.com>";
+      "MSREG Hub <onboarding@resend.dev>";
 
     console.log(
       `[notify-agent-post] Sending Resend email to ${recipientEmail} for listing "${listing.address}" (${currentStatus})`

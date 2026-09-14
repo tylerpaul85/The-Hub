@@ -104,6 +104,7 @@ export interface ContentItem {
   meta_media_link: string | null;
   meta_copy: string | null;
   post_type: string;
+  agent_notified_at?: string | null;
 }
 
 export const HOURS = Array.from({ length: 19 }, (_, i) => i + 5); // 5..23 (5 AM to 11 PM)

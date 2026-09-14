@@ -21,6 +21,7 @@ import {
   User,
   Sparkles,
   Calendar as CalendarIcon,
+  MailCheck,
 } from "lucide-react";
 import {
   DndContext,
@@ -244,10 +245,15 @@ export function CalendarListView({
           .eq("calendar_entry_id", id);
       }
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: ["content-items"] });
       qc.invalidateQueries({ queryKey: ["content-items-list"] });
       qc.invalidateQueries({ queryKey: ["listing-posts"] });
+      if (variables.patch.status === "scheduled" || variables.patch.status === "published") {
+        toast.success(`Post marked as ${variables.patch.status}`, {
+          description: "Listing agent email notification dispatched.",
+        });
+      }
     },
     onError: (e: any) => toast.error(e.message ?? "Update failed"),
   });
@@ -624,28 +630,38 @@ export function CalendarListView({
                               </span>
                             )}
                           </div>
-                          <Select
-                            value={it.status}
-                            onValueChange={(v) =>
-                              updateField.mutate({ id: it.id, patch: { status: v } })
-                            }
-                          >
-                            <SelectTrigger
-                              className={cn(
-                                "h-7 text-[10px] border px-2 py-0 [&>svg]:h-3 [&>svg]:w-3",
-                                STATUS_CLASS[it.status as Status],
-                              )}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Select
+                              value={it.status}
+                              onValueChange={(v) =>
+                                updateField.mutate({ id: it.id, patch: { status: v } })
+                              }
                             >
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {STATUSES.map((s) => (
-                                <SelectItem key={s} value={s}>
-                                  {STATUS_LABEL[s]}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                              <SelectTrigger
+                                className={cn(
+                                  "h-7 text-[10px] border px-2 py-0 [&>svg]:h-3 [&>svg]:w-3",
+                                  STATUS_CLASS[it.status as Status],
+                                )}
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {STATUSES.map((s) => (
+                                  <SelectItem key={s} value={s}>
+                                    {STATUS_LABEL[s]}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {it.agent_notified_at && (
+                              <span
+                                title={`Listing agent emailed on ${format(new Date(it.agent_notified_at), "MMM d, h:mm a")}`}
+                                className="inline-flex items-center text-emerald-400 shrink-0"
+                              >
+                                <MailCheck className="h-3.5 w-3.5" />
+                              </span>
+                            )}
+                          </div>
                           <span className="text-xs text-muted-foreground">
                             {it.scheduled_at && !isNaN(new Date(it.scheduled_at).getTime())
                               ? format(new Date(it.scheduled_at), "h:mm a")
