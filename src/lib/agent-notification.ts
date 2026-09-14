@@ -313,7 +313,7 @@ export async function processPostNotification(
   const resendApiKey = process.env.RESEND_API_KEY;
   const fromEmail =
     process.env.RESEND_FROM_EMAIL ||
-    "MSREG Hub <onboarding@resend.dev>";
+    "MSREG Hub <notifications@msreginternal.com>";
 
   let resendId: string | null = null;
 
