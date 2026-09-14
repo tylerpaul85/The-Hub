@@ -458,9 +458,12 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const fromEmail =
+    let fromEmail =
       Deno.env.get("RESEND_FROM_EMAIL") ||
       "MSREG Hub <notifications@msreginternal.com>";
+    if (fromEmail.includes("mattsmithrealestategroup.com")) {
+      fromEmail = fromEmail.replace(/mattsmithrealestategroup\.com/g, "msreginternal.com");
+    }
 
     console.log(
       `[notify-agent-post] Sending Resend email to ${recipientEmail} for listing "${listing.address}" (${currentStatus})`

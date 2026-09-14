@@ -310,10 +310,12 @@ export async function processPostNotification(
     websiteLink: listing.website_link || item.link,
   });
 
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const fromEmail =
+  let fromEmail =
     process.env.RESEND_FROM_EMAIL ||
     "MSREG Hub <notifications@msreginternal.com>";
+  if (fromEmail.includes("mattsmithrealestategroup.com")) {
+    fromEmail = fromEmail.replace(/mattsmithrealestategroup\.com/g, "msreginternal.com");
+  }
 
   let resendId: string | null = null;
 
