@@ -1,0 +1,593 @@
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+interface WebhookPayload {
+  content_item_id?: string;
+  new_status?: string;
+  old_status?: string;
+  // Supabase Database Webhook format compatibility
+  type?: string;
+  table?: string;
+  record?: {
+    id: string;
+    status: string;
+    agent_notified_at?: string | null;
+    title?: string;
+  };
+  old_record?: {
+    status?: string;
+  };
+}
+
+interface Agent {
+  id: string;
+  name: string;
+  email: string | null;
+}
+
+// ─── Agent Name Resolution ───────────────────────────────────────────────────
+// Resolves listings.agent_name to toolbox_agents.email with nickname and initial normalization.
+function resolveAgent(
+  agentName: string | null | undefined,
+  agents: Agent[]
+): Agent | null {
+  if (!agentName) return null;
+  const target = agentName.trim().toLowerCase();
+
+  // 1. Exact match
+  const exact = agents.find((a) => a.name.trim().toLowerCase() === target);
+  if (exact) return exact;
+
+  // 2. Middle initials stripped (e.g., "Tasha D McBride" -> "Tasha McBride")
+  const stripInitials = (s: string) =>
+    s.replace(/\b[a-z]\b\.?/gi, "").replace(/\s+/g, " ").trim().toLowerCase();
+  const targetNoInitials = stripInitials(target);
+  const withoutInitialsMatch = agents.find(
+    (a) => stripInitials(a.name) === targetNoInitials
+  );
+  if (withoutInitialsMatch) return withoutInitialsMatch;
+
+  // 3. Known name pairs / nicknames
+  const nicknames: Record<string, string[]> = {
+    mike: ["michael"],
+    michael: ["mike"],
+    joe: ["joseph"],
+    joseph: ["joe"],
+    dan: ["daniel"],
+    daniel: ["dan"],
+    chris: ["christopher", "christina"],
+  };
+
+  const targetParts = target.split(/\s+/);
+  const targetFirst = targetParts[0];
+  const targetLast = targetParts[targetParts.length - 1];
+
+  for (const a of agents) {
+    const aParts = a.name.toLowerCase().trim().split(/\s+/);
+    const aFirst = aParts[0];
+    const aLast = aParts[aParts.length - 1];
+
+    if (aLast === targetLast) {
+      if (aFirst === targetFirst) return a;
+      if (
+        nicknames[targetFirst]?.includes(aFirst) ||
+        nicknames[aFirst]?.includes(targetFirst)
+      ) {
+        return a;
+      }
+    }
+  }
+
+  // 4. Token containment (e.g. "Luis Aparicio" within "Luis Padilla Aparicio")
+  const containsMatch = agents.find((a) => {
+    const aLower = a.name.toLowerCase();
+    return targetParts.every((part) => part.length > 1 && aLower.includes(part));
+  });
+  if (containsMatch) return containsMatch;
+
+  return null;
+}
+
+// ─── Email Template Generator ─────────────────────────────────────────────────
+function generateEmailHtml(opts: {
+  agentName: string;
+  address: string;
+  status: "scheduled" | "published";
+  scheduledAt?: string | null;
+  canvaLink?: string | null;
+  websiteLink?: string | null;
+}) {
+  const isScheduled = opts.status === "scheduled";
+  const badgeText = isScheduled ? "SCHEDULED" : "LIVE NOW";
+  const badgeBg = isScheduled ? "#0284c7" : "#059669";
+  const headline = isScheduled
+    ? "Your Listing Post Has Been Scheduled"
+    : "Your Listing Is Live on Social Media!";
+  const subtext = isScheduled
+    ? `A social media post for your listing at <strong>${opts.address}</strong> has been scheduled to post on social media.`
+    : `Great news! A social media post for your listing at <strong>${opts.address}</strong> just went live on social media.`;
+
+  const scheduledDateFormatted = opts.scheduledAt
+    ? new Date(opts.scheduledAt).toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short",
+      })
+    : "Upcoming on Content Calendar";
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${headline}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0f172a; padding: 40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 580px; background-color: #1e293b; border-radius: 12px; border: 1px solid #334155; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 32px 32px 24px; border-bottom: 1px solid #334155; background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);">
+              <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td>
+                    <span style="display: inline-block; padding: 4px 12px; border-radius: 9999px; background-color: ${badgeBg}; color: #ffffff; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;">
+                      ${badgeText}
+                    </span>
+                    <h1 style="margin: 16px 0 0; font-size: 22px; font-weight: 700; color: #f8fafc; line-height: 1.3;">
+                      ${headline}
+                    </h1>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Content Body -->
+          <tr>
+            <td style="padding: 32px;">
+              <p style="margin: 0 0 20px; font-size: 15px; line-height: 1.6; color: #cbd5e1;">
+                Hi ${opts.agentName},
+              </p>
+              <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.6; color: #cbd5e1;">
+                ${subtext}
+              </p>
+
+              <!-- Listing Details Box -->
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0f172a; border-radius: 8px; border: 1px solid #334155; margin-bottom: 28px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; margin-bottom: 6px;">
+                      Property Address
+                    </div>
+                    <div style="font-size: 17px; font-weight: 700; color: #f1f5f9; margin-bottom: 14px;">
+                      ${opts.address}
+                    </div>
+                    <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; margin-bottom: 4px;">
+                      ${isScheduled ? "Target Post Time" : "Status"}
+                    </div>
+                    <div style="font-size: 14px; color: #e2e8f0; font-weight: 500;">
+                      ${isScheduled ? scheduledDateFormatted : "Published to Social Media"}
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              ${
+                opts.websiteLink
+                  ? `<div style="margin-bottom: 20px;">
+                      <a href="${opts.websiteLink}" target="_blank" style="display: inline-block; background-color: #d97706; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600;">
+                        View Listing Page
+                      </a>
+                    </div>`
+                  : ""
+              }
+
+              <p style="margin: 28px 0 0; font-size: 13px; line-height: 1.5; color: #64748b;">
+                This is an automated notification from the MSREG Marketing Hub. If you have questions about this post, please contact the marketing team.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 20px 32px; background-color: #0f172a; border-top: 1px solid #334155; text-align: center;">
+              <p style="margin: 0; font-size: 12px; color: #64748b;">
+                © Matt Smith Real Estate Group · Marketing Hub
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+// ─── Main Handler ─────────────────────────────────────────────────────────────
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+      },
+    });
+  }
+
+  const resHeaders = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*",
+  };
+
+  try {
+    const supabaseUrl =
+      Deno.env.get("SUPABASE_URL") ||
+      Deno.env.get("VITE_SUPABASE_URL") ||
+      "";
+    const supabaseServiceKey =
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ||
+      Deno.env.get("SUPABASE_SECRET_KEY") ||
+      "";
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("[notify-agent-post] Missing Supabase environment credentials");
+      return new Response(
+        JSON.stringify({ error: "Server misconfiguration: missing Supabase credentials" }),
+        { status: 500, headers: resHeaders }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false },
+    });
+
+    // Parse body (supports custom trigger body or Supabase DB webhook)
+    const payload: WebhookPayload = await req.json().catch(() => ({}));
+    const contentItemId = payload.content_item_id || payload.record?.id;
+    const targetStatus = payload.new_status || payload.record?.status;
+    const oldStatus = payload.old_status || payload.old_record?.status;
+
+    if (!contentItemId) {
+      return new Response(
+        JSON.stringify({ error: "Missing content_item_id in payload" }),
+        { status: 400, headers: resHeaders }
+      );
+    }
+
+    console.log(
+      `[notify-agent-post] Processing content_item_id=${contentItemId}, targetStatus=${targetStatus}, oldStatus=${oldStatus}`
+    );
+
+    // 1. Fetch current content_item row
+    const { data: item, error: itemErr } = await supabase
+      .from("content_items")
+      .select("id, status, scheduled_at, agent_notified_at, title, canva_link, link")
+      .eq("id", contentItemId)
+      .maybeSingle();
+
+    if (itemErr) {
+      console.error("[notify-agent-post] Error querying content_items:", itemErr);
+      return new Response(
+        JSON.stringify({ error: itemErr.message }),
+        { status: 500, headers: resHeaders }
+      );
+    }
+
+    if (!item) {
+      console.log(`[notify-agent-post] content_items row not found for ${contentItemId}`);
+      return new Response(
+        JSON.stringify({ error: "Content item not found" }),
+        { status: 404, headers: resHeaders }
+      );
+    }
+
+    // 2. HARD IDEMPOTENCY GUARD: Never send twice
+    if (item.agent_notified_at) {
+      console.log(
+        `[notify-agent-post] IDEMPOTENCY SKIP: content_item ${contentItemId} already notified at ${item.agent_notified_at}`
+      );
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          skipped: true,
+          reason: "Agent already notified",
+          notified_at: item.agent_notified_at,
+        }),
+        { status: 200, headers: resHeaders }
+      );
+    }
+
+    // 3. Status Transition Verification
+    const currentStatus = (targetStatus || item.status) as "scheduled" | "published";
+    if (currentStatus !== "scheduled" && currentStatus !== "published") {
+      console.log(
+        `[notify-agent-post] SKIP: item ${contentItemId} status is '${currentStatus}' (not scheduled/published)`
+      );
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          skipped: true,
+          reason: `Status is ${currentStatus}, not scheduled or published`,
+        }),
+        { status: 200, headers: resHeaders }
+      );
+    }
+
+    // 4. Find linked listing via listing_posts
+    const { data: postRow, error: postErr } = await supabase
+      .from("listing_posts")
+      .select("id, listing_id, post_type")
+      .eq("calendar_entry_id", contentItemId)
+      .maybeSingle();
+
+    if (postErr) {
+      console.error("[notify-agent-post] Error querying listing_posts:", postErr);
+      return new Response(
+        JSON.stringify({ error: postErr.message }),
+        { status: 500, headers: resHeaders }
+      );
+    }
+
+    if (!postRow || !postRow.listing_id) {
+      console.log(
+        `[notify-agent-post] SKIP: content_item ${contentItemId} is not linked to any listing_posts row`
+      );
+      await supabase.from("agent_notification_logs").insert({
+        content_item_id: contentItemId,
+        post_status: currentStatus,
+        notification_type: currentStatus,
+        status: "skipped",
+        error_message: "Post is not tied to a listing (general content calendar post)",
+      });
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          skipped: true,
+          reason: "Not a listing post",
+        }),
+        { status: 200, headers: resHeaders }
+      );
+    }
+
+    // 5. Fetch listing details
+    const { data: listing, error: listErr } = await supabase
+      .from("listings")
+      .select("id, address, agent_name, agent_id, canva_link, website_link")
+      .eq("id", postRow.listing_id)
+      .single();
+
+    if (listErr || !listing) {
+      console.error("[notify-agent-post] Error fetching listing:", listErr);
+      await supabase.from("agent_notification_logs").insert({
+        content_item_id: contentItemId,
+        listing_id: postRow.listing_id,
+        post_status: currentStatus,
+        notification_type: currentStatus,
+        status: "failed",
+        error_message: `Failed to find listing with ID ${postRow.listing_id}`,
+      });
+      return new Response(
+        JSON.stringify({ error: "Listing not found" }),
+        { status: 404, headers: resHeaders }
+      );
+    }
+
+    // 6. Resolve agent email from toolbox_agents
+    const { data: agents, error: agentsErr } = await supabase
+      .from("toolbox_agents")
+      .select("id, name, email");
+
+    if (agentsErr) {
+      console.error("[notify-agent-post] Error querying toolbox_agents:", agentsErr);
+    }
+
+    let matchedAgent: Agent | null = null;
+    if (listing.agent_id && agents) {
+      matchedAgent = agents.find((a) => a.id === listing.agent_id) ?? null;
+    }
+    if (!matchedAgent && listing.agent_name && agents) {
+      matchedAgent = resolveAgent(listing.agent_name, agents);
+    }
+
+    if (!matchedAgent || !matchedAgent.email) {
+      const errReason = `Could not resolve agent email for listing agent "${listing.agent_name || "Unknown"}"`;
+      console.error(`[notify-agent-post] FAILED: ${errReason}`);
+
+      await supabase.from("agent_notification_logs").insert({
+        content_item_id: contentItemId,
+        listing_id: listing.id,
+        agent_name: listing.agent_name,
+        post_status: currentStatus,
+        notification_type: currentStatus,
+        status: "failed",
+        error_message: errReason,
+      });
+
+      // Do NOT set agent_notified_at so it can be resolved & retried once agent is updated
+      return new Response(
+        JSON.stringify({ ok: false, error: errReason }),
+        { status: 422, headers: resHeaders }
+      );
+    }
+
+    const recipientEmail =
+      Deno.env.get("TEST_NOTIFICATION_EMAIL") || matchedAgent.email;
+
+    // 7. Compose Email
+    const isScheduled = currentStatus === "scheduled";
+    const emailSubject = isScheduled
+      ? `Social Media Post Scheduled: ${listing.address}`
+      : `Social Media Post Live: ${listing.address}`;
+
+    const emailHtml = generateEmailHtml({
+      agentName: matchedAgent.name,
+      address: listing.address,
+      status: currentStatus,
+      scheduledAt: item.scheduled_at,
+      canvaLink: listing.canva_link || item.canva_link,
+      websiteLink: listing.website_link || item.link,
+    });
+
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      const noKeyErr = "Missing RESEND_API_KEY environment secret";
+      console.error(`[notify-agent-post] FAILED: ${noKeyErr}`);
+
+      await supabase.from("agent_notification_logs").insert({
+        content_item_id: contentItemId,
+        listing_id: listing.id,
+        agent_name: matchedAgent.name,
+        agent_email: recipientEmail,
+        post_status: currentStatus,
+        notification_type: currentStatus,
+        status: "failed",
+        error_message: noKeyErr,
+      });
+
+      // Return 500 so system reports configuration error; do not set agent_notified_at
+      return new Response(
+        JSON.stringify({ ok: false, error: noKeyErr }),
+        { status: 500, headers: resHeaders }
+      );
+    }
+
+    const fromEmail =
+      Deno.env.get("RESEND_FROM_EMAIL") ||
+      "MSREG Hub <notifications@mattsmithrealestategroup.com>";
+
+    console.log(
+      `[notify-agent-post] Sending Resend email to ${recipientEmail} for listing "${listing.address}" (${currentStatus})`
+    );
+
+    // 8. Call Resend API
+    const resendRes = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${resendApiKey}`,
+      },
+      body: JSON.stringify({
+        from: fromEmail,
+        to: [recipientEmail],
+        subject: emailSubject,
+        html: emailHtml,
+      }),
+    });
+
+    const resendData = await resendRes.json().catch(() => ({}));
+
+    if (!resendRes.ok) {
+      const errorDetail =
+        resendData?.message ||
+        resendData?.error ||
+        `Resend API error status ${resendRes.status}`;
+      console.error(
+        `[notify-agent-post] Resend API call failed: ${errorDetail}`,
+        resendData
+      );
+
+      // Record failure; DO NOT update agent_notified_at so it can retry
+      await supabase.from("agent_notification_logs").insert({
+        content_item_id: contentItemId,
+        listing_id: listing.id,
+        agent_name: matchedAgent.name,
+        agent_email: recipientEmail,
+        post_status: currentStatus,
+        notification_type: currentStatus,
+        status: "failed",
+        error_message: errorDetail,
+        metadata: resendData,
+      });
+
+      return new Response(
+        JSON.stringify({ ok: false, error: errorDetail, resend: resendData }),
+        { status: resendRes.status >= 500 ? 502 : 400, headers: resHeaders }
+      );
+    }
+
+    const resendId = resendData?.id ?? null;
+    console.log(
+      `[notify-agent-post] Resend email sent successfully! resend_id=${resendId}`
+    );
+
+    // 9. Atomic Update: Mark agent_notified_at = now()
+    const nowIso = new Date().toISOString();
+    const { data: updatedItem, error: updateErr } = await supabase
+      .from("content_items")
+      .update({ agent_notified_at: nowIso })
+      .eq("id", contentItemId)
+      .is("agent_notified_at", null)
+      .select("id, agent_notified_at")
+      .maybeSingle();
+
+    if (updateErr) {
+      // EDGE CASE: Email sent, but DB update failed!
+      console.error(
+        `[notify-agent-post] CRITICAL ALERT: Email ${resendId} sent to ${recipientEmail} but DB update for content_items ${contentItemId} failed:`,
+        updateErr
+      );
+      await supabase.from("agent_notification_logs").insert({
+        content_item_id: contentItemId,
+        listing_id: listing.id,
+        agent_name: matchedAgent.name,
+        agent_email: recipientEmail,
+        post_status: currentStatus,
+        notification_type: currentStatus,
+        status: "sent_db_update_failed",
+        resend_id: resendId,
+        error_message: `Email was sent (${resendId}), but setting agent_notified_at failed: ${updateErr.message}`,
+        metadata: { resendData, dbError: updateErr },
+      });
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          warning: "Email sent but DB update failed",
+          resend_id: resendId,
+        }),
+        { status: 200, headers: resHeaders }
+      );
+    }
+
+    // 10. Record Successful Notification Log
+    await supabase.from("agent_notification_logs").insert({
+      content_item_id: contentItemId,
+      listing_id: listing.id,
+      agent_name: matchedAgent.name,
+      agent_email: recipientEmail,
+      post_status: currentStatus,
+      notification_type: currentStatus,
+      status: "sent",
+      resend_id: resendId,
+      metadata: { resend: resendData },
+    });
+
+    console.log(
+      `[notify-agent-post] Success! content_item ${contentItemId} marked agent_notified_at=${nowIso}`
+    );
+
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        sent: true,
+        agent_email: recipientEmail,
+        agent_name: matchedAgent.name,
+        resend_id: resendId,
+        agent_notified_at: nowIso,
+      }),
+      { status: 200, headers: resHeaders }
+    );
+  } catch (err: any) {
+    console.error("[notify-agent-post] Unhandled exception:", err);
+    return new Response(
+      JSON.stringify({ error: err?.message || "Internal server error" }),
+      { status: 500, headers: resHeaders }
+    );
+  }
+});

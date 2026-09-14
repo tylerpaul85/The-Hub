@@ -8,6 +8,59 @@ export type Database = {
   };
   public: {
     Tables: {
+      agent_notification_logs: {
+        Row: {
+          agent_email: string | null;
+          agent_name: string | null;
+          content_item_id: string | null;
+          created_at: string;
+          error_message: string | null;
+          id: string;
+          listing_id: string | null;
+          metadata: Json;
+          notification_type: string;
+          post_status: string;
+          resend_id: string | null;
+          status: string;
+        };
+        Insert: {
+          agent_email?: string | null;
+          agent_name?: string | null;
+          content_item_id?: string | null;
+          created_at?: string;
+          error_message?: string | null;
+          id?: string;
+          listing_id?: string | null;
+          metadata?: Json;
+          notification_type: string;
+          post_status: string;
+          resend_id?: string | null;
+          status: string;
+        };
+        Update: {
+          agent_email?: string | null;
+          agent_name?: string | null;
+          content_item_id?: string | null;
+          created_at?: string;
+          error_message?: string | null;
+          id?: string;
+          listing_id?: string | null;
+          metadata?: Json;
+          notification_type?: string;
+          post_status?: string;
+          resend_id?: string | null;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "agent_notification_logs_content_item_id_fkey";
+            columns: ["content_item_id"];
+            isOneToOne: false;
+            referencedRelation: "content_items";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       agent_availability: {
         Row: {
           agent_id: string;
@@ -276,6 +329,7 @@ export type Database = {
       };
       content_items: {
         Row: {
+          agent_notified_at: string | null;
           blog_content: string | null;
           blog_doc_link: string | null;
           brand: string;
@@ -309,6 +363,7 @@ export type Database = {
           youtube_video_title: string | null;
         };
         Insert: {
+          agent_notified_at?: string | null;
           blog_content?: string | null;
           blog_doc_link?: string | null;
           brand?: string;
@@ -342,6 +397,7 @@ export type Database = {
           youtube_video_title?: string | null;
         };
         Update: {
+          agent_notified_at?: string | null;
           blog_content?: string | null;
           blog_doc_link?: string | null;
           brand?: string;
