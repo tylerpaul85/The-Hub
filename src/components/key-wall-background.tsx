@@ -22,9 +22,9 @@ interface SimKey {
   spriteIdx: number;
   scale: number;
   length: number;
-  r1: number;
-  r2: number;
-  halfD: number;
+  r1: number; // Bow / Head collision radius
+  r2: number; // Blade / Tip collision radius
+  halfD: number; // Distance from center of mass to collision circles
   sleepFrames: number;
   isAsleep: boolean;
 }
@@ -41,7 +41,7 @@ class SpatialHash {
   private cellSize: number;
   private cells: Map<number, SimKey[]>;
 
-  constructor(cellSize = 30) {
+  constructor(cellSize = 32) {
     this.cellSize = cellSize;
     this.cells = new Map();
   }
@@ -66,7 +66,7 @@ class SpatialHash {
     cell.push(key);
   }
 
-  query(x: number, y: number, radius = 28): SimKey[] {
+  query(x: number, y: number, radius = 32): SimKey[] {
     const minX = Math.floor((x - radius) / this.cellSize);
     const maxX = Math.floor((x + radius) / this.cellSize);
     const minY = Math.floor((y - radius) / this.cellSize);
@@ -88,37 +88,76 @@ class SpatialHash {
 }
 
 /**
- * Pre-renders an assortment of brass/gold key silhouette sprites onto small offscreen canvases.
- * Key shape: rounded bow with circular hole, shaft, and 2-3 distinct teeth notches.
- * Warm brass tones (#C9A24B base, lighter highlight edge).
+ * Pre-renders realistic brass house key silhouette sprites onto small offscreen canvases.
+ * Authentic details:
+ * - Oval/chamfered brass bow with keyring hole and inner bevel
+ * - Defined collar/stop shoulders where blade meets bow
+ * - Real pin-tumbler bitting cuts (peaks & valleys) along the blade edge
+ * - Beveled 45° guide tip
+ * - Longitudinal warding groove
+ * - Rich metallic brass/gold gradient lighting (#FCE496 highlight, #C9A24B base, #7A5314 shadow)
  */
-function createKeySprites(dpr = 1): KeySprite[] {
+function createRealisticKeySprites(dpr = 1): KeySprite[] {
   const sprites: KeySprite[] = [];
-  const colorPalettes = [
-    { base: "#C9A24B", highlight: "#E6C978", shadow: "#9C792E" },
-    { base: "#D4AF37", highlight: "#F3DC8C", shadow: "#A68224" },
-    { base: "#BFA04E", highlight: "#DFCA82", shadow: "#91742B" },
-    { base: "#C29940", highlight: "#ECC66E", shadow: "#967026" },
+
+  const palettes = [
+    {
+      highlight: "#FCE496",
+      base: "#C9A24B",
+      mid: "#AF8632",
+      shadow: "#735012",
+      groove: "#5A3C0A",
+    },
+    {
+      highlight: "#FFF0B3",
+      base: "#D4AF37",
+      mid: "#B8912A",
+      shadow: "#7A5816",
+      groove: "#60420E",
+    },
+    {
+      highlight: "#F7DA88",
+      base: "#C0973E",
+      mid: "#A67D2B",
+      shadow: "#6E490F",
+      groove: "#523408",
+    },
+    {
+      highlight: "#FEE28F",
+      base: "#CCA146",
+      mid: "#B38734",
+      shadow: "#785315",
+      groove: "#5C3E0C",
+    },
   ];
 
-  const scales = [0.82, 0.92, 1.0, 1.10, 1.18]; // +/-20% variation as requested
+  // Variations in bitting (key teeth cuts)
+  const bittings = [
+    [1.0, 2.5, 1.4, 2.2],
+    [2.2, 1.2, 2.6, 1.5],
+    [1.4, 2.2, 1.8, 2.7],
+    [2.0, 1.6, 2.4, 1.2],
+  ];
+
+  const scales = [0.85, 0.95, 1.05, 1.15]; // Natural size variance
 
   for (let sIdx = 0; sIdx < scales.length; sIdx++) {
     const scale = scales[sIdx];
-    for (let cIdx = 0; cIdx < colorPalettes.length; cIdx++) {
-      const palette = colorPalettes[cIdx];
-      const hasThreeTeeth = (sIdx + cIdx) % 2 === 0;
 
-      const bowRadius = 4.8 * scale;
-      const holeRadius = 2.1 * scale;
-      const shaftLen = (hasThreeTeeth ? 14 : 12) * scale;
-      const shaftWidth = 2.4 * scale;
-      const totalLen = bowRadius * 2 + shaftLen;
+    for (let pIdx = 0; pIdx < palettes.length; pIdx++) {
+      const pal = palettes[pIdx];
+      const cuts = bittings[(sIdx + pIdx) % bittings.length];
 
-      // Offscreen canvas padded for highlight strokes and rotation
+      const bowRadius = 6.2 * scale;
+      const holeRadius = 2.4 * scale;
+      const bladeLength = 16.0 * scale;
+      const bladeHalfWidth = 2.0 * scale;
+      const shoulderWidth = 3.6 * scale;
+      const totalLen = bowRadius * 2 + bladeLength;
+
       const pad = 4;
       const w = Math.ceil((totalLen + pad * 2) * dpr);
-      const h = Math.ceil((bowRadius * 2 + 8 * scale + pad * 2) * dpr);
+      const h = Math.ceil((bowRadius * 2 + 10 * scale + pad * 2) * dpr);
 
       const offCanvas = document.createElement("canvas");
       offCanvas.width = w;
@@ -129,71 +168,91 @@ function createKeySprites(dpr = 1): KeySprite[] {
       ctx.scale(dpr, dpr);
       ctx.translate(pad + bowRadius, pad + bowRadius + 2 * scale);
 
-      // Draw Key Silhouette
+      // --- 1. Main Key Silhouette Path ---
       ctx.beginPath();
-      // 1. Bow (outer circle)
-      ctx.arc(0, 0, bowRadius, 0, Math.PI * 2, false);
 
-      // 2. Shaft & Teeth
-      const topY = -shaftWidth / 2;
-      const botY = shaftWidth / 2;
+      // Bow (rounded head with subtle chamfers)
+      ctx.arc(0, 0, bowRadius, Math.PI * 0.28, Math.PI * 1.72, false);
 
-      ctx.moveTo(bowRadius * 0.7, topY);
-      ctx.lineTo(bowRadius + shaftLen, topY);
-      // Tip rounded bevel
-      ctx.arc(
-        bowRadius + shaftLen,
-        topY + shaftWidth / 2,
-        shaftWidth / 2,
-        -Math.PI / 2,
-        Math.PI / 2,
-        false
-      );
+      // Top shoulder step
+      ctx.lineTo(bowRadius * 0.9, -shoulderWidth);
+      ctx.lineTo(bowRadius + 1.2 * scale, -shoulderWidth);
+      ctx.lineTo(bowRadius + 1.8 * scale, -bladeHalfWidth);
 
-      // Teeth notches extending down from bottom edge
-      if (hasThreeTeeth) {
-        // Tooth 3 (near tip)
-        ctx.lineTo(bowRadius + shaftLen - 1.5 * scale, botY);
-        ctx.lineTo(bowRadius + shaftLen - 1.5 * scale, botY + 2.2 * scale);
-        ctx.lineTo(bowRadius + shaftLen - 3.2 * scale, botY + 2.2 * scale);
-        ctx.lineTo(bowRadius + shaftLen - 3.2 * scale, botY);
-        // Tooth 2 (middle)
-        ctx.lineTo(bowRadius + shaftLen - 4.8 * scale, botY);
-        ctx.lineTo(bowRadius + shaftLen - 4.8 * scale, botY + 2.8 * scale);
-        ctx.lineTo(bowRadius + shaftLen - 6.8 * scale, botY + 2.8 * scale);
-        ctx.lineTo(bowRadius + shaftLen - 6.8 * scale, botY);
-        // Tooth 1 (inner)
-        ctx.lineTo(bowRadius + shaftLen - 8.4 * scale, botY);
-        ctx.lineTo(bowRadius + shaftLen - 8.4 * scale, botY + 1.8 * scale);
-        ctx.lineTo(bowRadius + shaftLen - 10.2 * scale, botY + 1.8 * scale);
-        ctx.lineTo(bowRadius + shaftLen - 10.2 * scale, botY);
-      } else {
-        // Two teeth variation
-        ctx.lineTo(bowRadius + shaftLen - 2.0 * scale, botY);
-        ctx.lineTo(bowRadius + shaftLen - 2.0 * scale, botY + 2.6 * scale);
-        ctx.lineTo(bowRadius + shaftLen - 4.2 * scale, botY + 2.6 * scale);
-        ctx.lineTo(bowRadius + shaftLen - 4.2 * scale, botY);
+      // Top blade straight edge
+      const tipX = bowRadius + bladeLength;
+      ctx.lineTo(tipX - 1.2 * scale, -bladeHalfWidth);
 
-        ctx.lineTo(bowRadius + shaftLen - 6.0 * scale, botY);
-        ctx.lineTo(bowRadius + shaftLen - 6.0 * scale, botY + 2.4 * scale);
-        ctx.lineTo(bowRadius + shaftLen - 8.4 * scale, botY + 2.4 * scale);
-        ctx.lineTo(bowRadius + shaftLen - 8.4 * scale, botY);
+      // Beveled guide tip
+      ctx.lineTo(tipX, -bladeHalfWidth * 0.4);
+      ctx.lineTo(tipX, bladeHalfWidth * 0.4);
+      ctx.lineTo(tipX - 1.2 * scale, bladeHalfWidth);
+
+      // Bottom blade edge with realistic bitting (teeth cuts)
+      let curX = tipX - 2.0 * scale;
+      for (let c = cuts.length - 1; c >= 0; c--) {
+        const cutDepth = cuts[c] * scale;
+        const toothW = 2.2 * scale;
+
+        // Angled entry
+        ctx.lineTo(curX, bladeHalfWidth);
+        ctx.lineTo(curX - 0.7 * scale, bladeHalfWidth + cutDepth);
+        // Flat valley
+        ctx.lineTo(curX - toothW + 0.7 * scale, bladeHalfWidth + cutDepth);
+        // Angled exit
+        ctx.lineTo(curX - toothW, bladeHalfWidth);
+
+        curX -= toothW + 1.0 * scale;
       }
 
-      ctx.lineTo(bowRadius * 0.7, botY);
+      // Bottom shoulder step
+      ctx.lineTo(bowRadius + 1.8 * scale, bladeHalfWidth);
+      ctx.lineTo(bowRadius + 1.2 * scale, shoulderWidth);
+      ctx.lineTo(bowRadius * 0.9, shoulderWidth);
+
       ctx.closePath();
 
-      // Cut out bow center hole (donut head)
+      // Subtract keyring hole in center of bow
       ctx.moveTo(holeRadius, 0);
       ctx.arc(0, 0, holeRadius, 0, Math.PI * 2, true);
 
-      // Base fill
-      ctx.fillStyle = palette.base;
+      // --- 2. Metallic Brass Gradient Fill ---
+      const grad = ctx.createLinearGradient(0, -bowRadius, 0, bowRadius + 4 * scale);
+      grad.addColorStop(0, pal.highlight);
+      grad.addColorStop(0.35, pal.base);
+      grad.addColorStop(0.75, pal.mid);
+      grad.addColorStop(1, pal.shadow);
+
+      ctx.fillStyle = grad;
       ctx.fill();
 
-      // Subtle lighter highlight edge on top
-      ctx.lineWidth = 0.75 * scale;
-      ctx.strokeStyle = palette.highlight;
+      // --- 3. Warding Groove (longitudinal milled slot) ---
+      ctx.beginPath();
+      const grooveY = 0;
+      ctx.moveTo(bowRadius + 2.5 * scale, grooveY);
+      ctx.lineTo(tipX - 2.5 * scale, grooveY);
+      ctx.lineWidth = 0.9 * scale;
+      ctx.strokeStyle = pal.groove;
+      ctx.stroke();
+
+      // Groove highlight line
+      ctx.beginPath();
+      ctx.moveTo(bowRadius + 2.5 * scale, grooveY - 0.7 * scale);
+      ctx.lineTo(tipX - 2.5 * scale, grooveY - 0.7 * scale);
+      ctx.lineWidth = 0.5 * scale;
+      ctx.strokeStyle = pal.highlight;
+      ctx.stroke();
+
+      // --- 4. Outer Rim Highlight Stroke ---
+      ctx.lineWidth = 0.7 * scale;
+      ctx.strokeStyle = pal.highlight;
+      ctx.stroke();
+
+      // --- 5. Hole Bevel Rim ---
+      ctx.beginPath();
+      ctx.arc(0, 0, holeRadius + 0.4 * scale, 0, Math.PI * 2);
+      ctx.lineWidth = 0.5 * scale;
+      ctx.strokeStyle = pal.shadow;
       ctx.stroke();
 
       sprites.push({
@@ -216,7 +275,7 @@ export function KeyWallBackground() {
   const fetchCount = useServerFn(getClosedTransactionCount);
   const [closedCount, setClosedCount] = useState<number>(4092);
 
-  // Fetch live closed transaction count on mount
+  // Fetch live closed transaction count
   useEffect(() => {
     let active = true;
     fetchCount()
@@ -226,7 +285,7 @@ export function KeyWallBackground() {
         }
       })
       .catch(() => {
-        // fallback kept at 4092
+        // Fallback milestone count preserved
       });
     return () => {
       active = false;
@@ -245,13 +304,13 @@ export function KeyWallBackground() {
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    // Defer initialization slightly after initial paint to avoid competing with LCP
+    // Initialize after first paint
     const initTimer = setTimeout(() => {
       if (isDisposed) return;
-      startKeySimulation();
-    }, 80);
+      startSimulation();
+    }, 60);
 
-    function startKeySimulation() {
+    function startSimulation() {
       if (!canvas || isDisposed) return;
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
@@ -265,17 +324,17 @@ export function KeyWallBackground() {
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
 
-      // Secondary offscreen canvas layer to permanently bake settled "asleep" keys
+      // Static offscreen canvas layer to permanently bake settled keys
       const staticCanvas = document.createElement("canvas");
       staticCanvas.width = canvas.width;
       staticCanvas.height = canvas.height;
       const staticCtx = staticCanvas.getContext("2d");
       if (!staticCtx) return;
 
-      // Scale total keys based on device capability:
-      // Mobile / low concurrency: cap around 600-800
+      // Device capacity scaling:
+      // Mobile / low cores: ~600-800
       // Tablet: ~1,500
-      // Desktop: full closedCount (~4,000)
+      // Desktop: full transaction count (~4,000)
       const concurrency = navigator.hardwareConcurrency || 4;
       let targetCount = closedCount;
       if (width < 640 || concurrency <= 2) {
@@ -286,15 +345,14 @@ export function KeyWallBackground() {
         targetCount = Math.min(4200, closedCount);
       }
 
-      // Check localStorage for previously simulated settled resting positions
-      // Bucket width to nearest 100px so minor viewport variance reuses layout
-      const widthBucket = Math.round(width / 100) * 100;
-      const cacheKey = `msreg_keypile_v1_${widthBucket}_${targetCount}`;
+      // Width-bucketed cache key (v2 for updated realistic physics & visuals)
+      const widthBucket = Math.round(width / 120) * 120;
+      const cacheKey = `msreg_keypile_v2_${widthBucket}_${targetCount}`;
 
-      const sprites = createKeySprites(dpr);
+      const sprites = createRealisticKeySprites(dpr);
       if (sprites.length === 0) return;
 
-      // Try loading cached positions
+      // Check localStorage for previously simulated resting layout
       let cachedSettled: SettledRecord[] | null = null;
       try {
         const raw = localStorage.getItem(cacheKey);
@@ -306,8 +364,8 @@ export function KeyWallBackground() {
         }
       } catch {}
 
-      // Fast render function for settled keys
-      const drawKeyToCtx = (
+      // Fast key renderer onto any 2D canvas context
+      const drawKey = (
         targetContext: CanvasRenderingContext2D,
         x: number,
         y: number,
@@ -318,7 +376,6 @@ export function KeyWallBackground() {
         const cos = Math.cos(angle);
         const sin = Math.sin(angle);
 
-        // Hardware accelerated setTransform
         targetContext.setTransform(
           cos * dpr,
           sin * dpr,
@@ -330,21 +387,19 @@ export function KeyWallBackground() {
         targetContext.drawImage(sprite.canvas, -sprite.cx * dpr, -sprite.cy * dpr);
       };
 
-      // If cached OR if user prefers reduced motion, render immediately without running physics!
+      // If cached OR reduced-motion: render immediately with zero animation loop
       if (cachedSettled || prefersReducedMotion) {
         let keysToDraw: SettledRecord[] = cachedSettled || [];
 
-        // If reduced motion with no cache yet, generate static pile distribution
         if (!cachedSettled && prefersReducedMotion) {
           keysToDraw = [];
           const floorY = height - 12;
           for (let i = 0; i < targetCount; i++) {
             const x = 20 + Math.random() * (width - 40);
-            // Pile thickness distribution: thicker in center, tapering to edges
             const normX = (x / width) * 2 - 1;
-            const pileHeight = Math.max(8, (1 - normX * normX * 0.7) * 75 * (i / targetCount));
+            const pileHeight = Math.max(8, (1 - normX * normX * 0.65) * 80 * (i / targetCount));
             const y = floorY - Math.random() * pileHeight;
-            const angle = (Math.random() - 0.5) * Math.PI * 0.45;
+            const angle = (Math.random() - 0.5) * Math.PI * 0.4;
             const spriteIdx = Math.floor(Math.random() * sprites.length);
             keysToDraw.push({ x, y, angle, spriteIdx });
           }
@@ -353,28 +408,29 @@ export function KeyWallBackground() {
           } catch {}
         }
 
-        // Draw all settled keys directly to static canvas & composite once
+        // Bake all keys once onto staticCanvas
         for (let i = 0; i < keysToDraw.length; i++) {
           const k = keysToDraw[i];
-          drawKeyToCtx(staticCtx, k.x, k.y, k.angle, k.spriteIdx);
+          drawKey(staticCtx, k.x, k.y, k.angle, k.spriteIdx);
         }
 
+        // Composite onto main canvas
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.drawImage(staticCanvas, 0, 0);
-        return; // Zero further CPU usage!
+        return; // Complete! Zero ongoing CPU.
       }
 
       // --- Live Staged Physics Simulation ---
       const activeKeys: SimKey[] = [];
       const settledRecords: SettledRecord[] = [];
-      const activeGrid = new SpatialHash(30);
-      const staticGrid = new SpatialHash(30);
+      const activeGrid = new SpatialHash(32);
+      const staticGrid = new SpatialHash(32);
 
       let spawnedTotal = 0;
       const floorY = height - 12;
 
-      // Rate of spawn: 14 to 26 keys per frame so keys cascade across ~5-7 seconds
-      const spawnRate = Math.max(12, Math.min(28, Math.ceil(targetCount / 220)));
+      // Staged spawn rate: smooth cascade over ~5-7 seconds
+      const spawnRate = Math.max(12, Math.min(26, Math.ceil(targetCount / 220)));
 
       const spawnBatch = () => {
         const toSpawn = Math.min(spawnRate, targetCount - spawnedTotal);
@@ -383,17 +439,17 @@ export function KeyWallBackground() {
           const sprite = sprites[spriteIdx];
 
           const scale = sprite.scale;
-          const r1 = 4.8 * scale;
-          const r2 = 3.2 * scale;
-          const halfD = 6.0 * scale;
+          const r1 = 6.0 * scale; // Bow radius
+          const r2 = 3.6 * scale; // Blade tip radius
+          const halfD = 7.2 * scale; // Half length to collision circles
 
           activeKeys.push({
             x: 20 + Math.random() * (width - 40),
-            y: -20 - Math.random() * 50,
-            vx: (Math.random() - 0.5) * 0.7,
-            vy: 1.2 + Math.random() * 2.6,
+            y: -25 - Math.random() * 50,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: 0.8 + Math.random() * 1.8, // Slow ambient falling speed
             angle: Math.random() * Math.PI * 2,
-            va: (Math.random() - 0.5) * 0.05,
+            va: (Math.random() - 0.5) * 0.03, // Gentle tumble
             spriteIdx,
             scale,
             length: sprite.length,
@@ -407,17 +463,18 @@ export function KeyWallBackground() {
         }
       };
 
-      const gravity = 0.36;
-      const restitution = 0.40; // real bounce with energy loss on each impact
-      const friction = 0.82; // surface grip
-      const pileRegionY = height - 160;
+      // Physics parameters tuned for realistic metal clatter & natural stacking:
+      // Minimal bounce (restitution ~0.08), high surface grip (friction ~0.92)
+      const gravity = 0.18; // Slow ambient gravity
+      const restitution = 0.08; // Almost zero bounce as requested
+      const friction = 0.92; // Surface friction to prevent endless skidding
+      const pileRegionY = height - 180;
 
-      // Listen to tab visibility to pause simulation when user switches tabs
       let isVisible = document.visibilityState !== "hidden";
-      const handleVisibilityChange = () => {
+      const handleVisibility = () => {
         isVisible = document.visibilityState !== "hidden";
       };
-      document.addEventListener("visibilitychange", handleVisibilityChange);
+      document.addEventListener("visibilitychange", handleVisibility);
 
       const tick = () => {
         if (isDisposed) return;
@@ -427,26 +484,26 @@ export function KeyWallBackground() {
           return;
         }
 
-        // 1. Stage new keys into the viewport
+        // 1. Spawn batch of keys from the top
         if (spawnedTotal < targetCount) {
           spawnBatch();
         }
 
-        // 2. Clear active spatial hash and rebuild for current frame
+        // 2. Rebuild active spatial hash for current frame
         activeGrid.clear();
         for (let i = 0; i < activeKeys.length; i++) {
           activeGrid.insert(activeKeys[i]);
         }
 
-        // 3. Physics update & collision resolution for active keys
+        // 3. Update physics and handle stacking & tumbling
         for (let i = 0; i < activeKeys.length; i++) {
           const k = activeKeys[i];
 
-          // Apply Gravity and Air Drag
+          // Slow ambient air drag & gravity
           k.vy += gravity;
-          k.vx *= 0.993;
-          k.vy *= 0.995;
-          k.va *= 0.96;
+          if (k.vy > 2.4) k.vy = 2.4; // Terminal velocity cap for slow ambient drift
+          k.vx *= 0.988;
+          k.va *= 0.95;
 
           k.x += k.vx;
           k.y += k.vy;
@@ -455,31 +512,31 @@ export function KeyWallBackground() {
           const cos = Math.cos(k.angle);
           const sin = Math.sin(k.angle);
 
-          // Sphere 1 (Head) and Sphere 2 (Tip) centers
+          // Head & tip center coordinates
           const p1x = k.x - cos * k.halfD;
           const p1y = k.y - sin * k.halfD;
           const p2x = k.x + cos * k.halfD;
           const p2y = k.y + sin * k.halfD;
 
-          // Floor boundary collision
+          // Floor boundary impact (no bounce, realistic clatter/tumble)
           let touchedFloor = false;
           if (p1y + k.r1 >= floorY) {
-            const pen = p1y + k.r1 - floorY;
-            k.y -= pen;
+            k.y -= p1y + k.r1 - floorY;
             if (k.vy > 0) {
               k.vy = -k.vy * restitution;
               k.vx *= friction;
-              k.va += (Math.random() - 0.5) * 0.04 - sin * 0.05;
+              // Torque rotates the key flat onto the floor
+              k.va += (Math.random() - 0.5) * 0.02 - sin * 0.06;
             }
             touchedFloor = true;
           }
           if (p2y + k.r2 >= floorY) {
-            const pen = p2y + k.r2 - floorY;
-            k.y -= pen;
+            k.y -= p2y + k.r2 - floorY;
             if (k.vy > 0) {
               k.vy = -k.vy * restitution;
               k.vx *= friction;
-              k.va += (Math.random() - 0.5) * 0.04 + sin * 0.05;
+              // Torque rotates the key flat onto the floor
+              k.va += (Math.random() - 0.5) * 0.02 + sin * 0.06;
             }
             touchedFloor = true;
           }
@@ -493,10 +550,9 @@ export function KeyWallBackground() {
             k.vx = -Math.abs(k.vx) * restitution;
           }
 
-          // Key-to-Key Collisions (Active vs Active + Active vs Static)
-          // Spatial hash query: only check nearby neighboring cells!
-          const neighbors = activeGrid.query(k.x, k.y, 32);
-          const staticNeighbors = staticGrid.query(k.x, k.y, 32);
+          // Key-to-Key Stacking Collisions (query local 3x3 cells only)
+          const neighbors = activeGrid.query(k.x, k.y, 34);
+          const staticNeighbors = staticGrid.query(k.x, k.y, 34);
 
           const checkCollisionWith = (other: SimKey, isOtherStatic: boolean) => {
             const dx = k.x - other.x;
@@ -512,7 +568,6 @@ export function KeyWallBackground() {
             const op2x = other.x + oCos * other.halfD;
             const op2y = other.y + oSin * other.halfD;
 
-            // Check 4 sphere pair combinations:
             const pairs = [
               { x1: p1x, y1: p1y, r1: k.r1, x2: op1x, y2: op1y, r2: other.r1, isHead1: true },
               { x1: p1x, y1: p1y, r1: k.r1, x2: op2x, y2: op2y, r2: other.r2, isHead1: true },
@@ -527,13 +582,13 @@ export function KeyWallBackground() {
               const d2 = cdx * cdx + cdy * cdy;
               const minD = pair.r1 + pair.r2;
 
-              if (d2 < minD * minD && d2 > 0.001) {
+              if (d2 < minD * minD && d2 > 0.0001) {
                 const d = Math.sqrt(d2);
                 const nx = cdx / d;
                 const ny = cdy / d;
                 const pen = minD - d;
 
-                // Position correction
+                // Stack separation: keys sit on top of each other
                 if (isOtherStatic) {
                   k.x += nx * pen;
                   k.y += ny * pen;
@@ -544,18 +599,25 @@ export function KeyWallBackground() {
                   other.y -= ny * pen * 0.5;
                 }
 
-                // Impulse bounce
+                // Inelastic collision with tumble torque
                 const relVx = k.vx - (isOtherStatic ? 0 : other.vx);
                 const relVy = k.vy - (isOtherStatic ? 0 : other.vy);
                 const vNorm = relVx * nx + relVy * ny;
 
                 if (vNorm < 0) {
-                  const j = -(1 + restitution) * vNorm * (isOtherStatic ? 0.75 : 0.45);
+                  // Inelastic contact: minimal bounce, energy dissipated
+                  const j = -(1 + restitution) * vNorm * (isOtherStatic ? 0.8 : 0.45);
                   k.vx += nx * j;
                   k.vy += ny * j;
-                  // Natural rotational tumble imparted on impact
+
+                  // Tumble torque: hitting on one side induces rotation so key rolls/slips flat
                   const torqueArm = pair.isHead1 ? -k.halfD : k.halfD;
-                  k.va += (nx * sin - ny * cos) * torqueArm * 0.02;
+                  k.va += (nx * sin - ny * cos) * torqueArm * 0.025;
+
+                  // Slope slip: if resting on a slope, slide sideways into valleys
+                  if (Math.abs(nx) > 0.3) {
+                    k.vx += Math.sign(nx) * 0.08;
+                  }
 
                   if (!isOtherStatic) {
                     other.vx -= nx * j;
@@ -567,32 +629,26 @@ export function KeyWallBackground() {
             }
           };
 
-          // Compare against neighboring active keys
           for (let n = 0; n < neighbors.length; n++) {
-            const other = neighbors[n];
-            if (other !== k) {
-              checkCollisionWith(other, false);
-            }
+            if (neighbors[n] !== k) checkCollisionWith(neighbors[n], false);
           }
-
-          // Compare against neighboring settled static keys
           for (let n = 0; n < staticNeighbors.length; n++) {
             checkCollisionWith(staticNeighbors[n], true);
           }
 
-          // Sleep check: freeze key once velocity drops below threshold for consecutive frames
+          // Sleep condition: freeze settled keys in place once at rest in the pile
           const speed = Math.sqrt(k.vx * k.vx + k.vy * k.vy);
           if (
             (touchedFloor || k.y >= pileRegionY) &&
-            speed < 0.16 &&
-            Math.abs(k.va) < 0.035
+            speed < 0.14 &&
+            Math.abs(k.va) < 0.03
           ) {
             k.sleepFrames++;
-            if (k.sleepFrames >= 14) {
+            if (k.sleepFrames >= 10) {
               k.isAsleep = true;
-              // Permanently bake into static offscreen canvas
-              drawKeyToCtx(staticCtx, k.x, k.y, k.angle, k.spriteIdx);
-              // Register in static spatial grid so subsequent falling keys can stack on it
+              // Permanently bake key onto static offscreen canvas
+              drawKey(staticCtx, k.x, k.y, k.angle, k.spriteIdx);
+              // Add to static grid so subsequent keys stack on it
               staticGrid.insert(k);
               settledRecords.push({
                 x: Math.round(k.x * 10) / 10,
@@ -606,35 +662,31 @@ export function KeyWallBackground() {
           }
         }
 
-        // 4. Filter out asleep keys from the active simulation array
-        // (Iterating only over active keys ensures ultra-fast rendering)
+        // 4. Remove asleep keys from active simulation array
         for (let i = activeKeys.length - 1; i >= 0; i--) {
           if (activeKeys[i].isAsleep) {
             activeKeys.splice(i, 1);
           }
         }
 
-        // 5. Render frame: composite the baked static pile underneath, then draw moving keys
+        // 5. Composite frame: draw baked static pile, then draw currently moving active keys
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(staticCanvas, 0, 0);
 
-        // Draw only active keys in motion
         for (let i = 0; i < activeKeys.length; i++) {
           const k = activeKeys[i];
-          drawKeyToCtx(ctx, k.x, k.y, k.angle, k.spriteIdx);
+          drawKey(ctx, k.x, k.y, k.angle, k.spriteIdx);
         }
 
-        // 6. Halt condition: once all keys have finished falling and settling
+        // 6. Halt condition: once all keys have settled into the pile
         if (spawnedTotal >= targetCount && activeKeys.length === 0) {
-          // Cache resting layout to localStorage so repeat visits skip physics
           try {
             localStorage.setItem(cacheKey, JSON.stringify(settledRecords));
           } catch {}
 
-          document.removeEventListener("visibilitychange", handleVisibilityChange);
-          // Render loop terminates! Zero ongoing CPU / GPU usage.
-          return;
+          document.removeEventListener("visibilitychange", handleVisibility);
+          return; // Simulation complete! 0 CPU / 0 GPU from this point onwards.
         }
 
         animId = requestAnimationFrame(tick);
@@ -652,8 +704,8 @@ export function KeyWallBackground() {
 
   return (
     <div
-      className="fixed inset-0 pointer-events-none -z-10 overflow-hidden select-none"
-      style={{ opacity: 0.22 }}
+      className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none"
+      style={{ opacity: 0.42 }}
       aria-hidden="true"
     >
       <canvas ref={canvasRef} className="w-full h-full block" />

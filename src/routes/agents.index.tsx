@@ -46,7 +46,7 @@ function AgentsHome() {
     <div className="min-h-screen bg-background px-4 py-8 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))] relative overflow-x-hidden">
       <KeyWallBackground />
 
-      <div className="max-w-3xl mx-auto relative">
+      <div className="max-w-3xl mx-auto relative z-10">
         <div className="flex justify-end mb-3 sm:mb-0 sm:absolute sm:top-0 sm:right-0 z-10">
           <Link
             to={user ? "/dashboard" : "/auth"}
@@ -147,7 +147,13 @@ function AgentsHome() {
           </div>
         )}
 
-        <footer className="mt-12 text-center text-[11px] text-muted-foreground">
+        <div className="mt-12 text-center">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-gold/70 font-medium">
+            Over 4,000 families guided home · One key for every closed transaction
+          </p>
+        </div>
+
+        <footer className="mt-3 text-center text-[11px] text-muted-foreground/80">
           © Matt Smith Real Estate Group
         </footer>
       </div>
