@@ -4,6 +4,7 @@ import { Send, Images, ChevronRight, Share, Plus, Gift, Signpost, Calculator, Ca
 import logo from "@/assets/msreg-logo.png";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import { KeyWallBackground } from "@/components/key-wall-background";
 
 export const Route = createFileRoute("/agents/")({
   component: AgentsHome,
@@ -42,7 +43,9 @@ function AgentsHome() {
   };
 
   return (
-    <div className="min-h-screen bg-background px-4 py-8 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
+    <div className="min-h-screen bg-background px-4 py-8 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))] relative overflow-x-hidden">
+      <KeyWallBackground />
+
       <div className="max-w-3xl mx-auto relative">
         <div className="flex justify-end mb-3 sm:mb-0 sm:absolute sm:top-0 sm:right-0 z-10">
           <Link
