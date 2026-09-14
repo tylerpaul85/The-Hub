@@ -4,7 +4,6 @@ import { Send, Images, ChevronRight, Share, Plus, Gift, Signpost, Calculator, Ca
 import logo from "@/assets/msreg-logo.png";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { KeyWallBackground } from "@/components/key-wall-background";
 
 export const Route = createFileRoute("/agents/")({
   component: AgentsHome,
@@ -43,10 +42,8 @@ function AgentsHome() {
   };
 
   return (
-    <div className="min-h-screen bg-background px-4 py-8 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))] relative overflow-x-hidden">
-      <KeyWallBackground />
-
-      <div className="max-w-3xl mx-auto relative z-10">
+    <div className="min-h-screen bg-background px-4 py-8 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
+      <div className="max-w-3xl mx-auto relative">
         <div className="flex justify-end mb-3 sm:mb-0 sm:absolute sm:top-0 sm:right-0 z-10">
           <Link
             to={user ? "/dashboard" : "/auth"}
@@ -147,13 +144,7 @@ function AgentsHome() {
           </div>
         )}
 
-        <div className="mt-12 text-center">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-gold/70 font-medium">
-            Over 4,000 families guided home · One key for every closed transaction
-          </p>
-        </div>
-
-        <footer className="mt-3 text-center text-[11px] text-muted-foreground/80">
+        <footer className="mt-12 text-center text-[11px] text-muted-foreground">
           © Matt Smith Real Estate Group
         </footer>
       </div>
