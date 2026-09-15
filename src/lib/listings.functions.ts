@@ -116,6 +116,14 @@ async function createCalendarEntry(
     console.error("[listings] Calendar entry error:", error.message, error.code);
     throw new Error(`Calendar entry failed: ${error.message}`);
   }
+  if (data?.id) {
+    await sb.from("content_history").insert({
+      content_id: data.id,
+      user_id: userId,
+      field: "created",
+      new_value: title,
+    });
+  }
   return data?.id ?? null;
 } /**
  * Creates 30/60/90-day repost entries for a listing.

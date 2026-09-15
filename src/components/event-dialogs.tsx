@@ -396,6 +396,14 @@ export function EventDetailSheet({
       toast.error(error.message);
       return;
     }
+    if (ci?.id) {
+      await sb.from("content_history").insert({
+        content_id: ci.id,
+        user_id: user?.id ?? null,
+        field: "created",
+        new_value: ci.title,
+      });
+    }
     await sb
       .from("event_content_suggestions")
       .update({ status: "approved", content_id: ci.id })

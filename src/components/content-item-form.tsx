@@ -86,8 +86,21 @@ export function ContentItemForm({ open, onOpenChange, initialDate, initial }: Pr
         meta_copy: form.meta_copy || null,
         post_type: form.post_type,
       };
-      const { error } = await (supabase as any).from("content_items").insert(payload);
+      const { data: inserted, error } = await (supabase as any)
+        .from("content_items")
+        .insert(payload)
+        .select("id, title")
+        .single();
       if (error) throw error;
+
+      if (inserted?.id) {
+        await (supabase as any).from("content_history").insert({
+          content_id: inserted.id,
+          user_id: user?.id ?? null,
+          field: "created",
+          new_value: inserted.title,
+        });
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["content-items"] });

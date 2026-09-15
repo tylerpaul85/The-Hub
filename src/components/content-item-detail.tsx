@@ -105,6 +105,20 @@ type FormShape = {
 
 const META_PLATFORMS = ["Meta", "Meta PP", "Meta LOZ"];
 
+function formatHistoryValue(field: string, val: string | null): string {
+  if (!val) return "—";
+  if (field === "scheduled_at" || field === "target_publish_date") {
+    const d = new Date(val.replace(" ", "T"));
+    if (!isNaN(d.getTime())) {
+      return format(d, "MMM d, yyyy 'at' h:mm a");
+    }
+  }
+  if (field === "status") {
+    return STATUS_LABEL[val as Status] || val;
+  }
+  return val;
+}
+
 export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
   const { user, canEditContent, canDelete } = useAuth();
   const qc = useQueryClient();
@@ -1094,28 +1108,43 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                 {history.length === 0 && (
                   <div className="text-xs text-muted-foreground">No changes recorded yet.</div>
                 )}
-                {(history as any[]).map((h) => (
-                  <div
-                    key={h.id}
-                    className="text-xs flex items-start gap-2 py-1.5 border-b border-border/40"
-                  >
-                    <span className="text-muted-foreground whitespace-nowrap">
-                      {format(new Date(h.created_at), "MMM d, h:mm a")}
-                    </span>
-                    <div className="flex-1">
-                      <span className="font-medium text-gold capitalize">
-                        {h.field.replace(/_/g, " ")}
+                {(history as any[]).map((h) => {
+                  const isCreation = h.field === "created" || h.field === "item_created";
+                  return (
+                    <div
+                      key={h.id}
+                      className="text-xs flex items-start gap-2 py-2 border-b border-border/40 last:border-0"
+                    >
+                      <span className="text-muted-foreground whitespace-nowrap pt-0.5">
+                        {format(new Date(h.created_at), "MMM d, h:mm a")}
                       </span>
-                      <span className="text-muted-foreground"> changed by </span>
-                      <span className="text-foreground">{nameOf(h.user_id)}</span>
-                      <div className="text-muted-foreground truncate">
-                        <span className="line-through">{h.old_value ?? "—"}</span>
-                        <span className="mx-1">→</span>
-                        <span className="text-foreground">{h.new_value ?? "—"}</span>
+                      <div className="flex-1 min-w-0">
+                        {isCreation ? (
+                          <div>
+                            <span className="inline-flex items-center gap-1 font-semibold text-emerald-400">
+                              <Plus className="h-3 w-3" /> Item created
+                            </span>
+                            <span className="text-muted-foreground"> by </span>
+                            <span className="text-foreground font-medium">{nameOf(h.user_id)}</span>
+                          </div>
+                        ) : (
+                          <div>
+                            <span className="font-medium text-gold capitalize">
+                              {h.field.replace(/_/g, " ")}
+                            </span>
+                            <span className="text-muted-foreground"> changed by </span>
+                            <span className="text-foreground font-medium">{nameOf(h.user_id)}</span>
+                            <div className="text-muted-foreground truncate mt-0.5">
+                              <span className="line-through">{formatHistoryValue(h.field, h.old_value)}</span>
+                              <span className="mx-1">→</span>
+                              <span className="text-foreground">{formatHistoryValue(h.field, h.new_value)}</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
           </div>
