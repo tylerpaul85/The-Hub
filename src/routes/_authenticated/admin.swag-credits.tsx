@@ -497,6 +497,21 @@ function AdminSwagCreditsPage() {
         </Alert>
       )}
 
+      {/* Resend Configuration Warning Banner */}
+      {!isConfigLoading && !config?.hasResend && (
+        <Alert className="border-amber-500/30 bg-amber-500/10 text-amber-400">
+          <Mail className="h-5 w-5 text-amber-400" />
+          <AlertTitle className="font-semibold text-white">Resend API Key Missing</AlertTitle>
+          <AlertDescription className="text-sm mt-1">
+            Automated email dispatch is currently paused because{" "}
+            <code className="bg-amber-950/50 px-1 py-0.5 rounded text-white border border-amber-500/20 font-mono text-xs">
+              RESEND_API_KEY
+            </code>{" "}
+            is not set in your server environment variables. Gift cards can still be generated and codes copied manually.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Main Content Dashboard */}
       <Card className="border-sidebar-border bg-sidebar/40 backdrop-blur-sm">
         <CardHeader className="pb-3 border-b border-sidebar-border/40">

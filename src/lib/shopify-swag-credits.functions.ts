@@ -549,5 +549,6 @@ export const checkShopifyConfig = createServerFn({ method: "GET" })
     return {
       configured: hasLegacyToken || hasNewCredentials,
       storeUrl: process.env.SHOPIFY_STORE_URL || null,
+      hasResend: !!process.env.RESEND_API_KEY,
     };
   });
