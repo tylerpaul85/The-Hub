@@ -2298,6 +2298,7 @@ export type Database = {
         Row: {
           id: string;
           agent_name: string;
+          recipient_email: string | null;
           amount: number;
           balance: number;
           reason: string;
@@ -2311,6 +2312,7 @@ export type Database = {
         Insert: {
           id?: string;
           agent_name: string;
+          recipient_email?: string | null;
           amount: number;
           balance: number;
           reason: string;
@@ -2324,6 +2326,7 @@ export type Database = {
         Update: {
           id?: string;
           agent_name?: string;
+          recipient_email?: string | null;
           amount?: number;
           balance?: number;
           reason?: string;
