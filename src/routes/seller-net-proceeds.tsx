@@ -839,6 +839,35 @@ function CalculatorView({
   const calc2 = useMemo(() => calculateScenario(data.scenario2_price || 0, 2), [data]);
   const calc3 = useMemo(() => calculateScenario(data.scenario3_price || 0, 3), [data]);
 
+  const activeCalcs = useMemo(() => {
+    const list = [calc1];
+    if (data.num_scenarios >= 2) list.push(calc2);
+    if (data.num_scenarios >= 3) list.push(calc3);
+    return list;
+  }, [calc1, calc2, calc3, data.num_scenarios]);
+
+  const allProceedsNegative = activeCalcs.every((c) => c.cashToSeller < 0);
+  const allProceedsPositive = activeCalcs.every((c) => c.cashToSeller >= 0);
+
+  const rowProceedsClasses = allProceedsNegative
+    ? "bg-red-950/40 print:bg-red-100 font-extrabold border-t-2 border-red-500/50 text-red-400 print:text-red-900 text-sm"
+    : allProceedsPositive
+    ? "bg-emerald-950/40 print:bg-emerald-100 font-extrabold border-t-2 border-emerald-500/50 text-emerald-400 print:text-emerald-900 text-sm"
+    : "bg-sidebar/50 print:bg-slate-100 font-extrabold border-t-2 border-border print:border-slate-300 text-foreground print:text-black text-sm";
+
+  const labelProceedsClasses = allProceedsNegative
+    ? "p-3.5 uppercase tracking-wider text-red-400 print:text-red-900"
+    : allProceedsPositive
+    ? "p-3.5 uppercase tracking-wider text-emerald-400 print:text-emerald-900"
+    : "p-3.5 uppercase tracking-wider text-muted-foreground print:text-slate-700";
+
+  const getProceedsCellClasses = (cash: number) => {
+    if (cash < 0) {
+      return "p-3.5 text-center font-mono text-base border-l border-red-800/60 print:border-red-300 bg-red-500/10 print:bg-red-200 text-red-400 print:text-red-900";
+    }
+    return "p-3.5 text-center font-mono text-base border-l border-emerald-800/60 print:border-emerald-300 bg-emerald-500/10 print:bg-emerald-200 text-emerald-400 print:text-emerald-900";
+  };
+
   // Save mutation
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -1282,21 +1311,21 @@ function CalculatorView({
                 )}
               </tr>
 
-              {/* ESTIMATED CASH TO SELLER (BOLD & LIGHT GREEN HIGHLIGHT) */}
-              <tr className="bg-emerald-950/40 print:bg-emerald-100 font-extrabold border-t-2 border-emerald-500/50 text-emerald-400 print:text-emerald-900 text-sm">
-                <td className="p-3.5 uppercase tracking-wider text-emerald-400 print:text-emerald-900">
+              {/* ESTIMATED CASH TO SELLER (RED IF NEGATIVE, GREEN IF POSITIVE) */}
+              <tr className={rowProceedsClasses}>
+                <td className={labelProceedsClasses}>
                   ESTIMATED CASH TO SELLER
                 </td>
-                <td className="p-3.5 text-center font-mono text-base border-l border-emerald-800/60 print:border-emerald-300 bg-emerald-500/10 print:bg-emerald-200">
+                <td className={getProceedsCellClasses(calc1.cashToSeller)}>
                   {formatCurrency(calc1.cashToSeller)}
                 </td>
                 {data.num_scenarios >= 2 && (
-                  <td className="p-3.5 text-center font-mono text-base border-l border-emerald-800/60 print:border-emerald-300 bg-emerald-500/10 print:bg-emerald-200">
+                  <td className={getProceedsCellClasses(calc2.cashToSeller)}>
                     {formatCurrency(calc2.cashToSeller)}
                   </td>
                 )}
                 {data.num_scenarios >= 3 && (
-                  <td className="p-3.5 text-center font-mono text-base border-l border-emerald-800/60 print:border-emerald-300 bg-emerald-500/10 print:bg-emerald-200">
+                  <td className={getProceedsCellClasses(calc3.cashToSeller)}>
                     {formatCurrency(calc3.cashToSeller)}
                   </td>
                 )}

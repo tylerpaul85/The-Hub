@@ -238,6 +238,32 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
   const c2 = calculateScenario(data.scenario2_price || 0);
   const c3 = calculateScenario(data.scenario3_price || 0);
 
+  const activeCalcs = [c1];
+  if (num >= 2) activeCalcs.push(c2);
+  if (num >= 3) activeCalcs.push(c3);
+
+  const allProceedsNegative = activeCalcs.every((c) => c.cashToSeller < 0);
+  const allProceedsPositive = activeCalcs.every((c) => c.cashToSeller >= 0);
+
+  const rowProceedsClasses = allProceedsNegative
+    ? "bg-red-950/40 font-extrabold border-t-2 border-red-500/50 text-red-400"
+    : allProceedsPositive
+    ? "bg-emerald-950/40 font-extrabold border-t-2 border-emerald-500/50 text-emerald-400"
+    : "bg-slate-900 font-extrabold border-t-2 border-slate-800 text-slate-200";
+
+  const labelProceedsClasses = allProceedsNegative
+    ? "p-3 uppercase text-red-400"
+    : allProceedsPositive
+    ? "p-3 uppercase text-emerald-400"
+    : "p-3 uppercase text-slate-300";
+
+  const getProceedsCellClasses = (cash: number) => {
+    if (cash < 0) {
+      return "p-3 text-center font-mono text-sm border-l border-red-800/60 bg-red-500/10 text-red-400";
+    }
+    return "p-3 text-center font-mono text-sm border-l border-emerald-800/60 bg-emerald-500/10 text-emerald-400";
+  };
+
   return (
     <div className="space-y-6 text-xs text-slate-200 p-2">
       <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
@@ -403,18 +429,18 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
               )}
             </tr>
 
-            <tr className="bg-emerald-950/40 font-extrabold border-t-2 border-emerald-500/50 text-emerald-400">
-              <td className="p-3 uppercase">ESTIMATED CASH TO SELLER</td>
-              <td className="p-3 text-center font-mono text-sm border-l border-emerald-800/60 bg-emerald-500/10">
+            <tr className={rowProceedsClasses}>
+              <td className={labelProceedsClasses}>ESTIMATED CASH TO SELLER</td>
+              <td className={getProceedsCellClasses(c1.cashToSeller)}>
                 {formatCurrency(c1.cashToSeller)}
               </td>
               {num >= 2 && (
-                <td className="p-3 text-center font-mono text-sm border-l border-emerald-800/60 bg-emerald-500/10">
+                <td className={getProceedsCellClasses(c2.cashToSeller)}>
                   {formatCurrency(c2.cashToSeller)}
                 </td>
               )}
               {num >= 3 && (
-                <td className="p-3 text-center font-mono text-sm border-l border-emerald-800/60 bg-emerald-500/10">
+                <td className={getProceedsCellClasses(c3.cashToSeller)}>
                   {formatCurrency(c3.cashToSeller)}
                 </td>
               )}

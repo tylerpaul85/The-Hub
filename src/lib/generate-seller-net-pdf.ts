@@ -109,6 +109,32 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
   const c2 = calculateScenario(data.scenario2_price || 0, 2);
   const c3 = calculateScenario(data.scenario3_price || 0, 3);
 
+  const activeScenarios = [c1];
+  if (numScenarios >= 2) activeScenarios.push(c2);
+  if (numScenarios >= 3) activeScenarios.push(c3);
+
+  const allNegative = activeScenarios.every((s) => s.cashToSeller < 0);
+  const allPositive = activeScenarios.every((s) => s.cashToSeller >= 0);
+
+  const rowProceedsStyle = allNegative
+    ? "background-color: #fee2e2; border-top: 2px solid #ef4444; border-bottom: 2px solid #ef4444; color: #991b1b;"
+    : allPositive
+    ? "background-color: #d1fae5; border-top: 2px solid #10b981; border-bottom: 2px solid #10b981; color: #065f46;"
+    : "background-color: #f8fafc; border-top: 2px solid #cbd5e1; border-bottom: 2px solid #cbd5e1; color: #1e293b;";
+
+  const labelProceedsStyle = allNegative
+    ? "padding: 10px; text-transform: uppercase; color: #991b1b;"
+    : allPositive
+    ? "padding: 10px; text-transform: uppercase; color: #065f46;"
+    : "padding: 10px; text-transform: uppercase; color: #1e293b;";
+
+  const getCellProceedsStyle = (cash: number) => {
+    if (cash < 0) {
+      return "padding: 10px; text-align: right; border-left: 1px solid #fca5a5; background-color: #fee2e2; color: #991b1b; font-weight: 800;";
+    }
+    return "padding: 10px; text-align: right; border-left: 1px solid #a7f3d0; background-color: #d1fae5; color: #065f46; font-weight: 800;";
+  };
+
   // Convert black MSREG logo to Base64 (with fallback to default logo)
   let logoBase64 = await getBase64ImageFromUrl(BLACK_LOGO_URL);
   if (!logoBase64 || logoBase64 === BLACK_LOGO_URL) {
@@ -231,12 +257,12 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
           ${numScenarios >= 3 ? `<td style="padding: 8px 10px; text-align: right; border-left: 1px solid #cbd5e1; color: #1B2F5B;">${formatMoney(c3.totalSellingCosts)}</td>` : ""}
         </tr>
 
-        <!-- ESTIMATED CASH TO SELLER (BOLD & LIGHT GREEN HIGHLIGHT) -->
-        <tr style="font-weight: 800; background-color: #d1fae5; border-top: 2px solid #10b981; border-bottom: 2px solid #10b981; color: #065f46; font-size: 13px;">
-          <td style="padding: 10px; text-transform: uppercase;">ESTIMATED CASH TO SELLER</td>
-          <td style="padding: 10px; text-align: right; border-left: 1px solid #a7f3d0;">${formatMoney(c1.cashToSeller)}</td>
-          ${numScenarios >= 2 ? `<td style="padding: 10px; text-align: right; border-left: 1px solid #a7f3d0;">${formatMoney(c2.cashToSeller)}</td>` : ""}
-          ${numScenarios >= 3 ? `<td style="padding: 10px; text-align: right; border-left: 1px solid #a7f3d0;">${formatMoney(c3.cashToSeller)}</td>` : ""}
+        <!-- ESTIMATED CASH TO SELLER (RED IF NEGATIVE, GREEN IF POSITIVE) -->
+        <tr style="font-weight: 800; ${rowProceedsStyle} font-size: 13px;">
+          <td style="${labelProceedsStyle}">ESTIMATED CASH TO SELLER</td>
+          <td style="${getCellProceedsStyle(c1.cashToSeller)}">${formatMoney(c1.cashToSeller)}</td>
+          ${numScenarios >= 2 ? `<td style="${getCellProceedsStyle(c2.cashToSeller)}">${formatMoney(c2.cashToSeller)}</td>` : ""}
+          ${numScenarios >= 3 ? `<td style="${getCellProceedsStyle(c3.cashToSeller)}">${formatMoney(c3.cashToSeller)}</td>` : ""}
         </tr>
       </tbody>
     </table>
