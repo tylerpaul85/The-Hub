@@ -113,6 +113,7 @@ function generateEmailHtml(opts: {
         day: "numeric",
         hour: "numeric",
         minute: "2-digit",
+        timeZone: "America/Chicago",
         timeZoneName: "short",
       })
     : "Upcoming on Content Calendar";
