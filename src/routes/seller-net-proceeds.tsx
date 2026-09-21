@@ -170,7 +170,7 @@ function SellerNetProceedsPage() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Top Navy/Gold Agent Header */}
-      <header className="bg-card border-b border-border px-4 py-3 sm:px-6 shadow-md print:hidden">
+      <header className="bg-card border-b border-border px-4 py-3 sm:px-6 shadow-md print:hidden pt-[max(0.75rem,env(safe-area-inset-top,0px))]">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
             <Link

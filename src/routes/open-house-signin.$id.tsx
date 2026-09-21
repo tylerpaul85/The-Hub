@@ -149,7 +149,7 @@ function PublicOpenHouseSigninPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white flex flex-col justify-between selection:bg-gold/30 selection:text-white">
       {/* Top Header */}
-      <header className="border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-md sticky top-0 z-30 px-4 py-3">
+      <header className="border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-md sticky top-0 z-30 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))]">
         <div className="max-w-xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <img src={logo} alt="Matt Smith Real Estate Group" className="h-8 w-auto" />

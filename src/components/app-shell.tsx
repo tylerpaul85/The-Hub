@@ -261,7 +261,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       : user?.email;
 
   return (
-    <div className="min-h-screen flex bg-background w-full max-w-full overflow-hidden">
+    <div className="h-screen h-[100dvh] flex bg-background w-full max-w-full overflow-hidden">
       {/* ─── Desktop Sidebar ───────────────────────────────────────── */}
       <aside className="hidden md:flex w-56 flex-col bg-sidebar border-r border-sidebar-border">
         <div className="px-4 py-4 border-b border-sidebar-border flex items-center gap-2.5">
@@ -304,43 +304,51 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0 w-full max-w-full overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 w-full max-w-full h-full overflow-hidden">
         {/* ─── Header ──────────────────────────────────────────────── */}
-        <header className="flex items-center justify-between px-4 h-12 border-b border-border bg-sidebar/60 pt-[max(0px,env(safe-area-inset-top))]">
-          {/* Mobile: hamburger + logo */}
-          <div className="md:hidden flex items-center gap-2">
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8"
-              onClick={() => setMobileNavOpen(true)}
-              aria-label="Open navigation"
-            >
-              <Menu className="h-4 w-4" />
-            </Button>
-            <img src={logo} alt="MSREG" className="h-7 w-auto" />
-          </div>
+        <header className="sticky top-0 z-30 shrink-0 w-full border-b border-border bg-sidebar/95 backdrop-blur pt-[env(safe-area-inset-top,0px)]">
+          <div className="flex items-center justify-between px-3 sm:px-4 h-14 md:h-12 w-full">
+            {/* Mobile: hamburger + logo */}
+            <div className="md:hidden flex items-center gap-2">
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-10 w-10 -ml-1 text-sidebar-foreground hover:bg-sidebar-accent hover:text-white"
+                onClick={() => setMobileNavOpen(true)}
+                aria-label="Open navigation"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              <img src={logo} alt="MSREG" className="h-7 w-auto" />
+            </div>
 
-          {/* Desktop: page title */}
-          <div className="hidden md:block">
-            {pageTitle && (
-              <h2 className="text-[13px] font-medium text-foreground/80 tracking-tight">{pageTitle}</h2>
-            )}
-          </div>
+            {/* Desktop: page title */}
+            <div className="hidden md:block">
+              {pageTitle && (
+                <h2 className="text-[13px] font-medium text-foreground/80 tracking-tight">{pageTitle}</h2>
+              )}
+            </div>
 
-          <div className="flex items-center gap-1 shrink-0">
-            <QuickHeadlineButton />
-            <NotificationBell />
-            <Button size="icon" variant="ghost" className="md:hidden h-8 w-8" onClick={signOut}>
-              <LogOut className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <QuickHeadlineButton />
+              <NotificationBell />
+              <Button
+                size="icon"
+                variant="ghost"
+                className="md:hidden h-10 w-10 text-sidebar-foreground hover:bg-sidebar-accent hover:text-white"
+                onClick={signOut}
+                aria-label="Sign out"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </header>
 
         {/* ─── Mobile Nav Drawer ───────────────────────────────────── */}
         <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-          <SheetContent side="left" className="w-72 bg-sidebar p-0 border-sidebar-border">
-            <SheetHeader className="px-4 py-4 border-b border-sidebar-border">
+          <SheetContent side="left" className="w-72 bg-sidebar p-0 border-sidebar-border flex flex-col h-full">
+            <SheetHeader className="px-4 py-4 border-b border-sidebar-border pt-[max(1rem,calc(env(safe-area-inset-top,0px)+0.75rem))]">
               <div className="flex items-center gap-2.5">
                 <img
                   src={logo}
@@ -358,7 +366,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </div>
             </SheetHeader>
 
-            <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto max-h-[calc(100vh-160px)]">
+            <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto">
               <NavLinks
                 pathname={pathname}
                 isAdmin={isAdmin}
@@ -369,7 +377,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               />
             </nav>
 
-            <div className="px-3 py-2.5 border-t border-sidebar-border">
+            <div className="px-3 py-2.5 border-t border-sidebar-border pb-[max(1rem,calc(env(safe-area-inset-bottom,0px)+0.5rem))]">
               <div className="px-1.5 py-1 text-xs">
                 <div className="text-white/90 font-medium truncate text-[13px]">{userName}</div>
                 <div className="text-muted-foreground text-[11px] tracking-widest uppercase mt-px">
@@ -391,7 +399,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </SheetContent>
         </Sheet>
 
-        <main className="flex-1 overflow-x-hidden overflow-y-auto pt-4 md:pt-0">{children}</main>
+        <main className="flex-1 overflow-x-hidden overflow-y-auto pt-4 md:pt-0 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]">{children}</main>
       </div>
     </div>
   );
