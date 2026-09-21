@@ -216,28 +216,29 @@ function ListingsPage() {
   );
 
   return (
-    <div className="p-6 lg:p-8 max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto space-y-6 w-full min-w-0">
       {/* Header */}
-      <header className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="flex items-center gap-3 flex-1">
-          <div className="h-10 w-10 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center">
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full min-w-0 border-b border-border pb-5 sm:border-0 sm:pb-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="h-10 w-10 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center shrink-0">
             <Home className="h-5 w-5 text-gold" />
           </div>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Listings</h1>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold tracking-tight truncate">Listings</h1>
             <p className="text-muted-foreground text-sm mt-0.5">
               Manage listing lifecycle, marketing, and scheduled posts.
             </p>
           </div>
         </div>
         {canManage && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               size="sm"
               onClick={() => backfillMut.mutate()}
               disabled={backfillMut.isPending}
               title="Schedule missing 30-day reposts for all active listings ≤30 days on market"
+              className="shrink-0"
             >
               {backfillMut.isPending ? (
                 <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
@@ -246,12 +247,12 @@ function ListingsPage() {
               )}
               Backfill 30-Day Reposts
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="shrink-0">
               <Upload className="h-4 w-4 mr-1.5" /> Bulk Import
             </Button>
             <Button
               size="sm"
-              className="bg-gold hover:bg-gold/90 text-navy font-semibold"
+              className="bg-gold hover:bg-gold/90 text-navy font-semibold shrink-0"
               onClick={() => setNewOpen(true)}
             >
               <Plus className="h-4 w-4 mr-1.5" /> New Listing
@@ -261,8 +262,8 @@ function ListingsPage() {
       </header>
 
       {/* Filter + search bar */}
-      <div className="mb-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-        <div className="flex gap-1 bg-card border border-border rounded-lg p-1 overflow-x-auto max-w-full no-scrollbar whitespace-nowrap">
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between w-full min-w-0">
+        <div className="flex gap-1 bg-card border border-border rounded-lg p-1 overflow-x-auto max-w-full no-scrollbar whitespace-nowrap shrink-0">
           {(["all", "active", "under_contract", "sold"] as const).map((s) => (
             <button
               key={s}
@@ -279,7 +280,7 @@ function ListingsPage() {
             </button>
           ))}
         </div>
-        <div className="flex-1 max-w-xs">
+        <div className="w-full sm:w-72 sm:max-w-xs min-w-0">
           <Input
             placeholder="Search address, agent, MLS…"
             value={search}
@@ -290,7 +291,7 @@ function ListingsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden min-w-0 w-full">
         {isLoading ? (
           <div className="flex items-center justify-center p-16">
             <Loader2 className="h-6 w-6 animate-spin text-gold" />

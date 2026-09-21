@@ -198,42 +198,44 @@ function ListingDetailPage() {
   }
 
   return (
-    <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6 w-full min-w-0">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link to="/listings" className="hover:text-gold transition-colors flex items-center gap-1">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0 flex-wrap">
+        <Link to="/listings" className="hover:text-gold transition-colors flex items-center gap-1 shrink-0">
           <ArrowLeft className="h-3.5 w-3.5" /> Listings
         </Link>
-        <span>/</span>
-        <span className="text-foreground truncate max-w-[300px]">{listing.address}</span>
+        <span className="shrink-0">/</span>
+        <span className="text-foreground truncate min-w-0 max-w-[240px] sm:max-w-md">{listing.address}</span>
       </div>
 
       {/* Header card */}
-      <div className="bg-card border border-border rounded-xl p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="h-12 w-12 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center shrink-0">
-          <Home className="h-6 w-6 text-gold" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-bold truncate">{listing.address}</h1>
-          <div className="flex items-center gap-3 mt-1 flex-wrap">
-            <span
-              className={cn(
-                "px-2 py-0.5 rounded text-xs font-medium border",
-                LISTING_STATUS_CLASS[listing.status],
+      <div className="bg-card border border-border rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full min-w-0">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="h-12 w-12 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center shrink-0">
+            <Home className="h-6 w-6 text-gold" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold truncate">{listing.address}</h1>
+            <div className="flex items-center gap-3 mt-1 flex-wrap">
+              <span
+                className={cn(
+                  "px-2 py-0.5 rounded text-xs font-medium border shrink-0",
+                  LISTING_STATUS_CLASS[listing.status],
+                )}
+              >
+                {LISTING_STATUS_LABEL[listing.status]}
+              </span>
+              {listing.agent_name && (
+                <span className="text-muted-foreground text-sm truncate">{listing.agent_name}</span>
               )}
-            >
-              {LISTING_STATUS_LABEL[listing.status]}
-            </span>
-            {listing.agent_name && (
-              <span className="text-muted-foreground text-sm">{listing.agent_name}</span>
-            )}
-            <span className="text-muted-foreground text-sm">
-              {calcDaysListed(listing.list_date)} days on market
-            </span>
+              <span className="text-muted-foreground text-sm shrink-0">
+                {calcDaysListed(listing.list_date)} days on market
+              </span>
+            </div>
           </div>
         </div>
         {canManage && listing.status === "active" && (
-          <div className="shrink-0">
+          <div className="shrink-0 w-full sm:w-auto">
             <MarkUnderContractButton
               listingId={listing.id}
               userId={userId}

@@ -286,15 +286,15 @@ export function OpenHousesPage() {
   const archivedCount = allOpenHouses.filter((oh) => oh.archived).length;
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-12 w-full min-w-0">
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border pb-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-foreground tracking-tight">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border pb-5 w-full min-w-0">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-foreground tracking-tight break-words">
               Open Houses Hub
             </h1>
-            <Badge className="bg-gold/15 text-gold border-gold/30 text-xs">
+            <Badge className="bg-gold/15 text-gold border-gold/30 text-xs shrink-0">
               Team Workspace
             </Badge>
           </div>
@@ -303,14 +303,14 @@ export function OpenHousesPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto min-w-0">
           {isAdmin && (
-            <div className="inline-flex rounded-md border border-border overflow-hidden shrink-0 mr-1">
+            <div className="inline-flex rounded-md border border-border overflow-x-auto max-w-full shrink-0">
               <button
                 type="button"
                 onClick={() => setActiveTab("hub")}
                 className={cn(
-                  "px-3 py-1.5 text-xs font-medium transition-colors",
+                  "px-3 py-1.5 text-xs font-medium transition-colors shrink-0",
                   activeTab === "hub" ? "bg-gold text-navy" : "hover:bg-accent/40 text-foreground"
                 )}
               >
@@ -320,7 +320,7 @@ export function OpenHousesPage() {
                 type="button"
                 onClick={() => setActiveTab("analytics")}
                 className={cn(
-                  "px-3 py-1.5 text-xs font-medium border-l border-border transition-colors",
+                  "px-3 py-1.5 text-xs font-medium border-l border-border transition-colors shrink-0",
                   activeTab === "analytics" ? "bg-gold text-navy" : "hover:bg-accent/40 text-foreground"
                 )}
               >
@@ -330,7 +330,7 @@ export function OpenHousesPage() {
                 type="button"
                 onClick={() => setActiveTab("templates")}
                 className={cn(
-                  "px-3 py-1.5 text-xs font-medium border-l border-border transition-colors",
+                  "px-3 py-1.5 text-xs font-medium border-l border-border transition-colors shrink-0",
                   activeTab === "templates" ? "bg-gold text-navy" : "hover:bg-accent/40 text-foreground"
                 )}
               >
@@ -341,7 +341,7 @@ export function OpenHousesPage() {
 
           <Button
             onClick={() => setCreateModalOpen(true)}
-            className="bg-gold text-navy hover:bg-gold/90 font-semibold shadow-md shrink-0"
+            className="bg-gold text-navy hover:bg-gold/90 font-semibold shadow-md shrink-0 w-full sm:w-auto"
           >
             <Plus className="h-4 w-4 mr-1.5" /> Schedule Open House
           </Button>
@@ -356,9 +356,9 @@ export function OpenHousesPage() {
         /* Main Hub View */
         <div className="space-y-6">
           {/* Filter Bar */}
-          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border/80 shadow-sm">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border/80 shadow-sm min-w-0 w-full">
             {/* Time Filter Pills */}
-            <div className="inline-flex rounded-lg border border-border p-1 bg-muted/40 overflow-x-auto shrink-0">
+            <div className="inline-flex rounded-lg border border-border p-1 bg-muted/40 overflow-x-auto max-w-full shrink-0">
               <button
                 type="button"
                 onClick={() => setTimeFilter("weekend")}
@@ -402,10 +402,10 @@ export function OpenHousesPage() {
             </div>
 
             {/* Agent Dropdown & Search */}
-            <div className="flex items-center gap-2.5 flex-1 min-w-0 max-w-2xl">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 min-w-0 max-w-2xl">
               {agentNames.length > 0 && (
                 <Select value={agentFilter} onValueChange={setAgentFilter}>
-                  <SelectTrigger className="w-44 text-xs h-9 shrink-0">
+                  <SelectTrigger className="w-full sm:w-44 text-xs h-9 shrink-0">
                     <SelectValue placeholder="Filter by Agent" />
                   </SelectTrigger>
                   <SelectContent>
@@ -419,7 +419,7 @@ export function OpenHousesPage() {
                 </Select>
               )}
 
-              <div className="relative flex-1">
+              <div className="relative flex-1 min-w-0">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
                   type="search"
@@ -464,7 +464,7 @@ export function OpenHousesPage() {
               </Button>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full min-w-0">
               {filteredOpenHouses.map((oh) => {
                 const c = counts[oh.id] ?? { assets: 0, thumb: null };
                 const signinsCount = signinCounts[oh.id] ?? 0;
@@ -476,7 +476,7 @@ export function OpenHousesPage() {
                   <Card
                     key={oh.id}
                     className={cn(
-                      "overflow-hidden flex flex-col border border-border/80 hover:border-gold/50 transition-all duration-300 group shadow-sm bg-card",
+                      "overflow-hidden flex flex-col border border-border/80 hover:border-gold/50 transition-all duration-300 group shadow-sm bg-card min-w-0 w-full",
                       isArchived && "opacity-80"
                     )}
                   >

@@ -337,11 +337,11 @@ function OpenHouseManagerMain({ token, onLock }: { token: string; onLock: () => 
       </header>
 
       {/* Main Container */}
-      <main className="max-w-6xl mx-auto px-4 py-6 space-y-6 pb-20">
+      <main className="max-w-6xl mx-auto px-4 py-6 space-y-6 pb-20 w-full min-w-0">
         {/* Banner Section */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-card via-card/90 to-card border border-border/80 p-5 rounded-2xl shadow-sm">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-serif font-bold text-foreground">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-card via-card/90 to-card border border-border/80 p-5 rounded-2xl shadow-sm min-w-0 w-full">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-serif font-bold text-foreground break-words">
               Open House Management
             </h1>
             <p className="text-xs text-muted-foreground mt-1 max-w-xl">
@@ -350,16 +350,16 @@ function OpenHouseManagerMain({ token, onLock }: { token: string; onLock: () => 
           </div>
           <Button
             onClick={() => setScheduleModalOpen(true)}
-            className="bg-gold text-navy hover:bg-gold/90 font-bold text-xs h-10 px-4 rounded-xl shadow-md shrink-0"
+            className="bg-gold text-navy hover:bg-gold/90 font-bold text-xs h-10 px-4 rounded-xl shadow-md shrink-0 w-full sm:w-auto"
           >
             <Plus className="h-4 w-4 mr-1.5" /> Schedule Open House
           </Button>
         </div>
 
         {/* Filter Controls */}
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border min-w-0 w-full">
           {/* Time Filter Pills */}
-          <div className="inline-flex rounded-lg border border-border p-1 bg-muted/40 overflow-x-auto shrink-0">
+          <div className="inline-flex rounded-lg border border-border p-1 bg-muted/40 overflow-x-auto max-w-full shrink-0">
             <button
               type="button"
               onClick={() => setTimeFilter("weekend")}
@@ -403,10 +403,10 @@ function OpenHouseManagerMain({ token, onLock }: { token: string; onLock: () => 
           </div>
 
           {/* Search & Agent Filter */}
-          <div className="flex items-center gap-2 flex-1 max-w-xl">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 min-w-0 max-w-xl">
             {agentNames.length > 0 && (
               <Select value={agentFilter} onValueChange={setAgentFilter}>
-                <SelectTrigger className="w-40 text-xs h-9 shrink-0">
+                <SelectTrigger className="w-full sm:w-40 text-xs h-9 shrink-0">
                   <SelectValue placeholder="Agent Filter" />
                 </SelectTrigger>
                 <SelectContent>
@@ -420,7 +420,7 @@ function OpenHouseManagerMain({ token, onLock }: { token: string; onLock: () => 
               </Select>
             )}
 
-            <div className="relative flex-1">
+            <div className="relative flex-1 min-w-0">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 type="search"
@@ -444,12 +444,12 @@ function OpenHouseManagerMain({ token, onLock }: { token: string; onLock: () => 
         {/* Cards Grid */}
         {isLoading ? (
           <div className="text-center py-16 text-muted-foreground text-sm">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-gold mb-3" />
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-gold border-t-transparent mx-auto mb-3" />
             Loading open houses...
           </div>
         ) : filtered.length === 0 ? (
           <Card className="p-12 text-center text-muted-foreground border-dashed">
-            <Home className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
+            <Home className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
             <div className="font-semibold text-foreground text-base">No open houses found</div>
             <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
               {timeFilter === "weekend"
@@ -465,7 +465,7 @@ function OpenHouseManagerMain({ token, onLock }: { token: string; onLock: () => 
             </Button>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full min-w-0">
             {filtered.map((oh) => {
               const signins = oh.signinCount || 0;
               const totalTasks = oh.checklistTotal || 21;
@@ -477,7 +477,7 @@ function OpenHouseManagerMain({ token, onLock }: { token: string; onLock: () => 
                 <Card
                   key={oh.id}
                   className={cn(
-                    "overflow-hidden flex flex-col border border-border/80 hover:border-gold/60 transition-all duration-300 shadow-sm bg-card group",
+                    "overflow-hidden flex flex-col border border-border/80 hover:border-gold/60 transition-all duration-300 shadow-sm bg-card group min-w-0 w-full",
                     isArchived && "opacity-80"
                   )}
                 >
