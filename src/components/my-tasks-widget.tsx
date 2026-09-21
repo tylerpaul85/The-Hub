@@ -96,13 +96,13 @@ export function MyTasksWidget() {
   const today = new Date().toISOString().slice(0, 10);
 
   return (
-    <section className="bg-card border border-border rounded-lg">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-        <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
-        <h2 className="text-sm font-semibold">My Tasks</h2>
-        <span className="ml-auto text-xs text-muted-foreground tabular-nums">{items.length}</span>
+    <section className="bg-card border border-border rounded-lg min-w-0 w-full overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border min-w-0">
+        <ClipboardCheck className="h-4 w-4 text-muted-foreground shrink-0" />
+        <h2 className="text-sm font-semibold truncate">My Tasks</h2>
+        <span className="ml-auto text-xs text-muted-foreground tabular-nums shrink-0">{items.length}</span>
       </div>
-      <div className="divide-y divide-border/50">
+      <div className="divide-y divide-border/50 min-w-0">
         {isLoading && (
           <div className="space-y-2.5 px-4 py-4">
             <Skeleton className="h-4 w-3/4" />
@@ -111,7 +111,7 @@ export function MyTasksWidget() {
           </div>
         )}
         {!isLoading && items.length === 0 && (
-          <div className="py-10 flex flex-col items-center text-center">
+          <div className="py-10 px-4 flex flex-col items-center text-center">
             <ClipboardCheck className="h-5 w-5 text-muted-foreground/40 mb-2" />
             <p className="text-sm text-muted-foreground">No open tasks.</p>
           </div>
@@ -121,13 +121,13 @@ export function MyTasksWidget() {
             const overdue = t.due_date && t.due_date < today;
             if (t.kind === "todo") {
               return (
-                <div key={`todo-${t.id}`} className="px-4 py-2.5 flex items-center gap-2.5">
-                  <Checkbox checked={false} onCheckedChange={() => toggleTodo.mutate(t.id)} />
+                <div key={`todo-${t.id}`} className="px-4 py-2.5 flex items-center gap-2.5 min-w-0">
+                  <Checkbox className="shrink-0" checked={false} onCheckedChange={() => toggleTodo.mutate(t.id)} />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm truncate">{t.title}</div>
                     <div
                       className={cn(
-                        "text-xs mt-px",
+                        "text-xs mt-px truncate",
                         overdue ? "text-destructive" : "text-muted-foreground",
                       )}
                     >
@@ -143,9 +143,10 @@ export function MyTasksWidget() {
             return (
               <div
                 key={`task-${t.id}`}
-                className="px-4 py-2.5 flex items-center gap-2.5 hover:bg-accent/40 transition-colors duration-100 group"
+                className="px-4 py-2.5 flex items-center gap-2.5 hover:bg-accent/40 transition-colors duration-100 group min-w-0"
               >
                 <Checkbox
+                  className="shrink-0"
                   checked={false}
                   onCheckedChange={() => toggleTask.mutate(t.id)}
                   aria-label="Mark task complete"
@@ -158,7 +159,7 @@ export function MyTasksWidget() {
                   <div className="text-sm truncate group-hover:text-gold transition-colors">{t.title}</div>
                   <div
                     className={cn(
-                      "text-xs mt-px",
+                      "text-xs mt-px truncate",
                       overdue ? "text-destructive" : "text-muted-foreground",
                     )}
                   >

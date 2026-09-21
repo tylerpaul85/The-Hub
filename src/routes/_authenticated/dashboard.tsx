@@ -67,19 +67,19 @@ function Dashboard() {
 
       {isClientCare && <ClientCareClosingGifts />}
 
-      <div className="grid lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full min-w-0">
         <MyRocksWidget />
         <MyTasksWidget />
       </div>
 
       {/* Onboarding — shown when user has no action items or approved content */}
       {isEmpty && (
-        <section className="rounded-lg border border-border bg-card p-4">
+        <section className="rounded-lg border border-border bg-card p-4 min-w-0 w-full overflow-hidden">
           <h2 className="text-sm font-semibold mb-1">Get started</h2>
           <p className="text-sm text-muted-foreground mb-3">
             Here's what you can do in The Hub.
           </p>
-          <div className="grid sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 min-w-0">
             {[
               { to: "/calendar" as const, icon: Calendar, label: "Calendar", desc: "View content schedule" },
               { to: "/listings" as const, icon: Home, label: "Listings", desc: "Manage properties" },
@@ -88,12 +88,12 @@ function Dashboard() {
               <Link
                 key={link.to}
                 to={link.to}
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-md border border-border hover:bg-accent/40 transition-colors duration-100"
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-md border border-border hover:bg-accent/40 transition-colors duration-100 min-w-0"
               >
                 <link.icon className="h-4 w-4 text-muted-foreground shrink-0" />
                 <div className="min-w-0">
-                  <div className="text-sm font-medium">{link.label}</div>
-                  <div className="text-xs text-muted-foreground">{link.desc}</div>
+                  <div className="text-sm font-medium truncate">{link.label}</div>
+                  <div className="text-xs text-muted-foreground truncate">{link.desc}</div>
                 </div>
                 <ArrowRight className="h-3.5 w-3.5 text-muted-foreground ml-auto shrink-0" />
               </Link>
@@ -104,18 +104,18 @@ function Dashboard() {
 
       {/* Action Items */}
       {(isAdmin || roles?.includes("marketing_coordinator")) && (
-        <div className="grid lg:grid-cols-2 gap-4 mt-6">
-          <section className="bg-card border border-border rounded-lg shadow-sm">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
-              <ListTodo className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">My Action Items</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6 w-full min-w-0">
+          <section className="bg-card border border-border rounded-lg shadow-sm min-w-0 w-full overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-border min-w-0">
+              <ListTodo className="h-4 w-4 text-muted-foreground shrink-0" />
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground truncate">My Action Items</h2>
               {actionItems.length > 0 && (
-                <span className="ml-auto text-[11px] font-semibold text-gold tabular-nums bg-gold/10 px-2 py-0.5 rounded-full">
+                <span className="ml-auto text-[11px] font-semibold text-gold tabular-nums bg-gold/10 px-2 py-0.5 rounded-full shrink-0">
                   {actionItems.length}
                 </span>
               )}
             </div>
-            <div className="divide-y divide-border/50">
+            <div className="divide-y divide-border/50 min-w-0">
               {isLoading && (
                 <div className="space-y-2.5 px-5 py-5">
                   <Skeleton className="h-4 w-3/4" />
@@ -123,7 +123,7 @@ function Dashboard() {
                 </div>
               )}
               {!isLoading && actionItems.length === 0 && (
-                <div className="py-10 flex flex-col items-center text-center">
+                <div className="py-10 px-4 flex flex-col items-center text-center">
                   <ListTodo className="h-5 w-5 text-muted-foreground/40 mb-2" />
                   <p className="text-sm text-muted-foreground">Nothing needs your attention right now.</p>
                 </div>
@@ -135,15 +135,15 @@ function Dashboard() {
           </section>
 
           {/* Approved & Ready */}
-          <section className="bg-card border border-border rounded-lg shadow-sm">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
-              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Approved & Ready</h2>
-              <span className="ml-auto text-[11px] text-muted-foreground tabular-nums bg-muted px-2 py-0.5 rounded-full">
+          <section className="bg-card border border-border rounded-lg shadow-sm min-w-0 w-full overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-border min-w-0">
+              <CheckCircle2 className="h-4 w-4 text-muted-foreground shrink-0" />
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground truncate">Approved & Ready</h2>
+              <span className="ml-auto text-[11px] text-muted-foreground tabular-nums bg-muted px-2 py-0.5 rounded-full shrink-0">
                 {approved.length}
               </span>
             </div>
-            <div className="divide-y divide-border/50">
+            <div className="divide-y divide-border/50 min-w-0">
               {isLoading && (
                 <div className="space-y-2.5 px-5 py-5">
                   <Skeleton className="h-4 w-3/4" />
@@ -151,7 +151,7 @@ function Dashboard() {
                 </div>
               )}
               {!isLoading && approved.length === 0 && (
-                <div className="py-10 flex flex-col items-center text-center">
+                <div className="py-10 px-4 flex flex-col items-center text-center">
                   <CheckCircle2 className="h-5 w-5 text-muted-foreground/40 mb-2" />
                   <p className="text-sm text-muted-foreground">No approved content waiting.</p>
                 </div>
@@ -169,24 +169,24 @@ function Dashboard() {
 
 function Row({ item, onOpen }: { item: ContentItem; onOpen: () => void }) {
   return (
-    <div className="px-4 py-2.5 flex items-center gap-3 hover:bg-accent/40 transition-colors duration-100">
+    <div className="px-4 py-2.5 flex items-center gap-3 hover:bg-accent/40 transition-colors duration-100 min-w-0">
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium truncate flex items-center gap-2">
-          {item.title}
-          <StatusBadge className={STATUS_CLASS[item.status as Status]}>
+          <span className="truncate">{item.title}</span>
+          <StatusBadge className={cn("shrink-0", STATUS_CLASS[item.status as Status])}>
             {STATUS_LABEL[item.status as Status]}
           </StatusBadge>
         </div>
         <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
           <span>{format(new Date(item.scheduled_at), "MMM d, yyyy · h:mm a")}</span>
           {(item.platforms || []).map((p) => (
-            <span key={p} className="px-1.5 py-px bg-muted rounded text-[11px]">
+            <span key={p} className="px-1.5 py-px bg-muted rounded text-[11px] shrink-0">
               {p}
             </span>
           ))}
         </div>
       </div>
-      <Button size="sm" variant="outline" onClick={onOpen}>
+      <Button size="sm" variant="outline" onClick={onOpen} className="shrink-0">
         Open <ExternalLink className="h-3 w-3 ml-1" />
       </Button>
     </div>
