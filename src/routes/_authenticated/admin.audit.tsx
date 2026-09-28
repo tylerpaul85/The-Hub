@@ -57,6 +57,8 @@ import {
   reviewComplianceFlag,
   getRubricCriteria,
   upsertRubricCriterion,
+  prepareAgentGradingSample,
+  gradeSingleSampledLead,
   runAgentGradingSample,
   getCalibrationSets,
   upsertCalibrationSet,
@@ -296,20 +298,44 @@ function AgentAuditPage() {
   const handleExecuteSampling = async () => {
     if (!sampleTargetAgent) return;
     setIsGrading(true);
-    toast.info(
-      `Sampling and grading ${sampleSize} leads for ${sampleTargetAgent.agent_name}...`,
-    );
     try {
-      const result = await runAgentGradingSample({
+      toast.loading(`Sampling leads for ${sampleTargetAgent.agent_name}...`, {
+        id: "grading-progress",
+      });
+
+      const prepResult = await prepareAgentGradingSample({
         data: {
           agentFubId: sampleTargetAgent.agent_fub_id,
           sampleSize,
           auditMonth: new Date().toISOString().slice(0, 7),
-          mode: "direct",
         },
       });
+
+      const totalToGrade = prepResult.sampledLeads?.length ?? 0;
+      if (totalToGrade === 0) {
+        toast.error("No active leads were found in scope for this agent.", {
+          id: "grading-progress",
+        });
+        return;
+      }
+
+      let completedCount = 0;
+      for (let i = 0; i < totalToGrade; i++) {
+        const item = prepResult.sampledLeads[i];
+        toast.loading(
+          `Grading lead ${i + 1} of ${totalToGrade} (${item.leadName}) with Claude...`,
+          { id: "grading-progress" },
+        );
+
+        await gradeSingleSampledLead({
+          data: { sampledLeadId: item.id },
+        });
+        completedCount++;
+      }
+
       toast.success(
-        `Graded ${result.sampled_count} leads for ${sampleTargetAgent.agent_name}!`,
+        `Graded ${completedCount} leads for ${sampleTargetAgent.agent_name}!`,
+        { id: "grading-progress" },
       );
       setShowSamplingModal(false);
       loadOverview();
@@ -318,7 +344,7 @@ function AgentAuditPage() {
         setAgentDetail(detail);
       }
     } catch (err: any) {
-      toast.error(`Grading failed: ${err.message}`);
+      toast.error(`Grading failed: ${cleanErrorMessage(err)}`, { id: "grading-progress" });
     } finally {
       setIsGrading(false);
     }

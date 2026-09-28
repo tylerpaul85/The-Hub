@@ -750,6 +750,227 @@ export const upsertRubricCriterion = createServerFn({ method: "POST" })
 // 5. Claude Sampling & Grading Execution
 // ------------------------------------------------------------------------------
 
+export const prepareAgentGradingSample = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        agentFubId: z.number(),
+        sampleSize: z.number().min(1).max(50).default(DEFAULT_MONTHLY_SAMPLE_SIZE),
+        auditMonth: z.string().default(() => new Date().toISOString().slice(0, 7)),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data: input, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const sb = supabaseAdmin as any;
+
+    const { data: agent } = await sb
+      .from("fub_agents")
+      .select("fub_id, name")
+      .eq("fub_id", input.agentFubId)
+      .single();
+    if (!agent) throw new Error("Agent not found in database.");
+
+    // Sample candidate leads
+    let candidateLeads: any[] = [];
+    const { data: primaryLeads } = await sb
+      .from("fub_leads")
+      .select("fub_id, name, stage, source, created_at")
+      .eq("assigned_user_fub_id", input.agentFubId)
+      .order("last_activity", { ascending: false })
+      .limit(100);
+
+    candidateLeads = primaryLeads ?? [];
+
+    if (candidateLeads.length === 0) {
+      const [agentCalls, agentNotes, agentTasks] = await Promise.all([
+        sb.from("fub_calls").select("person_fub_id").eq("user_fub_id", input.agentFubId).gt("person_fub_id", 0).limit(50),
+        sb.from("fub_notes").select("person_fub_id").eq("user_fub_id", input.agentFubId).gt("person_fub_id", 0).limit(50),
+        sb.from("fub_tasks").select("person_fub_id").eq("assigned_user_fub_id", input.agentFubId).gt("person_fub_id", 0).limit(50),
+      ]);
+
+      const activePersonIds = Array.from(
+        new Set([
+          ...(agentCalls.data || []).map((c: any) => c.person_fub_id),
+          ...(agentNotes.data || []).map((n: any) => n.person_fub_id),
+          ...(agentTasks.data || []).map((t: any) => t.person_fub_id),
+        ]),
+      ).filter(Boolean);
+
+      if (activePersonIds.length > 0) {
+        const { data: fallbackLeads } = await sb
+          .from("fub_leads")
+          .select("fub_id, name, stage, source, created_at")
+          .in("fub_id", activePersonIds)
+          .limit(100);
+        candidateLeads = fallbackLeads ?? [];
+      }
+    }
+
+    if (candidateLeads.length === 0) {
+      throw new Error(`No leads found assigned to or handled by ${agent.name} (ID: ${agent.fub_id}).`);
+    }
+
+    const shuffled = [...candidateLeads].sort(() => Math.random() - 0.5);
+    const selectedLeads = shuffled.slice(0, input.sampleSize);
+
+    const preparedSampledLeads: { id: string; personFubId: number; leadName: string }[] = [];
+
+    for (const lead of selectedLeads) {
+      const [calls, notes, texts, emails, tasks, appts, stages] = await Promise.all([
+        sb.from("fub_calls").select("*").eq("person_fub_id", lead.fub_id),
+        sb.from("fub_notes").select("*").eq("person_fub_id", lead.fub_id),
+        sb.from("fub_text_messages").select("*").eq("person_fub_id", lead.fub_id),
+        sb.from("fub_emails").select("*").eq("person_fub_id", lead.fub_id),
+        sb.from("fub_tasks").select("*").eq("person_fub_id", lead.fub_id),
+        sb.from("fub_appointments").select("*").eq("person_fub_id", lead.fub_id),
+        sb.from("fub_stage_history").select("*").eq("person_fub_id", lead.fub_id),
+      ]);
+
+      const timeline = buildSanitizedLeadTimeline({
+        calls: calls.data ?? [],
+        notes: notes.data ?? [],
+        texts: texts.data ?? [],
+        emails: emails.data ?? [],
+        tasks: tasks.data ?? [],
+        appointments: appts.data ?? [],
+        stageHistory: stages.data ?? [],
+        agentName: agent.name,
+      });
+
+      const { data: sampledRow, error: slErr } = await sb
+        .from("audit_sampled_leads")
+        .insert({
+          audit_month: input.auditMonth,
+          agent_fub_id: agent.fub_id,
+          agent_name: agent.name,
+          person_fub_id: lead.fub_id,
+          anonymized_label: ANONYMIZED_AGENT_LABEL,
+          timeline_json: timeline,
+          grading_status: "pending",
+        })
+        .select("id")
+        .single();
+
+      if (!slErr && sampledRow?.id) {
+        preparedSampledLeads.push({
+          id: sampledRow.id,
+          personFubId: lead.fub_id,
+          leadName: lead.name || `Lead #${lead.fub_id}`,
+        });
+      }
+    }
+
+    return {
+      agentName: agent.name,
+      agentFubId: agent.fub_id,
+      sampledLeads: preparedSampledLeads,
+    };
+  });
+
+export const gradeSingleSampledLead = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ sampledLeadId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data: input, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const sb = supabaseAdmin as any;
+
+    const { data: sampledRow, error: sErr } = await sb
+      .from("audit_sampled_leads")
+      .select("*")
+      .eq("id", input.sampledLeadId)
+      .single();
+
+    if (sErr || !sampledRow) {
+      throw new Error(`Sampled lead ${input.sampledLeadId} not found.`);
+    }
+
+    // Load active rubric criteria
+    const { data: criteriaRows } = await sb
+      .from("audit_rubric_criteria")
+      .select("*")
+      .eq("is_active", true)
+      .order("sort_order");
+    const criteria = (criteriaRows ?? []) as AuditRubricCriterion[];
+    if (criteria.length === 0) {
+      throw new Error("No active rubric criteria found.");
+    }
+
+    const timeline = (sampledRow.timeline_json ?? []) as TimelineActivity[];
+
+    try {
+      const gradingOutput = await gradeLeadDirectly(timeline, criteria);
+
+      const gradeInserts = (gradingOutput.scores ?? []).map((s) => {
+        const criterionMatch = criteria.find((c) => c.key === s.criterion_key);
+        return {
+          sampled_lead_id: sampledRow.id,
+          criterion_id: criterionMatch?.id || null,
+          criterion_key: s.criterion_key,
+          score: s.insufficient_evidence ? null : s.score,
+          insufficient_evidence: s.insufficient_evidence,
+          cited_activity_ids: s.cited_activity_ids,
+          excerpt: s.excerpt,
+          reasoning: s.reasoning,
+        };
+      });
+
+      if (gradeInserts.length > 0) {
+        await sb.from("audit_lead_grades").insert(gradeInserts);
+      }
+
+      const compInserts = (gradingOutput.compliance_concerns ?? []).map((c) => ({
+        sampled_lead_id: sampledRow.id,
+        person_fub_id: sampledRow.person_fub_id,
+        agent_fub_id: sampledRow.agent_fub_id,
+        agent_name: sampledRow.agent_name,
+        flag_type: c.flag_type,
+        exact_language: c.exact_language,
+        cited_activity_ids: [c.activity_id],
+        severity: "high",
+      }));
+
+      if (compInserts.length > 0) {
+        await sb.from("audit_compliance_flags").insert(compInserts);
+      }
+
+      const validScores = gradeInserts
+        .map((g) => g.score)
+        .filter((s): s is number => typeof s === "number");
+      const avgScore =
+        validScores.length > 0
+          ? Number(
+              (
+                validScores.reduce((acc, curr) => acc + curr, 0) / validScores.length
+              ).toFixed(2),
+            )
+          : null;
+
+      await sb
+        .from("audit_sampled_leads")
+        .update({
+          grading_status: "graded",
+          overall_score: avgScore,
+        })
+        .eq("id", sampledRow.id);
+
+      return { ok: true, sampledLeadId: sampledRow.id, overallScore: avgScore };
+    } catch (err: any) {
+      await sb
+        .from("audit_sampled_leads")
+        .update({
+          grading_status: "failed",
+        })
+        .eq("id", sampledRow.id);
+      throw err;
+    }
+  });
+
 export const runAgentGradingSample = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
