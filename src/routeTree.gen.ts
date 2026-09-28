@@ -47,6 +47,7 @@ import { Route as AgentsIndexRouteImport } from './routes/agents.index'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as OpenHouseSigninIdRouteImport } from './routes/open-house-signin.$id'
 import { Route as AuthenticatedAdminAssistantRouteImport } from './routes/_authenticated/admin.assistant'
+import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin.audit'
 import { Route as AuthenticatedAdminSwagCreditsRouteImport } from './routes/_authenticated/admin.swag-credits'
 import { Route as AuthenticatedEosIssuesRouteImport } from './routes/_authenticated/eos.issues'
 import { Route as AuthenticatedEosL10RouteImport } from './routes/_authenticated/eos.l10'
@@ -259,6 +260,11 @@ const AuthenticatedAdminAssistantRoute =
     path: '/admin/assistant',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminAuditRoute = AuthenticatedAdminAuditRouteImport.update({
+  id: '/admin/audit',
+  path: '/admin/audit',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminSwagCreditsRoute =
   AuthenticatedAdminSwagCreditsRouteImport.update({
     id: '/admin/swag-credits',
@@ -383,6 +389,7 @@ export interface FileRoutesByFullPath {
   '/open-house-signin/$id': typeof OpenHouseSigninIdRoute
   '/agents/': typeof AgentsIndexRoute
   '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
+  '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
   '/eos/issues': typeof AuthenticatedEosIssuesRoute
   '/eos/l10': typeof AuthenticatedEosL10RouteWithChildren
@@ -434,6 +441,7 @@ export interface FileRoutesByTo {
   '/open-house-signin/$id': typeof OpenHouseSigninIdRoute
   '/agents': typeof AgentsIndexRoute
   '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
+  '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
   '/eos/issues': typeof AuthenticatedEosIssuesRoute
   '/eos/rocks': typeof AuthenticatedEosRocksRoute
@@ -489,6 +497,7 @@ export interface FileRoutesById {
   '/open-house-signin/$id': typeof OpenHouseSigninIdRoute
   '/agents/': typeof AgentsIndexRoute
   '/_authenticated/admin/assistant': typeof AuthenticatedAdminAssistantRoute
+  '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/_authenticated/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
   '/_authenticated/eos/issues': typeof AuthenticatedEosIssuesRoute
   '/_authenticated/eos/l10': typeof AuthenticatedEosL10RouteWithChildren
@@ -545,6 +554,7 @@ export interface FileRouteTypes {
     | '/open-house-signin/$id'
     | '/agents/'
     | '/admin/assistant'
+    | '/admin/audit'
     | '/admin/swag-credits'
     | '/eos/issues'
     | '/eos/l10'
@@ -596,6 +606,7 @@ export interface FileRouteTypes {
     | '/open-house-signin/$id'
     | '/agents'
     | '/admin/assistant'
+    | '/admin/audit'
     | '/admin/swag-credits'
     | '/eos/issues'
     | '/eos/rocks'
@@ -650,6 +661,7 @@ export interface FileRouteTypes {
     | '/open-house-signin/$id'
     | '/agents/'
     | '/_authenticated/admin/assistant'
+    | '/_authenticated/admin/audit'
     | '/_authenticated/admin/swag-credits'
     | '/_authenticated/eos/issues'
     | '/_authenticated/eos/l10'
@@ -953,6 +965,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAssistantRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/audit': {
+      id: '/_authenticated/admin/audit'
+      path: '/admin/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AuthenticatedAdminAuditRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/swag-credits': {
       id: '/_authenticated/admin/swag-credits'
       path: '/admin/swag-credits'
@@ -1136,6 +1155,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedVideosRoute: typeof AuthenticatedVideosRoute
   AuthenticatedVideosArchiveRoute: typeof AuthenticatedVideosArchiveRoute
   AuthenticatedAdminAssistantRoute: typeof AuthenticatedAdminAssistantRoute
+  AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
   AuthenticatedAdminSwagCreditsRoute: typeof AuthenticatedAdminSwagCreditsRoute
   AuthenticatedEosIssuesRoute: typeof AuthenticatedEosIssuesRoute
   AuthenticatedEosL10Route: typeof AuthenticatedEosL10RouteWithChildren
@@ -1167,6 +1187,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedVideosRoute: AuthenticatedVideosRoute,
   AuthenticatedVideosArchiveRoute: AuthenticatedVideosArchiveRoute,
   AuthenticatedAdminAssistantRoute: AuthenticatedAdminAssistantRoute,
+  AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
   AuthenticatedAdminSwagCreditsRoute: AuthenticatedAdminSwagCreditsRoute,
   AuthenticatedEosIssuesRoute: AuthenticatedEosIssuesRoute,
   AuthenticatedEosL10Route: AuthenticatedEosL10RouteWithChildren,

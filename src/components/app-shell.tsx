@@ -27,6 +27,7 @@ import {
   Sparkles,
   Store,
   DoorOpen,
+  UserCheck,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -75,6 +76,7 @@ const TOOLS_NAV = [
   { to: "/admin/swag-credits", label: "Swag Credits", icon: Ticket, adminOnly: false },
   { to: "/audit-log", label: "Audit Log", icon: ShieldCheck, adminOnly: true },
   { to: "/admin/assistant", label: "AI Assistant", icon: Bot, adminOnly: true },
+  { to: "/admin/audit", label: "Agent Audit", icon: UserCheck, adminOnly: true },
 ] as const;
 
 const CLIENT_CARE_ALLOWED = [
@@ -114,6 +116,7 @@ function getPageTitle(pathname: string): string {
     "/admin/swag-credits": "Swag Credits",
     "/audit-log": "Audit Log",
     "/admin/assistant": "AI Assistant",
+    "/admin/audit": "Agent Audit",
     "/experiments": "Experiments",
     "/archive": "Archive",
     "/my-availability": "My Availability",
