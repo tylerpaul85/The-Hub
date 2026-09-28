@@ -1437,20 +1437,6 @@ export const sendMonthlyAuditReportEmail = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const sb = supabaseAdmin as any;
 
-    const keyString = process.env.GOOGLE_SA_KEY_JSON;
-    if (!keyString) {
-      throw new Error(
-        "Missing Google Service Account key in environment variables (GOOGLE_SA_KEY_JSON)",
-      );
-    }
-
-    let key: any;
-    try {
-      key = JSON.parse(keyString);
-    } catch {
-      key = JSON.parse(keyString.replace(/\\n/g, "\n"));
-    }
-
     // Fetch team metrics
     const { data: metrics } = await sb
       .from("view_audit_agent_monthly_metrics")
@@ -1461,18 +1447,21 @@ export const sendMonthlyAuditReportEmail = createServerFn({ method: "POST" })
     );
 
     // Build email HTML table
-    const tableRows = activeMetrics
-      .map(
-        (m: any) => `
-      <tr style="border-bottom: 1px solid #e5e7eb;">
-        <td style="padding: 10px; font-weight: 600;">${m.agent_name}</td>
-        <td style="padding: 10px; text-align: center;">${m.avg_rubric_score ? m.avg_rubric_score + " / 5.0" : "N/A"}</td>
-        <td style="padding: 10px; text-align: center;">${m.open_integrity_flags_count}</td>
-        <td style="padding: 10px; text-align: center;">${m.compliance_flags_count > 0 ? `<span style="color: #dc2626; font-weight: bold;">${m.compliance_flags_count}</span>` : "0"}</td>
-        <td style="padding: 10px; text-align: center;">${m.short_calls_pct}% (${m.total_short_calls}/${m.total_calls})</td>
-      </tr>`,
-      )
-      .join("");
+    const tableRows =
+      activeMetrics.length > 0
+        ? activeMetrics
+            .map(
+              (m: any) => `
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 10px; font-weight: 600;">${m.agent_name}</td>
+            <td style="padding: 10px; text-align: center;">${m.avg_rubric_score ? Number(m.avg_rubric_score).toFixed(2) + " / 5.0" : "N/A"}</td>
+            <td style="padding: 10px; text-align: center;">${m.open_integrity_flags_count || 0}</td>
+            <td style="padding: 10px; text-align: center;">${m.compliance_flags_count > 0 ? `<span style="color: #dc2626; font-weight: bold;">${m.compliance_flags_count}</span>` : "0"}</td>
+            <td style="padding: 10px; text-align: center;">${m.short_calls_pct || 0}% (${m.total_short_calls || 0}/${m.total_calls || 0})</td>
+          </tr>`,
+            )
+            .join("")
+        : `<tr><td colspan="5" style="padding: 16px; text-align: center; color: #6b7280;">No active agent metrics recorded for this period yet.</td></tr>`;
 
     const emailSubject = `MSREG Agent Audit Report — ${input.auditMonth} Team Rollup`;
     const emailHtml = `
@@ -1507,54 +1496,142 @@ export const sendMonthlyAuditReportEmail = createServerFn({ method: "POST" })
           </table>
 
           <div style="margin-top: 24px; padding: 16px; background-color: #f9fafb; border-radius: 6px; border: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
-            <strong>Confidentiality Note:</strong> This audit report is generated strictly for leadership coaching and compliance review. All metrics are computed in PostgreSQL and conversation quality grades are verified by leadership.
+            <strong>Confidentiality Note:</strong> This audit report is generated strictly for leadership coaching and compliance review. All metrics are computed in PostgreSQL and conversation quality grades are evaluated via AI rubric benchmark.
           </div>
         </div>
       </div>
     </body>
     </html>`;
 
-    // Google Service Account Domain-Wide Delegation to send email
-    const { google } = await import("googleapis");
-    const senderEmail =
-      process.env.GMAIL_SENDER_EMAIL ||
-      key.client_email ||
-      "tyler.p@mattsmithrealestategroup.com";
+    // 1. Primary Attempt: Send via Resend (used across Hub for transactional notifications)
+    const resendApiKey = process.env.RESEND_API_KEY;
+    let resendError: string | null = null;
 
-    const auth = new google.auth.JWT(
-      key.client_email,
-      undefined,
-      key.private_key,
-      ["https://www.googleapis.com/auth/gmail.send", "https://mail.google.com/"],
-      senderEmail,
+    if (resendApiKey) {
+      try {
+        let fromEmail =
+          process.env.RESEND_FROM_EMAIL ||
+          "MSREG Agent Audit <notifications@msreginternal.com>";
+        if (fromEmail.includes("mattsmithrealestategroup.com")) {
+          fromEmail = fromEmail.replace(/mattsmithrealestategroup\.com/g, "msreginternal.com");
+        }
+
+        const resendRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${resendApiKey}`,
+          },
+          body: JSON.stringify({
+            from: fromEmail,
+            to: [input.recipientEmail],
+            subject: emailSubject,
+            html: emailHtml,
+          }),
+        });
+
+        const resData = await resendRes.json().catch(() => ({}));
+        if (resendRes.ok) {
+          return {
+            ok: true,
+            provider: "Resend",
+            recipient: input.recipientEmail,
+            sentAt: new Date().toISOString(),
+          };
+        } else {
+          resendError = resData?.message || resData?.error || `HTTP ${resendRes.status}`;
+          console.warn("Resend email delivery failed, will attempt Gmail fallback:", resendError);
+        }
+      } catch (err: any) {
+        resendError = err?.message || String(err);
+        console.warn("Resend email exception, will attempt Gmail fallback:", resendError);
+      }
+    }
+
+    // 2. Second Attempt: Fallback to Google Workspace / Gmail API (Google Service Account)
+    const keyString = process.env.GOOGLE_SA_KEY_JSON;
+    if (keyString) {
+      try {
+        let key: any;
+        try {
+          key = JSON.parse(keyString);
+        } catch {
+          key = JSON.parse(keyString.replace(/\\n/g, "\n"));
+        }
+
+        // IMPORTANT: Google Service Account emails cannot impersonate themselves because
+        // they lack a Google Workspace mailbox. The delegation subject MUST be a real Workspace user email,
+        // NEVER key.client_email (which produces Google 400 "Precondition check failed").
+        const senderEmail =
+          process.env.GMAIL_SENDER_EMAIL || "tyler.p@mattsmithrealestategroup.com";
+
+        const { google } = await import("googleapis");
+        const auth = new google.auth.JWT(
+          key.client_email,
+          undefined,
+          key.private_key,
+          ["https://www.googleapis.com/auth/gmail.send"],
+          senderEmail,
+        );
+
+        const gmail = google.gmail({ version: "v1", auth });
+
+        // Format RFC 2822 email message
+        const utf8Subject = `=?utf-8?B?${Buffer.from(emailSubject).toString("base64")}?=`;
+        const messageParts = [
+          `From: MSREG Agent Audit <${senderEmail}>`,
+          `To: ${input.recipientEmail}`,
+          `Subject: ${utf8Subject}`,
+          "MIME-Version: 1.0",
+          "Content-Type: text/html; charset=utf-8",
+          "",
+          emailHtml,
+        ];
+        const message = messageParts.join("\r\n");
+        const encodedMessage = Buffer.from(message)
+          .toString("base64")
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, "");
+
+        await gmail.users.messages.send({
+          userId: "me",
+          requestBody: {
+            raw: encodedMessage,
+          },
+        });
+
+        return {
+          ok: true,
+          provider: "Gmail",
+          recipient: input.recipientEmail,
+          sentAt: new Date().toISOString(),
+        };
+      } catch (gmailErr: any) {
+        console.error("Gmail email dispatch failed:", gmailErr);
+        const gMsg =
+          gmailErr?.response?.data?.error?.message ||
+          gmailErr?.message ||
+          String(gmailErr);
+
+        let friendlyGMailMsg = gMsg;
+        if (gMsg.includes("Precondition check failed")) {
+          friendlyGMailMsg =
+            "Precondition check failed. Google Workspace Domain-Wide Delegation for gmail.send is not authorized in Google Admin Console, or the sender email has no Google Workspace mailbox.";
+        }
+
+        const combinedError = resendApiKey
+          ? `Resend failed (${resendError}), and Gmail fallback failed: ${friendlyGMailMsg}`
+          : `Gmail failed: ${friendlyGMailMsg}. To send via Resend, configure RESEND_API_KEY.`;
+
+        throw new Error(combinedError);
+      }
+    }
+
+    // 3. Neither provider succeeded or was configured
+    throw new Error(
+      resendApiKey
+        ? `Failed to send email via Resend: ${resendError}`
+        : "No email dispatch service is configured. Please set RESEND_API_KEY or configure Google Workspace Domain-Wide Delegation."
     );
-
-    const gmail = google.gmail({ version: "v1", auth });
-
-    // Format RFC 2822 email message
-    const utf8Subject = `=?utf-8?B?${Buffer.from(emailSubject).toString("base64")}?=`;
-    const messageParts = [
-      `From: MSREG Agent Audit <${senderEmail}>`,
-      `To: ${input.recipientEmail}`,
-      `Subject: ${utf8Subject}`,
-      "MIME-Version: 1.0",
-      "Content-Type: text/html; charset=utf-8",
-      "",
-      emailHtml,
-    ];
-    const message = messageParts.join("\r\n");
-    const encodedMessage = Buffer.from(message)
-      .toString("base64")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/, "");
-
-    await gmail.users.messages.send({
-      userId: "me",
-      requestBody: {
-        raw: encodedMessage,
-      },
-    });
-
-    return { ok: true, recipient: input.recipientEmail, sentAt: new Date().toISOString() };
   });

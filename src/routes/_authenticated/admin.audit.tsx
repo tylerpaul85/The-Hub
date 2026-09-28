@@ -491,14 +491,16 @@ function AgentAuditPage() {
   const handleSendMonthlyReport = async () => {
     setIsSendingEmail(true);
     try {
-      await sendMonthlyAuditReportEmail({
+      const res = await sendMonthlyAuditReportEmail({
         data: {
           recipientEmail: emailRecipient,
           auditMonth: emailMonth,
           reportType: "team_rollup",
         },
       });
-      toast.success(`Monthly audit report emailed to ${emailRecipient}`);
+      toast.success(
+        `Monthly audit report sent to ${emailRecipient}${res?.provider ? ` (via ${res.provider})` : ""}`,
+      );
       setShowEmailModal(false);
     } catch (err: any) {
       toast.error(`Failed to send report: ${cleanErrorMessage(err)}`);
@@ -1477,7 +1479,7 @@ function AgentAuditPage() {
           <DialogHeader>
             <DialogTitle>Email Monthly Audit Report</DialogTitle>
             <DialogDescription>
-              Dispatches the monthly team performance rollup via our Google Workspace / Gmail API integration.
+              Dispatches the monthly team performance and conversation quality rollup directly to leadership.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2 text-xs">
@@ -1510,7 +1512,7 @@ function AgentAuditPage() {
               disabled={isSendingEmail}
               className="bg-gold hover:bg-gold-light text-navy-dark font-medium"
             >
-              {isSendingEmail ? "Sending..." : "Send Report via Gmail"}
+              {isSendingEmail ? "Sending..." : "Send Audit Report"}
             </Button>
           </DialogFooter>
         </DialogContent>
