@@ -75,8 +75,6 @@ const TOOLS_NAV = [
   { to: "/admin-net-sheets", label: "Agent Net Sheets", icon: Calculator, adminOnly: true },
   { to: "/admin/swag-credits", label: "Swag Credits", icon: Ticket, adminOnly: false },
   { to: "/audit-log", label: "Audit Log", icon: ShieldCheck, adminOnly: true },
-  { to: "/admin/assistant", label: "AI Assistant", icon: Bot, adminOnly: true },
-  { to: "/admin/audit", label: "Agent Audit", icon: UserCheck, adminOnly: true },
 ] as const;
 
 const CLIENT_CARE_ALLOWED = [
@@ -247,7 +245,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { isAdmin, user, signOut, role, roles } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const EXPERIMENT_EMAILS = ["tyler.p@mattsmithrealestategroup.com", "tylerpaul85@gmail.com"];
-  const canSeeExperiments = EXPERIMENT_EMAILS.includes((user?.email ?? "").toLowerCase());
+  const canSeeExperiments = isAdmin || EXPERIMENT_EMAILS.includes((user?.email ?? "").toLowerCase());
   const isClientCareOnly = roles.length > 0 && roles.every((r) => r === "client_care");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 

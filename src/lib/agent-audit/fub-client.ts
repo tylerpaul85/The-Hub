@@ -35,7 +35,7 @@ export async function fubFetch(
   endpointOrFullUrl: string,
   options: FubFetchOptions = {},
 ): Promise<Response> {
-  const { retries = 3, timeoutMs = 15000 } = options;
+  const { retries = 1, timeoutMs = 6000 } = options;
   const apiKey = getFubApiKey();
   const systemKey = getFubSystemKey();
 
@@ -78,7 +78,7 @@ export async function fubFetch(
       );
       if (retries > 0) {
         await new Promise((resolve) =>
-          setTimeout(resolve, retryAfter * 1000 + 750),
+          setTimeout(resolve, retryAfter * 1000 + 500),
         );
         return fubFetch(endpointOrFullUrl, {
           ...options,
@@ -93,7 +93,7 @@ export async function fubFetch(
 
     if (res.status >= 500) {
       if (retries > 0) {
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         return fubFetch(endpointOrFullUrl, {
           ...options,
           retries: retries - 1,
@@ -104,12 +104,9 @@ export async function fubFetch(
       );
     }
 
-    // Cooldown if rate limit is running low (< 25 remaining in 10s window)
-    if (remaining && remaining < 25) {
-      console.log(
-        `[FUB Rate Limit Pacing] Remaining calls: ${remaining}. Pausing 2s.`,
-      );
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Cooldown if rate limit is running low (< 15 remaining in 10s window)
+    if (remaining && remaining < 15) {
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
 
     return res;
@@ -136,7 +133,7 @@ export async function fubFetch(
 export async function fubPaginate(
   endpointOrFullUrl: string,
   collectionKey: string,
-  maxPages = 10,
+  maxPages = 2,
 ): Promise<{ items: any[]; total: number; truncated: boolean }> {
   const out: any[] = [];
   let nextUrl: string | null = endpointOrFullUrl;
@@ -210,7 +207,7 @@ export async function fetchFubUsers() {
 
 export async function fetchFubLeads(
   updatedAfter?: string,
-  maxPages = 15,
+  maxPages = 2,
 ) {
   const params = new URLSearchParams();
   params.append("limit", "100");
@@ -228,7 +225,7 @@ export async function fetchFubLeads(
 
 export async function fetchFubNotes(
   createdAfter?: string,
-  maxPages = 15,
+  maxPages = 2,
 ) {
   const params = new URLSearchParams();
   params.append("limit", "100");
@@ -242,7 +239,7 @@ export async function fetchFubNotes(
 
 export async function fetchFubCalls(
   createdAfter?: string,
-  maxPages = 15,
+  maxPages = 2,
 ) {
   const params = new URLSearchParams();
   params.append("limit", "100");
@@ -256,7 +253,7 @@ export async function fetchFubCalls(
 
 export async function fetchFubTextMessages(
   createdAfter?: string,
-  maxPages = 15,
+  maxPages = 2,
 ) {
   const params = new URLSearchParams();
   params.append("limit", "100");
@@ -280,7 +277,7 @@ export async function fetchFubTextMessages(
 
 export async function fetchFubEmails(
   createdAfter?: string,
-  maxPages = 15,
+  maxPages = 2,
 ) {
   const params = new URLSearchParams();
   params.append("limit", "100");
@@ -300,7 +297,7 @@ export async function fetchFubEmails(
 
 export async function fetchFubTasks(
   updatedAfter?: string,
-  maxPages = 10,
+  maxPages = 2,
 ) {
   const params = new URLSearchParams();
   params.append("limit", "100");
@@ -314,7 +311,7 @@ export async function fetchFubTasks(
 
 export async function fetchFubAppointments(
   updatedAfter?: string,
-  maxPages = 10,
+  maxPages = 2,
 ) {
   const params = new URLSearchParams();
   params.append("limit", "100");
@@ -328,7 +325,7 @@ export async function fetchFubAppointments(
 
 export async function fetchFubDeals(
   updatedAfter?: string,
-  maxPages = 10,
+  maxPages = 2,
 ) {
   const params = new URLSearchParams();
   params.append("limit", "100");

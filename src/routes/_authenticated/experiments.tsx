@@ -10,10 +10,10 @@ export const Route = createFileRoute("/_authenticated/experiments")({
 });
 
 function ExperimentsLayout() {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   if (loading) return null;
   const email = (user?.email ?? "").toLowerCase();
-  if (!ALLOWED_EMAILS.includes(email)) {
+  if (!ALLOWED_EMAILS.includes(email) && !isAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
   return <Outlet />;

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -220,18 +220,52 @@ function AgentAuditPage() {
   }, [selectedCalibrationSetId]);
 
   // Actions
-  const handleTriggerSync = async () => {
+  const cleanErrorMessage = (err: any) => {
+    const raw = err?.message || String(err || "Unknown error");
+    const stripped = raw.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    if (stripped.includes("Inactivity Timeout") || stripped.includes("Too much time has passed")) {
+      return "The FUB connection timed out on the host gateway. Use Quick Sync or wait a few moments before retrying.";
+    }
+    return stripped;
+  };
+
+  const handleTriggerQuickSync = async () => {
     setIsSyncing(true);
-    toast.info("Starting Follow Up Boss incremental sync...");
+    toast.info("Starting quick parallel FUB sync (3-5s)...");
     try {
-      const result = await triggerFubSync({ data: { fullSync: false } });
+      const result = await triggerFubSync({ data: { step: "quick", fullSync: false } });
       toast.success(
-        `Sync completed: ${result.counts.leads} leads, ${result.counts.calls} calls, ${result.counts.notes} notes.`,
+        `Quick sync complete: ${result.counts.leads} leads, ${result.counts.calls} calls, ${result.counts.notes} notes.`,
       );
       loadOverview();
       loadSyncLogs();
     } catch (err: any) {
-      toast.error(`Sync failed: ${err.message}`);
+      toast.error(`Sync failed: ${cleanErrorMessage(err)}`);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleTriggerFullSync = async () => {
+    setIsSyncing(true);
+    try {
+      toast.loading("Step 1/4: Syncing Team Roster & Leads...", { id: "fub-stepped-sync" });
+      await triggerFubSync({ data: { step: "agents_leads", fullSync: false } });
+
+      toast.loading("Step 2/4: Syncing Calls, Texts, Emails & Notes...", { id: "fub-stepped-sync" });
+      await triggerFubSync({ data: { step: "comms", fullSync: false } });
+
+      toast.loading("Step 3/4: Syncing Tasks & Deals...", { id: "fub-stepped-sync" });
+      await triggerFubSync({ data: { step: "tasks_pipeline", fullSync: false } });
+
+      toast.loading("Step 4/4: Scanning Data Integrity Flags...", { id: "fub-stepped-sync" });
+      await triggerFubSync({ data: { step: "scan_flags", fullSync: false } });
+
+      toast.success("Comprehensive FUB sync completed successfully!", { id: "fub-stepped-sync" });
+      loadOverview();
+      loadSyncLogs();
+    } catch (err: any) {
+      toast.error(`Sync failed: ${cleanErrorMessage(err)}`, { id: "fub-stepped-sync" });
     } finally {
       setIsSyncing(false);
     }
@@ -482,6 +516,17 @@ function AgentAuditPage() {
 
   return (
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
+      {/* ── Breadcrumb / Back Navigation ─────────────────────────────────── */}
+      <div>
+        <Link
+          to="/experiments"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-gold transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to Experiments
+        </Link>
+      </div>
+
       {/* ── Top Header ──────────────────────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/60 pb-5">
         <div>
@@ -506,12 +551,24 @@ function AgentAuditPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={handleTriggerSync}
+            onClick={handleTriggerQuickSync}
             disabled={isSyncing}
-            className="border-border/80 text-xs"
+            className="border-border/80 text-xs font-medium"
+            title="Fast parallel sync of latest FUB updates (3-5s)"
           >
             <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isSyncing ? "animate-spin" : ""}`} />
-            {isSyncing ? "Syncing FUB..." : "Sync FUB Data"}
+            {isSyncing ? "Syncing..." : "Quick Sync FUB"}
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleTriggerFullSync}
+            disabled={isSyncing}
+            className="border border-border/40 text-xs text-muted-foreground hover:text-foreground"
+            title="4-stage comprehensive synchronization across all entities"
+          >
+            Full Stepped Sync
           </Button>
 
           <Button

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import {
   AlertTriangle,
   ShieldCheck,
   FileSpreadsheet,
+  ArrowLeft,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -915,6 +916,17 @@ function AdminAssistantPage() {
 
   return (
     <div className="p-4 lg:p-8 max-w-5xl mx-auto h-[calc(100vh-theme(spacing.16))] flex flex-col">
+      {/* Breadcrumb / Back Link */}
+      <div className="mb-2">
+        <Link
+          to="/experiments"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-gold transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to Experiments
+        </Link>
+      </div>
+
       {/* Header */}
       <header className="mb-4 flex flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-4">
         <div className="flex items-center gap-3.5">

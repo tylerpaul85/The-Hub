@@ -55,13 +55,201 @@ async function assertAdmin(supabase: any, userId: string) {
 }
 
 // ------------------------------------------------------------------------------
-// 1. Data Sync Functions
+// 1. Data Sync Functions & Upsert Helpers
 // ------------------------------------------------------------------------------
+
+async function upsertAgents(sb: any, users: any[]) {
+  if (!users?.length) return 0;
+  const agentRows = users.map((u: any) => ({
+    fub_id: u.id,
+    name: u.name || [u.firstName, u.lastName].filter(Boolean).join(" ").trim(),
+    first_name: u.firstName || null,
+    last_name: u.lastName || null,
+    email: u.email || null,
+    role: u.role || null,
+    is_active: u.status === "active" || u.isActive !== false,
+    raw_data: u,
+    updated_at: new Date().toISOString(),
+  }));
+  await sb.from("fub_agents").upsert(agentRows, { onConflict: "fub_id" });
+  return agentRows.length;
+}
+
+async function upsertLeads(sb: any, items: any[]) {
+  if (!items?.length) return 0;
+  const leadRows = items.map((p: any) => ({
+    fub_id: p.id,
+    name: p.name || [p.firstName, p.lastName].filter(Boolean).join(" ").trim() || "Unnamed",
+    first_name: p.firstName || null,
+    last_name: p.lastName || null,
+    stage: p.stage || null,
+    source: p.source || null,
+    assigned_user_fub_id: p.assignedUserId || null,
+    assigned_user_name: p.assignedTo || null,
+    price: p.price ? Number(p.price) : null,
+    contacted: Boolean(p.contacted),
+    tags: Array.isArray(p.tags) ? p.tags : [],
+    fub_created_at: p.created || null,
+    fub_updated_at: p.updated || null,
+    last_activity: p.lastActivity || null,
+    last_communication: p.lastCommunication || null,
+    last_sent_email: p.lastSentEmail || null,
+    last_sent_text: p.lastSentText || null,
+    last_outgoing_call: p.lastOutgoingCall || null,
+    raw_data: p,
+    updated_at: new Date().toISOString(),
+  }));
+  await sb.from("fub_leads").upsert(leadRows, { onConflict: "fub_id" });
+  return leadRows.length;
+}
+
+async function upsertNotes(sb: any, items: any[]) {
+  if (!items?.length) return 0;
+  const noteRows = items.map((n: any) => ({
+    fub_id: n.id,
+    person_fub_id: n.personId,
+    user_fub_id: n.userId || null,
+    user_name: n.user?.name || null,
+    subject: n.subject || null,
+    body: n.body || "",
+    fub_created_at: n.created || null,
+    fub_updated_at: n.updated || null,
+    raw_data: n,
+  }));
+  await sb.from("fub_notes").upsert(noteRows, { onConflict: "fub_id" });
+  return noteRows.length;
+}
+
+async function upsertCalls(sb: any, items: any[]) {
+  if (!items?.length) return 0;
+  const callRows = items.map((c: any) => ({
+    fub_id: c.id,
+    person_fub_id: c.personId,
+    user_fub_id: c.userId || null,
+    user_name: c.user?.name || null,
+    duration: Number(c.duration) || 0,
+    outcome: c.outcome || null,
+    direction: c.direction || null,
+    note: c.note || null,
+    fub_created_at: c.created || null,
+    raw_data: c,
+  }));
+  await sb.from("fub_calls").upsert(callRows, { onConflict: "fub_id" });
+  return callRows.length;
+}
+
+async function upsertTexts(sb: any, items: any[]) {
+  if (!items?.length) return 0;
+  const textRows = items.map((t: any) => ({
+    fub_id: t.id,
+    person_fub_id: t.personId,
+    user_fub_id: t.userId || null,
+    user_name: t.user?.name || null,
+    direction: t.direction || null,
+    body: t.body || "",
+    fub_created_at: t.created || null,
+    raw_data: t,
+  }));
+  await sb.from("fub_text_messages").upsert(textRows, { onConflict: "fub_id" });
+  return textRows.length;
+}
+
+async function upsertEmails(sb: any, items: any[]) {
+  if (!items?.length) return 0;
+  const emailRows = items.map((e: any) => ({
+    fub_id: e.id,
+    person_fub_id: e.personId,
+    user_fub_id: e.userId || null,
+    user_name: e.user?.name || null,
+    direction: e.direction || null,
+    subject: e.subject || null,
+    body: e.body || "",
+    fub_created_at: e.created || null,
+    raw_data: e,
+  }));
+  await sb.from("fub_emails").upsert(emailRows, { onConflict: "fub_id" });
+  return emailRows.length;
+}
+
+async function upsertTasks(sb: any, items: any[]) {
+  if (!items?.length) return 0;
+  const taskRows = items.map((tk: any) => ({
+    fub_id: tk.id,
+    person_fub_id: tk.personId,
+    assigned_user_fub_id: tk.assignedUserId || null,
+    assigned_user_name: tk.assignedTo || null,
+    name: tk.name || "Task",
+    type: tk.type || null,
+    due_date: tk.dueDate || null,
+    is_completed: tk.status === "completed" || Boolean(tk.completedAt),
+    completed_at: tk.completedAt || null,
+    fub_created_at: tk.created || null,
+    fub_updated_at: tk.updated || null,
+    raw_data: tk,
+  }));
+  await sb.from("fub_tasks").upsert(taskRows, { onConflict: "fub_id" });
+  return taskRows.length;
+}
+
+async function upsertAppointments(sb: any, items: any[]) {
+  if (!items?.length) return 0;
+  const apptRows = items.map((a: any) => ({
+    fub_id: a.id,
+    person_fub_id: a.personId || null,
+    user_fub_id: a.userId || null,
+    user_name: a.user?.name || null,
+    title: a.title || null,
+    description: a.description || null,
+    location: a.location || null,
+    start_time: a.start || a.startTime || null,
+    end_time: a.end || a.endTime || null,
+    outcome: a.outcome || null,
+    fub_created_at: a.created || null,
+    fub_updated_at: a.updated || null,
+    raw_data: a,
+  }));
+  await sb.from("fub_appointments").upsert(apptRows, { onConflict: "fub_id" });
+  return apptRows.length;
+}
+
+async function upsertDeals(sb: any, items: any[]) {
+  if (!items?.length) return 0;
+  const dealRows = items.map((d: any) => ({
+    fub_id: d.id,
+    person_fub_id: d.personId || null,
+    user_fub_id: d.userId || null,
+    user_name: d.user?.name || null,
+    pipeline_id: d.pipelineId || null,
+    pipeline_name: d.pipeline?.name || null,
+    stage_id: d.stageId || null,
+    stage_name: d.stage?.name || null,
+    name: d.name || null,
+    price: d.price ? Number(d.price) : null,
+    fub_created_at: d.created || null,
+    fub_updated_at: d.updated || null,
+    raw_data: d,
+  }));
+  await sb.from("fub_deals").upsert(dealRows, { onConflict: "fub_id" });
+  return dealRows.length;
+}
 
 export const triggerFubSync = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ fullSync: z.boolean().default(false) }).parse(input || {}),
+    z
+      .object({
+        fullSync: z.boolean().default(false),
+        step: z
+          .enum([
+            "quick",
+            "agents_leads",
+            "comms",
+            "tasks_pipeline",
+            "scan_flags",
+          ])
+          .default("quick"),
+      })
+      .parse(input || {}),
   )
   .handler(async ({ data: input, context }) => {
     await assertAdmin(context.supabase, context.userId);
@@ -72,7 +260,7 @@ export const triggerFubSync = createServerFn({ method: "POST" })
     const { data: logRow, error: logErr } = await sb
       .from("fub_sync_logs")
       .insert({
-        sync_type: input.fullSync ? "full" : "incremental",
+        sync_type: input.step === "quick" ? (input.fullSync ? "full" : "quick") : input.step,
         status: "running",
         triggered_by: context.userId,
       })
@@ -106,199 +294,97 @@ export const triggerFubSync = createServerFn({ method: "POST" })
           .maybeSingle();
 
         if (latestLead?.fub_updated_at) {
-          // Sync changes since latest record minus a small 2-hour buffer for clock skew
+          // Sync changes since latest record with a 4-hour buffer for clock skew
           const d = new Date(latestLead.fub_updated_at);
-          d.setHours(d.getHours() - 2);
+          d.setHours(d.getHours() - 4);
           updatedAfter = d.toISOString();
         }
       }
 
-      // 1. Sync Agents / Users
-      const users = await fetchFubUsers();
-      if (users.length > 0) {
-        const agentRows = users.map((u: any) => ({
-          fub_id: u.id,
-          name: u.name || [u.firstName, u.lastName].filter(Boolean).join(" ").trim(),
-          first_name: u.firstName || null,
-          last_name: u.lastName || null,
-          email: u.email || null,
-          role: u.role || null,
-          is_active: u.status === "active" || u.isActive !== false,
-          raw_data: u,
-          updated_at: new Date().toISOString(),
-        }));
-        await sb.from("fub_agents").upsert(agentRows, { onConflict: "fub_id" });
-        counts.agents = agentRows.length;
-      }
+      if (input.step === "quick") {
+        // Fast parallel fetch across core entities (1 page each = up to 100 recent items)
+        // All network requests run concurrently within 2-3 seconds
+        const [usersRes, leadsRes, callsRes, notesRes, tasksRes] = await Promise.allSettled([
+          fetchFubUsers(),
+          fetchFubLeads(updatedAfter, 1),
+          fetchFubCalls(updatedAfter, 1),
+          fetchFubNotes(updatedAfter, 1),
+          fetchFubTasks(updatedAfter, 1),
+        ]);
 
-      // 2. Sync Leads / People
-      const leadsRes = await fetchFubLeads(updatedAfter, 12);
-      if (leadsRes.items.length > 0) {
-        const leadRows = leadsRes.items.map((p: any) => ({
-          fub_id: p.id,
-          name: p.name || [p.firstName, p.lastName].filter(Boolean).join(" ").trim() || "Unnamed",
-          first_name: p.firstName || null,
-          last_name: p.lastName || null,
-          stage: p.stage || null,
-          source: p.source || null,
-          assigned_user_fub_id: p.assignedUserId || null,
-          assigned_user_name: p.assignedTo || null,
-          price: p.price ? Number(p.price) : null,
-          contacted: Boolean(p.contacted),
-          tags: Array.isArray(p.tags) ? p.tags : [],
-          fub_created_at: p.created || null,
-          fub_updated_at: p.updated || null,
-          last_activity: p.lastActivity || null,
-          last_communication: p.lastCommunication || null,
-          last_sent_email: p.lastSentEmail || null,
-          last_sent_text: p.lastSentText || null,
-          last_outgoing_call: p.lastOutgoingCall || null,
-          raw_data: p,
-          updated_at: new Date().toISOString(),
-        }));
-        await sb.from("fub_leads").upsert(leadRows, { onConflict: "fub_id" });
-        counts.leads = leadRows.length;
-      }
+        if (usersRes.status === "fulfilled" && usersRes.value?.length) {
+          counts.agents = await upsertAgents(sb, usersRes.value);
+        }
+        if (leadsRes.status === "fulfilled" && leadsRes.value?.items?.length) {
+          counts.leads = await upsertLeads(sb, leadsRes.value.items);
+        }
+        if (callsRes.status === "fulfilled" && callsRes.value?.items?.length) {
+          counts.calls = await upsertCalls(sb, callsRes.value.items);
+        }
+        if (notesRes.status === "fulfilled" && notesRes.value?.items?.length) {
+          counts.notes = await upsertNotes(sb, notesRes.value.items);
+        }
+        if (tasksRes.status === "fulfilled" && tasksRes.value?.items?.length) {
+          counts.tasks = await upsertTasks(sb, tasksRes.value.items);
+        }
 
-      // 3. Sync Notes
-      const notesRes = await fetchFubNotes(updatedAfter, 10);
-      if (notesRes.items.length > 0) {
-        const noteRows = notesRes.items.map((n: any) => ({
-          fub_id: n.id,
-          person_fub_id: n.personId,
-          user_fub_id: n.userId || null,
-          user_name: n.user?.name || null,
-          subject: n.subject || null,
-          body: n.body || "",
-          fub_created_at: n.created || null,
-          fub_updated_at: n.updated || null,
-          raw_data: n,
-        }));
-        await sb.from("fub_notes").upsert(noteRows, { onConflict: "fub_id" });
-        counts.notes = noteRows.length;
-      }
+        // Run deterministic integrity scan
+        await sb.rpc("fn_audit_generate_integrity_flags");
 
-      // 4. Sync Calls
-      const callsRes = await fetchFubCalls(updatedAfter, 10);
-      if (callsRes.items.length > 0) {
-        const callRows = callsRes.items.map((c: any) => ({
-          fub_id: c.id,
-          person_fub_id: c.personId,
-          user_fub_id: c.userId || null,
-          user_name: c.user?.name || null,
-          duration: Number(c.duration) || 0,
-          outcome: c.outcome || null,
-          direction: c.direction || null,
-          note: c.note || null,
-          fub_created_at: c.created || null,
-          raw_data: c,
-        }));
-        await sb.from("fub_calls").upsert(callRows, { onConflict: "fub_id" });
-        counts.calls = callRows.length;
-      }
+      } else if (input.step === "agents_leads") {
+        const pages = input.fullSync ? 4 : 2;
+        const [usersRes, leadsRes] = await Promise.allSettled([
+          fetchFubUsers(),
+          fetchFubLeads(updatedAfter, pages),
+        ]);
+        if (usersRes.status === "fulfilled" && usersRes.value?.length) {
+          counts.agents = await upsertAgents(sb, usersRes.value);
+        }
+        if (leadsRes.status === "fulfilled" && leadsRes.value?.items?.length) {
+          counts.leads = await upsertLeads(sb, leadsRes.value.items);
+        }
 
-      // 5. Sync Texts (if accessible)
-      const textsRes = await fetchFubTextMessages(updatedAfter, 10);
-      if (textsRes.items.length > 0) {
-        const textRows = textsRes.items.map((t: any) => ({
-          fub_id: t.id,
-          person_fub_id: t.personId,
-          user_fub_id: t.userId || null,
-          user_name: t.user?.name || null,
-          direction: t.direction || null,
-          body: t.body || "",
-          fub_created_at: t.created || null,
-          raw_data: t,
-        }));
-        await sb.from("fub_text_messages").upsert(textRows, { onConflict: "fub_id" });
-        counts.texts = textRows.length;
-      }
+      } else if (input.step === "comms") {
+        const pages = input.fullSync ? 3 : 2;
+        const [callsRes, notesRes, textsRes, emailsRes] = await Promise.allSettled([
+          fetchFubCalls(updatedAfter, pages),
+          fetchFubNotes(updatedAfter, pages),
+          fetchFubTextMessages(updatedAfter, pages),
+          fetchFubEmails(updatedAfter, pages),
+        ]);
+        if (callsRes.status === "fulfilled" && callsRes.value?.items?.length) {
+          counts.calls = await upsertCalls(sb, callsRes.value.items);
+        }
+        if (notesRes.status === "fulfilled" && notesRes.value?.items?.length) {
+          counts.notes = await upsertNotes(sb, notesRes.value.items);
+        }
+        if (textsRes.status === "fulfilled" && textsRes.value?.items?.length) {
+          counts.texts = await upsertTexts(sb, textsRes.value.items);
+        }
+        if (emailsRes.status === "fulfilled" && emailsRes.value?.items?.length) {
+          counts.emails = await upsertEmails(sb, emailsRes.value.items);
+        }
 
-      // 6. Sync Emails
-      const emailsRes = await fetchFubEmails(updatedAfter, 10);
-      if (emailsRes.items.length > 0) {
-        const emailRows = emailsRes.items.map((e: any) => ({
-          fub_id: e.id,
-          person_fub_id: e.personId,
-          user_fub_id: e.userId || null,
-          user_name: e.user?.name || null,
-          direction: e.direction || null,
-          subject: e.subject || null,
-          body: e.body || "",
-          fub_created_at: e.created || null,
-          raw_data: e,
-        }));
-        await sb.from("fub_emails").upsert(emailRows, { onConflict: "fub_id" });
-        counts.emails = emailRows.length;
-      }
+      } else if (input.step === "tasks_pipeline") {
+        const pages = input.fullSync ? 3 : 2;
+        const [tasksRes, apptsRes, dealsRes] = await Promise.allSettled([
+          fetchFubTasks(updatedAfter, pages),
+          fetchFubAppointments(updatedAfter, pages),
+          fetchFubDeals(updatedAfter, pages),
+        ]);
+        if (tasksRes.status === "fulfilled" && tasksRes.value?.items?.length) {
+          counts.tasks = await upsertTasks(sb, tasksRes.value.items);
+        }
+        if (apptsRes.status === "fulfilled" && apptsRes.value?.items?.length) {
+          counts.appointments = await upsertAppointments(sb, apptsRes.value.items);
+        }
+        if (dealsRes.status === "fulfilled" && dealsRes.value?.items?.length) {
+          counts.deals = await upsertDeals(sb, dealsRes.value.items);
+        }
 
-      // 7. Sync Tasks
-      const tasksRes = await fetchFubTasks(updatedAfter, 8);
-      if (tasksRes.items.length > 0) {
-        const taskRows = tasksRes.items.map((tk: any) => ({
-          fub_id: tk.id,
-          person_fub_id: tk.personId,
-          assigned_user_fub_id: tk.assignedUserId || null,
-          assigned_user_name: tk.assignedTo || null,
-          name: tk.name || "Task",
-          type: tk.type || null,
-          due_date: tk.dueDate || null,
-          is_completed: tk.status === "completed" || Boolean(tk.completedAt),
-          completed_at: tk.completedAt || null,
-          fub_created_at: tk.created || null,
-          fub_updated_at: tk.updated || null,
-          raw_data: tk,
-        }));
-        await sb.from("fub_tasks").upsert(taskRows, { onConflict: "fub_id" });
-        counts.tasks = taskRows.length;
+      } else if (input.step === "scan_flags") {
+        await sb.rpc("fn_audit_generate_integrity_flags");
       }
-
-      // 8. Sync Appointments
-      const apptsRes = await fetchFubAppointments(updatedAfter, 8);
-      if (apptsRes.items.length > 0) {
-        const apptRows = apptsRes.items.map((a: any) => ({
-          fub_id: a.id,
-          person_fub_id: a.personId || null,
-          user_fub_id: a.userId || null,
-          user_name: a.user?.name || null,
-          title: a.title || null,
-          description: a.description || null,
-          location: a.location || null,
-          start_time: a.start || a.startTime || null,
-          end_time: a.end || a.endTime || null,
-          outcome: a.outcome || null,
-          fub_created_at: a.created || null,
-          fub_updated_at: a.updated || null,
-          raw_data: a,
-        }));
-        await sb.from("fub_appointments").upsert(apptRows, { onConflict: "fub_id" });
-        counts.appointments = apptRows.length;
-      }
-
-      // 9. Sync Deals
-      const dealsRes = await fetchFubDeals(updatedAfter, 8);
-      if (dealsRes.items.length > 0) {
-        const dealRows = dealsRes.items.map((d: any) => ({
-          fub_id: d.id,
-          person_fub_id: d.personId || null,
-          user_fub_id: d.userId || null,
-          user_name: d.user?.name || null,
-          pipeline_id: d.pipelineId || null,
-          pipeline_name: d.pipeline?.name || null,
-          stage_id: d.stageId || null,
-          stage_name: d.stage?.name || null,
-          name: d.name || null,
-          price: d.price ? Number(d.price) : null,
-          fub_created_at: d.created || null,
-          fub_updated_at: d.updated || null,
-          raw_data: d,
-        }));
-        await sb.from("fub_deals").upsert(dealRows, { onConflict: "fub_id" });
-        counts.deals = dealRows.length;
-      }
-
-      // Automatically scan & populate deterministic SQL integrity flags
-      await sb.rpc("fn_audit_generate_integrity_flags");
 
       // Mark log completed
       await sb
@@ -310,7 +396,7 @@ export const triggerFubSync = createServerFn({ method: "POST" })
         })
         .eq("id", syncLogId);
 
-      return { ok: true, syncLogId, counts };
+      return { ok: true, syncLogId, counts, step: input.step };
     } catch (err: any) {
       console.error("[triggerFubSync] Sync error:", err);
       await sb
