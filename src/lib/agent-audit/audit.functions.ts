@@ -58,10 +58,41 @@ async function assertAdmin(supabase: any, userId: string) {
 // 1. Data Sync Functions & Upsert Helpers
 // ------------------------------------------------------------------------------
 
+function parseTimestamptz(val: any): string | null {
+  if (!val || typeof val !== "string") return null;
+  const trimmed = val.trim();
+  if (!trimmed || trimmed === "0000-00-00" || trimmed.startsWith("0000-00-00")) return null;
+  const d = new Date(trimmed);
+  return isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+function parseTags(val: any): string[] {
+  if (!val) return [];
+  if (Array.isArray(val)) {
+    return val.map((t) => (typeof t === "string" ? t : (t?.name || String(t)))).filter(Boolean);
+  }
+  if (typeof val === "string") {
+    return val.split(",").map((t) => t.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function parseNumeric(val: any): number | null {
+  if (val === null || val === undefined || val === "") return null;
+  const num = typeof val === "number" ? val : Number(String(val).replace(/[^0-9.-]/g, ""));
+  return isNaN(num) ? null : num;
+}
+
+function parseBigInt(val: any): number | null {
+  if (!val) return null;
+  const n = Number(val);
+  return isNaN(n) || n === 0 ? null : n;
+}
+
 async function upsertAgents(sb: any, users: any[]) {
   if (!users?.length) return 0;
   const agentRows = users.map((u: any) => ({
-    fub_id: u.id,
+    fub_id: parseBigInt(u.id),
     name: u.name || [u.firstName, u.lastName].filter(Boolean).join(" ").trim(),
     first_name: u.firstName || null,
     last_name: u.lastName || null,
@@ -70,166 +101,178 @@ async function upsertAgents(sb: any, users: any[]) {
     is_active: u.status === "active" || u.isActive !== false,
     raw_data: u,
     updated_at: new Date().toISOString(),
-  }));
-  await sb.from("fub_agents").upsert(agentRows, { onConflict: "fub_id" });
+  })).filter((r: any) => r.fub_id);
+  const { error } = await sb.from("fub_agents").upsert(agentRows, { onConflict: "fub_id" });
+  if (error) console.error("[upsertAgents] Error:", error);
   return agentRows.length;
 }
 
 async function upsertLeads(sb: any, items: any[]) {
   if (!items?.length) return 0;
   const leadRows = items.map((p: any) => ({
-    fub_id: p.id,
+    fub_id: parseBigInt(p.id),
     name: p.name || [p.firstName, p.lastName].filter(Boolean).join(" ").trim() || "Unnamed",
     first_name: p.firstName || null,
     last_name: p.lastName || null,
     stage: p.stage || null,
     source: p.source || null,
-    assigned_user_fub_id: p.assignedUserId || null,
+    assigned_user_fub_id: parseBigInt(p.assignedUserId),
     assigned_user_name: p.assignedTo || null,
-    price: p.price ? Number(p.price) : null,
+    price: parseNumeric(p.price),
     contacted: Boolean(p.contacted),
-    tags: Array.isArray(p.tags) ? p.tags : [],
-    fub_created_at: p.created || null,
-    fub_updated_at: p.updated || null,
-    last_activity: p.lastActivity || null,
-    last_communication: p.lastCommunication || null,
-    last_sent_email: p.lastSentEmail || null,
-    last_sent_text: p.lastSentText || null,
-    last_outgoing_call: p.lastOutgoingCall || null,
+    tags: parseTags(p.tags),
+    fub_created_at: parseTimestamptz(p.created),
+    fub_updated_at: parseTimestamptz(p.updated),
+    last_activity: parseTimestamptz(p.lastActivity),
+    last_communication: parseTimestamptz(p.lastCommunication),
+    last_sent_email: parseTimestamptz(p.lastSentEmail),
+    last_sent_text: parseTimestamptz(p.lastSentText),
+    last_outgoing_call: parseTimestamptz(p.lastOutgoingCall),
     raw_data: p,
     updated_at: new Date().toISOString(),
-  }));
-  await sb.from("fub_leads").upsert(leadRows, { onConflict: "fub_id" });
+  })).filter((r: any) => r.fub_id);
+  const { error } = await sb.from("fub_leads").upsert(leadRows, { onConflict: "fub_id" });
+  if (error) {
+    console.error("[upsertLeads] Error:", error);
+    throw new Error(`Failed to save leads: ${error.message}`);
+  }
   return leadRows.length;
 }
 
 async function upsertNotes(sb: any, items: any[]) {
   if (!items?.length) return 0;
   const noteRows = items.map((n: any) => ({
-    fub_id: n.id,
-    person_fub_id: n.personId,
-    user_fub_id: n.userId || null,
+    fub_id: parseBigInt(n.id),
+    person_fub_id: parseBigInt(n.personId),
+    user_fub_id: parseBigInt(n.userId),
     user_name: n.user?.name || null,
     subject: n.subject || null,
     body: n.body || "",
-    fub_created_at: n.created || null,
-    fub_updated_at: n.updated || null,
+    fub_created_at: parseTimestamptz(n.created),
+    fub_updated_at: parseTimestamptz(n.updated),
     raw_data: n,
-  }));
-  await sb.from("fub_notes").upsert(noteRows, { onConflict: "fub_id" });
+  })).filter((r: any) => r.fub_id && r.person_fub_id);
+  const { error } = await sb.from("fub_notes").upsert(noteRows, { onConflict: "fub_id" });
+  if (error) console.error("[upsertNotes] Error:", error);
   return noteRows.length;
 }
 
 async function upsertCalls(sb: any, items: any[]) {
   if (!items?.length) return 0;
   const callRows = items.map((c: any) => ({
-    fub_id: c.id,
-    person_fub_id: c.personId,
-    user_fub_id: c.userId || null,
+    fub_id: parseBigInt(c.id),
+    person_fub_id: parseBigInt(c.personId),
+    user_fub_id: parseBigInt(c.userId),
     user_name: c.user?.name || null,
     duration: Number(c.duration) || 0,
     outcome: c.outcome || null,
     direction: c.direction || null,
     note: c.note || null,
-    fub_created_at: c.created || null,
+    fub_created_at: parseTimestamptz(c.created),
     raw_data: c,
-  }));
-  await sb.from("fub_calls").upsert(callRows, { onConflict: "fub_id" });
+  })).filter((r: any) => r.fub_id);
+  const { error } = await sb.from("fub_calls").upsert(callRows, { onConflict: "fub_id" });
+  if (error) console.error("[upsertCalls] Error:", error);
   return callRows.length;
 }
 
 async function upsertTexts(sb: any, items: any[]) {
   if (!items?.length) return 0;
   const textRows = items.map((t: any) => ({
-    fub_id: t.id,
-    person_fub_id: t.personId,
-    user_fub_id: t.userId || null,
+    fub_id: parseBigInt(t.id),
+    person_fub_id: parseBigInt(t.personId),
+    user_fub_id: parseBigInt(t.userId),
     user_name: t.user?.name || null,
     direction: t.direction || null,
     body: t.body || "",
-    fub_created_at: t.created || null,
+    fub_created_at: parseTimestamptz(t.created),
     raw_data: t,
-  }));
-  await sb.from("fub_text_messages").upsert(textRows, { onConflict: "fub_id" });
+  })).filter((r: any) => r.fub_id && r.person_fub_id);
+  const { error } = await sb.from("fub_text_messages").upsert(textRows, { onConflict: "fub_id" });
+  if (error) console.error("[upsertTexts] Error:", error);
   return textRows.length;
 }
 
 async function upsertEmails(sb: any, items: any[]) {
   if (!items?.length) return 0;
   const emailRows = items.map((e: any) => ({
-    fub_id: e.id,
-    person_fub_id: e.personId,
-    user_fub_id: e.userId || null,
+    fub_id: parseBigInt(e.id),
+    person_fub_id: parseBigInt(e.personId),
+    user_fub_id: parseBigInt(e.userId),
     user_name: e.user?.name || null,
     direction: e.direction || null,
     subject: e.subject || null,
     body: e.body || "",
-    fub_created_at: e.created || null,
+    fub_created_at: parseTimestamptz(e.created),
     raw_data: e,
-  }));
-  await sb.from("fub_emails").upsert(emailRows, { onConflict: "fub_id" });
+  })).filter((r: any) => r.fub_id && r.person_fub_id);
+  const { error } = await sb.from("fub_emails").upsert(emailRows, { onConflict: "fub_id" });
+  if (error) console.error("[upsertEmails] Error:", error);
   return emailRows.length;
 }
 
 async function upsertTasks(sb: any, items: any[]) {
   if (!items?.length) return 0;
   const taskRows = items.map((tk: any) => ({
-    fub_id: tk.id,
-    person_fub_id: tk.personId,
-    assigned_user_fub_id: tk.assignedUserId || null,
+    fub_id: parseBigInt(tk.id),
+    person_fub_id: parseBigInt(tk.personId),
+    assigned_user_fub_id: parseBigInt(tk.assignedUserId),
     assigned_user_name: tk.assignedTo || null,
     name: tk.name || "Task",
     type: tk.type || null,
     due_date: tk.dueDate || null,
     is_completed: tk.status === "completed" || Boolean(tk.completedAt),
-    completed_at: tk.completedAt || null,
-    fub_created_at: tk.created || null,
-    fub_updated_at: tk.updated || null,
+    completed_at: parseTimestamptz(tk.completedAt),
+    fub_created_at: parseTimestamptz(tk.created),
+    fub_updated_at: parseTimestamptz(tk.updated),
     raw_data: tk,
-  }));
-  await sb.from("fub_tasks").upsert(taskRows, { onConflict: "fub_id" });
+  })).filter((r: any) => r.fub_id && r.person_fub_id);
+  const { error } = await sb.from("fub_tasks").upsert(taskRows, { onConflict: "fub_id" });
+  if (error) console.error("[upsertTasks] Error:", error);
   return taskRows.length;
 }
 
 async function upsertAppointments(sb: any, items: any[]) {
   if (!items?.length) return 0;
   const apptRows = items.map((a: any) => ({
-    fub_id: a.id,
-    person_fub_id: a.personId || null,
-    user_fub_id: a.userId || null,
+    fub_id: parseBigInt(a.id),
+    person_fub_id: parseBigInt(a.personId),
+    user_fub_id: parseBigInt(a.userId),
     user_name: a.user?.name || null,
     title: a.title || null,
     description: a.description || null,
     location: a.location || null,
-    start_time: a.start || a.startTime || null,
-    end_time: a.end || a.endTime || null,
+    start_time: parseTimestamptz(a.start || a.startTime),
+    end_time: parseTimestamptz(a.end || a.endTime),
     outcome: a.outcome || null,
-    fub_created_at: a.created || null,
-    fub_updated_at: a.updated || null,
+    fub_created_at: parseTimestamptz(a.created),
+    fub_updated_at: parseTimestamptz(a.updated),
     raw_data: a,
-  }));
-  await sb.from("fub_appointments").upsert(apptRows, { onConflict: "fub_id" });
+  })).filter((r: any) => r.fub_id);
+  const { error } = await sb.from("fub_appointments").upsert(apptRows, { onConflict: "fub_id" });
+  if (error) console.error("[upsertAppointments] Error:", error);
   return apptRows.length;
 }
 
 async function upsertDeals(sb: any, items: any[]) {
   if (!items?.length) return 0;
   const dealRows = items.map((d: any) => ({
-    fub_id: d.id,
-    person_fub_id: d.personId || null,
-    user_fub_id: d.userId || null,
+    fub_id: parseBigInt(d.id),
+    person_fub_id: parseBigInt(d.personId),
+    user_fub_id: parseBigInt(d.userId),
     user_name: d.user?.name || null,
-    pipeline_id: d.pipelineId || null,
+    pipeline_id: parseBigInt(d.pipelineId),
     pipeline_name: d.pipeline?.name || null,
-    stage_id: d.stageId || null,
+    stage_id: parseBigInt(d.stageId),
     stage_name: d.stage?.name || null,
     name: d.name || null,
-    price: d.price ? Number(d.price) : null,
-    fub_created_at: d.created || null,
-    fub_updated_at: d.updated || null,
+    price: parseNumeric(d.price),
+    fub_created_at: parseTimestamptz(d.created),
+    fub_updated_at: parseTimestamptz(d.updated),
     raw_data: d,
-  }));
-  await sb.from("fub_deals").upsert(dealRows, { onConflict: "fub_id" });
+  })).filter((r: any) => r.fub_id);
+  const { error } = await sb.from("fub_deals").upsert(dealRows, { onConflict: "fub_id" });
+  if (error) console.error("[upsertDeals] Error:", error);
   return dealRows.length;
 }
 
@@ -744,16 +787,48 @@ export const runAgentGradingSample = createServerFn({ method: "POST" })
     }
 
     // 3. Sample leads assigned to this agent with recent activity
-    const { data: candidateLeads } = await sb
+    let candidateLeads: any[] = [];
+    const { data: primaryLeads } = await sb
       .from("fub_leads")
       .select("fub_id, name, stage, source, created_at")
       .eq("assigned_user_fub_id", input.agentFubId)
       .order("last_activity", { ascending: false })
       .limit(100);
 
-    const candidates = candidateLeads ?? [];
+    candidateLeads = primaryLeads ?? [];
+
+    // Fallback: if no leads are directly assigned to this agent in fub_leads,
+    // search for leads where this agent participated in conversations (calls, notes, tasks)
+    if (candidateLeads.length === 0) {
+      const [agentCalls, agentNotes, agentTasks] = await Promise.all([
+        sb.from("fub_calls").select("person_fub_id").eq("user_fub_id", input.agentFubId).gt("person_fub_id", 0).limit(50),
+        sb.from("fub_notes").select("person_fub_id").eq("user_fub_id", input.agentFubId).gt("person_fub_id", 0).limit(50),
+        sb.from("fub_tasks").select("person_fub_id").eq("assigned_user_fub_id", input.agentFubId).gt("person_fub_id", 0).limit(50),
+      ]);
+
+      const activePersonIds = Array.from(
+        new Set([
+          ...(agentCalls.data || []).map((c: any) => c.person_fub_id),
+          ...(agentNotes.data || []).map((n: any) => n.person_fub_id),
+          ...(agentTasks.data || []).map((t: any) => t.person_fub_id),
+        ]),
+      ).filter(Boolean);
+
+      if (activePersonIds.length > 0) {
+        const { data: fallbackLeads } = await sb
+          .from("fub_leads")
+          .select("fub_id, name, stage, source, created_at")
+          .in("fub_id", activePersonIds)
+          .limit(100);
+        candidateLeads = fallbackLeads ?? [];
+      }
+    }
+
+    const candidates = candidateLeads;
     if (candidates.length === 0) {
-      throw new Error("No leads found assigned to this agent to sample.");
+      throw new Error(
+        `No leads found assigned to or handled by ${agent.name} (ID: ${agent.fub_id}). Run "Quick Sync FUB" or choose an agent with active leads.`,
+      );
     }
 
     // Shuffle and pick sampleSize leads

@@ -1500,6 +1500,19 @@ function AgentAuditPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2 text-xs">
+            <div className="rounded-md bg-muted/40 p-3 border border-border/60 space-y-1.5">
+              <div className="flex justify-between items-center text-muted-foreground">
+                <span>Active Leads in Scope:</span>
+                <Badge variant="outline" className="text-foreground font-semibold text-xs">
+                  {sampleTargetAgent?.total_assigned_leads ?? 0} leads
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center text-muted-foreground">
+                <span>Evaluation Model:</span>
+                <span className="font-mono text-gold text-[11px] font-medium">claude-sonnet-5</span>
+              </div>
+            </div>
+
             <div>
               <label className="font-semibold text-foreground">Sample Size (leads to grade)</label>
               <Input
@@ -1507,9 +1520,12 @@ function AgentAuditPage() {
                 min={1}
                 max={50}
                 value={sampleSize}
-                onChange={(e) => setSampleSize(Number(e.target.value))}
+                onChange={(e) => setSampleSize(Math.max(1, Number(e.target.value)))}
                 className="mt-1 text-xs"
               />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Claude reviews communication threads (calls, notes, texts) and evaluates compliance and conversational quality.
+              </p>
             </div>
           </div>
           <DialogFooter>
