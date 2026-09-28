@@ -493,15 +493,15 @@ function AgentAuditPage() {
     try {
       await sendMonthlyAuditReportEmail({
         data: {
-          recipientEmail,
+          recipientEmail: emailRecipient,
           auditMonth: emailMonth,
           reportType: "team_rollup",
         },
       });
-      toast.success(`Monthly audit report emailed to ${recipientEmail}`);
+      toast.success(`Monthly audit report emailed to ${emailRecipient}`);
       setShowEmailModal(false);
     } catch (err: any) {
-      toast.error(`Failed to send report: ${err.message}`);
+      toast.error(`Failed to send report: ${cleanErrorMessage(err)}`);
     } finally {
       setIsSendingEmail(false);
     }
