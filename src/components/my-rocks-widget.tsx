@@ -6,6 +6,7 @@ import { Target } from "lucide-react";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ROCK_STATUS_CLASS, ROCK_STATUS_LABEL, currentQuarter, type Rock } from "@/lib/eos";
+import { cn } from "@/lib/utils";
 
 const sb = supabase as any;
 
