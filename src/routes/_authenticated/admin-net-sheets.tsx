@@ -210,7 +210,7 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
   const num = data.num_scenarios || 1;
 
   const calculateScenario = (salesPrice: number) => {
-    const isSub50k = salesPrice > 0 && salesPrice < 50000;
+    const isSub50k = salesPrice > 0 && salesPrice <= 50000;
     const listingComm =
       data.listing_comm_type === "flat" && isSub50k
         ? (data.listing_comm_flat_fee ?? 1500)
@@ -274,13 +274,13 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
 
   const getCommLabel = (label: string, type?: "percent" | "flat", flatFee?: number, pct?: number) => {
     if (type === "flat") {
-      const allSub50k = activeCalcs.every((c) => c.salesPrice > 0 && c.salesPrice < 50000);
-      const anySub50k = activeCalcs.some((c) => c.salesPrice > 0 && c.salesPrice < 50000);
+      const allSub50k = activeCalcs.every((c) => c.salesPrice > 0 && c.salesPrice <= 50000);
+      const anySub50k = activeCalcs.some((c) => c.salesPrice > 0 && c.salesPrice <= 50000);
       const feeFormatted = `$${(flatFee ?? 1500).toLocaleString()}`;
       if (allSub50k) {
         return `${label} (${feeFormatted} Flat Fee)`;
       } else if (anySub50k) {
-        return `${label} (${feeFormatted} Flat Fee on <$50k / ${pct}%)`;
+        return `${label} (${feeFormatted} Flat Fee on ≤$50k / ${pct}%)`;
       }
     }
     return `${label} (${pct}%)`;
@@ -365,14 +365,14 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
               </td>
               <td className="p-2 text-center font-mono border-l border-slate-800">
                 <div>{formatCurrency(c1.listingComm)}</div>
-                {data.listing_comm_type === "flat" && c1.salesPrice > 0 && c1.salesPrice < 50000 && (
+                {data.listing_comm_type === "flat" && c1.salesPrice > 0 && c1.salesPrice <= 50000 && (
                   <span className="text-[10px] text-[#C9A84C]">Flat Fee</span>
                 )}
               </td>
               {num >= 2 && (
                 <td className="p-2 text-center font-mono border-l border-slate-800">
                   <div>{formatCurrency(c2.listingComm)}</div>
-                  {data.listing_comm_type === "flat" && c2.salesPrice > 0 && c2.salesPrice < 50000 && (
+                  {data.listing_comm_type === "flat" && c2.salesPrice > 0 && c2.salesPrice <= 50000 && (
                     <span className="text-[10px] text-[#C9A84C]">Flat Fee</span>
                   )}
                 </td>
@@ -380,7 +380,7 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
               {num >= 3 && (
                 <td className="p-2 text-center font-mono border-l border-slate-800">
                   <div>{formatCurrency(c3.listingComm)}</div>
-                  {data.listing_comm_type === "flat" && c3.salesPrice > 0 && c3.salesPrice < 50000 && (
+                  {data.listing_comm_type === "flat" && c3.salesPrice > 0 && c3.salesPrice <= 50000 && (
                     <span className="text-[10px] text-[#C9A84C]">Flat Fee</span>
                   )}
                 </td>
@@ -392,14 +392,14 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
               </td>
               <td className="p-2 text-center font-mono border-l border-slate-800">
                 <div>{formatCurrency(c1.sellingComm)}</div>
-                {data.selling_comm_type === "flat" && c1.salesPrice > 0 && c1.salesPrice < 50000 && (
+                {data.selling_comm_type === "flat" && c1.salesPrice > 0 && c1.salesPrice <= 50000 && (
                   <span className="text-[10px] text-[#C9A84C]">Flat Fee</span>
                 )}
               </td>
               {num >= 2 && (
                 <td className="p-2 text-center font-mono border-l border-slate-800">
                   <div>{formatCurrency(c2.sellingComm)}</div>
-                  {data.selling_comm_type === "flat" && c2.salesPrice > 0 && c2.salesPrice < 50000 && (
+                  {data.selling_comm_type === "flat" && c2.salesPrice > 0 && c2.salesPrice <= 50000 && (
                     <span className="text-[10px] text-[#C9A84C]">Flat Fee</span>
                   )}
                 </td>
@@ -407,7 +407,7 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
               {num >= 3 && (
                 <td className="p-2 text-center font-mono border-l border-slate-800">
                   <div>{formatCurrency(c3.sellingComm)}</div>
-                  {data.selling_comm_type === "flat" && c3.salesPrice > 0 && c3.salesPrice < 50000 && (
+                  {data.selling_comm_type === "flat" && c3.salesPrice > 0 && c3.salesPrice <= 50000 && (
                     <span className="text-[10px] text-[#C9A84C]">Flat Fee</span>
                   )}
                 </td>

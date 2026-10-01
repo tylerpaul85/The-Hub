@@ -810,7 +810,7 @@ function CalculatorView({
 
   // Calculations logic
   const calculateScenario = (salesPrice: number, scenarioIndex: 1 | 2 | 3) => {
-    const isSub50k = salesPrice > 0 && salesPrice < 50000;
+    const isSub50k = salesPrice > 0 && salesPrice <= 50000;
 
     const listingComm =
       data.listing_comm_type === "flat" && isSub50k
@@ -865,7 +865,7 @@ function CalculatorView({
   }, [calc1, calc2, calc3, data.num_scenarios]);
 
   const hasSub50k = useMemo(() => {
-    const priceUnder50k = activeCalcs.some((c) => c.salesPrice > 0 && c.salesPrice < 50000);
+    const priceUnder50k = activeCalcs.some((c) => c.salesPrice > 0 && c.salesPrice <= 50000);
     return priceUnder50k || data.listing_comm_type === "flat" || data.selling_comm_type === "flat";
   }, [activeCalcs, data.listing_comm_type, data.selling_comm_type]);
 
@@ -1178,7 +1178,7 @@ function CalculatorView({
                       <div className="flex items-center gap-2.5 text-gold">
                         <AlertCircle className="h-4 w-4 shrink-0 text-gold" />
                         <div>
-                          <span className="font-bold">Transaction under $50,000 detected.</span>
+                          <span className="font-bold">Transaction $50,000 or less detected.</span>
                           <span className="text-slate-300 ml-1.5">
                             MSREG offers a <strong>$1,500 flat fee</strong> minimum option instead of percentage.
                           </span>
@@ -1192,7 +1192,7 @@ function CalculatorView({
                           onClick={() => {
                             updateField("listing_comm_type", "flat");
                             updateField("selling_comm_type", "flat");
-                            toast.success("Applied $1,500 flat fee to both sides for <$50k transactions");
+                            toast.success("Applied $1,500 flat fee to both sides for ≤$50k transactions");
                           }}
                           className={`h-7 text-xs px-2.5 font-medium border-gold/40 ${
                             data.listing_comm_type === "flat" && data.selling_comm_type === "flat"
@@ -1209,7 +1209,7 @@ function CalculatorView({
                           onClick={() => {
                             updateField("listing_comm_type", "flat");
                             updateField("selling_comm_type", "percent");
-                            toast.success("Applied $1,500 flat fee to Listing Agent for <$50k transactions");
+                            toast.success("Applied $1,500 flat fee to Listing Agent for ≤$50k transactions");
                           }}
                           className={`h-7 text-xs px-2.5 font-medium border-gold/40 ${
                             data.listing_comm_type === "flat" && data.selling_comm_type !== "flat"
@@ -1247,7 +1247,7 @@ function CalculatorView({
                     <span>Listing Agent Commission</span>
                     {data.listing_comm_type === "flat" && (
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gold/20 text-gold border border-gold/40 print:text-slate-700 print:bg-slate-100 print:border-slate-300">
-                        $1,500 Flat Fee on &lt;$50k
+                        $1,500 Flat Fee on &le;$50k
                       </span>
                     )}
                   </div>
@@ -1311,28 +1311,28 @@ function CalculatorView({
                 </td>
                 <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
                   <div>{formatCurrency(calc1.listingComm)}</div>
-                  {data.listing_comm_type === "flat" && calc1.salesPrice > 0 && calc1.salesPrice < 50000 && (
+                  {data.listing_comm_type === "flat" && calc1.salesPrice > 0 && calc1.salesPrice <= 50000 && (
                     <div className="text-[10px] text-gold font-sans font-medium print:text-slate-500">
                       Flat Fee
                     </div>
                   )}
-                  {data.listing_comm_type === "flat" && calc1.salesPrice >= 50000 && (
+                  {data.listing_comm_type === "flat" && calc1.salesPrice > 50000 && (
                     <div className="text-[10px] text-muted-foreground font-sans print:text-slate-500">
-                      {data.listing_comm_pct}% (&ge;$50k)
+                      {data.listing_comm_pct}% (&gt;$50k)
                     </div>
                   )}
                 </td>
                 {data.num_scenarios >= 2 && (
                   <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
                     <div>{formatCurrency(calc2.listingComm)}</div>
-                    {data.listing_comm_type === "flat" && calc2.salesPrice > 0 && calc2.salesPrice < 50000 && (
+                    {data.listing_comm_type === "flat" && calc2.salesPrice > 0 && calc2.salesPrice <= 50000 && (
                       <div className="text-[10px] text-gold font-sans font-medium print:text-slate-500">
                         Flat Fee
                       </div>
                     )}
-                    {data.listing_comm_type === "flat" && calc2.salesPrice >= 50000 && (
+                    {data.listing_comm_type === "flat" && calc2.salesPrice > 50000 && (
                       <div className="text-[10px] text-muted-foreground font-sans print:text-slate-500">
-                        {data.listing_comm_pct}% (&ge;$50k)
+                        {data.listing_comm_pct}% (&gt;$50k)
                       </div>
                     )}
                   </td>
@@ -1340,14 +1340,14 @@ function CalculatorView({
                 {data.num_scenarios >= 3 && (
                   <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
                     <div>{formatCurrency(calc3.listingComm)}</div>
-                    {data.listing_comm_type === "flat" && calc3.salesPrice > 0 && calc3.salesPrice < 50000 && (
+                    {data.listing_comm_type === "flat" && calc3.salesPrice > 0 && calc3.salesPrice <= 50000 && (
                       <div className="text-[10px] text-gold font-sans font-medium print:text-slate-500">
                         Flat Fee
                       </div>
                     )}
-                    {data.listing_comm_type === "flat" && calc3.salesPrice >= 50000 && (
+                    {data.listing_comm_type === "flat" && calc3.salesPrice > 50000 && (
                       <div className="text-[10px] text-muted-foreground font-sans print:text-slate-500">
-                        {data.listing_comm_pct}% (&ge;$50k)
+                        {data.listing_comm_pct}% (&gt;$50k)
                       </div>
                     )}
                   </td>
@@ -1361,7 +1361,7 @@ function CalculatorView({
                     <span>Selling Agent Commission</span>
                     {data.selling_comm_type === "flat" && (
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gold/20 text-gold border border-gold/40 print:text-slate-700 print:bg-slate-100 print:border-slate-300">
-                        $1,500 Flat Fee on &lt;$50k
+                        $1,500 Flat Fee on &le;$50k
                       </span>
                     )}
                   </div>
@@ -1425,28 +1425,28 @@ function CalculatorView({
                 </td>
                 <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
                   <div>{formatCurrency(calc1.sellingComm)}</div>
-                  {data.selling_comm_type === "flat" && calc1.salesPrice > 0 && calc1.salesPrice < 50000 && (
+                  {data.selling_comm_type === "flat" && calc1.salesPrice > 0 && calc1.salesPrice <= 50000 && (
                     <div className="text-[10px] text-gold font-sans font-medium print:text-slate-500">
                       Flat Fee
                     </div>
                   )}
-                  {data.selling_comm_type === "flat" && calc1.salesPrice >= 50000 && (
+                  {data.selling_comm_type === "flat" && calc1.salesPrice > 50000 && (
                     <div className="text-[10px] text-muted-foreground font-sans print:text-slate-500">
-                      {data.selling_comm_pct}% (&ge;$50k)
+                      {data.selling_comm_pct}% (&gt;$50k)
                     </div>
                   )}
                 </td>
                 {data.num_scenarios >= 2 && (
                   <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
                     <div>{formatCurrency(calc2.sellingComm)}</div>
-                    {data.selling_comm_type === "flat" && calc2.salesPrice > 0 && calc2.salesPrice < 50000 && (
+                    {data.selling_comm_type === "flat" && calc2.salesPrice > 0 && calc2.salesPrice <= 50000 && (
                       <div className="text-[10px] text-gold font-sans font-medium print:text-slate-500">
                         Flat Fee
                       </div>
                     )}
-                    {data.selling_comm_type === "flat" && calc2.salesPrice >= 50000 && (
+                    {data.selling_comm_type === "flat" && calc2.salesPrice > 50000 && (
                       <div className="text-[10px] text-muted-foreground font-sans print:text-slate-500">
-                        {data.selling_comm_pct}% (&ge;$50k)
+                        {data.selling_comm_pct}% (&gt;$50k)
                       </div>
                     )}
                   </td>
@@ -1454,14 +1454,14 @@ function CalculatorView({
                 {data.num_scenarios >= 3 && (
                   <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
                     <div>{formatCurrency(calc3.sellingComm)}</div>
-                    {data.selling_comm_type === "flat" && calc3.salesPrice > 0 && calc3.salesPrice < 50000 && (
+                    {data.selling_comm_type === "flat" && calc3.salesPrice > 0 && calc3.salesPrice <= 50000 && (
                       <div className="text-[10px] text-gold font-sans font-medium print:text-slate-500">
                         Flat Fee
                       </div>
                     )}
-                    {data.selling_comm_type === "flat" && calc3.salesPrice >= 50000 && (
+                    {data.selling_comm_type === "flat" && calc3.salesPrice > 50000 && (
                       <div className="text-[10px] text-muted-foreground font-sans print:text-slate-500">
-                        {data.selling_comm_pct}% (&ge;$50k)
+                        {data.selling_comm_pct}% (&gt;$50k)
                       </div>
                     )}
                   </td>

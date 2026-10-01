@@ -80,7 +80,7 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
   const numScenarios = data.num_scenarios || 1;
 
   const calculateScenario = (salesPrice: number, scenarioIndex: 1 | 2 | 3) => {
-    const isSub50k = salesPrice > 0 && salesPrice < 50000;
+    const isSub50k = salesPrice > 0 && salesPrice <= 50000;
 
     const listingComm =
       data.listing_comm_type === "flat" && isSub50k
@@ -136,13 +136,13 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
     pct?: number,
   ) => {
     if (type === "flat") {
-      const allSub50k = activeScenarios.every((c) => c.salesPrice > 0 && c.salesPrice < 50000);
-      const anySub50k = activeScenarios.some((c) => c.salesPrice > 0 && c.salesPrice < 50000);
+      const allSub50k = activeScenarios.every((c) => c.salesPrice > 0 && c.salesPrice <= 50000);
+      const anySub50k = activeScenarios.some((c) => c.salesPrice > 0 && c.salesPrice <= 50000);
       const feeFormatted = `$${(flatFee ?? 1500).toLocaleString()}`;
       if (allSub50k) {
         return `${label} (${feeFormatted} Flat Fee)`;
       } else if (anySub50k) {
-        return `${label} (${feeFormatted} Flat Fee on &lt;$50k / ${pct}%)`;
+        return `${label} (${feeFormatted} Flat Fee on ≤$50k / ${pct}%)`;
       }
     }
     return `${label} (${pct}%)`;
