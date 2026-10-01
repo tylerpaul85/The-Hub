@@ -209,8 +209,15 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
   const num = data.num_scenarios || 1;
 
   const calculateScenario = (salesPrice: number) => {
-    const listingComm = salesPrice * ((data.listing_comm_pct || 0) / 100);
-    const sellingComm = salesPrice * ((data.selling_comm_pct || 0) / 100);
+    const isSub50k = salesPrice > 0 && salesPrice < 50000;
+    const listingComm =
+      data.listing_comm_type === "flat" && isSub50k
+        ? (data.listing_comm_flat_fee ?? 1500)
+        : salesPrice * ((data.listing_comm_pct || 0) / 100);
+    const sellingComm =
+      data.selling_comm_type === "flat" && isSub50k
+        ? (data.selling_comm_flat_fee ?? 1500)
+        : salesPrice * ((data.selling_comm_pct || 0) / 100);
     const totalComm = listingComm + sellingComm;
 
     const fixedCosts =
@@ -262,6 +269,20 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
       return "p-3 text-center font-mono text-sm border-l border-red-800/60 bg-red-500/10 text-red-400";
     }
     return "p-3 text-center font-mono text-sm border-l border-emerald-800/60 bg-emerald-500/10 text-emerald-400";
+  };
+
+  const getCommLabel = (label: string, type?: "percent" | "flat", flatFee?: number, pct?: number) => {
+    if (type === "flat") {
+      const allSub50k = activeCalcs.every((c) => c.salesPrice > 0 && c.salesPrice < 50000);
+      const anySub50k = activeCalcs.some((c) => c.salesPrice > 0 && c.salesPrice < 50000);
+      const feeFormatted = `$${(flatFee ?? 1500).toLocaleString()}`;
+      if (allSub50k) {
+        return `${label} (${feeFormatted} Flat Fee)`;
+      } else if (anySub50k) {
+        return `${label} (${feeFormatted} Flat Fee on <$50k / ${pct}%)`;
+      }
+    }
+    return `${label} (${pct}%)`;
   };
 
   return (
@@ -338,34 +359,56 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
               )}
             </tr>
             <tr>
-              <td className="p-2 text-slate-300">Listing Commission ({data.listing_comm_pct}%)</td>
+              <td className="p-2 text-slate-300">
+                {getCommLabel("Listing Commission", data.listing_comm_type, data.listing_comm_flat_fee, data.listing_comm_pct)}
+              </td>
               <td className="p-2 text-center font-mono border-l border-slate-800">
-                {formatCurrency(c1.listingComm)}
+                <div>{formatCurrency(c1.listingComm)}</div>
+                {data.listing_comm_type === "flat" && c1.salesPrice > 0 && c1.salesPrice < 50000 && (
+                  <span className="text-[10px] text-[#C9A84C]">Flat Fee</span>
+                )}
               </td>
               {num >= 2 && (
                 <td className="p-2 text-center font-mono border-l border-slate-800">
-                  {formatCurrency(c2.listingComm)}
+                  <div>{formatCurrency(c2.listingComm)}</div>
+                  {data.listing_comm_type === "flat" && c2.salesPrice > 0 && c2.salesPrice < 50000 && (
+                    <span className="text-[10px] text-[#C9A84C]">Flat Fee</span>
+                  )}
                 </td>
               )}
               {num >= 3 && (
                 <td className="p-2 text-center font-mono border-l border-slate-800">
-                  {formatCurrency(c3.listingComm)}
+                  <div>{formatCurrency(c3.listingComm)}</div>
+                  {data.listing_comm_type === "flat" && c3.salesPrice > 0 && c3.salesPrice < 50000 && (
+                    <span className="text-[10px] text-[#C9A84C]">Flat Fee</span>
+                  )}
                 </td>
               )}
             </tr>
             <tr>
-              <td className="p-2 text-slate-300">Selling Commission ({data.selling_comm_pct}%)</td>
+              <td className="p-2 text-slate-300">
+                {getCommLabel("Selling Commission", data.selling_comm_type, data.selling_comm_flat_fee, data.selling_comm_pct)}
+              </td>
               <td className="p-2 text-center font-mono border-l border-slate-800">
-                {formatCurrency(c1.sellingComm)}
+                <div>{formatCurrency(c1.sellingComm)}</div>
+                {data.selling_comm_type === "flat" && c1.salesPrice > 0 && c1.salesPrice < 50000 && (
+                  <span className="text-[10px] text-[#C9A84C]">Flat Fee</span>
+                )}
               </td>
               {num >= 2 && (
                 <td className="p-2 text-center font-mono border-l border-slate-800">
-                  {formatCurrency(c2.sellingComm)}
+                  <div>{formatCurrency(c2.sellingComm)}</div>
+                  {data.selling_comm_type === "flat" && c2.salesPrice > 0 && c2.salesPrice < 50000 && (
+                    <span className="text-[10px] text-[#C9A84C]">Flat Fee</span>
+                  )}
                 </td>
               )}
               {num >= 3 && (
                 <td className="p-2 text-center font-mono border-l border-slate-800">
-                  {formatCurrency(c3.sellingComm)}
+                  <div>{formatCurrency(c3.sellingComm)}</div>
+                  {data.selling_comm_type === "flat" && c3.salesPrice > 0 && c3.salesPrice < 50000 && (
+                    <span className="text-[10px] text-[#C9A84C]">Flat Fee</span>
+                  )}
                 </td>
               )}
             </tr>

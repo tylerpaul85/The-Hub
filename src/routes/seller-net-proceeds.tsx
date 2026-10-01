@@ -79,6 +79,10 @@ interface SheetData {
   scenario3_price: number;
   listing_comm_pct: number;
   selling_comm_pct: number;
+  listing_comm_type?: "percent" | "flat";
+  listing_comm_flat_fee?: number;
+  selling_comm_type?: "percent" | "flat";
+  selling_comm_flat_fee?: number;
   mortgage_payoff_1: number;
   mortgage_payoff_2: number;
   closing_protection_letter: number;
@@ -111,6 +115,10 @@ const DEFAULT_SHEET_DATA: SheetData = {
   scenario3_price: 330000,
   listing_comm_pct: 3.0,
   selling_comm_pct: 3.0,
+  listing_comm_type: "percent",
+  listing_comm_flat_fee: 1500,
+  selling_comm_type: "percent",
+  selling_comm_flat_fee: 1500,
   mortgage_payoff_1: 0,
   mortgage_payoff_2: 0,
   closing_protection_letter: 50,
@@ -802,8 +810,18 @@ function CalculatorView({
 
   // Calculations logic
   const calculateScenario = (salesPrice: number, scenarioIndex: 1 | 2 | 3) => {
-    const listingComm = salesPrice * ((data.listing_comm_pct || 0) / 100);
-    const sellingComm = salesPrice * ((data.selling_comm_pct || 0) / 100);
+    const isSub50k = salesPrice > 0 && salesPrice < 50000;
+
+    const listingComm =
+      data.listing_comm_type === "flat" && isSub50k
+        ? (data.listing_comm_flat_fee ?? 1500)
+        : salesPrice * ((data.listing_comm_pct || 0) / 100);
+
+    const sellingComm =
+      data.selling_comm_type === "flat" && isSub50k
+        ? (data.selling_comm_flat_fee ?? 1500)
+        : salesPrice * ((data.selling_comm_pct || 0) / 100);
+
     const totalComm = listingComm + sellingComm;
 
     const fixedCosts =
@@ -845,6 +863,11 @@ function CalculatorView({
     if (data.num_scenarios >= 3) list.push(calc3);
     return list;
   }, [calc1, calc2, calc3, data.num_scenarios]);
+
+  const hasSub50k = useMemo(() => {
+    const priceUnder50k = activeCalcs.some((c) => c.salesPrice > 0 && c.salesPrice < 50000);
+    return priceUnder50k || data.listing_comm_type === "flat" || data.selling_comm_type === "flat";
+  }, [activeCalcs, data.listing_comm_type, data.selling_comm_type]);
 
   const allProceedsNegative = activeCalcs.every((c) => c.cashToSeller < 0);
   const allProceedsPositive = activeCalcs.every((c) => c.cashToSeller >= 0);
@@ -1147,66 +1170,300 @@ function CalculatorView({
                 )}
               </tr>
 
-              {/* Listing Agent Commission (%) */}
+              {/* Sub-$50k Minimum Commission Notice */}
+              {hasSub50k && (
+                <tr className="bg-gold/10 border-y border-gold/30 print:hidden">
+                  <td colSpan={1 + data.num_scenarios} className="p-3">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2.5 text-gold">
+                        <AlertCircle className="h-4 w-4 shrink-0 text-gold" />
+                        <div>
+                          <span className="font-bold">Transaction under $50,000 detected.</span>
+                          <span className="text-slate-300 ml-1.5">
+                            MSREG offers a <strong>$1,500 flat fee</strong> minimum option instead of percentage.
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={data.listing_comm_type === "flat" && data.selling_comm_type === "flat" ? "default" : "outline"}
+                          onClick={() => {
+                            updateField("listing_comm_type", "flat");
+                            updateField("selling_comm_type", "flat");
+                            toast.success("Applied $1,500 flat fee to both sides for <$50k transactions");
+                          }}
+                          className={`h-7 text-xs px-2.5 font-medium border-gold/40 ${
+                            data.listing_comm_type === "flat" && data.selling_comm_type === "flat"
+                              ? "bg-gold text-navy-dark hover:bg-gold-light"
+                              : "text-gold hover:bg-gold/20"
+                          }`}
+                        >
+                          $1,500 Flat (Both Sides)
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={data.listing_comm_type === "flat" && data.selling_comm_type !== "flat" ? "default" : "outline"}
+                          onClick={() => {
+                            updateField("listing_comm_type", "flat");
+                            updateField("selling_comm_type", "percent");
+                            toast.success("Applied $1,500 flat fee to Listing Agent for <$50k transactions");
+                          }}
+                          className={`h-7 text-xs px-2.5 font-medium border-gold/40 ${
+                            data.listing_comm_type === "flat" && data.selling_comm_type !== "flat"
+                              ? "bg-gold text-navy-dark hover:bg-gold-light"
+                              : "text-gold hover:bg-gold/20"
+                          }`}
+                        >
+                          $1,500 Flat (Listing Only)
+                        </Button>
+                        {(data.listing_comm_type === "flat" || data.selling_comm_type === "flat") && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              updateField("listing_comm_type", "percent");
+                              updateField("selling_comm_type", "percent");
+                              toast.info("Reset commission to percentage");
+                            }}
+                            className="h-7 text-xs px-2 text-slate-400 hover:text-white"
+                          >
+                            Reset to %
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+
+              {/* Listing Agent Commission */}
               <tr>
                 <td className="p-2.5 text-slate-300 print:text-slate-800 flex items-center justify-between gap-2">
-                  <span>Listing Agent Commission</span>
-                  <div className="flex items-center gap-1">
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={data.listing_comm_pct}
-                      onChange={(e) =>
-                        updateField("listing_comm_pct", parseFloat(e.target.value) || 0)
-                      }
-                      className="h-6 w-14 text-center text-[11px] bg-background print:bg-white border-border px-1 focus-visible:ring-gold"
-                    />
-                    <span className="text-slate-400">%</span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span>Listing Agent Commission</span>
+                    {data.listing_comm_type === "flat" && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gold/20 text-gold border border-gold/40 print:text-slate-700 print:bg-slate-100 print:border-slate-300">
+                        $1,500 Flat Fee on &lt;$50k
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {/* Toggle between % and Flat Fee when sub-50k applies */}
+                    {hasSub50k && (
+                      <div className="flex items-center rounded border border-border bg-background p-0.5 text-[10px] print:hidden">
+                        <button
+                          type="button"
+                          onClick={() => updateField("listing_comm_type", "percent")}
+                          className={`px-1.5 py-0.5 rounded transition-colors ${
+                            data.listing_comm_type !== "flat"
+                              ? "bg-gold text-navy-dark font-bold shadow-xs"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          %
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateField("listing_comm_type", "flat")}
+                          className={`px-1.5 py-0.5 rounded transition-colors ${
+                            data.listing_comm_type === "flat"
+                              ? "bg-gold text-navy-dark font-bold shadow-xs"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          $1,500 Flat
+                        </button>
+                      </div>
+                    )}
+                    {data.listing_comm_type === "flat" ? (
+                      <div className="flex items-center gap-1">
+                        <span className="text-slate-400 text-xs">$</span>
+                        <Input
+                          type="number"
+                          step="50"
+                          value={data.listing_comm_flat_fee ?? 1500}
+                          onChange={(e) =>
+                            updateField("listing_comm_flat_fee", parseFloat(e.target.value) || 0)
+                          }
+                          className="h-6 w-16 text-center text-[11px] bg-background print:bg-white border-border px-1 focus-visible:ring-gold"
+                        />
+                        <span className="text-gold font-semibold text-[10px] uppercase">Flat</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={data.listing_comm_pct}
+                          onChange={(e) =>
+                            updateField("listing_comm_pct", parseFloat(e.target.value) || 0)
+                          }
+                          className="h-6 w-14 text-center text-[11px] bg-background print:bg-white border-border px-1 focus-visible:ring-gold"
+                        />
+                        <span className="text-slate-400">%</span>
+                      </div>
+                    )}
                   </div>
                 </td>
                 <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
-                  {formatCurrency(calc1.listingComm)}
+                  <div>{formatCurrency(calc1.listingComm)}</div>
+                  {data.listing_comm_type === "flat" && calc1.salesPrice > 0 && calc1.salesPrice < 50000 && (
+                    <div className="text-[10px] text-gold font-sans font-medium print:text-slate-500">
+                      Flat Fee
+                    </div>
+                  )}
+                  {data.listing_comm_type === "flat" && calc1.salesPrice >= 50000 && (
+                    <div className="text-[10px] text-muted-foreground font-sans print:text-slate-500">
+                      {data.listing_comm_pct}% (&ge;$50k)
+                    </div>
+                  )}
                 </td>
                 {data.num_scenarios >= 2 && (
                   <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
-                    {formatCurrency(calc2.listingComm)}
+                    <div>{formatCurrency(calc2.listingComm)}</div>
+                    {data.listing_comm_type === "flat" && calc2.salesPrice > 0 && calc2.salesPrice < 50000 && (
+                      <div className="text-[10px] text-gold font-sans font-medium print:text-slate-500">
+                        Flat Fee
+                      </div>
+                    )}
+                    {data.listing_comm_type === "flat" && calc2.salesPrice >= 50000 && (
+                      <div className="text-[10px] text-muted-foreground font-sans print:text-slate-500">
+                        {data.listing_comm_pct}% (&ge;$50k)
+                      </div>
+                    )}
                   </td>
                 )}
                 {data.num_scenarios >= 3 && (
                   <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
-                    {formatCurrency(calc3.listingComm)}
+                    <div>{formatCurrency(calc3.listingComm)}</div>
+                    {data.listing_comm_type === "flat" && calc3.salesPrice > 0 && calc3.salesPrice < 50000 && (
+                      <div className="text-[10px] text-gold font-sans font-medium print:text-slate-500">
+                        Flat Fee
+                      </div>
+                    )}
+                    {data.listing_comm_type === "flat" && calc3.salesPrice >= 50000 && (
+                      <div className="text-[10px] text-muted-foreground font-sans print:text-slate-500">
+                        {data.listing_comm_pct}% (&ge;$50k)
+                      </div>
+                    )}
                   </td>
                 )}
               </tr>
 
-              {/* Selling Agent Commission (%) */}
+              {/* Selling Agent Commission */}
               <tr>
                 <td className="p-2.5 text-slate-300 print:text-slate-800 flex items-center justify-between gap-2">
-                  <span>Selling Agent Commission</span>
-                  <div className="flex items-center gap-1">
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={data.selling_comm_pct}
-                      onChange={(e) =>
-                        updateField("selling_comm_pct", parseFloat(e.target.value) || 0)
-                      }
-                      className="h-6 w-14 text-center text-[11px] bg-background print:bg-white border-border px-1 focus-visible:ring-gold"
-                    />
-                    <span className="text-slate-400">%</span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span>Selling Agent Commission</span>
+                    {data.selling_comm_type === "flat" && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gold/20 text-gold border border-gold/40 print:text-slate-700 print:bg-slate-100 print:border-slate-300">
+                        $1,500 Flat Fee on &lt;$50k
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {/* Toggle between % and Flat Fee when sub-50k applies */}
+                    {hasSub50k && (
+                      <div className="flex items-center rounded border border-border bg-background p-0.5 text-[10px] print:hidden">
+                        <button
+                          type="button"
+                          onClick={() => updateField("selling_comm_type", "percent")}
+                          className={`px-1.5 py-0.5 rounded transition-colors ${
+                            data.selling_comm_type !== "flat"
+                              ? "bg-gold text-navy-dark font-bold shadow-xs"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          %
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateField("selling_comm_type", "flat")}
+                          className={`px-1.5 py-0.5 rounded transition-colors ${
+                            data.selling_comm_type === "flat"
+                              ? "bg-gold text-navy-dark font-bold shadow-xs"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          $1,500 Flat
+                        </button>
+                      </div>
+                    )}
+                    {data.selling_comm_type === "flat" ? (
+                      <div className="flex items-center gap-1">
+                        <span className="text-slate-400 text-xs">$</span>
+                        <Input
+                          type="number"
+                          step="50"
+                          value={data.selling_comm_flat_fee ?? 1500}
+                          onChange={(e) =>
+                            updateField("selling_comm_flat_fee", parseFloat(e.target.value) || 0)
+                          }
+                          className="h-6 w-16 text-center text-[11px] bg-background print:bg-white border-border px-1 focus-visible:ring-gold"
+                        />
+                        <span className="text-gold font-semibold text-[10px] uppercase">Flat</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={data.selling_comm_pct}
+                          onChange={(e) =>
+                            updateField("selling_comm_pct", parseFloat(e.target.value) || 0)
+                          }
+                          className="h-6 w-14 text-center text-[11px] bg-background print:bg-white border-border px-1 focus-visible:ring-gold"
+                        />
+                        <span className="text-slate-400">%</span>
+                      </div>
+                    )}
                   </div>
                 </td>
                 <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
-                  {formatCurrency(calc1.sellingComm)}
+                  <div>{formatCurrency(calc1.sellingComm)}</div>
+                  {data.selling_comm_type === "flat" && calc1.salesPrice > 0 && calc1.salesPrice < 50000 && (
+                    <div className="text-[10px] text-gold font-sans font-medium print:text-slate-500">
+                      Flat Fee
+                    </div>
+                  )}
+                  {data.selling_comm_type === "flat" && calc1.salesPrice >= 50000 && (
+                    <div className="text-[10px] text-muted-foreground font-sans print:text-slate-500">
+                      {data.selling_comm_pct}% (&ge;$50k)
+                    </div>
+                  )}
                 </td>
                 {data.num_scenarios >= 2 && (
                   <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
-                    {formatCurrency(calc2.sellingComm)}
+                    <div>{formatCurrency(calc2.sellingComm)}</div>
+                    {data.selling_comm_type === "flat" && calc2.salesPrice > 0 && calc2.salesPrice < 50000 && (
+                      <div className="text-[10px] text-gold font-sans font-medium print:text-slate-500">
+                        Flat Fee
+                      </div>
+                    )}
+                    {data.selling_comm_type === "flat" && calc2.salesPrice >= 50000 && (
+                      <div className="text-[10px] text-muted-foreground font-sans print:text-slate-500">
+                        {data.selling_comm_pct}% (&ge;$50k)
+                      </div>
+                    )}
                   </td>
                 )}
                 {data.num_scenarios >= 3 && (
                   <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
-                    {formatCurrency(calc3.sellingComm)}
+                    <div>{formatCurrency(calc3.sellingComm)}</div>
+                    {data.selling_comm_type === "flat" && calc3.salesPrice > 0 && calc3.salesPrice < 50000 && (
+                      <div className="text-[10px] text-gold font-sans font-medium print:text-slate-500">
+                        Flat Fee
+                      </div>
+                    )}
+                    {data.selling_comm_type === "flat" && calc3.salesPrice >= 50000 && (
+                      <div className="text-[10px] text-muted-foreground font-sans print:text-slate-500">
+                        {data.selling_comm_pct}% (&ge;$50k)
+                      </div>
+                    )}
                   </td>
                 )}
               </tr>

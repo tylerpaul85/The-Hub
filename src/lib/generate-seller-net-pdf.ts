@@ -15,6 +15,10 @@ export interface SheetDataForPdf {
   scenario3_price: number;
   listing_comm_pct: number;
   selling_comm_pct: number;
+  listing_comm_type?: "percent" | "flat";
+  listing_comm_flat_fee?: number;
+  selling_comm_type?: "percent" | "flat";
+  selling_comm_flat_fee?: number;
   mortgage_payoff_1: number;
   mortgage_payoff_2: number;
   closing_protection_letter: number;
@@ -74,8 +78,18 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
   const numScenarios = data.num_scenarios || 1;
 
   const calculateScenario = (salesPrice: number, scenarioIndex: 1 | 2 | 3) => {
-    const listingComm = salesPrice * ((data.listing_comm_pct || 0) / 100);
-    const sellingComm = salesPrice * ((data.selling_comm_pct || 0) / 100);
+    const isSub50k = salesPrice > 0 && salesPrice < 50000;
+
+    const listingComm =
+      data.listing_comm_type === "flat" && isSub50k
+        ? (data.listing_comm_flat_fee ?? 1500)
+        : salesPrice * ((data.listing_comm_pct || 0) / 100);
+
+    const sellingComm =
+      data.selling_comm_type === "flat" && isSub50k
+        ? (data.selling_comm_flat_fee ?? 1500)
+        : salesPrice * ((data.selling_comm_pct || 0) / 100);
+
     const totalComm = listingComm + sellingComm;
 
     const fixedCosts =
@@ -112,6 +126,25 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
   const activeScenarios = [c1];
   if (numScenarios >= 2) activeScenarios.push(c2);
   if (numScenarios >= 3) activeScenarios.push(c3);
+
+  const getCommissionLabel = (
+    label: string,
+    type?: "percent" | "flat",
+    flatFee?: number,
+    pct?: number,
+  ) => {
+    if (type === "flat") {
+      const allSub50k = activeScenarios.every((c) => c.salesPrice > 0 && c.salesPrice < 50000);
+      const anySub50k = activeScenarios.some((c) => c.salesPrice > 0 && c.salesPrice < 50000);
+      const feeFormatted = `$${(flatFee ?? 1500).toLocaleString()}`;
+      if (allSub50k) {
+        return `${label} (${feeFormatted} Flat Fee)`;
+      } else if (anySub50k) {
+        return `${label} (${feeFormatted} Flat Fee on &lt;$50k / ${pct}%)`;
+      }
+    }
+    return `${label} (${pct}%)`;
+  };
 
   const allNegative = activeScenarios.every((s) => s.cashToSeller < 0);
   const allPositive = activeScenarios.every((s) => s.cashToSeller >= 0);
@@ -220,7 +253,9 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
 
         <!-- Listing Agent Commission -->
         <tr style="border-bottom: 1px solid #f1f5f9;">
-          <td style="padding: 6px 10px; color: #334155;">Listing Agent Commission (${data.listing_comm_pct}%)</td>
+          <td style="padding: 6px 10px; color: #334155;">
+            ${getCommissionLabel("Listing Agent Commission", data.listing_comm_type, data.listing_comm_flat_fee, data.listing_comm_pct)}
+          </td>
           <td style="padding: 6px 10px; text-align: right; border-left: 1px solid #f1f5f9; color: #334155;">${formatMoney(c1.listingComm)}</td>
           ${numScenarios >= 2 ? `<td style="padding: 6px 10px; text-align: right; border-left: 1px solid #f1f5f9; color: #334155;">${formatMoney(c2.listingComm)}</td>` : ""}
           ${numScenarios >= 3 ? `<td style="padding: 6px 10px; text-align: right; border-left: 1px solid #f1f5f9; color: #334155;">${formatMoney(c3.listingComm)}</td>` : ""}
@@ -228,7 +263,9 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
 
         <!-- Selling Agent Commission -->
         <tr style="border-bottom: 1px solid #f1f5f9;">
-          <td style="padding: 6px 10px; color: #334155;">Selling Agent Commission (${data.selling_comm_pct}%)</td>
+          <td style="padding: 6px 10px; color: #334155;">
+            ${getCommissionLabel("Selling Agent Commission", data.selling_comm_type, data.selling_comm_flat_fee, data.selling_comm_pct)}
+          </td>
           <td style="padding: 6px 10px; text-align: right; border-left: 1px solid #f1f5f9; color: #334155;">${formatMoney(c1.sellingComm)}</td>
           ${numScenarios >= 2 ? `<td style="padding: 6px 10px; text-align: right; border-left: 1px solid #f1f5f9; color: #334155;">${formatMoney(c2.sellingComm)}</td>` : ""}
           ${numScenarios >= 3 ? `<td style="padding: 6px 10px; text-align: right; border-left: 1px solid #f1f5f9; color: #334155;">${formatMoney(c3.sellingComm)}</td>` : ""}
