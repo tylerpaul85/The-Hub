@@ -55,7 +55,7 @@ const securityHeadersMiddleware = createMiddleware().server(async ({ next }) => 
       "upgrade-insecure-requests;";
   }
   try {
-    setResponseHeaders(headers);
+    setResponseHeaders(headers as any);
   } catch {
     // outside HTTP context — ignore
   }

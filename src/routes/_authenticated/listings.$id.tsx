@@ -1305,6 +1305,7 @@ function AutoScheduleModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const qc = useQueryClient();
   const mut = useMutation({
     mutationFn: () =>
       autoScheduleReposts(

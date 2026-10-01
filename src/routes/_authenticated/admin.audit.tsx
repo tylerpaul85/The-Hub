@@ -172,9 +172,9 @@ function AgentAuditPage() {
 
   const loadCalibrationSets = async () => {
     try {
-      const data = await getCalibrationSets();
+      const data: any = await getCalibrationSets();
       setCalibrationSets(data as any);
-      if (data && data.length > 0 && !selectedCalibrationSetId) {
+      if (Array.isArray(data) && data.length > 0 && !selectedCalibrationSetId) {
         setSelectedCalibrationSetId(data[0].id);
       }
     } catch (err: any) {

@@ -1,5 +1,3 @@
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
 import logo from "@/assets/msreg-logo.png";
 
 export interface SheetDataForPdf {
@@ -75,6 +73,10 @@ const BLACK_LOGO_URL =
   "https://jxymjhmbaqstmrttjdib.supabase.co/storage/v1/object/public/signature-headshots/Blue%20Minimalist%20Circle%20Framed%20Instagram%20Profile%20Picture%20(4).png";
 
 export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void> {
+  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+    import("html2canvas"),
+    import("jspdf"),
+  ]);
   const numScenarios = data.num_scenarios || 1;
 
   const calculateScenario = (salesPrice: number, scenarioIndex: 1 | 2 | 3) => {

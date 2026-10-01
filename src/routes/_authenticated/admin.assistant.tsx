@@ -48,6 +48,12 @@ interface StructuredReportData {
   total_deals_value?: number;
   average_deal_value?: number;
   people?: any[];
+  unique_records_processed?: number;
+  pond_summary?: {
+    reportable_agent_leads: number;
+    shared_pond_owner_assigned: number;
+    excluded_reporting_users: string[];
+  };
 }
 
 interface ChatMessage {

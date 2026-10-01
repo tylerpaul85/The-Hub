@@ -319,6 +319,7 @@ export async function processPostNotification(
   }
 
   let resendId: string | null = null;
+  const resendApiKey = process.env.RESEND_API_KEY;
 
   // 8. Dispatch Email (via mock or real Resend)
   if (params.mockResendSend) {

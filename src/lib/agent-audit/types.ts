@@ -128,6 +128,7 @@ export interface AuditSampledLead {
   created_at: string;
   grades?: AuditLeadGrade[];
   compliance_flags?: AuditComplianceFlag[];
+  lead_url?: string | null;
 }
 
 export interface AuditLeadGrade {

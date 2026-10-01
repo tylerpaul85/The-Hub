@@ -40,25 +40,54 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
+  console.error("Root error boundary caught error:", error);
   const router = useRouter();
+
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
+
+    // Auto-recover from chunk loading errors caused by fresh deployments replacing old bundle hashes
+    const errMsg = error?.message || "";
+    const isChunkOrDeployError =
+      errMsg.includes("Failed to fetch dynamically imported module") ||
+      errMsg.includes("Importing a module script failed") ||
+      errMsg.includes("error loading dynamically imported module") ||
+      error?.name === "ChunkLoadError";
+
+    if (isChunkOrDeployError && typeof window !== "undefined") {
+      const reloadKey = `chunk_reload_lock`;
+      const lastReload = sessionStorage.getItem(reloadKey);
+      const now = Date.now();
+      // Only auto-reload once every 10 seconds to prevent infinite reload loops
+      if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
+        sessionStorage.setItem(reloadKey, String(now));
+        window.location.reload();
+      }
+    }
   }, [error]);
+
+  const handleHardReload = () => {
+    if (typeof window !== "undefined") {
+      window.location.reload();
+    } else {
+      router.invalidate();
+      reset();
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold">This page didn't load</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Something went wrong.</p>
+        <p className="mt-2 text-sm text-muted-foreground break-words">
+          {error?.message || "Something went wrong."}
+        </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
-            onClick={() => {
-              router.invalidate();
-              reset();
-            }}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            onClick={handleHardReload}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 cursor-pointer"
           >
-            Try again
+            Reload page
           </button>
           <a
             href="/"
@@ -67,6 +96,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             Go home
           </a>
         </div>
+        {error?.stack && (
+          <details className="mt-4 text-left text-xs text-muted-foreground bg-muted/40 p-2 rounded max-h-36 overflow-auto border border-border/40">
+            <summary className="cursor-pointer font-mono text-[11px] text-muted-foreground hover:text-foreground">Error Details</summary>
+            <pre className="mt-2 whitespace-pre-wrap font-mono text-[10px]">{error.stack}</pre>
+          </details>
+        )}
       </div>
     </div>
   );

@@ -30,7 +30,7 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
     return response;
   }
 
-  const err = consumeLastCapturedError();
+  const err = consumeLastCapturedError() as any;
   console.error(err ?? new Error(`h3 swallowed SSR error: ${body}`));
 
   const isProd = typeof process !== "undefined" && process.env?.NODE_ENV === "production";

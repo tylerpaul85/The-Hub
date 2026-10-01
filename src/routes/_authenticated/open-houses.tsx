@@ -150,7 +150,7 @@ function isThisWeekend(dateStr: string | null): boolean {
 
 export function OpenHousesPage() {
   const qc = useQueryClient();
-  const { user, profile, roles, isAdmin } = useAuth();
+  const { user, roles, isAdmin } = useAuth();
   const searchParams = useRouterState({ select: (s) => s.location.search }) as Record<string, any>;
   const initialSelectedId = searchParams?.id || null;
 
@@ -622,13 +622,13 @@ function ScheduleOpenHouseModal({
   onCreated: (id: string) => void;
 }) {
   const qc = useQueryClient();
-  const { profile } = useAuth();
+  const { user } = useAuth();
   const cloneAssets = useServerFn(cloneListingAssetsToOpenHouse);
 
   const [selectedListingId, setSelectedListingId] = useState<string>("none");
   const [form, setForm] = useState({
     address: "",
-    agent_name: profile?.full_name || "",
+    agent_name: (user?.user_metadata?.full_name as string) || (user?.user_metadata?.name as string) || "",
     status: "upcoming",
     open_house_at: "",
     description: "",

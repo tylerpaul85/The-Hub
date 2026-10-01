@@ -125,6 +125,7 @@ function safeFmtDate(d: string | null | undefined, fmtStr = "MMM d, p") {
 function RequestsInbox() {
   const { isAdmin, user, roles } = useAuth();
   const isClientCare = roles?.includes("client_care");
+  const isMarketing = roles?.includes("marketing_coordinator") || roles?.includes("admin") || isAdmin;
   const qc = useQueryClient();
   const [filter, setFilter] = useState<
     "all" | "pending" | "approved" | "declined" | "completed_gifts"

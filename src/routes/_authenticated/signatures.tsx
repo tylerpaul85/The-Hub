@@ -50,6 +50,7 @@ interface AgentSig {
   email: string;
   name: string;
   active: boolean;
+  headshot_url?: string | null;
   sig: {
     id: string;
     toolbox_agent_id: string;
@@ -620,7 +621,7 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
       <Input
         id={id}
         type={type}
-        value={form[key]}
+        value={(form[key] as string) ?? ""}
         onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
         placeholder={placeholder}
         className="h-9 text-sm"

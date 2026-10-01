@@ -54,7 +54,7 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
 
   const fetchAgentProfile = async (currentToken: string) => {
     try {
-      const { data, error } = await supabase.rpc("seller_get_profile", {
+      const { data, error } = await (supabase as any).rpc("seller_get_profile", {
         p_token: currentToken,
       });
       if (error || (data as any)?.error) {
@@ -99,7 +99,7 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
       throw new Error("Please enter your full name.");
     }
 
-    const { data, error } = await supabase.rpc("seller_signup", {
+    const { data, error } = await (supabase as any).rpc("seller_signup", {
       p_email: cleanEmail,
       p_password: password,
       p_full_name: fullName.trim(),
@@ -132,7 +132,7 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
       throw new Error("Accounts are limited to @mattsmithrealestategroup.com email addresses.");
     }
 
-    const { data, error } = await supabase.rpc("seller_login", {
+    const { data, error } = await (supabase as any).rpc("seller_login", {
       p_email: cleanEmail,
       p_password: password,
     });
@@ -158,7 +158,7 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
 
   const signOutAgent = async () => {
     if (token) {
-      await supabase.rpc("seller_logout", { p_token: token });
+      await (supabase as any).rpc("seller_logout", { p_token: token });
     }
     setAgent(null);
     setToken(null);

@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { generateSellerNetPdf } from "@/lib/generate-seller-net-pdf";
 
 export const Route = createFileRoute("/_authenticated/admin-net-sheets")({
+  ssr: false,
   component: AdminNetSheetsPage,
   head: () => ({
     meta: [{ title: "Agent Net Sheets — MSREG Hub" }],

@@ -134,7 +134,7 @@ function CalendarPage() {
       });
       setSlotDate(new Date());
       setFormOpen(true);
-      navigate({ search: {}, replace: true });
+      navigate({ search: {} as any, replace: true });
     }
   }, [
     search.prefillTitle,
