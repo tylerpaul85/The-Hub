@@ -15,6 +15,7 @@ export const getMetaConfig = createServerFn({ method: "POST" })
 
     const appId = process.env.META_APP_ID || "2004401023558912";
     const hasSecret = Boolean(process.env.META_APP_SECRET);
+    const envPageId = process.env.META_PAGE_ID;
 
     // Fetch saved page configurations
     const { data: pages, error } = await sb
@@ -28,10 +29,26 @@ export const getMetaConfig = createServerFn({ method: "POST" })
       console.warn("[meta-social] Error fetching page configs:", error.message);
     }
 
+    let finalPages = pages || [];
+    if (finalPages.length === 0 && envPageId) {
+      finalPages = [
+        {
+          id: "env-default",
+          page_id: envPageId,
+          page_name: "Integrity Property Management",
+          brand_tag: "Default",
+          instagram_username: null,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      ];
+    }
+
     return {
       appId,
       hasSecret,
-      pages: pages || [],
+      pages: finalPages,
     };
   });
 
@@ -145,15 +162,23 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
       query = query.eq("brand_tag", data.brandTag);
     }
 
-    const { data: pageRows, error: pageErr } = await query.limit(1);
+    const { data: pageRows } = await query.limit(1);
 
-    if (pageErr || !pageRows || pageRows.length === 0) {
+    let targetPage = pageRows?.[0];
+    if (!targetPage && process.env.META_PAGE_ID && process.env.META_PAGE_ACCESS_TOKEN) {
+      targetPage = {
+        page_id: process.env.META_PAGE_ID,
+        page_access_token: process.env.META_PAGE_ACCESS_TOKEN,
+        page_name: "Connected Facebook Page",
+      };
+    }
+
+    if (!targetPage) {
       throw new Error(
         "No active connected Facebook Page found. Please connect your Facebook Page in Meta Social Settings first.",
       );
     }
 
-    const targetPage = pageRows[0];
     const { page_id: pageId, page_access_token: token } = targetPage;
 
     let postId = "";
@@ -259,14 +284,22 @@ export const getPageAnalytics = createServerFn({ method: "POST" })
 
     const { data: pageRows } = await query.limit(1);
 
-    if (!pageRows || pageRows.length === 0) {
+    let page = pageRows?.[0];
+    if (!page && process.env.META_PAGE_ID && process.env.META_PAGE_ACCESS_TOKEN) {
+      page = {
+        page_id: process.env.META_PAGE_ID,
+        page_access_token: process.env.META_PAGE_ACCESS_TOKEN,
+        page_name: "Integrity Property Management",
+      };
+    }
+
+    if (!page) {
       return {
         connected: false,
         message: "No connected Facebook Page. Configure your Page Access Token to see analytics.",
       };
     }
 
-    const page = pageRows[0];
     const { page_id: pageId, page_access_token: token, page_name: pageName } = page;
 
     try {
