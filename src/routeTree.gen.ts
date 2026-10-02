@@ -16,7 +16,9 @@ import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AvailabilityRouteImport } from './routes/availability'
 import { Route as ClosingGiftRouteImport } from './routes/closing-gift'
+import { Route as DataDeletionRouteImport } from './routes/data-deletion'
 import { Route as OpenHouseManagementRouteImport } from './routes/open-house-management'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as RequestRouteImport } from './routes/request'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SellerNetProceedsRouteImport } from './routes/seller-net-proceeds'
@@ -63,6 +65,7 @@ import { Route as AuthenticatedEosL10IndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedEosL10IdRouteImport } from './routes/_authenticated/eos.l10.$id'
 import { Route as ApiPublicHooksScorecardRemindersRouteImport } from './routes/api/public/hooks/scorecard-reminders'
 import { Route as ApiPublicWebhooksInstantdecoRouteImport } from './routes/api/public/webhooks/instantdeco'
+import { Route as ApiPublicWebhooksMetaDeletionRouteImport } from './routes/api/public/webhooks/meta-deletion'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -98,9 +101,19 @@ const ClosingGiftRoute = ClosingGiftRouteImport.update({
   path: '/closing-gift',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DataDeletionRoute = DataDeletionRouteImport.update({
+  id: '/data-deletion',
+  path: '/data-deletion',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OpenHouseManagementRoute = OpenHouseManagementRouteImport.update({
   id: '/open-house-management',
   path: '/open-house-management',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RequestRoute = RequestRouteImport.update({
@@ -350,6 +363,12 @@ const ApiPublicWebhooksInstantdecoRoute =
     path: '/api/public/webhooks/instantdeco',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicWebhooksMetaDeletionRoute =
+  ApiPublicWebhooksMetaDeletionRouteImport.update({
+    id: '/api/public/webhooks/meta-deletion',
+    path: '/api/public/webhooks/meta-deletion',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -358,7 +377,9 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteWithChildren
   '/availability': typeof AvailabilityRoute
   '/closing-gift': typeof ClosingGiftRoute
+  '/data-deletion': typeof DataDeletionRoute
   '/open-house-management': typeof OpenHouseManagementRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/request': typeof RequestRoute
   '/reset-password': typeof ResetPasswordRoute
   '/seller-net-proceeds': typeof SellerNetProceedsRoute
@@ -404,6 +425,7 @@ export interface FileRoutesByFullPath {
   '/eos/l10/$id': typeof AuthenticatedEosL10IdRoute
   '/api/public/hooks/scorecard-reminders': typeof ApiPublicHooksScorecardRemindersRoute
   '/api/public/webhooks/instantdeco': typeof ApiPublicWebhooksInstantdecoRoute
+  '/api/public/webhooks/meta-deletion': typeof ApiPublicWebhooksMetaDeletionRoute
   '/eos/l10/': typeof AuthenticatedEosL10IndexRoute
 }
 export interface FileRoutesByTo {
@@ -412,7 +434,9 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRouteWithChildren
   '/availability': typeof AvailabilityRoute
   '/closing-gift': typeof ClosingGiftRoute
+  '/data-deletion': typeof DataDeletionRoute
   '/open-house-management': typeof OpenHouseManagementRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/request': typeof RequestRoute
   '/reset-password': typeof ResetPasswordRoute
   '/seller-net-proceeds': typeof SellerNetProceedsRoute
@@ -455,6 +479,7 @@ export interface FileRoutesByTo {
   '/eos/l10/$id': typeof AuthenticatedEosL10IdRoute
   '/api/public/hooks/scorecard-reminders': typeof ApiPublicHooksScorecardRemindersRoute
   '/api/public/webhooks/instantdeco': typeof ApiPublicWebhooksInstantdecoRoute
+  '/api/public/webhooks/meta-deletion': typeof ApiPublicWebhooksMetaDeletionRoute
   '/eos/l10': typeof AuthenticatedEosL10IndexRoute
 }
 export interface FileRoutesById {
@@ -466,7 +491,9 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteWithChildren
   '/availability': typeof AvailabilityRoute
   '/closing-gift': typeof ClosingGiftRoute
+  '/data-deletion': typeof DataDeletionRoute
   '/open-house-management': typeof OpenHouseManagementRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/request': typeof RequestRoute
   '/reset-password': typeof ResetPasswordRoute
   '/seller-net-proceeds': typeof SellerNetProceedsRoute
@@ -512,6 +539,7 @@ export interface FileRoutesById {
   '/_authenticated/eos/l10/$id': typeof AuthenticatedEosL10IdRoute
   '/api/public/hooks/scorecard-reminders': typeof ApiPublicHooksScorecardRemindersRoute
   '/api/public/webhooks/instantdeco': typeof ApiPublicWebhooksInstantdecoRoute
+  '/api/public/webhooks/meta-deletion': typeof ApiPublicWebhooksMetaDeletionRoute
   '/_authenticated/eos/l10/': typeof AuthenticatedEosL10IndexRoute
 }
 export interface FileRouteTypes {
@@ -523,7 +551,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/availability'
     | '/closing-gift'
+    | '/data-deletion'
     | '/open-house-management'
+    | '/privacy-policy'
     | '/request'
     | '/reset-password'
     | '/seller-net-proceeds'
@@ -569,6 +599,7 @@ export interface FileRouteTypes {
     | '/eos/l10/$id'
     | '/api/public/hooks/scorecard-reminders'
     | '/api/public/webhooks/instantdeco'
+    | '/api/public/webhooks/meta-deletion'
     | '/eos/l10/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -577,7 +608,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/availability'
     | '/closing-gift'
+    | '/data-deletion'
     | '/open-house-management'
+    | '/privacy-policy'
     | '/request'
     | '/reset-password'
     | '/seller-net-proceeds'
@@ -620,6 +653,7 @@ export interface FileRouteTypes {
     | '/eos/l10/$id'
     | '/api/public/hooks/scorecard-reminders'
     | '/api/public/webhooks/instantdeco'
+    | '/api/public/webhooks/meta-deletion'
     | '/eos/l10'
   id:
     | '__root__'
@@ -630,7 +664,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/availability'
     | '/closing-gift'
+    | '/data-deletion'
     | '/open-house-management'
+    | '/privacy-policy'
     | '/request'
     | '/reset-password'
     | '/seller-net-proceeds'
@@ -676,6 +712,7 @@ export interface FileRouteTypes {
     | '/_authenticated/eos/l10/$id'
     | '/api/public/hooks/scorecard-reminders'
     | '/api/public/webhooks/instantdeco'
+    | '/api/public/webhooks/meta-deletion'
     | '/_authenticated/eos/l10/'
   fileRoutesById: FileRoutesById
 }
@@ -687,7 +724,9 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   AvailabilityRoute: typeof AvailabilityRoute
   ClosingGiftRoute: typeof ClosingGiftRoute
+  DataDeletionRoute: typeof DataDeletionRoute
   OpenHouseManagementRoute: typeof OpenHouseManagementRoute
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   RequestRoute: typeof RequestRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SellerNetProceedsRoute: typeof SellerNetProceedsRoute
@@ -695,6 +734,7 @@ export interface RootRouteChildren {
   OpenHouseSigninIdRoute: typeof OpenHouseSigninIdRoute
   ApiPublicHooksScorecardRemindersRoute: typeof ApiPublicHooksScorecardRemindersRoute
   ApiPublicWebhooksInstantdecoRoute: typeof ApiPublicWebhooksInstantdecoRoute
+  ApiPublicWebhooksMetaDeletionRoute: typeof ApiPublicWebhooksMetaDeletionRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -748,11 +788,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClosingGiftRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/data-deletion': {
+      id: '/data-deletion'
+      path: '/data-deletion'
+      fullPath: '/data-deletion'
+      preLoaderRoute: typeof DataDeletionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/open-house-management': {
       id: '/open-house-management'
       path: '/open-house-management'
       fullPath: '/open-house-management'
       preLoaderRoute: typeof OpenHouseManagementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/request': {
@@ -1077,6 +1131,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhooksInstantdecoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/webhooks/meta-deletion': {
+      id: '/api/public/webhooks/meta-deletion'
+      path: '/api/public/webhooks/meta-deletion'
+      fullPath: '/api/public/webhooks/meta-deletion'
+      preLoaderRoute: typeof ApiPublicWebhooksMetaDeletionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1227,7 +1288,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   AvailabilityRoute: AvailabilityRoute,
   ClosingGiftRoute: ClosingGiftRoute,
+  DataDeletionRoute: DataDeletionRoute,
   OpenHouseManagementRoute: OpenHouseManagementRoute,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
   RequestRoute: RequestRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SellerNetProceedsRoute: SellerNetProceedsRoute,
@@ -1235,6 +1298,7 @@ const rootRouteChildren: RootRouteChildren = {
   OpenHouseSigninIdRoute: OpenHouseSigninIdRoute,
   ApiPublicHooksScorecardRemindersRoute: ApiPublicHooksScorecardRemindersRoute,
   ApiPublicWebhooksInstantdecoRoute: ApiPublicWebhooksInstantdecoRoute,
+  ApiPublicWebhooksMetaDeletionRoute: ApiPublicWebhooksMetaDeletionRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
