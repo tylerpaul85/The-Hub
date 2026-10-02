@@ -1,15 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { useServerFn } from "@tanstack/react-start";
+import { publishPostToMeta } from "@/lib/meta-social.functions";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -130,8 +133,42 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
   const [revisionNoteDraft, setRevisionNoteDraft] = useState("");
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const publishToMetaFn = useServerFn(publishPostToMeta);
+  const [publishingToMeta, setPublishingToMeta] = useState(false);
 
-  const { data: item, isLoading, isError } = useQuery({
+  const handlePublishToFacebook = async () => {
+    const message = form.meta_copy || form.caption || form.title;
+    if (!message) {
+      toast.error("Please enter post copy, a caption, or a title first.");
+      return;
+    }
+    setPublishingToMeta(true);
+    try {
+      const res = await publishToMetaFn({
+        data: {
+          contentItemId: item?.id,
+          brandTag: form.brand,
+          message,
+          mediaUrl: form.meta_graphic_link || (form.image_urls && form.image_urls[0]) || undefined,
+          mediaType:
+            form.meta_graphic_link || (form.image_urls && form.image_urls[0]) ? "photo" : "status",
+        },
+      });
+      toast.success(`Published live to ${res.pageName}!`);
+      qc.invalidateQueries({ queryKey: ["content-item", itemId] });
+      qc.invalidateQueries({ queryKey: ["content_items"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to publish post to Facebook.");
+    } finally {
+      setPublishingToMeta(false);
+    }
+  };
+
+  const {
+    data: item,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ["content-item", itemId],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
@@ -476,7 +513,9 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent className="flex flex-col h-[100dvh] p-0 gap-0 sm:max-w-2xl bg-background border-l border-border overflow-hidden">
-          <div className="p-6 text-destructive font-medium">Failed to load content item. It may have been deleted, or you don't have permission.</div>
+          <div className="p-6 text-destructive font-medium">
+            Failed to load content item. It may have been deleted, or you don't have permission.
+          </div>
         </SheetContent>
       </Sheet>
     );
@@ -566,22 +605,26 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
 
             {item.status === "pending_re_approval" && (
               <div className="rounded-md bg-[oklch(0.72_0.18_55)]/10 border border-[oklch(0.72_0.18_55)]/40 p-3 text-sm">
-                <span className="font-semibold text-[oklch(0.82_0.18_55)]">Pending Re-Approval</span>{" "}
+                <span className="font-semibold text-[oklch(0.82_0.18_55)]">
+                  Pending Re-Approval
+                </span>{" "}
                 — awaiting admin review.
               </div>
             )}
 
             {targetMissed && (
               <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/15 border border-destructive/30 text-destructive text-sm">
-                <AlertTriangle className="h-4 w-4" /> Target publish date ({item.target_publish_date})
-                has passed without Published status.
+                <AlertTriangle className="h-4 w-4" /> Target publish date (
+                {item.target_publish_date}) has passed without Published status.
               </div>
             )}
 
             <fieldset disabled={!canEditContent} className="space-y-5 disabled:opacity-95">
               {/* ===== TOP: Title, Notes, Chat ===== */}
               <div>
-                <Label className="text-xs uppercase tracking-wide text-muted-foreground">Title</Label>
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Title
+                </Label>
                 <Input
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -592,7 +635,9 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
               </div>
 
               <div>
-                <Label className="text-xs uppercase tracking-wide text-muted-foreground">Notes</Label>
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Notes
+                </Label>
                 <Textarea
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -957,6 +1002,43 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                       placeholder="Post copy…"
                     />
                   </div>
+
+                  <div className="pt-2 flex items-center justify-between border-t border-blue-500/20">
+                    {item?.published_post_url ? (
+                      <div className="flex items-center gap-1.5 text-xs text-emerald-400">
+                        <Check className="h-3.5 w-3.5" />
+                        <span>Live on Facebook:</span>
+                        <a
+                          href={item.published_post_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-gold hover:underline font-medium"
+                        >
+                          View Post <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={publishingToMeta || !canEditContent}
+                        onClick={handlePublishToFacebook}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs gap-1.5 h-8"
+                      >
+                        {publishingToMeta ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            Publishing to Facebook…
+                          </>
+                        ) : (
+                          <>
+                            <Send className="h-3.5 w-3.5" />
+                            Publish to Facebook Page
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -1017,7 +1099,10 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Status</Label>
-                  <Select value={form.status} onValueChange={(v) => handleStatusChange(v as Status)}>
+                  <Select
+                    value={form.status}
+                    onValueChange={(v) => handleStatusChange(v as Status)}
+                  >
                     <SelectTrigger className="mt-1.5">
                       <SelectValue />
                     </SelectTrigger>
@@ -1036,7 +1121,10 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                       <div className="leading-tight">
                         <div className="font-semibold text-emerald-300">Agent Notified</div>
                         <div className="text-[10px] text-emerald-400/80">
-                          {notificationLogs[0]?.agent_name ? `${notificationLogs[0].agent_name}` : "Listing agent"} emailed {format(new Date(item.agent_notified_at), "MMM d, h:mm a")}
+                          {notificationLogs[0]?.agent_name
+                            ? `${notificationLogs[0].agent_name}`
+                            : "Listing agent"}{" "}
+                          emailed {format(new Date(item.agent_notified_at), "MMM d, h:mm a")}
                         </div>
                       </div>
                     </div>
@@ -1135,9 +1223,13 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                             <span className="text-muted-foreground"> changed by </span>
                             <span className="text-foreground font-medium">{nameOf(h.user_id)}</span>
                             <div className="text-muted-foreground truncate mt-0.5">
-                              <span className="line-through">{formatHistoryValue(h.field, h.old_value)}</span>
+                              <span className="line-through">
+                                {formatHistoryValue(h.field, h.old_value)}
+                              </span>
                               <span className="mx-1">→</span>
-                              <span className="text-foreground">{formatHistoryValue(h.field, h.new_value)}</span>
+                              <span className="text-foreground">
+                                {formatHistoryValue(h.field, h.new_value)}
+                              </span>
                             </div>
                           </div>
                         )}

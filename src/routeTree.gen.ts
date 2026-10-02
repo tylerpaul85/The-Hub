@@ -33,6 +33,7 @@ import { Route as AuthenticatedDutyCalendarRouteImport } from './routes/_authent
 import { Route as AuthenticatedExperimentsRouteImport } from './routes/_authenticated/experiments'
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
 import { Route as AuthenticatedListingsRouteImport } from './routes/_authenticated/listings'
+import { Route as AuthenticatedMetaSocialRouteImport } from './routes/_authenticated/meta-social'
 import { Route as AuthenticatedMyAvailabilityRouteImport } from './routes/_authenticated/my-availability'
 import { Route as AuthenticatedOpenHousesRouteImport } from './routes/_authenticated/open-houses'
 import { Route as AuthenticatedProcessesRouteImport } from './routes/_authenticated/processes'
@@ -187,6 +188,11 @@ const AuthenticatedInventoryRoute = AuthenticatedInventoryRouteImport.update({
 const AuthenticatedListingsRoute = AuthenticatedListingsRouteImport.update({
   id: '/listings',
   path: '/listings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMetaSocialRoute = AuthenticatedMetaSocialRouteImport.update({
+  id: '/meta-social',
+  path: '/meta-social',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedMyAvailabilityRoute =
@@ -394,6 +400,7 @@ export interface FileRoutesByFullPath {
   '/experiments': typeof AuthenticatedExperimentsRouteWithChildren
   '/inventory': typeof AuthenticatedInventoryRoute
   '/listings': typeof AuthenticatedListingsRouteWithChildren
+  '/meta-social': typeof AuthenticatedMetaSocialRoute
   '/my-availability': typeof AuthenticatedMyAvailabilityRoute
   '/open-houses': typeof AuthenticatedOpenHousesRoute
   '/processes': typeof AuthenticatedProcessesRoute
@@ -449,6 +456,7 @@ export interface FileRoutesByTo {
   '/duty-agents': typeof AuthenticatedDutyAgentsRoute
   '/duty-calendar': typeof AuthenticatedDutyCalendarRoute
   '/inventory': typeof AuthenticatedInventoryRoute
+  '/meta-social': typeof AuthenticatedMetaSocialRoute
   '/my-availability': typeof AuthenticatedMyAvailabilityRoute
   '/open-houses': typeof AuthenticatedOpenHousesRoute
   '/processes': typeof AuthenticatedProcessesRoute
@@ -508,6 +516,7 @@ export interface FileRoutesById {
   '/_authenticated/experiments': typeof AuthenticatedExperimentsRouteWithChildren
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
   '/_authenticated/listings': typeof AuthenticatedListingsRouteWithChildren
+  '/_authenticated/meta-social': typeof AuthenticatedMetaSocialRoute
   '/_authenticated/my-availability': typeof AuthenticatedMyAvailabilityRoute
   '/_authenticated/open-houses': typeof AuthenticatedOpenHousesRoute
   '/_authenticated/processes': typeof AuthenticatedProcessesRoute
@@ -568,6 +577,7 @@ export interface FileRouteTypes {
     | '/experiments'
     | '/inventory'
     | '/listings'
+    | '/meta-social'
     | '/my-availability'
     | '/open-houses'
     | '/processes'
@@ -623,6 +633,7 @@ export interface FileRouteTypes {
     | '/duty-agents'
     | '/duty-calendar'
     | '/inventory'
+    | '/meta-social'
     | '/my-availability'
     | '/open-houses'
     | '/processes'
@@ -681,6 +692,7 @@ export interface FileRouteTypes {
     | '/_authenticated/experiments'
     | '/_authenticated/inventory'
     | '/_authenticated/listings'
+    | '/_authenticated/meta-social'
     | '/_authenticated/my-availability'
     | '/_authenticated/open-houses'
     | '/_authenticated/processes'
@@ -905,6 +917,13 @@ declare module '@tanstack/react-router' {
       path: '/listings'
       fullPath: '/listings'
       preLoaderRoute: typeof AuthenticatedListingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/meta-social': {
+      id: '/_authenticated/meta-social'
+      path: '/meta-social'
+      fullPath: '/meta-social'
+      preLoaderRoute: typeof AuthenticatedMetaSocialRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/my-availability': {
@@ -1203,6 +1222,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedExperimentsRoute: typeof AuthenticatedExperimentsRouteWithChildren
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
   AuthenticatedListingsRoute: typeof AuthenticatedListingsRouteWithChildren
+  AuthenticatedMetaSocialRoute: typeof AuthenticatedMetaSocialRoute
   AuthenticatedMyAvailabilityRoute: typeof AuthenticatedMyAvailabilityRoute
   AuthenticatedOpenHousesRoute: typeof AuthenticatedOpenHousesRoute
   AuthenticatedProcessesRoute: typeof AuthenticatedProcessesRoute
@@ -1235,6 +1255,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedExperimentsRoute: AuthenticatedExperimentsRouteWithChildren,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
   AuthenticatedListingsRoute: AuthenticatedListingsRouteWithChildren,
+  AuthenticatedMetaSocialRoute: AuthenticatedMetaSocialRoute,
   AuthenticatedMyAvailabilityRoute: AuthenticatedMyAvailabilityRoute,
   AuthenticatedOpenHousesRoute: AuthenticatedOpenHousesRoute,
   AuthenticatedProcessesRoute: AuthenticatedProcessesRoute,

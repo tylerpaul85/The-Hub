@@ -28,6 +28,7 @@ import {
   Store,
   DoorOpen,
   UserCheck,
+  Share2,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -36,15 +37,11 @@ import { Button } from "@/components/ui/button";
 import logo from "@/assets/msreg-logo.png";
 import { NotificationBell } from "@/components/notification-bell";
 import { QuickHeadlineButton } from "@/components/quick-headline-button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 const CONTENT_NAV = [
   { to: "/calendar", label: "Content Calendar", icon: Calendar, adminOnly: false },
+  { to: "/meta-social", label: "Social & Analytics", icon: Share2, adminOnly: false },
   { to: "/open-houses", label: "Open Houses", icon: DoorOpen, adminOnly: false },
   { to: "/special-events", label: "Special Events", icon: Sparkles, adminOnly: false },
   { to: "/videos", label: "Video Pipeline", icon: Video, adminOnly: false },
@@ -93,6 +90,7 @@ function getPageTitle(pathname: string): string {
   const map: Record<string, string> = {
     "/dashboard": "Dashboard",
     "/calendar": "Calendar",
+    "/meta-social": "Social & Analytics",
     "/open-houses": "Open Houses",
     "/special-events": "Special Events",
     "/listings": "Listings",
@@ -130,8 +128,7 @@ const navLinkClass =
   "flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] font-medium transition-colors duration-100";
 const navLinkActive =
   "bg-gold/10 text-gold border-l-2 border-gold -ml-[2px] pl-2 rounded-r-md rounded-l-none";
-const navLinkInactive =
-  "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-white";
+const navLinkInactive = "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-white";
 const sectionLabel =
   "pt-4 pb-1 px-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/60";
 
@@ -162,7 +159,11 @@ function NavLinks({
       <Link
         to="/dashboard"
         onClick={onNavigate}
-        className={cn(navLinkClass, isActive("/dashboard") ? navLinkActive : navLinkInactive, "mb-4")}
+        className={cn(
+          navLinkClass,
+          isActive("/dashboard") ? navLinkActive : navLinkInactive,
+          "mb-4",
+        )}
       >
         <LayoutDashboard className="h-4 w-4 shrink-0" />
         Dashboard
@@ -245,7 +246,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { isAdmin, user, signOut, role, roles } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const EXPERIMENT_EMAILS = ["tyler.p@mattsmithrealestategroup.com", "tylerpaul85@gmail.com"];
-  const canSeeExperiments = isAdmin || EXPERIMENT_EMAILS.includes((user?.email ?? "").toLowerCase());
+  const canSeeExperiments =
+    isAdmin || EXPERIMENT_EMAILS.includes((user?.email ?? "").toLowerCase());
   const isClientCareOnly = roles.length > 0 && roles.every((r) => r === "client_care");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -253,10 +255,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const userName =
     (user?.user_metadata as any)?.first_name || (user?.user_metadata as any)?.last_name
-      ? [
-          (user?.user_metadata as any)?.first_name,
-          (user?.user_metadata as any)?.last_name,
-        ]
+      ? [(user?.user_metadata as any)?.first_name, (user?.user_metadata as any)?.last_name]
           .filter(Boolean)
           .join(" ")
       : user?.email;
@@ -326,7 +325,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             {/* Desktop: page title */}
             <div className="hidden md:block">
               {pageTitle && (
-                <h2 className="text-[13px] font-medium text-foreground/80 tracking-tight">{pageTitle}</h2>
+                <h2 className="text-[13px] font-medium text-foreground/80 tracking-tight">
+                  {pageTitle}
+                </h2>
               )}
             </div>
 
@@ -348,7 +349,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         {/* ─── Mobile Nav Drawer ───────────────────────────────────── */}
         <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-          <SheetContent side="left" className="w-72 bg-sidebar p-0 border-sidebar-border flex flex-col h-full">
+          <SheetContent
+            side="left"
+            className="w-72 bg-sidebar p-0 border-sidebar-border flex flex-col h-full"
+          >
             <SheetHeader className="px-4 py-4 border-b border-sidebar-border pt-[max(1rem,calc(env(safe-area-inset-top,0px)+0.75rem))]">
               <div className="flex items-center gap-2.5">
                 <img
@@ -400,7 +404,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           </SheetContent>
         </Sheet>
 
-        <main className="flex-1 overflow-x-hidden overflow-y-auto pt-4 md:pt-0 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]">{children}</main>
+        <main className="flex-1 overflow-x-hidden overflow-y-auto pt-4 md:pt-0 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]">
+          {children}
+        </main>
       </div>
     </div>
   );
