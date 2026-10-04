@@ -125,6 +125,21 @@ function formatHistoryValue(field: string, val: string | null): string {
   return val;
 }
 
+function cleanUrlDisplay(url: string): string {
+  if (!url) return "";
+  try {
+    const u = new URL(url);
+    const pathParts = u.pathname.split("/").filter(Boolean);
+    const filename = pathParts[pathParts.length - 1] || u.hostname;
+    const clean = decodeURIComponent(filename)
+      .replace(/^meta-\d+-/, "")
+      .replace(/^meta-video-\d+-/, "");
+    return clean.length > 35 ? clean.slice(0, 32) + "…" : clean;
+  } catch {
+    return url.length > 35 ? url.slice(0, 32) + "…" : url;
+  }
+}
+
 export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
   const { user, canEditContent, canDelete } = useAuth();
   const qc = useQueryClient();
@@ -631,7 +646,7 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
               {item?.title ?? "Loading..."}
             </SheetTitle>
           </SheetHeader>
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6 min-w-0 max-w-full">
             <div className="flex items-center gap-2 flex-wrap text-sm">
               <span className="text-base">
                 {canEditContent ? "Edit Content" : "Content Details"}
@@ -1027,21 +1042,21 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
               )}
 
               {showMeta && (
-                <div className="rounded-md border border-blue-500/30 bg-blue-500/5 p-3 space-y-3">
+                <div className="rounded-md border border-blue-500/30 bg-blue-500/5 p-3 space-y-3 min-w-0 max-w-full overflow-hidden">
                   <div className="text-xs font-semibold text-blue-300">
                     Meta (Facebook/Instagram) details
                   </div>
                   {/* Graphic Upload / Drag-and-Drop */}
-                  <div className="space-y-2">
+                  <div className="space-y-2 min-w-0 max-w-full overflow-hidden">
                     <div className="flex items-center justify-between">
                       <Label className="text-xs font-semibold flex items-center gap-1.5 text-blue-200">
-                        <ImageIcon className="h-3.5 w-3.5 text-blue-400" /> Facebook Graphic / Image
+                        <ImageIcon className="h-3.5 w-3.5 text-blue-400 shrink-0" /> Facebook Graphic / Image
                       </Label>
                       {form.meta_graphic_link && (
                         <button
                           type="button"
                           onClick={() => setForm((f) => ({ ...f, meta_graphic_link: "" }))}
-                          className="text-[11px] text-muted-foreground hover:text-destructive flex items-center gap-1 transition"
+                          className="text-[11px] text-muted-foreground hover:text-destructive flex items-center gap-1 transition shrink-0"
                         >
                           <X className="h-3 w-3" /> Clear Graphic
                         </button>
@@ -1061,7 +1076,7 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                     />
 
                     {form.meta_graphic_link ? (
-                      <div className="flex items-center gap-3 p-2.5 rounded-lg border border-blue-500/30 bg-blue-500/10">
+                      <div className="flex items-center gap-3 p-2.5 rounded-lg border border-blue-500/30 bg-blue-500/10 min-w-0 max-w-full overflow-hidden">
                         <img
                           src={form.meta_graphic_link}
                           alt="Graphic preview"
@@ -1070,19 +1085,22 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                             (e.target as HTMLElement).style.display = "none";
                           }}
                         />
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 overflow-hidden space-y-1">
                           <div className="text-xs font-semibold text-blue-200">
                             Graphic Ready for Publishing
                           </div>
-                          <div className="text-[11px] text-muted-foreground truncate font-mono">
-                            {form.meta_graphic_link}
+                          <div
+                            className="text-[11px] text-muted-foreground truncate font-mono max-w-full block"
+                            title={form.meta_graphic_link}
+                          >
+                            {cleanUrlDisplay(form.meta_graphic_link)}
                           </div>
-                          <div className="flex items-center gap-3 mt-1.5">
+                          <div className="flex items-center gap-3">
                             <a
                               href={form.meta_graphic_link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-[11px] text-gold hover:underline"
+                              className="inline-flex items-center gap-1 text-[11px] text-gold hover:underline shrink-0"
                             >
                               <ExternalLink className="h-3 w-3" /> View image
                             </a>
@@ -1090,7 +1108,7 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                               <button
                                 type="button"
                                 onClick={() => metaGraphicFileRef.current?.click()}
-                                className="text-[11px] text-blue-300 hover:text-blue-100 underline"
+                                className="text-[11px] text-blue-300 hover:text-blue-100 underline shrink-0"
                               >
                                 Replace image
                               </button>
@@ -1099,73 +1117,75 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                         </div>
                       </div>
                     ) : (
-                      <div
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (e.dataTransfer.files?.length) {
-                            handleMetaGraphicUpload(e.dataTransfer.files);
-                          }
-                        }}
-                        className="rounded-lg border-2 border-dashed border-blue-500/30 hover:border-blue-500/60 bg-blue-950/20 hover:bg-blue-950/40 p-4 transition text-center space-y-2"
-                      >
-                        <div className="flex flex-col items-center justify-center gap-1">
-                          <div className="p-2 rounded-full bg-blue-500/15 text-blue-400">
-                            {uploadingMetaGraphic ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Upload className="h-4 w-4" />
+                      <>
+                        <div
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (e.dataTransfer.files?.length) {
+                              handleMetaGraphicUpload(e.dataTransfer.files);
+                            }
+                          }}
+                          className="rounded-lg border-2 border-dashed border-blue-500/30 hover:border-blue-500/60 bg-blue-950/20 hover:bg-blue-950/40 p-4 transition text-center space-y-2 min-w-0 max-w-full"
+                        >
+                          <div className="flex flex-col items-center justify-center gap-1">
+                            <div className="p-2 rounded-full bg-blue-500/15 text-blue-400">
+                              {uploadingMetaGraphic ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Upload className="h-4 w-4" />
+                              )}
+                            </div>
+                            <div className="text-xs font-medium text-foreground">
+                              {uploadingMetaGraphic
+                                ? "Uploading graphic to secure storage…"
+                                : "Drag & drop graphic here, or click to browse"}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground">
+                              PNG, JPG, or WebP
+                            </div>
+                            {canEditContent && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                disabled={uploadingMetaGraphic}
+                                onClick={() => metaGraphicFileRef.current?.click()}
+                                className="mt-1 h-7 text-xs bg-blue-600 hover:bg-blue-500 text-white gap-1.5 shadow-sm"
+                              >
+                                <Upload className="h-3 w-3" />
+                                {uploadingMetaGraphic ? "Uploading…" : "Upload Graphic"}
+                              </Button>
                             )}
                           </div>
-                          <div className="text-xs font-medium text-foreground">
-                            {uploadingMetaGraphic
-                              ? "Uploading graphic to secure storage…"
-                              : "Drag & drop graphic here, or click to browse"}
-                          </div>
-                          <div className="text-[10px] text-muted-foreground">
-                            PNG, JPG, or WebP
-                          </div>
-                          {canEditContent && (
-                            <Button
-                              type="button"
-                              size="sm"
-                              disabled={uploadingMetaGraphic}
-                              onClick={() => metaGraphicFileRef.current?.click()}
-                              className="mt-1 h-7 text-xs bg-blue-600 hover:bg-blue-500 text-white gap-1.5 shadow-sm"
-                            >
-                              <Upload className="h-3 w-3" />
-                              {uploadingMetaGraphic ? "Uploading…" : "Upload Graphic"}
-                            </Button>
+
+                          {form.image_urls.length > 0 && (
+                            <div className="pt-2 border-t border-blue-500/20">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setForm((f) => ({ ...f, meta_graphic_link: f.image_urls[0] }))
+                                }
+                                className="text-[11px] text-gold hover:underline inline-flex items-center gap-1 font-medium"
+                              >
+                                💡 Use photo already uploaded in Photos above
+                              </button>
+                            </div>
                           )}
                         </div>
 
-                        {form.image_urls.length > 0 && (
-                          <div className="pt-2 border-t border-blue-500/20">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setForm((f) => ({ ...f, meta_graphic_link: f.image_urls[0] }))
-                              }
-                              className="text-[11px] text-gold hover:underline inline-flex items-center gap-1 font-medium"
-                            >
-                              💡 Use photo already uploaded in Photos above
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                        <Input
+                          type="url"
+                          value={form.meta_graphic_link}
+                          onChange={(e) => setForm({ ...form, meta_graphic_link: e.target.value })}
+                          placeholder="Or paste direct image URL (https://…)"
+                          className="mt-1 h-8 text-xs bg-background/50 border-blue-500/20 w-full min-w-0 max-w-full"
+                        />
+                      </>
                     )}
-
-                    <Input
-                      type="url"
-                      value={form.meta_graphic_link}
-                      onChange={(e) => setForm({ ...form, meta_graphic_link: e.target.value })}
-                      placeholder="Or paste direct image URL (https://…)"
-                      className="mt-1 h-8 text-xs bg-background/50 border-blue-500/20"
-                    />
 
                     {form.meta_graphic_link && form.meta_graphic_link.toLowerCase().includes("canva.com") && (
                       <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-2 text-xs text-amber-300">
@@ -1175,16 +1195,16 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                   </div>
 
                   {/* Video Upload / Drag-and-Drop */}
-                  <div className="space-y-2 pt-2 border-t border-blue-500/20">
+                  <div className="space-y-2 pt-2 border-t border-blue-500/20 min-w-0 max-w-full overflow-hidden">
                     <div className="flex items-center justify-between">
                       <Label className="text-xs font-semibold flex items-center gap-1.5 text-blue-200">
-                        <Film className="h-3.5 w-3.5 text-rose-400" /> Facebook Video
+                        <Film className="h-3.5 w-3.5 text-rose-400 shrink-0" /> Facebook Video
                       </Label>
                       {form.meta_video_link && (
                         <button
                           type="button"
                           onClick={() => setForm((f) => ({ ...f, meta_video_link: "" }))}
-                          className="text-[11px] text-muted-foreground hover:text-destructive flex items-center gap-1 transition"
+                          className="text-[11px] text-muted-foreground hover:text-destructive flex items-center gap-1 transition shrink-0"
                         >
                           <X className="h-3 w-3" /> Clear Video
                         </button>
@@ -1204,16 +1224,16 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                     />
 
                     {form.meta_video_link ? (
-                      <div className="flex flex-col gap-2 p-3 rounded-lg border border-rose-500/30 bg-rose-500/10">
+                      <div className="flex flex-col gap-2 p-3 rounded-lg border border-rose-500/30 bg-rose-500/10 min-w-0 max-w-full overflow-hidden">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-semibold text-rose-300 flex items-center gap-1.5">
-                            <Film className="h-3.5 w-3.5 text-rose-400" /> Video Ready for Publishing
+                            <Film className="h-3.5 w-3.5 text-rose-400 shrink-0" /> Video Ready for Publishing
                           </span>
                           {canEditContent && (
                             <button
                               type="button"
                               onClick={() => metaVideoFileRef.current?.click()}
-                              className="text-[11px] text-rose-300 hover:text-rose-100 underline"
+                              className="text-[11px] text-rose-300 hover:text-rose-100 underline shrink-0"
                             >
                               Replace video
                             </button>
@@ -1224,64 +1244,69 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                           controls
                           className="w-full max-h-48 rounded bg-black/60 border border-border"
                         />
-                        <div className="text-[11px] text-muted-foreground truncate font-mono">
-                          {form.meta_video_link}
+                        <div
+                          className="text-[11px] text-muted-foreground truncate font-mono max-w-full block"
+                          title={form.meta_video_link}
+                        >
+                          {cleanUrlDisplay(form.meta_video_link)}
                         </div>
                       </div>
                     ) : (
-                      <div
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (e.dataTransfer.files?.length) {
-                            handleMetaVideoUpload(e.dataTransfer.files);
-                          }
-                        }}
-                        className="rounded-lg border-2 border-dashed border-rose-500/30 hover:border-rose-500/60 bg-rose-950/10 hover:bg-rose-950/20 p-4 transition text-center space-y-2"
-                      >
-                        <div className="flex flex-col items-center justify-center gap-1">
-                          <div className="p-2 rounded-full bg-rose-500/15 text-rose-400">
-                            {uploadingMetaVideo ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Film className="h-4 w-4" />
+                      <>
+                        <div
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (e.dataTransfer.files?.length) {
+                              handleMetaVideoUpload(e.dataTransfer.files);
+                            }
+                          }}
+                          className="rounded-lg border-2 border-dashed border-rose-500/30 hover:border-rose-500/60 bg-rose-950/10 hover:bg-rose-950/20 p-4 transition text-center space-y-2 min-w-0 max-w-full"
+                        >
+                          <div className="flex flex-col items-center justify-center gap-1">
+                            <div className="p-2 rounded-full bg-rose-500/15 text-rose-400">
+                              {uploadingMetaVideo ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Film className="h-4 w-4" />
+                              )}
+                            </div>
+                            <div className="text-xs font-medium text-foreground">
+                              {uploadingMetaVideo
+                                ? "Uploading video to storage…"
+                                : "Drag & drop video here, or click to browse"}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground">
+                              MP4, MOV, or WebM
+                            </div>
+                            {canEditContent && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                disabled={uploadingMetaVideo}
+                                onClick={() => metaVideoFileRef.current?.click()}
+                                className="mt-1 h-7 text-xs bg-rose-600 hover:bg-rose-500 text-white gap-1.5 shadow-sm"
+                              >
+                                <Upload className="h-3 w-3" />
+                                {uploadingMetaVideo ? "Uploading…" : "Upload Video (.mp4)"}
+                              </Button>
                             )}
                           </div>
-                          <div className="text-xs font-medium text-foreground">
-                            {uploadingMetaVideo
-                              ? "Uploading video to storage…"
-                              : "Drag & drop video here, or click to browse"}
-                          </div>
-                          <div className="text-[10px] text-muted-foreground">
-                            MP4, MOV, or WebM
-                          </div>
-                          {canEditContent && (
-                            <Button
-                              type="button"
-                              size="sm"
-                              disabled={uploadingMetaVideo}
-                              onClick={() => metaVideoFileRef.current?.click()}
-                              className="mt-1 h-7 text-xs bg-rose-600 hover:bg-rose-500 text-white gap-1.5 shadow-sm"
-                            >
-                              <Upload className="h-3 w-3" />
-                              {uploadingMetaVideo ? "Uploading…" : "Upload Video (.mp4)"}
-                            </Button>
-                          )}
                         </div>
-                      </div>
-                    )}
 
-                    <Input
-                      type="url"
-                      value={form.meta_video_link}
-                      onChange={(e) => setForm({ ...form, meta_video_link: e.target.value })}
-                      placeholder="Or paste direct video URL (https://…)"
-                      className="mt-1 h-8 text-xs bg-background/50 border-blue-500/20"
-                    />
+                        <Input
+                          type="url"
+                          value={form.meta_video_link}
+                          onChange={(e) => setForm({ ...form, meta_video_link: e.target.value })}
+                          placeholder="Or paste direct video URL (https://…)"
+                          className="mt-1 h-8 text-xs bg-background/50 border-blue-500/20 w-full min-w-0 max-w-full"
+                        />
+                      </>
+                    )}
 
                     {form.meta_video_link && form.meta_video_link.toLowerCase().includes("canva.com") && (
                       <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-2 text-xs text-amber-300">

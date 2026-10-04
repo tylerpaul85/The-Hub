@@ -324,9 +324,8 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
       }
 
       // Record in meta_published_posts
-      await sb
-        .from("meta_published_posts")
-        .insert({
+      try {
+        await sb.from("meta_published_posts").insert({
           content_item_id: data.contentItemId || null,
           page_id: pageId,
           facebook_post_id: postId,
@@ -335,13 +334,13 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
           media_type: data.mediaType,
           media_url: data.mediaUrl || null,
           published_by: context.userId,
-        })
-        .catch((err: any) =>
-          console.warn(
-            `[meta-social] Note: failed to log meta_published_posts for ${pageName}:`,
-            err,
-          ),
+        });
+      } catch (err: any) {
+        console.warn(
+          `[meta-social] Note: failed to log meta_published_posts for ${pageName}:`,
+          err,
         );
+      }
 
       results.push({ pageId, pageName, postId, permalinkUrl });
     }
@@ -351,17 +350,18 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
       const combinedUrls = results.map((r) => r.permalinkUrl).join(", ");
       const combinedIds = results.map((r) => r.postId).join(", ");
 
-      await sb
-        .from("content_items")
-        .update({
-          status: "published",
-          published_post_id: combinedIds,
-          published_post_url: combinedUrls,
-        })
-        .eq("id", data.contentItemId)
-        .catch((err: any) =>
-          console.warn("[meta-social] Note: failed to update content_items status:", err),
-        );
+      try {
+        await sb
+          .from("content_items")
+          .update({
+            status: "published",
+            published_post_id: combinedIds,
+            published_post_url: combinedUrls,
+          })
+          .eq("id", data.contentItemId);
+      } catch (err: any) {
+        console.warn("[meta-social] Note: failed to update content_items status:", err);
+      }
     }
 
     return {
