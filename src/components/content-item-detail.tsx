@@ -59,6 +59,8 @@ import {
   Download,
   MailCheck,
   Mail,
+  Image as ImageIcon,
+  Film,
 } from "lucide-react";
 import { makeStorageKey } from "@/lib/sanitize-filename";
 import { cn } from "@/lib/utils";
@@ -128,8 +130,12 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const noteFileRef = useRef<HTMLInputElement>(null);
+  const metaGraphicFileRef = useRef<HTMLInputElement>(null);
+  const metaVideoFileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadingNote, setUploadingNote] = useState(false);
+  const [uploadingMetaGraphic, setUploadingMetaGraphic] = useState(false);
+  const [uploadingMetaVideo, setUploadingMetaVideo] = useState(false);
   const [revisionOpen, setRevisionOpen] = useState(false);
   const [revisionNoteDraft, setRevisionNoteDraft] = useState("");
   const [lightbox, setLightbox] = useState<string | null>(null);
@@ -450,6 +456,65 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
 
   const removeImage = (idx: number) => {
     setForm((f) => ({ ...f, image_urls: f.image_urls.filter((_, i) => i !== idx) }));
+  };
+
+  const handleMetaGraphicUpload = async (files: FileList | File[]) => {
+    if (!user) return;
+    const arr = Array.from(files);
+    if (arr.length === 0) return;
+    const file = arr[0];
+    setUploadingMetaGraphic(true);
+    try {
+      const path = makeStorageKey(user.id, `meta-${Date.now()}-${file.name}`);
+      const { error: upErr } = await supabase.storage
+        .from("content-thumbnails")
+        .upload(path, file, { upsert: false });
+      if (upErr) throw upErr;
+      const { data: signed, error: sErr } = await supabase.storage
+        .from("content-thumbnails")
+        .createSignedUrl(path, 60 * 60 * 24 * 365);
+      if (sErr) throw sErr;
+      setForm((f) => ({
+        ...f,
+        meta_graphic_link: signed.signedUrl,
+        image_urls: f.image_urls.includes(signed.signedUrl)
+          ? f.image_urls
+          : [signed.signedUrl, ...f.image_urls],
+      }));
+      toast.success("Graphic uploaded successfully!");
+    } catch (e: any) {
+      toast.error(e.message ?? "Upload failed");
+    } finally {
+      setUploadingMetaGraphic(false);
+    }
+  };
+
+  const handleMetaVideoUpload = async (files: FileList | File[]) => {
+    if (!user) return;
+    const arr = Array.from(files);
+    if (arr.length === 0) return;
+    const file = arr[0];
+    setUploadingMetaVideo(true);
+    try {
+      const path = makeStorageKey(user.id, `meta-video-${Date.now()}-${file.name}`);
+      const { error: upErr } = await supabase.storage
+        .from("content-thumbnails")
+        .upload(path, file, { upsert: false });
+      if (upErr) throw upErr;
+      const { data: signed, error: sErr } = await supabase.storage
+        .from("content-thumbnails")
+        .createSignedUrl(path, 60 * 60 * 24 * 365);
+      if (sErr) throw sErr;
+      setForm((f) => ({
+        ...f,
+        meta_video_link: signed.signedUrl,
+      }));
+      toast.success("Video uploaded successfully!");
+    } catch (e: any) {
+      toast.error(e.message ?? "Upload failed");
+    } finally {
+      setUploadingMetaVideo(false);
+    }
   };
 
   const handleNoteUpload = async (files: FileList | File[]) => {
@@ -966,53 +1031,263 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                   <div className="text-xs font-semibold text-blue-300">
                     Meta (Facebook/Instagram) details
                   </div>
-                  <div>
-                    <Label className="text-xs">Graphic link</Label>
+                  {/* Graphic Upload / Drag-and-Drop */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold flex items-center gap-1.5 text-blue-200">
+                        <ImageIcon className="h-3.5 w-3.5 text-blue-400" /> Facebook Graphic / Image
+                      </Label>
+                      {form.meta_graphic_link && (
+                        <button
+                          type="button"
+                          onClick={() => setForm((f) => ({ ...f, meta_graphic_link: "" }))}
+                          className="text-[11px] text-muted-foreground hover:text-destructive flex items-center gap-1 transition"
+                        >
+                          <X className="h-3 w-3" /> Clear Graphic
+                        </button>
+                      )}
+                    </div>
+
+                    <input
+                      ref={metaGraphicFileRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const fs = e.target.files;
+                        if (fs && fs.length) handleMetaGraphicUpload(fs);
+                        if (metaGraphicFileRef.current) metaGraphicFileRef.current.value = "";
+                      }}
+                    />
+
+                    {form.meta_graphic_link ? (
+                      <div className="flex items-center gap-3 p-2.5 rounded-lg border border-blue-500/30 bg-blue-500/10">
+                        <img
+                          src={form.meta_graphic_link}
+                          alt="Graphic preview"
+                          className="h-16 w-16 rounded object-cover border border-border bg-black/40 shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = "none";
+                          }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-semibold text-blue-200">
+                            Graphic Ready for Publishing
+                          </div>
+                          <div className="text-[11px] text-muted-foreground truncate font-mono">
+                            {form.meta_graphic_link}
+                          </div>
+                          <div className="flex items-center gap-3 mt-1.5">
+                            <a
+                              href={form.meta_graphic_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[11px] text-gold hover:underline"
+                            >
+                              <ExternalLink className="h-3 w-3" /> View image
+                            </a>
+                            {canEditContent && (
+                              <button
+                                type="button"
+                                onClick={() => metaGraphicFileRef.current?.click()}
+                                className="text-[11px] text-blue-300 hover:text-blue-100 underline"
+                              >
+                                Replace image
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (e.dataTransfer.files?.length) {
+                            handleMetaGraphicUpload(e.dataTransfer.files);
+                          }
+                        }}
+                        className="rounded-lg border-2 border-dashed border-blue-500/30 hover:border-blue-500/60 bg-blue-950/20 hover:bg-blue-950/40 p-4 transition text-center space-y-2"
+                      >
+                        <div className="flex flex-col items-center justify-center gap-1">
+                          <div className="p-2 rounded-full bg-blue-500/15 text-blue-400">
+                            {uploadingMetaGraphic ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Upload className="h-4 w-4" />
+                            )}
+                          </div>
+                          <div className="text-xs font-medium text-foreground">
+                            {uploadingMetaGraphic
+                              ? "Uploading graphic to secure storage…"
+                              : "Drag & drop graphic here, or click to browse"}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">
+                            PNG, JPG, or WebP
+                          </div>
+                          {canEditContent && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={uploadingMetaGraphic}
+                              onClick={() => metaGraphicFileRef.current?.click()}
+                              className="mt-1 h-7 text-xs bg-blue-600 hover:bg-blue-500 text-white gap-1.5 shadow-sm"
+                            >
+                              <Upload className="h-3 w-3" />
+                              {uploadingMetaGraphic ? "Uploading…" : "Upload Graphic"}
+                            </Button>
+                          )}
+                        </div>
+
+                        {form.image_urls.length > 0 && (
+                          <div className="pt-2 border-t border-blue-500/20">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setForm((f) => ({ ...f, meta_graphic_link: f.image_urls[0] }))
+                              }
+                              className="text-[11px] text-gold hover:underline inline-flex items-center gap-1 font-medium"
+                            >
+                              💡 Use photo already uploaded in Photos above
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <Input
                       type="url"
                       value={form.meta_graphic_link}
                       onChange={(e) => setForm({ ...form, meta_graphic_link: e.target.value })}
-                      placeholder="https://… (image / graphic)"
-                      className="mt-1.5"
+                      placeholder="Or paste direct image URL (https://…)"
+                      className="mt-1 h-8 text-xs bg-background/50 border-blue-500/20"
                     />
-                    {form.meta_graphic_link && form.meta_graphic_link.toLowerCase().includes("canva.com") ? (
-                      <div className="mt-1.5 rounded-md bg-amber-500/10 border border-amber-500/20 p-2 text-xs text-amber-300">
-                        ⚠️ <strong>Canva Link Detected:</strong> Meta cannot fetch raw Canva design links directly. Please download the graphic from Canva (Share → Download → PNG/JPG) and upload it to the <strong>Photos</strong> section above!
+
+                    {form.meta_graphic_link && form.meta_graphic_link.toLowerCase().includes("canva.com") && (
+                      <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-2 text-xs text-amber-300">
+                        ⚠️ <strong>Canva Link Detected:</strong> Meta cannot fetch raw Canva design links. Please download the PNG from Canva and drop it in the upload box above!
                       </div>
-                    ) : form.meta_graphic_link ? (
-                      <a
-                        href={form.meta_graphic_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-1 inline-flex items-center gap-1 text-xs text-gold hover:underline"
-                      >
-                        <ExternalLink className="h-3 w-3" /> Open graphic
-                      </a>
-                    ) : null}
+                    )}
                   </div>
-                  <div>
-                    <Label className="text-xs">Video link</Label>
+
+                  {/* Video Upload / Drag-and-Drop */}
+                  <div className="space-y-2 pt-2 border-t border-blue-500/20">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold flex items-center gap-1.5 text-blue-200">
+                        <Film className="h-3.5 w-3.5 text-rose-400" /> Facebook Video
+                      </Label>
+                      {form.meta_video_link && (
+                        <button
+                          type="button"
+                          onClick={() => setForm((f) => ({ ...f, meta_video_link: "" }))}
+                          className="text-[11px] text-muted-foreground hover:text-destructive flex items-center gap-1 transition"
+                        >
+                          <X className="h-3 w-3" /> Clear Video
+                        </button>
+                      )}
+                    </div>
+
+                    <input
+                      ref={metaVideoFileRef}
+                      type="file"
+                      accept="video/mp4,video/quicktime,video/webm,video/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const fs = e.target.files;
+                        if (fs && fs.length) handleMetaVideoUpload(fs);
+                        if (metaVideoFileRef.current) metaVideoFileRef.current.value = "";
+                      }}
+                    />
+
+                    {form.meta_video_link ? (
+                      <div className="flex flex-col gap-2 p-3 rounded-lg border border-rose-500/30 bg-rose-500/10">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-rose-300 flex items-center gap-1.5">
+                            <Film className="h-3.5 w-3.5 text-rose-400" /> Video Ready for Publishing
+                          </span>
+                          {canEditContent && (
+                            <button
+                              type="button"
+                              onClick={() => metaVideoFileRef.current?.click()}
+                              className="text-[11px] text-rose-300 hover:text-rose-100 underline"
+                            >
+                              Replace video
+                            </button>
+                          )}
+                        </div>
+                        <video
+                          src={form.meta_video_link}
+                          controls
+                          className="w-full max-h-48 rounded bg-black/60 border border-border"
+                        />
+                        <div className="text-[11px] text-muted-foreground truncate font-mono">
+                          {form.meta_video_link}
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (e.dataTransfer.files?.length) {
+                            handleMetaVideoUpload(e.dataTransfer.files);
+                          }
+                        }}
+                        className="rounded-lg border-2 border-dashed border-rose-500/30 hover:border-rose-500/60 bg-rose-950/10 hover:bg-rose-950/20 p-4 transition text-center space-y-2"
+                      >
+                        <div className="flex flex-col items-center justify-center gap-1">
+                          <div className="p-2 rounded-full bg-rose-500/15 text-rose-400">
+                            {uploadingMetaVideo ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Film className="h-4 w-4" />
+                            )}
+                          </div>
+                          <div className="text-xs font-medium text-foreground">
+                            {uploadingMetaVideo
+                              ? "Uploading video to storage…"
+                              : "Drag & drop video here, or click to browse"}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">
+                            MP4, MOV, or WebM
+                          </div>
+                          {canEditContent && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={uploadingMetaVideo}
+                              onClick={() => metaVideoFileRef.current?.click()}
+                              className="mt-1 h-7 text-xs bg-rose-600 hover:bg-rose-500 text-white gap-1.5 shadow-sm"
+                            >
+                              <Upload className="h-3 w-3" />
+                              {uploadingMetaVideo ? "Uploading…" : "Upload Video (.mp4)"}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <Input
                       type="url"
                       value={form.meta_video_link}
                       onChange={(e) => setForm({ ...form, meta_video_link: e.target.value })}
-                      placeholder="https://… (direct MP4/video URL)"
-                      className="mt-1.5"
+                      placeholder="Or paste direct video URL (https://…)"
+                      className="mt-1 h-8 text-xs bg-background/50 border-blue-500/20"
                     />
-                    {form.meta_video_link && form.meta_video_link.toLowerCase().includes("canva.com") ? (
-                      <div className="mt-1.5 rounded-md bg-amber-500/10 border border-amber-500/20 p-2 text-xs text-amber-300">
-                        ⚠️ <strong>Canva Link Detected:</strong> Meta cannot fetch raw Canva links directly. Please download the video from Canva (Share → Download → MP4) and provide a direct video URL.
+
+                    {form.meta_video_link && form.meta_video_link.toLowerCase().includes("canva.com") && (
+                      <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-2 text-xs text-amber-300">
+                        ⚠️ <strong>Canva Link Detected:</strong> Meta cannot fetch raw Canva links. Please download the MP4 from Canva and drop it in the upload box above!
                       </div>
-                    ) : form.meta_video_link ? (
-                      <a
-                        href={form.meta_video_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-1 inline-flex items-center gap-1 text-xs text-gold hover:underline"
-                      >
-                        <ExternalLink className="h-3 w-3" /> Open video
-                      </a>
-                    ) : null}
+                    )}
                   </div>
                   {form.meta_media_link && (
                     <div>
