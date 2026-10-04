@@ -102,8 +102,12 @@ export interface ContentItem {
   youtube_video_title: string | null;
   email_subject_line: string | null;
   meta_media_link: string | null;
+  meta_graphic_link?: string | null;
+  meta_video_link?: string | null;
   meta_copy: string | null;
   post_type: string;
+  published_post_id?: string | null;
+  published_post_url?: string | null;
   agent_notified_at?: string | null;
 }
 

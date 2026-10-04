@@ -143,16 +143,41 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
       toast.error("Please enter post copy, a caption, or a title first.");
       return;
     }
+
+    const rawGraphic = (form.meta_graphic_link || "").trim();
+    const rawVideo = (form.meta_video_link || "").trim();
+
+    if (rawGraphic.toLowerCase().includes("canva.com") || rawVideo.toLowerCase().includes("canva.com")) {
+      toast.error(
+        "Canva design links cannot be published directly by Meta. Please download the PNG or MP4 from Canva and upload it to the Photos section above or use a direct media URL.",
+        { duration: 6000 }
+      );
+      return;
+    }
+
     setPublishingToMeta(true);
     try {
+      let mediaUrl: string | undefined;
+      let mediaType: "photo" | "video" | "status" = "status";
+
+      if (rawVideo) {
+        mediaUrl = rawVideo;
+        mediaType = "video";
+      } else if (rawGraphic) {
+        mediaUrl = rawGraphic;
+        mediaType = "photo";
+      } else if (form.image_urls && form.image_urls.length > 0) {
+        mediaUrl = form.image_urls[0];
+        mediaType = "photo";
+      }
+
       const res = await publishToMetaFn({
         data: {
           contentItemId: item?.id,
           brandTag: form.brand,
           message,
-          mediaUrl: form.meta_graphic_link || (form.image_urls && form.image_urls[0]) || undefined,
-          mediaType:
-            form.meta_graphic_link || (form.image_urls && form.image_urls[0]) ? "photo" : "status",
+          mediaUrl,
+          mediaType,
         },
       });
       toast.success(`Published live to ${res.pageName}!`);
@@ -950,7 +975,11 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                       placeholder="https://… (image / graphic)"
                       className="mt-1.5"
                     />
-                    {form.meta_graphic_link && (
+                    {form.meta_graphic_link && form.meta_graphic_link.toLowerCase().includes("canva.com") ? (
+                      <div className="mt-1.5 rounded-md bg-amber-500/10 border border-amber-500/20 p-2 text-xs text-amber-300">
+                        ⚠️ <strong>Canva Link Detected:</strong> Meta cannot fetch raw Canva design links directly. Please download the graphic from Canva (Share → Download → PNG/JPG) and upload it to the <strong>Photos</strong> section above!
+                      </div>
+                    ) : form.meta_graphic_link ? (
                       <a
                         href={form.meta_graphic_link}
                         target="_blank"
@@ -959,7 +988,7 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                       >
                         <ExternalLink className="h-3 w-3" /> Open graphic
                       </a>
-                    )}
+                    ) : null}
                   </div>
                   <div>
                     <Label className="text-xs">Video link</Label>
@@ -967,10 +996,14 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                       type="url"
                       value={form.meta_video_link}
                       onChange={(e) => setForm({ ...form, meta_video_link: e.target.value })}
-                      placeholder="https://… (video)"
+                      placeholder="https://… (direct MP4/video URL)"
                       className="mt-1.5"
                     />
-                    {form.meta_video_link && (
+                    {form.meta_video_link && form.meta_video_link.toLowerCase().includes("canva.com") ? (
+                      <div className="mt-1.5 rounded-md bg-amber-500/10 border border-amber-500/20 p-2 text-xs text-amber-300">
+                        ⚠️ <strong>Canva Link Detected:</strong> Meta cannot fetch raw Canva links directly. Please download the video from Canva (Share → Download → MP4) and provide a direct video URL.
+                      </div>
+                    ) : form.meta_video_link ? (
                       <a
                         href={form.meta_video_link}
                         target="_blank"
@@ -979,7 +1012,7 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                       >
                         <ExternalLink className="h-3 w-3" /> Open video
                       </a>
-                    )}
+                    ) : null}
                   </div>
                   {form.meta_media_link && (
                     <div>
@@ -1034,7 +1067,7 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                         </div>
                         <div className="flex flex-wrap gap-2 pl-5">
                           {item.published_post_url.split(", ").map((url: string, idx: number) => {
-                            const isMultiple = item.published_post_url.includes(", ");
+                            const isMultiple = (item.published_post_url ?? "").includes(", ");
                             const label = isMultiple
                               ? idx === 0
                                 ? "View Post (Main) ↗"
@@ -1071,22 +1104,22 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                         {publishingToMeta ? (
                           <>
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            Publishing to Facebook…
+                            {form.meta_video_link ? "Publishing Video to Facebook…" : "Publishing to Facebook…"}
                           </>
                         ) : (
                           <>
                             <Send className="h-3.5 w-3.5" />
                             {item?.published_post_url
                               ? form.brand === "MSREG ALL"
-                                ? "Publish Again to Both Pages"
+                                ? form.meta_video_link ? "Publish Video Again to Both Pages" : "Publish Again to Both Pages"
                                 : form.brand === "LOZ"
-                                  ? "Publish Again to LOZ"
-                                  : "Publish Again to Facebook"
+                                  ? form.meta_video_link ? "Publish Video Again to LOZ" : "Publish Again to LOZ"
+                                  : form.meta_video_link ? "Publish Video Again to Facebook" : "Publish Again to Facebook"
                               : form.brand === "MSREG ALL"
-                                ? "Publish to Both Pages (PP & LOZ)"
+                                ? form.meta_video_link ? "Publish Video to Both Pages (PP & LOZ)" : "Publish to Both Pages (PP & LOZ)"
                                 : form.brand === "LOZ"
-                                  ? "Publish to Lake of the Ozarks Page"
-                                  : "Publish to Facebook Page"}
+                                  ? form.meta_video_link ? "Publish Video to Lake of the Ozarks" : "Publish to Lake of the Ozarks Page"
+                                  : form.meta_video_link ? "Publish Video to Facebook Page" : "Publish to Facebook Page"}
                           </>
                         )}
                       </Button>

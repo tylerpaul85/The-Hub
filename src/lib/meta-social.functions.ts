@@ -277,6 +277,27 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
 
         postId = resData.post_id || resData.id;
         permalinkUrl = `https://www.facebook.com/${postId}`;
+      } else if (data.mediaType === "video" && data.mediaUrl) {
+        // Native Video post via Facebook Video API
+        const videoEndpoint = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/${pageId}/videos`;
+        const form = new URLSearchParams();
+        form.append("file_url", data.mediaUrl);
+        form.append("description", data.message);
+        form.append("access_token", token);
+
+        const res = await fetch(videoEndpoint, {
+          method: "POST",
+          body: form,
+        });
+
+        const resData = (await res.json()) as any;
+        if (!res.ok || resData.error) {
+          console.error(`[meta-social] Error publishing video to ${pageName}:`, resData.error);
+          throw new Error(resData.error?.message || `Failed to publish video to ${pageName}.`);
+        }
+
+        postId = resData.id;
+        permalinkUrl = `https://www.facebook.com/${postId}`;
       } else {
         // Standard Feed Post
         const feedEndpoint = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/${pageId}/feed`;
