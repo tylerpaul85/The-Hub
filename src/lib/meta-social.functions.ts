@@ -196,6 +196,99 @@ export const connectFacebookPage = createServerFn({ method: "POST" })
     };
   });
 
+// ── 2b. Auto-Connect & Sync All Pages via User Access Token ──────
+export const syncPagesFromUserToken = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(
+    z.object({
+      userAccessToken: z.string().trim().min(10, "Access token is required"),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const sb = supabaseAdmin as any;
+
+    const appId = process.env.META_APP_ID || "2004401023558912";
+    const appSecret = process.env.META_APP_SECRET;
+
+    let workingToken = data.userAccessToken.trim();
+
+    // 1. Attempt to exchange short-lived user token for 60-day long-lived token via App Secret
+    if (appId && appSecret) {
+      try {
+        const exchangeUrl = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${encodeURIComponent(
+          workingToken,
+        )}`;
+        const exRes = await fetch(exchangeUrl);
+        const exData = (await exRes.json()) as any;
+        if (exRes.ok && exData.access_token) {
+          console.log("[meta-social] Successfully exchanged token for long-lived user token");
+          workingToken = exData.access_token;
+        } else {
+          console.warn("[meta-social] Note: token exchange returned:", exData?.error?.message);
+        }
+      } catch (exErr) {
+        console.warn("[meta-social] Token exchange error:", exErr);
+      }
+    }
+
+    // 2. Fetch all managed pages via /me/accounts
+    // Using a long-lived user token here yields PERMANENT (never-expiring) Page Access Tokens!
+    const accountsUrl = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/me/accounts?fields=id,name,access_token,fan_count,picture,instagram_business_account{id,username}&access_token=${encodeURIComponent(
+      workingToken,
+    )}`;
+    const accountsRes = await fetch(accountsUrl);
+    const accountsData = (await accountsRes.json()) as any;
+
+    if (!accountsRes.ok || !Array.isArray(accountsData.data) || accountsData.data.length === 0) {
+      const errMsg =
+        accountsData.error?.message ||
+        "No Facebook Pages found for this account. Ensure 'pages_show_list' and 'pages_read_engagement' permissions were checked.";
+      throw new Error(`Meta Error: ${errMsg}`);
+    }
+
+    const connectedPages: any[] = [];
+
+    for (const page of accountsData.data) {
+      const pageId = page.id;
+      const pageName = page.name;
+      const pageToken = page.access_token;
+      const isLoz = pageName.toLowerCase().includes("lake of the ozarks");
+      const brandTag = isLoz ? "LOZ" : "PP";
+
+      const instagramAccountId = page.instagram_business_account?.id || null;
+      const instagramUsername = page.instagram_business_account?.username || null;
+
+      const { data: saved, error } = await sb
+        .from("meta_page_configs")
+        .upsert(
+          {
+            page_id: pageId,
+            page_name: pageName,
+            page_access_token: pageToken,
+            brand_tag: brandTag,
+            instagram_account_id: instagramAccountId,
+            instagram_username: instagramUsername,
+            is_active: true,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "page_id" },
+        )
+        .select("id, page_id, page_name, brand_tag, instagram_username, is_active")
+        .single();
+
+      if (!error && saved) {
+        connectedPages.push(saved);
+      }
+    }
+
+    return {
+      success: true,
+      count: connectedPages.length,
+      pages: connectedPages,
+    };
+  });
+
 // ── 3. Disconnect Page ──────────────────────────────────────────
 export const disconnectFacebookPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

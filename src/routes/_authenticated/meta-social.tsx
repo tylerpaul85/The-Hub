@@ -27,6 +27,7 @@ import {
 import {
   getMetaConfig,
   connectFacebookPage,
+  syncPagesFromUserToken,
   disconnectFacebookPage,
   publishPostToMeta,
   getPageAnalytics,
@@ -61,6 +62,7 @@ function MetaSocialPage() {
   const fetchConfig = useServerFn(getMetaConfig);
   const fetchAnalytics = useServerFn(getPageAnalytics);
   const connectPageFn = useServerFn(connectFacebookPage);
+  const syncPagesFn = useServerFn(syncPagesFromUserToken);
   const disconnectPageFn = useServerFn(disconnectFacebookPage);
   const publishFn = useServerFn(publishPostToMeta);
 
@@ -89,6 +91,7 @@ function MetaSocialPage() {
   const [pageId, setPageId] = useState("");
   const [pageAccessToken, setPageAccessToken] = useState("");
   const [brandTag, setBrandTag] = useState("PP");
+  const [userSyncToken, setUserSyncToken] = useState("");
 
   // Publisher form state
   const [publishTargetBrand, setPublishTargetBrand] = useState<string>("MSREG ALL");
@@ -97,6 +100,22 @@ function MetaSocialPage() {
   const [lastPublishedUrl, setLastPublishedUrl] = useState<string | null>(null);
 
   // Mutations
+  const syncMutation = useMutation({
+    mutationFn: () => syncPagesFn({ data: { userAccessToken: userSyncToken } }),
+    onSuccess: (res) => {
+      toast.success(
+        `Successfully auto-connected ${res.count} Facebook Page(s) with permanent tokens!`,
+      );
+      setUserSyncToken("");
+      queryClient.invalidateQueries({ queryKey: ["meta-config"] });
+      queryClient.invalidateQueries({ queryKey: ["meta-analytics"] });
+      setActiveTab("analytics");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to auto-connect pages.");
+    },
+  });
+
   const connectMutation = useMutation({
     mutationFn: () =>
       connectPageFn({
@@ -607,102 +626,102 @@ function MetaSocialPage() {
             </CardContent>
           </Card>
 
-          {/* Permanent Token Setup Guide */}
-          <Card className="border-gold/30 bg-gold/5">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-gold flex items-center gap-2">
-                <Sparkles className="h-4 w-4" />
-                How to Get a Permanent (Never-Expiring) Page Token
-              </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground">
-                <strong>Why do tokens expire?</strong> Graph API Explorer issues temporary test
-                sessions that Meta automatically terminates at midnight PDT (00:00:00 PDT). Follow
-                either option below for a permanent connection:
+          {/* Quick 1-Click Page Auto-Connect */}
+          <Card className="border-gold/50 bg-gradient-to-br from-gold/10 via-card/50 to-background shadow-md">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold flex items-center gap-2 text-foreground">
+                  <Sparkles className="h-4 w-4 text-gold" />
+                  Quick 1-Click Page Auto-Connect
+                </CardTitle>
+                <Badge
+                  variant="outline"
+                  className="bg-gold/20 text-gold border-gold/40 text-[10px] font-bold"
+                >
+                  Never Expires
+                </Badge>
+              </div>
+              <CardDescription className="text-xs text-muted-foreground leading-relaxed">
+                Since EXP business portfolio settings restrict System User creation, you can connect
+                everything in seconds using a User Token from Meta Graph API Explorer. The Hub will
+                automatically exchange it with your App Secret into{" "}
+                <strong className="text-foreground">permanent, never-expiring Page Tokens</strong>{" "}
+                for both PP and LOZ!
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 text-xs">
-              <div className="rounded-md border border-border/50 bg-background/60 p-3 space-y-1.5">
-                <p className="font-semibold text-foreground flex items-center gap-1.5">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gold/20 text-gold text-[11px] font-bold">
-                    1
-                  </span>
-                  Option A: Meta Business Suite System User (Recommended — Never Expires)
+            <CardContent className="space-y-4">
+              <div className="rounded-md border border-border/50 bg-background/70 p-3 text-xs space-y-1.5">
+                <p className="font-semibold text-foreground">
+                  3 Simple Steps in Graph API Explorer:
                 </p>
-                <ol className="list-decimal list-inside space-y-1 text-muted-foreground text-[11px] pl-1 leading-relaxed">
+                <ol className="list-decimal list-inside space-y-1 text-muted-foreground text-[11px] leading-relaxed">
                   <li>
                     Open{" "}
                     <a
-                      href="https://business.facebook.com/settings"
+                      href="https://developers.facebook.com/tools/explorer"
                       target="_blank"
                       rel="noreferrer"
-                      className="text-gold underline inline-flex items-center gap-0.5"
+                      className="text-gold font-semibold underline inline-flex items-center gap-0.5"
                     >
-                      Meta Business Settings <ExternalLink className="h-2.5 w-2.5" />
-                    </a>{" "}
-                    &rarr; <strong>Users</strong> &rarr; <strong>System Users</strong>.
+                      Meta Graph API Explorer <ExternalLink className="h-2.5 w-2.5" />
+                    </a>
+                    .
                   </li>
                   <li>
-                    Click <strong>Add</strong> &rarr; Name: <code>Hub Automation</code>, Role:{" "}
-                    <strong>Admin</strong>.
+                    In the top-right <strong>Meta App</strong> dropdown, select{" "}
+                    <strong>MSREG Marketing Hub</strong>.
                   </li>
                   <li>
-                    Click <strong>Assign Assets</strong> &rarr; <strong>Pages</strong> &rarr; Select
-                    both your pages &rarr; Enable <strong>Full Control</strong> (Manage Page) &rarr;
-                    Save.
-                  </li>
-                  <li>
-                    Click <strong>Generate New Token</strong> &rarr; Select App{" "}
-                    <strong>MSREG Marketing Hub</strong> &rarr; Token Expiration:{" "}
-                    <strong className="text-foreground">Never</strong>.
-                  </li>
-                  <li>
-                    Check permissions: <code>pages_show_list</code>,{" "}
-                    <code>pages_read_engagement</code>, <code>pages_manage_posts</code>,{" "}
-                    <code>pages_manage_metadata</code>.
-                  </li>
-                  <li>
-                    Click <strong>Generate Token</strong>, copy it, and paste it below. This token{" "}
-                    <strong>never expires</strong>!
+                    Ensure permissions are checked: <code>pages_show_list</code>,{" "}
+                    <code>pages_read_engagement</code>, <code>pages_manage_posts</code>. Click{" "}
+                    <strong>Generate Access Token</strong>, and paste it below!
                   </li>
                 </ol>
               </div>
 
-              <div className="rounded-md border border-border/50 bg-background/60 p-3 space-y-1.5">
-                <p className="font-semibold text-foreground flex items-center gap-1.5">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gold/20 text-gold text-[11px] font-bold">
-                    2
-                  </span>
-                  Option B: Graph API Explorer with App ID
-                </p>
-                <p className="text-muted-foreground text-[11px] leading-relaxed">
-                  If using{" "}
-                  <a
-                    href="https://developers.facebook.com/tools/explorer"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-gold underline inline-flex items-center gap-0.5"
-                  >
-                    Graph API Explorer <ExternalLink className="h-2.5 w-2.5" />
-                  </a>
-                  , switch the top-right <strong>Meta App</strong> dropdown to{" "}
-                  <strong>MSREG Marketing Hub</strong> (not "Graph API Explorer"). When you paste
-                  the token here, The Hub will automatically exchange it with your App Secret into a
-                  permanent Page Access Token.
-                </p>
+              <div className="space-y-1.5">
+                <Label htmlFor="syncToken" className="text-xs font-medium">
+                  Meta User Access Token <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="syncToken"
+                  type="password"
+                  value={userSyncToken}
+                  onChange={(e) => setUserSyncToken(e.target.value)}
+                  placeholder="Paste EAA... token from Graph API Explorer here"
+                  className="bg-background/80 text-xs font-mono"
+                />
               </div>
+
+              <Button
+                onClick={() => syncMutation.mutate()}
+                disabled={syncMutation.isPending || !userSyncToken.trim()}
+                className="w-full bg-gold hover:bg-gold/90 text-primary-foreground font-semibold text-xs py-2.5 gap-2"
+              >
+                {syncMutation.isPending ? (
+                  <>
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    Exchanging Token & Auto-Connecting Pages...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Auto-Connect All Pages & Lock In Permanent Tokens
+                  </>
+                )}
+              </Button>
             </CardContent>
           </Card>
 
-          {/* Connect New Page */}
+          {/* Manual Connect Option */}
           <Card className="border-border/60 bg-card/40">
             <CardHeader>
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Share2 className="h-4 w-4 text-gold" />
-                Connect Facebook Page
+              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
+                <Share2 className="h-4 w-4" />
+                Manual Page Connection (Optional)
               </CardTitle>
               <CardDescription className="text-xs">
-                Enter your Facebook Page ID and Page Access Token to authorize publishing and
-                analytics.
+                Or manually enter an individual Facebook Page ID and Page Access Token.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
