@@ -303,7 +303,7 @@ export const disconnectFacebookPage = createServerFn({ method: "POST" })
     return { success: true };
   });
 
-// ── 4. Publish Post to Facebook Page ────────────────────────────
+// ── 4. Publish / Schedule Post to Facebook Page ─────────────────
 export const publishPostToMeta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(
@@ -315,11 +315,25 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
       mediaUrl: z.string().url().optional().or(z.literal("")),
       mediaType: z.enum(["photo", "video", "status"]).optional().default("status"),
       firstComment: z.string().optional().default(""),
+      scheduledAt: z.string().optional(),
+      forceImmediate: z.boolean().optional().default(false),
     }),
   )
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const sb = supabaseAdmin as any;
+
+    const scheduledTimestamp = data.scheduledAt
+      ? Math.floor(new Date(data.scheduledAt).getTime() / 1000)
+      : null;
+    const nowUnix = Math.floor(Date.now() / 1000);
+    // Meta requires scheduled_publish_time to be between 10 minutes (600s) and 75 days in the future
+    const canScheduleOnMeta = Boolean(
+      !data.forceImmediate &&
+      scheduledTimestamp &&
+      scheduledTimestamp > nowUnix + 600 &&
+      scheduledTimestamp < nowUnix + 75 * 24 * 3600,
+    );
 
     // 1. Fetch all active connected Facebook Pages
     const { data: allActivePages, error: pagesErr } = await sb
@@ -376,7 +390,7 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
       permalinkUrl: string;
     }> = [];
 
-    // 2. Publish to each target page
+    // 2. Publish / Schedule to each target page
     for (const page of targetPages) {
       const { page_id: pageId, page_access_token: token, page_name: pageName } = page;
       let postId = "";
@@ -389,6 +403,10 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
         form.append("url", data.mediaUrl);
         form.append("caption", data.message);
         form.append("access_token", token);
+        if (canScheduleOnMeta && scheduledTimestamp) {
+          form.append("published", "false");
+          form.append("scheduled_publish_time", String(scheduledTimestamp));
+        }
 
         const res = await fetch(photoEndpoint, {
           method: "POST",
@@ -410,6 +428,10 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
         form.append("file_url", data.mediaUrl);
         form.append("description", data.message);
         form.append("access_token", token);
+        if (canScheduleOnMeta && scheduledTimestamp) {
+          form.append("published", "false");
+          form.append("scheduled_publish_time", String(scheduledTimestamp));
+        }
 
         const res = await fetch(videoEndpoint, {
           method: "POST",
@@ -433,6 +455,10 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
           form.append("link", data.mediaUrl);
         }
         form.append("access_token", token);
+        if (canScheduleOnMeta && scheduledTimestamp) {
+          form.append("published", "false");
+          form.append("scheduled_publish_time", String(scheduledTimestamp));
+        }
 
         const res = await fetch(feedEndpoint, {
           method: "POST",
@@ -449,8 +475,8 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
         permalinkUrl = `https://www.facebook.com/${postId}`;
       }
 
-      // Optional First Comment (e.g. link in comments, disclosures, agent contact)
-      if (data.firstComment && data.firstComment.trim() && postId) {
+      // Optional First Comment (only if published live immediately, since scheduled posts cannot be commented on until published)
+      if (!canScheduleOnMeta && data.firstComment && data.firstComment.trim() && postId) {
         try {
           const commentEndpoint = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/${postId}/comments`;
           const cForm = new URLSearchParams();
@@ -493,7 +519,7 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
       results.push({ pageId, pageName, postId, permalinkUrl });
     }
 
-    // 3. If attached to a content calendar item, mark as published
+    // 3. If attached to a content calendar item, update published/scheduled status
     if (data.contentItemId && results.length > 0) {
       const combinedUrls = results.map((r) => r.permalinkUrl).join(", ");
       const combinedIds = results.map((r) => r.postId).join(", ");
@@ -502,9 +528,14 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
         await sb
           .from("content_items")
           .update({
-            status: "published",
+            status: canScheduleOnMeta ? "scheduled" : "published",
             published_post_id: combinedIds,
             published_post_url: combinedUrls,
+            meta_is_scheduled: canScheduleOnMeta,
+            meta_scheduled_publish_time:
+              canScheduleOnMeta && data.scheduledAt
+                ? new Date(data.scheduledAt).toISOString()
+                : null,
             meta_first_comment: data.firstComment || null,
           })
           .eq("id", data.contentItemId);
@@ -519,7 +550,85 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
       postId: results[0]?.postId || "",
       permalinkUrl: results[0]?.permalinkUrl || "",
       pageName: results.map((r) => r.pageName).join(" & "),
+      isScheduled: canScheduleOnMeta,
+      scheduledPublishTime: canScheduleOnMeta && scheduledTimestamp ? scheduledTimestamp : null,
     };
+  });
+
+// ── 4c. Auto-Schedule Content Item to Meta ──────────────────────
+export const autoScheduleMetaPost = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(
+    z.object({
+      contentItemId: z.string().uuid(),
+    }),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const sb = supabaseAdmin as any;
+
+    const { data: item, error: itemErr } = await sb
+      .from("content_items")
+      .select("*")
+      .eq("id", data.contentItemId)
+      .single();
+
+    if (itemErr || !item) {
+      throw new Error("Content item not found.");
+    }
+
+    const platforms: string[] = Array.isArray(item.platforms) ? item.platforms : [];
+    const hasMeta = platforms.some((p) =>
+      ["Meta", "Meta PP", "Meta LOZ", "facebook", "instagram", "facebook_reels"].includes(p),
+    );
+
+    if (!hasMeta) {
+      return { success: false, reason: "Meta platform not selected." };
+    }
+
+    if (item.published_post_id) {
+      return { success: false, reason: "Already scheduled or published to Meta." };
+    }
+
+    const message = item.meta_copy || item.caption || item.title;
+    if (!message) {
+      return { success: false, reason: "Missing post copy, caption, or title." };
+    }
+
+    const rawGraphic = (item.meta_graphic_link || "").trim();
+    const rawVideo = (item.meta_video_link || "").trim();
+    let mediaUrl: string | undefined;
+    let mediaType: "photo" | "video" | "status" = "status";
+
+    if (rawVideo) {
+      mediaUrl = rawVideo;
+      mediaType = "video";
+    } else if (rawGraphic) {
+      mediaUrl = rawGraphic;
+      mediaType = "photo";
+    } else if (Array.isArray(item.image_urls) && item.image_urls.length > 0) {
+      mediaUrl = item.image_urls[0];
+      mediaType = "photo";
+    }
+
+    let targetBrand = item.brand;
+    if (platforms.includes("Meta LOZ")) {
+      targetBrand = "LOZ";
+    } else if (platforms.includes("Meta PP")) {
+      targetBrand = "PP";
+    }
+
+    return await publishPostToMeta({
+      data: {
+        contentItemId: item.id,
+        brandTag: targetBrand,
+        message,
+        mediaUrl,
+        mediaType,
+        firstComment: item.meta_first_comment || undefined,
+        scheduledAt: item.scheduled_at || undefined,
+      },
+    });
   });
 
 // ── 4b. Post Comment to Live Facebook Post ──────────────────────

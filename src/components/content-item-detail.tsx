@@ -61,6 +61,8 @@ import {
   Mail,
   Image as ImageIcon,
   Film,
+  Clock,
+  Calendar,
 } from "lucide-react";
 import { makeStorageKey } from "@/lib/sanitize-filename";
 import { cn } from "@/lib/utils";
@@ -159,7 +161,7 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
   const publishToMetaFn = useServerFn(publishPostToMeta);
   const [publishingToMeta, setPublishingToMeta] = useState(false);
 
-  const handlePublishToFacebook = async () => {
+  const handlePublishToFacebook = async (forceImmediate: boolean = false) => {
     const message = form.meta_copy || form.caption || form.title;
     if (!message) {
       toast.error("Please enter post copy, a caption, or a title first.");
@@ -193,19 +195,40 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
         mediaType = "photo";
       }
 
+      let targetBrand = form.brand;
+      if (form.platforms.includes("Meta LOZ")) {
+        targetBrand = "LOZ";
+      } else if (form.platforms.includes("Meta PP")) {
+        targetBrand = "PP";
+      }
+
       const res = await publishToMetaFn({
         data: {
           contentItemId: item?.id,
-          brandTag: form.brand,
+          brandTag: targetBrand,
           message,
           mediaUrl,
           mediaType,
           firstComment: form.meta_first_comment || undefined,
+          scheduledAt: forceImmediate ? undefined : (form.scheduled_at || undefined),
+          forceImmediate,
         },
       });
-      toast.success(`Published live to ${res.pageName}!`);
+
+      if (res.isScheduled) {
+        setForm((f) => ({ ...f, status: "scheduled" }));
+        toast.success(
+          `Post scheduled on Facebook for ${format(new Date(form.scheduled_at), "MMM d, h:mm a")}!`,
+          { description: `Target: ${res.pageName}` }
+        );
+      } else {
+        setForm((f) => ({ ...f, status: "published" }));
+        toast.success(`Published live to ${res.pageName}!`);
+      }
+
       qc.invalidateQueries({ queryKey: ["content-item", itemId] });
-      qc.invalidateQueries({ queryKey: ["content_items"] });
+      qc.invalidateQueries({ queryKey: ["content-items"] });
+      qc.invalidateQueries({ queryKey: ["content-items-list"] });
     } catch (err: any) {
       toast.error(err.message || "Failed to publish post to Facebook.");
     } finally {
@@ -621,6 +644,20 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
       });
     }
     setForm({ ...form, status: v });
+
+    // When status changes to "approved" or "scheduled", auto-schedule to Meta if Meta platform is selected!
+    if ((v === "approved" || v === "scheduled") && showMeta && !item?.published_post_id) {
+      const message = form.meta_copy || form.caption || form.title;
+      if (message) {
+        setTimeout(() => {
+          handlePublishToFacebook(false);
+        }, 200);
+      } else {
+        toast.info(
+          `Status set to ${STATUS_LABEL[v]}, but Meta post not scheduled (add post copy or media).`,
+        );
+      }
+    }
   };
 
   const submitRevision = () => {
@@ -1408,7 +1445,31 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                       </Badge>
                     </div>
 
-                    {item?.published_post_url && (
+                    {/* Scheduled Banner */}
+                    {(item as any)?.meta_is_scheduled && (
+                      <div className="flex flex-col gap-1.5 p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-400">
+                        <div className="flex items-center gap-1.5 font-semibold">
+                          <Clock className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                          <span>Scheduled on Facebook for:</span>
+                          <span className="text-foreground font-bold">
+                            {(item as any)?.meta_scheduled_publish_time || item.scheduled_at
+                              ? format(
+                                  new Date(
+                                    (item as any)?.meta_scheduled_publish_time || item.scheduled_at,
+                                  ),
+                                  "MMM d, yyyy · h:mm a",
+                                )
+                              : "Scheduled Time"}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground pl-5 leading-relaxed">
+                          In Facebook Page's native publishing queue. It will automatically publish live at that time.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Live Banner */}
+                    {item?.published_post_url && !(item as any)?.meta_is_scheduled && (
                       <div className="flex flex-col gap-2 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-400">
                         <div className="flex items-center gap-1.5 font-semibold">
                           <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
@@ -1438,7 +1499,7 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                       </div>
                     )}
 
-                    {item?.published_post_url && (
+                    {item?.published_post_url && !(item as any)?.meta_is_scheduled && (
                       <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-2.5 space-y-2">
                         <Label className="text-xs font-semibold text-blue-300 flex items-center gap-1.5">
                           <span>💬 Add Comment to Live Facebook Post</span>
@@ -1478,9 +1539,11 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                         type="button"
                         size="sm"
                         disabled={publishingToMeta || !canEditContent}
-                        onClick={handlePublishToFacebook}
+                        onClick={() =>
+                          handlePublishToFacebook((item as any)?.meta_is_scheduled ? true : false)
+                        }
                         className={
-                          item?.published_post_url
+                          item?.published_post_url || (item as any)?.meta_is_scheduled
                             ? "bg-muted text-foreground hover:bg-muted/80 font-medium text-xs gap-1.5 h-8 border border-border/60"
                             : "bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs gap-1.5 h-8"
                         }
@@ -1488,22 +1551,39 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                         {publishingToMeta ? (
                           <>
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            {form.meta_video_link ? "Publishing Video to Facebook…" : "Publishing to Facebook…"}
+                            {form.meta_video_link
+                              ? "Processing Video on Facebook…"
+                              : "Processing with Facebook…"}
                           </>
                         ) : (
                           <>
                             <Send className="h-3.5 w-3.5" />
-                            {item?.published_post_url
-                              ? form.brand === "MSREG ALL"
-                                ? form.meta_video_link ? "Publish Video Again to Both Pages" : "Publish Again to Both Pages"
-                                : form.brand === "LOZ"
-                                  ? form.meta_video_link ? "Publish Video Again to LOZ" : "Publish Again to LOZ"
-                                  : form.meta_video_link ? "Publish Video Again to Facebook" : "Publish Again to Facebook"
-                              : form.brand === "MSREG ALL"
-                                ? form.meta_video_link ? "Publish Video to Both Pages (PP & LOZ)" : "Publish to Both Pages (PP & LOZ)"
-                                : form.brand === "LOZ"
-                                  ? form.meta_video_link ? "Publish Video to Lake of the Ozarks" : "Publish to Lake of the Ozarks Page"
-                                  : form.meta_video_link ? "Publish Video to Facebook Page" : "Publish to Facebook Page"}
+                            {(item as any)?.meta_is_scheduled
+                              ? "Publish Live Now (Override Schedule)"
+                              : item?.published_post_url
+                                ? form.brand === "MSREG ALL"
+                                  ? form.meta_video_link
+                                    ? "Publish Video Again to Both Pages"
+                                    : "Publish Again to Both Pages"
+                                  : form.brand === "LOZ"
+                                    ? form.meta_video_link
+                                      ? "Publish Video Again to LOZ"
+                                      : "Publish Again to LOZ"
+                                    : form.meta_video_link
+                                      ? "Publish Video Again to Facebook"
+                                      : "Publish Again to Facebook"
+                                : form.scheduled_at &&
+                                    new Date(form.scheduled_at).getTime() > Date.now() + 600000
+                                  ? form.brand === "MSREG ALL"
+                                    ? `Schedule for ${format(new Date(form.scheduled_at), "h:mm a")} (Both Pages)`
+                                    : form.brand === "LOZ"
+                                      ? `Schedule for ${format(new Date(form.scheduled_at), "h:mm a")} (LOZ)`
+                                      : `Schedule for ${format(new Date(form.scheduled_at), "h:mm a")} (Facebook)`
+                                  : form.brand === "MSREG ALL"
+                                    ? "Publish Live to Both Pages"
+                                    : form.brand === "LOZ"
+                                      ? "Publish Live to LOZ"
+                                      : "Publish Live to Facebook"}
                           </>
                         )}
                       </Button>

@@ -22,7 +22,11 @@ import {
   Sparkles,
   Calendar as CalendarIcon,
   MailCheck,
+  Clock,
+  Check,
 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { autoScheduleMetaPost } from "@/lib/meta-social.functions";
 import {
   DndContext,
   useDraggable,
@@ -231,6 +235,8 @@ export function CalendarListView({
     return () => window.removeEventListener("msreg-export-calendar-list", handler as EventListener);
   }, [filteredAll, profiles]);
 
+  const autoScheduleMetaFn = useServerFn(autoScheduleMetaPost);
+
   // Mutations
   const updateField = useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Record<string, unknown> }) => {
@@ -245,7 +251,7 @@ export function CalendarListView({
           .eq("calendar_entry_id", id);
       }
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (_, variables) => {
       qc.invalidateQueries({ queryKey: ["content-items"] });
       qc.invalidateQueries({ queryKey: ["content-items-list"] });
       qc.invalidateQueries({ queryKey: ["listing-posts"] });
@@ -253,6 +259,26 @@ export function CalendarListView({
         toast.success(`Post marked as ${variables.patch.status}`, {
           description: "Listing agent email notification dispatched.",
         });
+      }
+
+      // Auto-schedule to Meta if marked approved or scheduled
+      if (variables.patch.status === "scheduled" || variables.patch.status === "approved") {
+        try {
+          const res = await autoScheduleMetaFn({ data: { contentItemId: variables.id } });
+          if (res?.success) {
+            if (res.isScheduled) {
+              toast.success(`Post scheduled on Facebook (${res.pageName})!`);
+            } else {
+              toast.success(`Post published live to Facebook (${res.pageName})!`);
+            }
+            qc.invalidateQueries({ queryKey: ["content-items"] });
+            qc.invalidateQueries({ queryKey: ["content-items-list"] });
+          } else if (res?.reason && !res.reason.includes("Meta platform not selected")) {
+            console.log("[calendar-list] autoScheduleMeta note:", res.reason);
+          }
+        } catch (err: any) {
+          console.warn("[calendar-list] autoScheduleMeta error:", err);
+        }
       }
     },
     onError: (e: any) => toast.error(e.message ?? "Update failed"),
@@ -263,12 +289,26 @@ export function CalendarListView({
       const ids = [...selected];
       const { error } = await (supabase as any).from("content_items").update(patch).in("id", ids);
       if (error) throw error;
+      return ids;
     },
-    onSuccess: () => {
+    onSuccess: (ids, patch) => {
       qc.invalidateQueries({ queryKey: ["content-items"] });
       qc.invalidateQueries({ queryKey: ["content-items-list"] });
       toast.success("Updated");
       setSelected(new Set());
+
+      if (patch.status === "scheduled" || patch.status === "approved") {
+        ids.forEach((id) => {
+          autoScheduleMetaFn({ data: { contentItemId: id } })
+            .then((res: any) => {
+              if (res?.success) {
+                qc.invalidateQueries({ queryKey: ["content-items"] });
+                qc.invalidateQueries({ queryKey: ["content-items-list"] });
+              }
+            })
+            .catch(() => {});
+        });
+      }
     },
     onError: (e: any) => toast.error(e.message ?? "Bulk update failed"),
   });
@@ -631,6 +671,21 @@ export function CalendarListView({
                             )}
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
+                            {(it as any).meta_is_scheduled ? (
+                              <span
+                                className="inline-flex items-center gap-1 text-[9px] font-semibold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded"
+                                title={`Scheduled on Facebook for ${format(new Date((it as any).meta_scheduled_publish_time || it.scheduled_at), "PPp")}`}
+                              >
+                                <Clock className="w-2.5 h-2.5" /> Meta
+                              </span>
+                            ) : it.published_post_id ? (
+                              <span
+                                className="inline-flex items-center gap-1 text-[9px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded"
+                                title="Live on Facebook"
+                              >
+                                <Check className="w-2.5 h-2.5" /> Meta
+                              </span>
+                            ) : null}
                             <Select
                               value={it.status}
                               onValueChange={(v) =>
