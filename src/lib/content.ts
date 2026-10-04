@@ -105,6 +105,7 @@ export interface ContentItem {
   meta_graphic_link?: string | null;
   meta_video_link?: string | null;
   meta_copy: string | null;
+  meta_first_comment?: string | null;
   post_type: string;
   published_post_id?: string | null;
   published_post_url?: string | null;

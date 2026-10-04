@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { publishPostToMeta } from "@/lib/meta-social.functions";
+import { publishPostToMeta, postCommentToMetaPost } from "@/lib/meta-social.functions";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -104,6 +104,7 @@ type FormShape = {
   meta_graphic_link: string;
   meta_video_link: string;
   meta_copy: string;
+  meta_first_comment: string;
   revision_note: string;
   note_attachments: NoteAttachment[];
   post_type: string;
@@ -199,6 +200,7 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
           message,
           mediaUrl,
           mediaType,
+          firstComment: form.meta_first_comment || undefined,
         },
       });
       toast.success(`Published live to ${res.pageName}!`);
@@ -208,6 +210,34 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
       toast.error(err.message || "Failed to publish post to Facebook.");
     } finally {
       setPublishingToMeta(false);
+    }
+  };
+
+  const postCommentFn = useServerFn(postCommentToMetaPost);
+  const [liveCommentText, setLiveCommentText] = useState("");
+  const [postingLiveComment, setPostingLiveComment] = useState(false);
+
+  const handlePostLiveComment = async () => {
+    if (!liveCommentText.trim()) {
+      toast.error("Please enter comment text first.");
+      return;
+    }
+    setPostingLiveComment(true);
+    try {
+      await postCommentFn({
+        data: {
+          contentItemId: item?.id,
+          postId: item?.published_post_id || undefined,
+          message: liveCommentText.trim(),
+          brandTag: form.brand,
+        },
+      });
+      toast.success("Comment posted to Facebook as your Page!");
+      setLiveCommentText("");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to post comment to Facebook.");
+    } finally {
+      setPostingLiveComment(false);
     }
   };
 
@@ -298,6 +328,7 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
     meta_graphic_link: "",
     meta_video_link: "",
     meta_copy: "",
+    meta_first_comment: "",
     revision_note: "",
     note_attachments: [],
     post_type: "post",
@@ -343,9 +374,10 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
         email_subject_line: item.email_subject_line ?? "",
         email_body: (item as any).email_body ?? "",
         meta_media_link: item.meta_media_link ?? "",
-        meta_graphic_link: (item as any).meta_graphic_link ?? "",
-        meta_video_link: (item as any).meta_video_link ?? "",
+        meta_graphic_link: item.meta_graphic_link ?? (item as any).meta_graphic_link ?? "",
+        meta_video_link: item.meta_video_link ?? (item as any).meta_video_link ?? "",
         meta_copy: item.meta_copy ?? "",
+        meta_first_comment: (item as any).meta_first_comment ?? "",
         revision_note: item.revision_note ?? "",
         note_attachments: Array.isArray((item as any).note_attachments)
           ? (item as any).note_attachments
@@ -384,6 +416,7 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
     meta_graphic_link: f.meta_graphic_link || null,
     meta_video_link: f.meta_video_link || null,
     meta_copy: f.meta_copy || null,
+    meta_first_comment: f.meta_first_comment || null,
     revision_note: f.revision_note || null,
     note_attachments: f.note_attachments,
     post_type: f.post_type,
@@ -1337,6 +1370,22 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                     />
                   </div>
 
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">First Comment (Optional)</Label>
+                      <span className="text-[10px] text-muted-foreground">
+                        Auto-posted as Page immediately after publishing
+                      </span>
+                    </div>
+                    <Textarea
+                      value={form.meta_first_comment}
+                      onChange={(e) => setForm({ ...form, meta_first_comment: e.target.value })}
+                      rows={2}
+                      className="mt-1.5 text-xs"
+                      placeholder="e.g. Link in comments (https://…), phone number, or MLS disclaimers"
+                    />
+                  </div>
+
                   {/* Publishing Target & Action */}
                   <div className="pt-3 space-y-3 border-t border-blue-500/20">
                     <div className="flex items-center justify-between text-xs">
@@ -1385,6 +1434,41 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                               </a>
                             );
                           })}
+                        </div>
+                      </div>
+                    )}
+
+                    {item?.published_post_url && (
+                      <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-2.5 space-y-2">
+                        <Label className="text-xs font-semibold text-blue-300 flex items-center gap-1.5">
+                          <span>💬 Add Comment to Live Facebook Post</span>
+                        </Label>
+                        <div className="flex gap-2">
+                          <Input
+                            value={liveCommentText}
+                            onChange={(e) => setLiveCommentText(e.target.value)}
+                            placeholder="Type a comment to post directly as your Page…"
+                            className="h-8 text-xs bg-background/60"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                handlePostLiveComment();
+                              }
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={postingLiveComment || !liveCommentText.trim()}
+                            onClick={handlePostLiveComment}
+                            className="h-8 text-xs bg-blue-600 hover:bg-blue-500 text-white shrink-0"
+                          >
+                            {postingLiveComment ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              "Comment as Page"
+                            )}
+                          </Button>
                         </div>
                       </div>
                     )}

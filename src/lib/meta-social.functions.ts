@@ -189,6 +189,7 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
       message: z.string().min(1, "Post message or caption is required"),
       mediaUrl: z.string().url().optional().or(z.literal("")),
       mediaType: z.enum(["photo", "video", "status"]).optional().default("status"),
+      firstComment: z.string().optional().default(""),
     }),
   )
   .handler(async ({ data, context }) => {
@@ -323,6 +324,28 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
         permalinkUrl = `https://www.facebook.com/${postId}`;
       }
 
+      // Optional First Comment (e.g. link in comments, disclosures, agent contact)
+      if (data.firstComment && data.firstComment.trim() && postId) {
+        try {
+          const commentEndpoint = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/${postId}/comments`;
+          const cForm = new URLSearchParams();
+          cForm.append("message", data.firstComment.trim());
+          cForm.append("access_token", token);
+          const cRes = await fetch(commentEndpoint, {
+            method: "POST",
+            body: cForm,
+          });
+          const cData = (await cRes.json()) as any;
+          if (!cRes.ok || cData.error) {
+            console.warn(`[meta-social] Note: first comment warning for ${pageName}:`, cData.error);
+          } else {
+            console.log(`[meta-social] First comment posted to ${pageName} (${postId})`);
+          }
+        } catch (cErr: any) {
+          console.warn(`[meta-social] Note: failed to post first comment to ${pageName}:`, cErr);
+        }
+      }
+
       // Record in meta_published_posts
       try {
         await sb.from("meta_published_posts").insert({
@@ -357,6 +380,7 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
             status: "published",
             published_post_id: combinedIds,
             published_post_url: combinedUrls,
+            meta_first_comment: data.firstComment || null,
           })
           .eq("id", data.contentItemId);
       } catch (err: any) {
@@ -370,6 +394,93 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
       postId: results[0]?.postId || "",
       permalinkUrl: results[0]?.permalinkUrl || "",
       pageName: results.map((r) => r.pageName).join(" & "),
+    };
+  });
+
+// ── 4b. Post Comment to Live Facebook Post ──────────────────────
+export const postCommentToMetaPost = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(
+    z.object({
+      contentItemId: z.string().uuid().optional(),
+      postId: z.string().optional(),
+      message: z.string().min(1, "Comment text is required"),
+      brandTag: z.string().optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const sb = supabaseAdmin as any;
+
+    const { data: allActivePages, error: pagesErr } = await sb
+      .from("meta_page_configs")
+      .select("*")
+      .eq("is_active", true);
+
+    if (pagesErr || !allActivePages || allActivePages.length === 0) {
+      throw new Error("No connected Facebook Pages found.");
+    }
+
+    let postIds: string[] = [];
+    if (data.postId) {
+      postIds = data.postId.split(",").map((s: string) => s.trim()).filter(Boolean);
+    } else if (data.contentItemId) {
+      const { data: item } = await sb
+        .from("content_items")
+        .select("published_post_id")
+        .eq("id", data.contentItemId)
+        .single();
+      if (item?.published_post_id) {
+        postIds = item.published_post_id.split(",").map((s: string) => s.trim()).filter(Boolean);
+      }
+    }
+
+    if (postIds.length === 0) {
+      throw new Error("No live Facebook post found to comment on.");
+    }
+
+    const successes: Array<{ postId: string; commentId: string; pageName: string }> = [];
+
+    for (const rawId of postIds) {
+      // Determine target page
+      let targetPage = allActivePages[0];
+      if (data.brandTag) {
+        const b = data.brandTag.toUpperCase().trim();
+        const found = allActivePages.find(
+          (p: any) =>
+            p.brand_tag?.toUpperCase() === b ||
+            (b === "LOZ" && p.page_name?.toLowerCase().includes("lake of the ozarks")),
+        );
+        if (found) targetPage = found;
+      }
+
+      const commentEndpoint = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/${rawId}/comments`;
+      const form = new URLSearchParams();
+      form.append("message", data.message.trim());
+      form.append("access_token", targetPage.page_access_token);
+
+      const res = await fetch(commentEndpoint, {
+        method: "POST",
+        body: form,
+      });
+
+      const resData = (await res.json()) as any;
+      if (!res.ok || resData.error) {
+        console.error(`[meta-social] Error posting comment to ${rawId}:`, resData.error);
+        throw new Error(resData.error?.message || "Failed to post comment to Facebook.");
+      }
+
+      successes.push({
+        postId: rawId,
+        commentId: resData.id,
+        pageName: targetPage.page_name,
+      });
+    }
+
+    return {
+      success: true,
+      comments: successes,
+      message: `Posted comment to ${successes.length} live Facebook post(s)!`,
     };
   });
 
