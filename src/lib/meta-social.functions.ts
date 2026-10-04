@@ -6,6 +6,23 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 const GRAPH_API_VERSION = "v19.0";
 const GRAPH_BASE_URL = "https://graph.facebook.com";
 
+// Helper to format Meta Graph API error messages with helpful, human-friendly guidance
+function formatMetaErrorMessage(error: any, pageName?: string): string {
+  const code = error?.code;
+  const rawMsg = error?.message || "Meta API request failed";
+
+  if (
+    code === 190 ||
+    rawMsg.toLowerCase().includes("session has expired") ||
+    rawMsg.toLowerCase().includes("error validating access token") ||
+    rawMsg.toLowerCase().includes("session is invalid")
+  ) {
+    const target = pageName ? ` for "${pageName}"` : "";
+    return `Facebook access token${target} has expired. Temporary Graph API Explorer tokens automatically expire at midnight PDT. Please generate a permanent, never-expiring token in Meta Business Suite -> System Users (or Meta App) and reconnect the page in Meta Settings.`;
+  }
+  return rawMsg;
+}
+
 // ── 1. Get Meta Config & Connected Pages ────────────────────────
 export const getMetaConfig = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -70,57 +87,72 @@ export const connectFacebookPage = createServerFn({ method: "POST" })
     let finalToken = data.pageAccessToken.trim();
     let resolvedPageId = trimmedPageId;
 
-    // 1. Verify credentials against Meta Graph API
-    let verifyUrl = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/${resolvedPageId}?fields=id,name,fan_count,picture,instagram_business_account{id,username}&access_token=${encodeURIComponent(
+    const appId = process.env.META_APP_ID || "2004401023558912";
+    const appSecret = process.env.META_APP_SECRET;
+
+    // 0. If App ID & Secret are available, attempt to exchange candidate token for a long-lived token
+    let workingToken = finalToken;
+    if (appId && appSecret) {
+      try {
+        const exchangeUrl = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${encodeURIComponent(
+          finalToken,
+        )}`;
+        const exRes = await fetch(exchangeUrl);
+        const exData = (await exRes.json()) as any;
+        if (exRes.ok && exData.access_token) {
+          console.log("[meta-social] Successfully exchanged token for long-lived 60-day token");
+          workingToken = exData.access_token;
+        }
+      } catch (exErr) {
+        console.warn("[meta-social] Token exchange attempt skipped or failed:", exErr);
+      }
+    }
+
+    // 1. Check if token can access /me/accounts to extract permanent Page Access Token
+    try {
+      const accountsUrl = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/me/accounts?fields=id,name,access_token&access_token=${encodeURIComponent(
+        workingToken,
+      )}`;
+      const accountsRes = await fetch(accountsUrl);
+      const accountsData = (await accountsRes.json()) as any;
+
+      if (accountsRes.ok && Array.isArray(accountsData.data) && accountsData.data.length > 0) {
+        const matchedPage =
+          accountsData.data.find((p: any) => p.id === trimmedPageId) ||
+          (accountsData.data.length === 1 ? accountsData.data[0] : null);
+
+        if (matchedPage?.access_token) {
+          resolvedPageId = matchedPage.id;
+          finalToken = matchedPage.access_token;
+          console.log(
+            `[meta-social] Acquired permanent Page Access Token for "${matchedPage.name}" (${resolvedPageId}) via /me/accounts`,
+          );
+        }
+      }
+    } catch (accountsErr) {
+      console.warn("[meta-social] /me/accounts lookup error:", accountsErr);
+    }
+
+    // 2. Verify credentials directly against Meta Graph API
+    const verifyUrl = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/${resolvedPageId}?fields=id,name,fan_count,picture,instagram_business_account{id,username}&access_token=${encodeURIComponent(
       finalToken,
     )}`;
 
-    let res = await fetch(verifyUrl);
-    let metaResponse = (await res.json()) as any;
-
-    // Fallback: If direct page lookup failed, check if a User Token was provided and auto-extract the Page Token via /me/accounts
-    if (!res.ok || metaResponse.error) {
-      console.log(
-        "[meta-social] Direct page query failed, checking if token has page access via /me/accounts...",
-      );
-      try {
-        const accountsUrl = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/me/accounts?fields=id,name,access_token&access_token=${encodeURIComponent(
-          finalToken,
-        )}`;
-        const accountsRes = await fetch(accountsUrl);
-        const accountsData = (await accountsRes.json()) as any;
-
-        if (accountsRes.ok && Array.isArray(accountsData.data) && accountsData.data.length > 0) {
-          const matchedPage =
-            accountsData.data.find((p: any) => p.id === trimmedPageId) ||
-            (accountsData.data.length === 1 ? accountsData.data[0] : null);
-
-          if (matchedPage?.access_token) {
-            resolvedPageId = matchedPage.id;
-            finalToken = matchedPage.access_token;
-            console.log(
-              `[meta-social] Auto-resolved Page Access Token for "${matchedPage.name}" (${resolvedPageId})`,
-            );
-
-            // Re-verify with the actual Page Access Token
-            verifyUrl = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/${resolvedPageId}?fields=id,name,fan_count,picture,instagram_business_account{id,username}&access_token=${encodeURIComponent(
-              finalToken,
-            )}`;
-            res = await fetch(verifyUrl);
-            metaResponse = (await res.json()) as any;
-          }
-        }
-      } catch (fallbackErr) {
-        console.warn("[meta-social] /me/accounts fallback error:", fallbackErr);
-      }
-    }
+    const res = await fetch(verifyUrl);
+    const metaResponse = (await res.json()) as any;
 
     if (!res.ok || metaResponse.error) {
       let errMsg =
         metaResponse.error?.message || "Failed to verify Facebook Page credentials with Meta.";
-      if (metaResponse.error?.code === 100 || errMsg.includes("pages_read_engagement")) {
+      if (
+        metaResponse.error?.code === 190 ||
+        errMsg.toLowerCase().includes("session has expired")
+      ) {
         errMsg =
-          "Missing 'pages_read_engagement' permission. In Meta Graph API Explorer, click 'Add a Permission' -> add 'pages_read_engagement' and 'pages_manage_posts', then click Generate Access Token.";
+          "Session has expired (temporary Graph API Explorer tokens expire at midnight PDT). Please generate a permanent token in Meta Business Suite -> System Users (or Meta App).";
+      } else if (metaResponse.error?.code === 100 || errMsg.includes("pages_read_engagement")) {
+        errMsg =
+          "Missing 'pages_read_engagement' permission. In Meta, ensure 'pages_read_engagement' and 'pages_manage_posts' are granted.";
       }
       console.error("[meta-social] Verification error:", metaResponse.error);
       throw new Error(`Meta API Error: ${errMsg}`);
@@ -130,7 +162,7 @@ export const connectFacebookPage = createServerFn({ method: "POST" })
     const instagramAccountId = metaResponse.instagram_business_account?.id || null;
     const instagramUsername = metaResponse.instagram_business_account?.username || null;
 
-    // 2. Upsert into meta_page_configs table
+    // 3. Upsert into meta_page_configs table
     const { data: savedPage, error: saveErr } = await sb
       .from("meta_page_configs")
       .upsert(
@@ -273,7 +305,7 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
         const resData = (await res.json()) as any;
         if (!res.ok || resData.error) {
           console.error(`[meta-social] Error publishing to ${pageName}:`, resData.error);
-          throw new Error(resData.error?.message || `Failed to publish photo to ${pageName}.`);
+          throw new Error(formatMetaErrorMessage(resData.error, pageName));
         }
 
         postId = resData.post_id || resData.id;
@@ -294,7 +326,7 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
         const resData = (await res.json()) as any;
         if (!res.ok || resData.error) {
           console.error(`[meta-social] Error publishing video to ${pageName}:`, resData.error);
-          throw new Error(resData.error?.message || `Failed to publish video to ${pageName}.`);
+          throw new Error(formatMetaErrorMessage(resData.error, pageName));
         }
 
         postId = resData.id;
@@ -317,7 +349,7 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
         const resData = (await res.json()) as any;
         if (!res.ok || resData.error) {
           console.error(`[meta-social] Error publishing to ${pageName}:`, resData.error);
-          throw new Error(resData.error?.message || `Failed to publish post to ${pageName}.`);
+          throw new Error(formatMetaErrorMessage(resData.error, pageName));
         }
 
         postId = resData.id;
@@ -423,7 +455,10 @@ export const postCommentToMetaPost = createServerFn({ method: "POST" })
 
     let postIds: string[] = [];
     if (data.postId) {
-      postIds = data.postId.split(",").map((s: string) => s.trim()).filter(Boolean);
+      postIds = data.postId
+        .split(",")
+        .map((s: string) => s.trim())
+        .filter(Boolean);
     } else if (data.contentItemId) {
       const { data: item } = await sb
         .from("content_items")
@@ -431,7 +466,10 @@ export const postCommentToMetaPost = createServerFn({ method: "POST" })
         .eq("id", data.contentItemId)
         .single();
       if (item?.published_post_id) {
-        postIds = item.published_post_id.split(",").map((s: string) => s.trim()).filter(Boolean);
+        postIds = item.published_post_id
+          .split(",")
+          .map((s: string) => s.trim())
+          .filter(Boolean);
       }
     }
 
@@ -467,7 +505,7 @@ export const postCommentToMetaPost = createServerFn({ method: "POST" })
       const resData = (await res.json()) as any;
       if (!res.ok || resData.error) {
         console.error(`[meta-social] Error posting comment to ${rawId}:`, resData.error);
-        throw new Error(resData.error?.message || "Failed to post comment to Facebook.");
+        throw new Error(formatMetaErrorMessage(resData.error, targetPage.page_name));
       }
 
       successes.push({
@@ -525,6 +563,9 @@ export const getPageAnalytics = createServerFn({ method: "POST" })
         )}`,
       );
       const pageInfo = (await pageInfoRes.json()) as any;
+      if (!pageInfoRes.ok || pageInfo.error) {
+        throw new Error(formatMetaErrorMessage(pageInfo.error, pageName));
+      }
 
       // 2. Fetch Recent Posts with Engagement Counts
       const postsRes = await fetch(
@@ -533,6 +574,9 @@ export const getPageAnalytics = createServerFn({ method: "POST" })
         )}`,
       );
       const postsData = (await postsRes.json()) as any;
+      if (!postsRes.ok || postsData.error) {
+        throw new Error(formatMetaErrorMessage(postsData.error, pageName));
+      }
 
       const posts = (postsData.data || []).map((p: any) => ({
         id: p.id,
