@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tv, FlaskConical, Wand2, CalendarOff, UserCheck, Bot } from "lucide-react";
+import { Tv, FlaskConical, Wand2, CalendarOff, UserCheck, Bot, Share2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/experiments/")({
   component: ExperimentsIndex,
@@ -14,11 +14,38 @@ function ExperimentsIndex() {
         <FlaskConical className="h-6 w-6 text-gold" />
         <div>
           <h1 className="text-2xl font-semibold">Experiments & Lab</h1>
-          <p className="text-sm text-muted-foreground">Admin tools, intelligence, and prototypes.</p>
+          <p className="text-sm text-muted-foreground">
+            Admin tools, intelligence, and prototypes.
+          </p>
         </div>
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
+        {/* Meta Social & Analytics */}
+        <Link to="/meta-social">
+          <Card className="p-5 hover:border-gold transition-all cursor-pointer h-full border-gold/40 bg-gradient-to-br from-gold/10 via-gold/5 to-transparent shadow-sm hover:shadow-md">
+            <div className="flex items-start gap-3.5">
+              <div className="p-2 rounded-lg bg-gold/15 text-gold border border-gold/30 shrink-0">
+                <Share2 className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-foreground">Social & Analytics</span>
+                  <Badge
+                    variant="outline"
+                    className="bg-amber-500/15 text-amber-400 border-amber-500/30 text-[10px] font-bold"
+                  >
+                    Lab / Meta API
+                  </Badge>
+                </div>
+                <div className="text-sm text-muted-foreground leading-relaxed">
+                  Meta Graph API integration for publishing content directly to Facebook &
+                  Instagram, and monitoring real-time page analytics.
+                </div>
+              </div>
+            </div>
+          </Card>
+        </Link>
         {/* Agent Audit System */}
         <Link to="/admin/audit">
           <Card className="p-5 hover:border-gold transition-all cursor-pointer h-full border-gold/40 bg-gradient-to-br from-gold/10 via-gold/5 to-transparent shadow-sm hover:shadow-md">
@@ -29,12 +56,16 @@ function ExperimentsIndex() {
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-foreground">Agent Audit System</span>
-                  <Badge variant="outline" className="bg-gold/15 text-gold border-gold/30 text-[10px] font-bold">
+                  <Badge
+                    variant="outline"
+                    className="bg-gold/15 text-gold border-gold/30 text-[10px] font-bold"
+                  >
                     Admin
                   </Badge>
                 </div>
                 <div className="text-sm text-muted-foreground leading-relaxed">
-                  Audit agent quality in Follow Up Boss, grade conversation timelines against our rubric, catch data-integrity issues (SQL only), and produce reports.
+                  Audit agent quality in Follow Up Boss, grade conversation timelines against our
+                  rubric, catch data-integrity issues (SQL only), and produce reports.
                 </div>
               </div>
             </div>
@@ -51,12 +82,16 @@ function ExperimentsIndex() {
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-foreground">FUB AI Assistant</span>
-                  <Badge variant="outline" className="bg-gold/15 text-gold border-gold/30 text-[10px] font-bold">
+                  <Badge
+                    variant="outline"
+                    className="bg-gold/15 text-gold border-gold/30 text-[10px] font-bold"
+                  >
                     Admin
                   </Badge>
                 </div>
                 <div className="text-sm text-muted-foreground leading-relaxed">
-                  Interactive conversational analyst for Follow Up Boss pipeline metrics, stale leads leaderboards, and source reports.
+                  Interactive conversational analyst for Follow Up Boss pipeline metrics, stale
+                  leads leaderboards, and source reports.
                 </div>
               </div>
             </div>

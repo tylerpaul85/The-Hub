@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { useAuth } from "@/hooks/use-auth";
+import { ALLOWED_EXPERIMENT_EMAILS } from "./experiments";
 import {
   Share2,
   BarChart3,
@@ -20,6 +22,7 @@ import {
   RefreshCw,
   AlertCircle,
   Sparkles,
+  ArrowLeft,
 } from "lucide-react";
 import {
   getMetaConfig,
@@ -50,6 +53,7 @@ export const Route = createFileRoute("/_authenticated/meta-social")({
 });
 
 function MetaSocialPage() {
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"analytics" | "publisher" | "settings">("analytics");
 
@@ -66,22 +70,28 @@ function MetaSocialPage() {
     queryFn: () => fetchConfig(),
   });
 
+  // Selected page for Analytics switcher
+  const [selectedPageId, setSelectedPageId] = useState<string>("");
+  const activePageId = selectedPageId || configData?.pages?.[0]?.page_id || "";
+
   const {
     data: analyticsData,
     isLoading: analyticsLoading,
     refetch: refetchAnalytics,
     isRefetching,
   } = useQuery({
-    queryKey: ["meta-analytics"],
-    queryFn: () => fetchAnalytics({ data: {} }),
+    queryKey: ["meta-analytics", activePageId],
+    queryFn: () => fetchAnalytics({ data: { pageId: activePageId || undefined } }),
+    enabled: Boolean(activePageId) || (configData?.pages?.length ?? 0) > 0,
   });
 
   // Settings form state
   const [pageId, setPageId] = useState("");
   const [pageAccessToken, setPageAccessToken] = useState("");
-  const [brandTag, setBrandTag] = useState("MSREG PP");
+  const [brandTag, setBrandTag] = useState("PP");
 
   // Publisher form state
+  const [publishTargetBrand, setPublishTargetBrand] = useState<string>("MSREG ALL");
   const [publishMessage, setPublishMessage] = useState("");
   const [publishImageUrl, setPublishImageUrl] = useState("");
   const [lastPublishedUrl, setLastPublishedUrl] = useState<string | null>(null);
@@ -125,13 +135,14 @@ function MetaSocialPage() {
     mutationFn: () =>
       publishFn({
         data: {
+          brandTag: publishTargetBrand,
           message: publishMessage,
           mediaUrl: publishImageUrl || undefined,
           mediaType: publishImageUrl ? "photo" : "status",
         },
       }),
     onSuccess: (res) => {
-      toast.success("Post successfully published to Facebook!");
+      toast.success(`Post successfully published to ${res.pageName}!`);
       setLastPublishedUrl(res.permalinkUrl);
       setPublishMessage("");
       setPublishImageUrl("");
@@ -144,8 +155,25 @@ function MetaSocialPage() {
 
   const isConnected = (configData?.pages?.length ?? 0) > 0;
 
+  const email = (user?.email ?? "").toLowerCase();
+  const canAccess = isAdmin || ALLOWED_EXPERIMENT_EMAILS.includes(email);
+  if (!authLoading && !canAccess) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
     <div className="container mx-auto px-4 py-6 max-w-6xl space-y-6">
+      {/* Back to Experiments breadcrumb */}
+      <div>
+        <Link
+          to="/experiments"
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-gold transition-colors font-medium"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to Experiments
+        </Link>
+      </div>
+
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-5">
         <div>
@@ -154,6 +182,12 @@ function MetaSocialPage() {
               <Share2 className="h-6 w-6 text-gold" />
               Meta Social & Analytics
             </h1>
+            <Badge
+              variant="outline"
+              className="bg-gold/15 text-gold border-gold/30 text-xs font-semibold"
+            >
+              Lab Experiment
+            </Badge>
             <Badge
               variant="outline"
               className={
@@ -231,33 +265,80 @@ function MetaSocialPage() {
             </Card>
           ) : (
             <>
-              {/* Analytics Header with Refresh */}
-              <div className="flex items-center justify-between">
+              {/* Analytics Header with Multi-Page Switcher & Refresh */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-border/60 bg-card/40">
                 <div className="flex items-center gap-3">
-                  {analyticsData?.pictureUrl && (
+                  {analyticsData?.pictureUrl ? (
                     <img
                       src={analyticsData.pictureUrl}
                       alt={analyticsData.pageName}
-                      className="h-10 w-10 rounded-full border border-border/80 object-cover"
+                      className="h-12 w-12 rounded-full border border-border/80 object-cover shadow-xs"
                     />
+                  ) : (
+                    <div className="h-12 w-12 rounded-full bg-gold/15 text-gold flex items-center justify-center font-bold text-sm border border-gold/30">
+                      MS
+                    </div>
                   )}
                   <div>
-                    <h2 className="text-base font-semibold text-foreground">
-                      {analyticsData?.pageName}
-                    </h2>
-                    <p className="text-xs text-muted-foreground">Live Facebook Page Performance</p>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base font-semibold text-foreground">
+                        {analyticsData?.pageName}
+                      </h2>
+                      {analyticsData?.brandTag && (
+                        <Badge
+                          variant="outline"
+                          className="bg-gold/15 text-gold border-gold/30 text-[10px] font-bold"
+                        >
+                          {analyticsData.brandTag}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Live Facebook Page Performance & Insights
+                    </p>
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => refetchAnalytics()}
-                  disabled={isRefetching}
-                  className="text-xs gap-1.5 border-border/60"
-                >
-                  <RefreshCw className={`h-3.5 w-3.5 ${isRefetching ? "animate-spin" : ""}`} />
-                  Refresh
-                </Button>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Page Switcher */}
+                  {configData?.pages && configData.pages.length > 1 && (
+                    <div className="flex items-center bg-background/80 p-1 rounded-lg border border-border/60">
+                      {configData.pages.map((p: any) => {
+                        const isSelected = activePageId === p.page_id;
+                        const label = p.brand_tag
+                          ? `${p.brand_tag} · ${p.page_name.includes("Lake") ? "Lake of the Ozarks" : "Main Page"}`
+                          : p.page_name;
+                        return (
+                          <Button
+                            key={p.page_id}
+                            type="button"
+                            variant={isSelected ? "default" : "ghost"}
+                            size="sm"
+                            onClick={() => setSelectedPageId(p.page_id)}
+                            className={`text-xs h-7 px-3 rounded-md transition-all ${
+                              isSelected
+                                ? "bg-gold text-primary-foreground font-semibold shadow-xs"
+                                : "text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {label}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => refetchAnalytics()}
+                    disabled={isRefetching}
+                    className="text-xs gap-1.5 border-border/60 h-8"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${isRefetching ? "animate-spin" : ""}`} />
+                    Refresh
+                  </Button>
+                </div>
               </div>
 
               {/* KPI Cards */}
@@ -400,6 +481,45 @@ function MetaSocialPage() {
                 </div>
               )}
 
+              {/* Post Destination Picker */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Post Destination</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPublishTargetBrand("MSREG ALL")}
+                    className={`p-3 rounded-xl border text-left text-xs transition-all ${
+                      publishTargetBrand === "MSREG ALL"
+                        ? "border-gold bg-gold/15 text-foreground font-semibold ring-1 ring-gold/40 shadow-xs"
+                        : "border-border/60 bg-card/40 text-muted-foreground hover:border-border"
+                    }`}
+                  >
+                    <p className="font-semibold text-foreground">Both Pages</p>
+                    <p className="text-[11px] text-muted-foreground">MSREG ALL (Main & LOZ)</p>
+                  </button>
+                  {configData?.pages?.map((p: any) => {
+                    const isSelected = publishTargetBrand === (p.brand_tag || p.page_id);
+                    return (
+                      <button
+                        key={p.page_id}
+                        type="button"
+                        onClick={() => setPublishTargetBrand(p.brand_tag || p.page_id)}
+                        className={`p-3 rounded-xl border text-left text-xs transition-all ${
+                          isSelected
+                            ? "border-gold bg-gold/15 text-foreground font-semibold ring-1 ring-gold/40 shadow-xs"
+                            : "border-border/60 bg-card/40 text-muted-foreground hover:border-border"
+                        }`}
+                      >
+                        <p className="font-semibold text-foreground truncate">{p.page_name}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {p.brand_tag ? `Brand: ${p.brand_tag}` : "Connected Page"}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="space-y-1.5">
                 <Label htmlFor="postMessage" className="text-xs font-medium">
                   Post Caption / Message <span className="text-destructive">*</span>
@@ -533,6 +653,41 @@ function MetaSocialPage() {
                 </p>
               </div>
 
+              {/* Brand Association */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">
+                  Brand Association <span className="text-destructive">*</span>
+                </Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBrandTag("PP")}
+                    className={`p-2.5 rounded-lg border text-left text-xs transition-all ${
+                      brandTag === "PP"
+                        ? "border-gold bg-gold/15 text-foreground font-semibold ring-1 ring-gold/40 shadow-xs"
+                        : "border-border/60 bg-background/50 text-muted-foreground hover:border-border"
+                    }`}
+                  >
+                    <p className="font-semibold text-foreground">PP (Main Page)</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Matt Smith Real Estate Group
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBrandTag("LOZ")}
+                    className={`p-2.5 rounded-lg border text-left text-xs transition-all ${
+                      brandTag === "LOZ"
+                        ? "border-gold bg-gold/15 text-foreground font-semibold ring-1 ring-gold/40 shadow-xs"
+                        : "border-border/60 bg-background/50 text-muted-foreground hover:border-border"
+                    }`}
+                  >
+                    <p className="font-semibold text-foreground">LOZ (Lake of Ozarks)</p>
+                    <p className="text-[10px] text-muted-foreground">Lake of the Ozarks Page</p>
+                  </button>
+                </div>
+              </div>
+
               <Button
                 onClick={() => connectMutation.mutate()}
                 disabled={connectMutation.isPending || !pageId.trim() || !pageAccessToken.trim()}
@@ -558,7 +713,17 @@ function MetaSocialPage() {
                     className="flex items-center justify-between p-3 rounded-lg border border-border/40 bg-background/50"
                   >
                     <div>
-                      <p className="text-xs font-semibold text-foreground">{p.page_name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-semibold text-foreground">{p.page_name}</p>
+                        {p.brand_tag && (
+                          <Badge
+                            variant="outline"
+                            className="bg-gold/15 text-gold border-gold/30 text-[10px] font-bold"
+                          >
+                            {p.brand_tag}
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-[11px] text-muted-foreground font-mono">
                         Page ID: {p.page_id}
                       </p>

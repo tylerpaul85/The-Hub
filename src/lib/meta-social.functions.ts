@@ -67,19 +67,61 @@ export const connectFacebookPage = createServerFn({ method: "POST" })
     const sb = supabaseAdmin as any;
 
     const trimmedPageId = data.pageId.trim();
-    const trimmedToken = data.pageAccessToken.trim();
+    let finalToken = data.pageAccessToken.trim();
+    let resolvedPageId = trimmedPageId;
 
     // 1. Verify credentials against Meta Graph API
-    const verifyUrl = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/${trimmedPageId}?fields=id,name,fan_count,picture,instagram_business_account{id,username}&access_token=${encodeURIComponent(
-      trimmedToken,
+    let verifyUrl = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/${resolvedPageId}?fields=id,name,fan_count,picture,instagram_business_account{id,username}&access_token=${encodeURIComponent(
+      finalToken,
     )}`;
 
-    const res = await fetch(verifyUrl);
-    const metaResponse = (await res.json()) as any;
+    let res = await fetch(verifyUrl);
+    let metaResponse = (await res.json()) as any;
+
+    // Fallback: If direct page lookup failed, check if a User Token was provided and auto-extract the Page Token via /me/accounts
+    if (!res.ok || metaResponse.error) {
+      console.log(
+        "[meta-social] Direct page query failed, checking if token has page access via /me/accounts...",
+      );
+      try {
+        const accountsUrl = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/me/accounts?fields=id,name,access_token&access_token=${encodeURIComponent(
+          finalToken,
+        )}`;
+        const accountsRes = await fetch(accountsUrl);
+        const accountsData = (await accountsRes.json()) as any;
+
+        if (accountsRes.ok && Array.isArray(accountsData.data) && accountsData.data.length > 0) {
+          const matchedPage =
+            accountsData.data.find((p: any) => p.id === trimmedPageId) ||
+            (accountsData.data.length === 1 ? accountsData.data[0] : null);
+
+          if (matchedPage?.access_token) {
+            resolvedPageId = matchedPage.id;
+            finalToken = matchedPage.access_token;
+            console.log(
+              `[meta-social] Auto-resolved Page Access Token for "${matchedPage.name}" (${resolvedPageId})`,
+            );
+
+            // Re-verify with the actual Page Access Token
+            verifyUrl = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/${resolvedPageId}?fields=id,name,fan_count,picture,instagram_business_account{id,username}&access_token=${encodeURIComponent(
+              finalToken,
+            )}`;
+            res = await fetch(verifyUrl);
+            metaResponse = (await res.json()) as any;
+          }
+        }
+      } catch (fallbackErr) {
+        console.warn("[meta-social] /me/accounts fallback error:", fallbackErr);
+      }
+    }
 
     if (!res.ok || metaResponse.error) {
-      const errMsg =
+      let errMsg =
         metaResponse.error?.message || "Failed to verify Facebook Page credentials with Meta.";
+      if (metaResponse.error?.code === 100 || errMsg.includes("pages_read_engagement")) {
+        errMsg =
+          "Missing 'pages_read_engagement' permission. In Meta Graph API Explorer, click 'Add a Permission' -> add 'pages_read_engagement' and 'pages_manage_posts', then click Generate Access Token.";
+      }
       console.error("[meta-social] Verification error:", metaResponse.error);
       throw new Error(`Meta API Error: ${errMsg}`);
     }
@@ -93,9 +135,9 @@ export const connectFacebookPage = createServerFn({ method: "POST" })
       .from("meta_page_configs")
       .upsert(
         {
-          page_id: trimmedPageId,
+          page_id: resolvedPageId,
           page_name: pageName,
-          page_access_token: trimmedToken,
+          page_access_token: finalToken,
           brand_tag: data.brandTag || "MSREG PP",
           instagram_account_id: instagramAccountId,
           instagram_username: instagramUsername,
@@ -153,107 +195,147 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const sb = supabaseAdmin as any;
 
-    // Find the page to publish to
-    let query = sb.from("meta_page_configs").select("*").eq("is_active", true);
+    // 1. Fetch all active connected Facebook Pages
+    const { data: allActivePages, error: pagesErr } = await sb
+      .from("meta_page_configs")
+      .select("*")
+      .eq("is_active", true);
+
+    if (pagesErr) {
+      console.error("[meta-social] Error fetching pages:", pagesErr);
+      throw new Error(`Failed to load connected pages: ${pagesErr.message}`);
+    }
+
+    let targetPages: any[] = [];
 
     if (data.pageId) {
-      query = query.eq("page_id", data.pageId);
+      targetPages = (allActivePages || []).filter((p: any) => p.page_id === data.pageId);
     } else if (data.brandTag) {
-      query = query.eq("brand_tag", data.brandTag);
+      const b = data.brandTag.toUpperCase().trim();
+      if (b === "MSREG ALL" || b === "ALL") {
+        // Publish to ALL connected pages (both PP and LOZ)
+        targetPages = allActivePages || [];
+      } else if (b === "LOZ") {
+        targetPages = (allActivePages || []).filter(
+          (p: any) =>
+            p.brand_tag?.toUpperCase() === "LOZ" ||
+            p.page_name?.toLowerCase().includes("lake of the ozarks"),
+        );
+      } else if (b === "PP" || b === "MSREG") {
+        targetPages = (allActivePages || []).filter(
+          (p: any) =>
+            p.brand_tag?.toUpperCase() === "PP" ||
+            !p.page_name?.toLowerCase().includes("lake of the ozarks"),
+        );
+      } else {
+        targetPages = (allActivePages || []).filter((p: any) => p.brand_tag?.toUpperCase() === b);
+        if (targetPages.length === 0 && allActivePages && allActivePages.length > 0) {
+          targetPages = [allActivePages[0]];
+        }
+      }
+    } else if (allActivePages && allActivePages.length > 0) {
+      targetPages = [allActivePages[0]];
     }
 
-    const { data: pageRows } = await query.limit(1);
-
-    let targetPage = pageRows?.[0];
-    if (!targetPage && process.env.META_PAGE_ID && process.env.META_PAGE_ACCESS_TOKEN) {
-      targetPage = {
-        page_id: process.env.META_PAGE_ID,
-        page_access_token: process.env.META_PAGE_ACCESS_TOKEN,
-        page_name: "Connected Facebook Page",
-      };
-    }
-
-    if (!targetPage) {
+    if (targetPages.length === 0) {
       throw new Error(
-        "No active connected Facebook Page found. Please connect your Facebook Page in Meta Social Settings first.",
+        `No connected Facebook Page found for brand "${data.brandTag || "default"}". Please connect your Page in Meta Social Settings.`,
       );
     }
 
-    const { page_id: pageId, page_access_token: token } = targetPage;
+    const results: Array<{
+      pageId: string;
+      pageName: string;
+      postId: string;
+      permalinkUrl: string;
+    }> = [];
 
-    let postId = "";
-    let permalinkUrl = "";
+    // 2. Publish to each target page
+    for (const page of targetPages) {
+      const { page_id: pageId, page_access_token: token, page_name: pageName } = page;
+      let postId = "";
+      let permalinkUrl = "";
 
-    // Publish to Meta Graph API
-    if (data.mediaType === "photo" && data.mediaUrl) {
-      // Photo Post
-      const photoEndpoint = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/${pageId}/photos`;
-      const form = new URLSearchParams();
-      form.append("url", data.mediaUrl);
-      form.append("caption", data.message);
-      form.append("access_token", token);
+      if (data.mediaType === "photo" && data.mediaUrl) {
+        // Photo post
+        const photoEndpoint = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/${pageId}/photos`;
+        const form = new URLSearchParams();
+        form.append("url", data.mediaUrl);
+        form.append("caption", data.message);
+        form.append("access_token", token);
 
-      const res = await fetch(photoEndpoint, {
-        method: "POST",
-        body: form,
-      });
+        const res = await fetch(photoEndpoint, {
+          method: "POST",
+          body: form,
+        });
 
-      const resData = (await res.json()) as any;
-      if (!res.ok || resData.error) {
-        throw new Error(resData.error?.message || "Failed to publish photo to Facebook Page.");
+        const resData = (await res.json()) as any;
+        if (!res.ok || resData.error) {
+          console.error(`[meta-social] Error publishing to ${pageName}:`, resData.error);
+          throw new Error(resData.error?.message || `Failed to publish photo to ${pageName}.`);
+        }
+
+        postId = resData.post_id || resData.id;
+        permalinkUrl = `https://www.facebook.com/${postId}`;
+      } else {
+        // Standard Feed Post
+        const feedEndpoint = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/${pageId}/feed`;
+        const form = new URLSearchParams();
+        form.append("message", data.message);
+        if (data.mediaUrl) {
+          form.append("link", data.mediaUrl);
+        }
+        form.append("access_token", token);
+
+        const res = await fetch(feedEndpoint, {
+          method: "POST",
+          body: form,
+        });
+
+        const resData = (await res.json()) as any;
+        if (!res.ok || resData.error) {
+          console.error(`[meta-social] Error publishing to ${pageName}:`, resData.error);
+          throw new Error(resData.error?.message || `Failed to publish post to ${pageName}.`);
+        }
+
+        postId = resData.id;
+        permalinkUrl = `https://www.facebook.com/${postId}`;
       }
 
-      postId = resData.post_id || resData.id;
-      permalinkUrl = `https://www.facebook.com/${postId}`;
-    } else {
-      // Standard Feed Post
-      const feedEndpoint = `${GRAPH_BASE_URL}/${GRAPH_API_VERSION}/${pageId}/feed`;
-      const form = new URLSearchParams();
-      form.append("message", data.message);
-      if (data.mediaUrl) {
-        form.append("link", data.mediaUrl);
-      }
-      form.append("access_token", token);
+      // Record in meta_published_posts
+      await sb
+        .from("meta_published_posts")
+        .insert({
+          content_item_id: data.contentItemId || null,
+          page_id: pageId,
+          facebook_post_id: postId,
+          permalink_url: permalinkUrl,
+          message: data.message,
+          media_type: data.mediaType,
+          media_url: data.mediaUrl || null,
+          published_by: context.userId,
+        })
+        .catch((err: any) =>
+          console.warn(
+            `[meta-social] Note: failed to log meta_published_posts for ${pageName}:`,
+            err,
+          ),
+        );
 
-      const res = await fetch(feedEndpoint, {
-        method: "POST",
-        body: form,
-      });
-
-      const resData = (await res.json()) as any;
-      if (!res.ok || resData.error) {
-        throw new Error(resData.error?.message || "Failed to publish post to Facebook Page.");
-      }
-
-      postId = resData.id;
-      permalinkUrl = `https://www.facebook.com/${postId}`;
+      results.push({ pageId, pageName, postId, permalinkUrl });
     }
 
-    // Record published post in database
-    await sb
-      .from("meta_published_posts")
-      .insert({
-        content_item_id: data.contentItemId || null,
-        page_id: pageId,
-        facebook_post_id: postId,
-        permalink_url: permalinkUrl,
-        message: data.message,
-        media_type: data.mediaType,
-        media_url: data.mediaUrl || null,
-        published_by: context.userId,
-      })
-      .catch((err: any) =>
-        console.warn("[meta-social] Note: failed to log meta_published_posts:", err),
-      );
+    // 3. If attached to a content calendar item, mark as published
+    if (data.contentItemId && results.length > 0) {
+      const combinedUrls = results.map((r) => r.permalinkUrl).join(", ");
+      const combinedIds = results.map((r) => r.postId).join(", ");
 
-    // If attached to a content calendar item, mark as published
-    if (data.contentItemId) {
       await sb
         .from("content_items")
         .update({
           status: "published",
-          published_post_id: postId,
-          published_post_url: permalinkUrl,
+          published_post_id: combinedIds,
+          published_post_url: combinedUrls,
         })
         .eq("id", data.contentItemId)
         .catch((err: any) =>
@@ -263,9 +345,10 @@ export const publishPostToMeta = createServerFn({ method: "POST" })
 
     return {
       success: true,
-      postId,
-      permalinkUrl,
-      pageName: targetPage.page_name,
+      publishedPages: results,
+      postId: results[0]?.postId || "",
+      permalinkUrl: results[0]?.permalinkUrl || "",
+      pageName: results.map((r) => r.pageName).join(" & "),
     };
   });
 
@@ -339,6 +422,7 @@ export const getPageAnalytics = createServerFn({ method: "POST" })
         connected: true,
         pageId,
         pageName: pageInfo.name || pageName,
+        brandTag: page.brand_tag,
         pictureUrl: pageInfo.picture?.data?.url || null,
         fanCount: pageInfo.fan_count ?? 0,
         followersCount: pageInfo.followers_count ?? pageInfo.fan_count ?? 0,

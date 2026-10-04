@@ -14,6 +14,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -1003,27 +1004,69 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                     />
                   </div>
 
-                  <div className="pt-2 flex items-center justify-between border-t border-blue-500/20">
-                    {item?.published_post_url ? (
-                      <div className="flex items-center gap-1.5 text-xs text-emerald-400">
-                        <Check className="h-3.5 w-3.5" />
-                        <span>Live on Facebook:</span>
-                        <a
-                          href={item.published_post_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-gold hover:underline font-medium"
-                        >
-                          View Post <ExternalLink className="h-3 w-3" />
-                        </a>
+                  {/* Publishing Target & Action */}
+                  <div className="pt-3 space-y-3 border-t border-blue-500/20">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground font-medium">Publishing Target:</span>
+                      <Badge
+                        variant="outline"
+                        className={
+                          form.brand === "MSREG ALL"
+                            ? "bg-purple-500/15 text-purple-400 border-purple-500/30 font-semibold"
+                            : form.brand === "LOZ"
+                              ? "bg-blue-500/15 text-blue-400 border-blue-500/30 font-semibold"
+                              : "bg-gold/15 text-gold border-gold/30 font-semibold"
+                        }
+                      >
+                        {form.brand === "MSREG ALL"
+                          ? "Both Pages (PP & LOZ)"
+                          : form.brand === "LOZ"
+                            ? "Lake of the Ozarks (LOZ)"
+                            : "Matt Smith Real Estate Group (PP)"}
+                      </Badge>
+                    </div>
+
+                    {item?.published_post_url && (
+                      <div className="flex flex-col gap-2 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-400">
+                        <div className="flex items-center gap-1.5 font-semibold">
+                          <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                          <span>Live on Facebook:</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2 pl-5">
+                          {item.published_post_url.split(", ").map((url: string, idx: number) => {
+                            const isMultiple = item.published_post_url.includes(", ");
+                            const label = isMultiple
+                              ? idx === 0
+                                ? "View Post (Main) ↗"
+                                : "View Post (LOZ) ↗"
+                              : "View Post ↗";
+                            return (
+                              <a
+                                key={url}
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-gold hover:underline font-medium text-xs bg-background/60 px-2.5 py-1 rounded border border-border/50"
+                              >
+                                {label} <ExternalLink className="h-3 w-3" />
+                              </a>
+                            );
+                          })}
+                        </div>
                       </div>
-                    ) : (
+                    )}
+
+                    <div className="flex items-center justify-end">
                       <Button
                         type="button"
                         size="sm"
                         disabled={publishingToMeta || !canEditContent}
                         onClick={handlePublishToFacebook}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs gap-1.5 h-8"
+                        className={
+                          item?.published_post_url
+                            ? "bg-muted text-foreground hover:bg-muted/80 font-medium text-xs gap-1.5 h-8 border border-border/60"
+                            : "bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs gap-1.5 h-8"
+                        }
                       >
                         {publishingToMeta ? (
                           <>
@@ -1033,11 +1076,21 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
                         ) : (
                           <>
                             <Send className="h-3.5 w-3.5" />
-                            Publish to Facebook Page
+                            {item?.published_post_url
+                              ? form.brand === "MSREG ALL"
+                                ? "Publish Again to Both Pages"
+                                : form.brand === "LOZ"
+                                  ? "Publish Again to LOZ"
+                                  : "Publish Again to Facebook"
+                              : form.brand === "MSREG ALL"
+                                ? "Publish to Both Pages (PP & LOZ)"
+                                : form.brand === "LOZ"
+                                  ? "Publish to Lake of the Ozarks Page"
+                                  : "Publish to Facebook Page"}
                           </>
                         )}
                       </Button>
-                    )}
+                    </div>
                   </div>
                 </div>
               )}
