@@ -202,16 +202,18 @@ export const syncPagesFromUserToken = createServerFn({ method: "POST" })
   .validator(
     z.object({
       userAccessToken: z.string().trim().min(10, "Access token is required"),
+      appSecret: z.string().trim().optional(),
     }),
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const sb = supabaseAdmin as any;
 
-    const appId = process.env.META_APP_ID || "2004401023558912";
-    const appSecret = process.env.META_APP_SECRET;
+    const appId = process.env.META_APP_ID || "1451976590177328";
+    const appSecret = data.appSecret || process.env.META_APP_SECRET;
 
     let workingToken = data.userAccessToken.trim();
+    let isExchanged = false;
 
     // 1. Attempt to exchange short-lived user token for 60-day long-lived token via App Secret
     if (appId && appSecret) {
@@ -224,6 +226,7 @@ export const syncPagesFromUserToken = createServerFn({ method: "POST" })
         if (exRes.ok && exData.access_token) {
           console.log("[meta-social] Successfully exchanged token for long-lived user token");
           workingToken = exData.access_token;
+          isExchanged = true;
         } else {
           console.warn("[meta-social] Note: token exchange returned:", exData?.error?.message);
         }
@@ -286,6 +289,7 @@ export const syncPagesFromUserToken = createServerFn({ method: "POST" })
       success: true,
       count: connectedPages.length,
       pages: connectedPages,
+      isPermanent: isExchanged,
     };
   });
 

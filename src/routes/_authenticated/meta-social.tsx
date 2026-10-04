@@ -99,14 +99,29 @@ function MetaSocialPage() {
   const [publishImageUrl, setPublishImageUrl] = useState("");
   const [lastPublishedUrl, setLastPublishedUrl] = useState<string | null>(null);
 
+  const [userAppSecret, setUserAppSecret] = useState("");
+
   // Mutations
   const syncMutation = useMutation({
-    mutationFn: () => syncPagesFn({ data: { userAccessToken: userSyncToken } }),
+    mutationFn: () =>
+      syncPagesFn({
+        data: {
+          userAccessToken: userSyncToken,
+          appSecret: userAppSecret.trim() || undefined,
+        },
+      }),
     onSuccess: (res) => {
-      toast.success(
-        `Successfully auto-connected ${res.count} Facebook Page(s) with permanent tokens!`,
-      );
+      if (res.isPermanent) {
+        toast.success(
+          `Successfully connected ${res.count} Facebook Page(s) with PERMANENT tokens that never expire!`,
+        );
+      } else {
+        toast.success(
+          `Connected ${res.count} Facebook Page(s)! (Note: temporary token — add App Secret below to lock in permanent tokens).`,
+        );
+      }
       setUserSyncToken("");
+      setUserAppSecret("");
       queryClient.invalidateQueries({ queryKey: ["meta-config"] });
       queryClient.invalidateQueries({ queryKey: ["meta-analytics"] });
       setActiveTab("analytics");
@@ -691,6 +706,34 @@ function MetaSocialPage() {
                   placeholder="Paste EAA... token from Graph API Explorer here"
                   className="bg-background/80 text-xs font-mono"
                 />
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="syncSecret" className="text-xs font-medium flex items-center gap-1.5">
+                    <KeyRound className="h-3.5 w-3.5 text-gold" />
+                    <span>Meta App Secret (Recommended for Permanent Token)</span>
+                  </Label>
+                  <a
+                    href="https://developers.facebook.com/apps/1451976590177328/settings/basic/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-gold hover:underline text-[10px] inline-flex items-center gap-0.5"
+                  >
+                    Get App Secret <ExternalLink className="h-2.5 w-2.5" />
+                  </a>
+                </div>
+                <Input
+                  id="syncSecret"
+                  type="password"
+                  value={userAppSecret}
+                  onChange={(e) => setUserAppSecret(e.target.value)}
+                  placeholder="Paste App Secret here to permanently lock in never-expiring Page tokens"
+                  className="bg-background/80 text-xs font-mono"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  With your App Secret, The Hub automatically upgrades your token into a permanent token that never expires.
+                </p>
               </div>
 
               <Button
