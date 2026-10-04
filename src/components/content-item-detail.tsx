@@ -210,7 +210,11 @@ export function ContentItemDetail({ itemId, open, onOpenChange }: Props) {
           mediaUrl,
           mediaType,
           firstComment: form.meta_first_comment || undefined,
-          scheduledAt: forceImmediate ? undefined : (form.scheduled_at || undefined),
+          scheduledAt: forceImmediate
+            ? undefined
+            : form.scheduled_at
+              ? new Date(form.scheduled_at).toISOString()
+              : undefined,
           forceImmediate,
         },
       });
