@@ -63,7 +63,9 @@ import {
   TrendingUp,
   FileSpreadsheet,
   Calendar,
+  Wand2,
 } from "lucide-react";
+import { extractMarketStatsFromPdf } from "@/lib/mls-pdf-parser";
 import { QrCode } from "@/components/qr-code";
 import { publicUrl } from "@/lib/public-url";
 import { makeStorageKey } from "@/lib/sanitize-filename";
@@ -3910,6 +3912,7 @@ function MarketStatsTab({ userId }: { userId: string | null }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingReport, setEditingReport] = useState<MarketStatsReport | null>(null);
   const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [scanningPdf, setScanningPdf] = useState(false);
   const [uploadingGraphic, setUploadingGraphic] = useState(false);
 
   // Form State
@@ -4062,27 +4065,71 @@ function MarketStatsTab({ userId }: { userId: string | null }) {
     },
   });
 
-  // Handle PDF file upload
+  // Handle PDF file upload with AI Auto-Scanning
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
       setUploadingPdf(true);
+      setScanningPdf(true);
+
+      // 1. Scan and parse PDF contents
+      let extracted: any = null;
+      try {
+        extracted = await extractMarketStatsFromPdf(file);
+      } catch (scanErr) {
+        console.warn("PDF auto-scan notice:", scanErr);
+      }
+
+      // 2. Upload file to Supabase storage
       const storagePath = makeStorageKey("market-stats/pdf", file.name);
       const res = await uploadFile(storagePath, file);
 
-      setForm((prev) => ({
-        ...prev,
-        pdfUrl: res.url,
-        pdfName: file.name,
-        pdfSize: file.size,
-      }));
-      toast.success(`PDF "${file.name}" uploaded successfully!`);
+      setForm((prev) => {
+        const updated = {
+          ...prev,
+          pdfUrl: res.url,
+          pdfName: file.name,
+          pdfSize: file.size,
+        };
+
+        if (extracted) {
+          if (extracted.month) {
+            updated.month = extracted.month;
+          }
+          if (extracted.region) {
+            updated.area = extracted.region;
+          }
+          updated.title = `${extracted.month || updated.month} MLS Market Stats — ${extracted.region || updated.area}`;
+
+          if (extracted.highlights && extracted.highlights.length > 0) {
+            updated.summaryNotes = extracted.highlights.join(" ");
+          }
+
+          if (extracted.metrics) {
+            updated.metrics = {
+              ...prev.metrics,
+              ...extracted.metrics,
+            };
+          }
+        }
+
+        return updated;
+      });
+
+      if (extracted && extracted.metrics?.medianSalePrice) {
+        toast.success(
+          `✨ Scanned "${file.name}"! Auto-filled ${extracted.region} (${extracted.month}) stats: ${extracted.metrics.medianSalePrice} Median, ${extracted.metrics.closedSales || "—"} Closed Sales.`
+        );
+      } else {
+        toast.success(`PDF "${file.name}" uploaded successfully!`);
+      }
     } catch (err: any) {
-      toast.error(err?.message || "Failed to upload PDF");
+      toast.error(err?.message || "Failed to upload or scan PDF");
     } finally {
       setUploadingPdf(false);
+      setScanningPdf(false);
     }
   };
 
@@ -4318,6 +4365,50 @@ function MarketStatsTab({ userId }: { userId: string | null }) {
           </DialogHeader>
 
           <div className="space-y-6 py-2">
+            {/* Quick Auto-Scan Banner */}
+            <div className="rounded-xl border border-gold/30 bg-gradient-to-r from-gold/15 via-gold/5 to-transparent p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-gold uppercase tracking-wider">
+                  <Sparkles className="h-4 w-4" />
+                  <span>AI Auto-Scan &amp; Extract MLS PDF</span>
+                </div>
+                <p className="text-xs text-muted-foreground max-w-lg">
+                  Drop or select your MLS Report PDF (MARIS County Update or Lake of the Ozarks Report) to auto-fill all price, inventory, and volume statistics instantly.
+                </p>
+              </div>
+
+              <label className="inline-flex shrink-0">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={uploadingPdf || scanningPdf}
+                  asChild
+                  className="cursor-pointer text-xs border-gold text-gold bg-gold/10 hover:bg-gold/20 font-semibold shadow-xs"
+                >
+                  <span>
+                    {scanningPdf || uploadingPdf ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                        {scanningPdf ? "Scanning PDF Stats…" : "Uploading…"}
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="h-3.5 w-3.5 mr-1.5" />
+                        Auto-Scan MLS PDF
+                      </>
+                    )}
+                  </span>
+                </Button>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={handlePdfUpload}
+                  disabled={uploadingPdf || scanningPdf}
+                />
+              </label>
+            </div>
+
             {/* Section 1: Basic Period & Area Info */}
             <div className="space-y-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-gold flex items-center gap-1.5">
