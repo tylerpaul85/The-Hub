@@ -62,6 +62,7 @@ import {
   BarChart3,
   TrendingUp,
   FileSpreadsheet,
+  Calendar,
 } from "lucide-react";
 import { QrCode } from "@/components/qr-code";
 import { publicUrl } from "@/lib/public-url";
@@ -4068,8 +4069,7 @@ function MarketStatsTab({ userId }: { userId: string | null }) {
 
     try {
       setUploadingPdf(true);
-      const cleanKey = makeStorageKey(file.name);
-      const storagePath = `market-stats/pdf/${Date.now()}_${cleanKey}`;
+      const storagePath = makeStorageKey("market-stats/pdf", file.name);
       const res = await uploadFile(storagePath, file);
 
       setForm((prev) => ({
@@ -4097,8 +4097,7 @@ function MarketStatsTab({ userId }: { userId: string | null }) {
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const cleanKey = makeStorageKey(file.name);
-        const storagePath = `market-stats/graphics/${Date.now()}_${cleanKey}`;
+        const storagePath = makeStorageKey("market-stats/graphics", file.name);
         const res = await uploadFile(storagePath, file);
 
         const defaultCaption = `🏡 ${form.month || "MONTHLY"} MARKET UPDATE 📈\n\nMedian Price: ${form.metrics.medianSalePrice || "$248,500"} (${form.metrics.medianPriceChange || "+4.2%"})\nAvg Days on Market: ${form.metrics.avgDaysOnMarket || "28 Days"}\nActive Listings: ${form.metrics.activeInventory || "348"}\n\nThinking about buying or selling? Contact us today!\n#MattSmithRealEstateGroup #MarketUpdate #CentralMORealEstate`;

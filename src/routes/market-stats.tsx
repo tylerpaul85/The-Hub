@@ -195,7 +195,7 @@ function MarketStatsPage() {
           <div className="flex items-center gap-2">
             {user && (
               <Link
-                to="/_authenticated/toolbox"
+                to={"/toolbox" as any}
                 className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gold/40 bg-gold/10 text-gold hover:bg-gold/20 text-xs font-medium transition-colors"
               >
                 <Layers className="h-3.5 w-3.5" />
