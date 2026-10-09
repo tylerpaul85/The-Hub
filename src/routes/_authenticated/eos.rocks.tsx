@@ -30,6 +30,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/page-header";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -41,7 +43,19 @@ import {
   type Rock,
   type RockStatus,
 } from "@/lib/eos";
-import { Target, Plus, Pencil, Trash2 } from "lucide-react";
+import {
+  Target,
+  Plus,
+  Pencil,
+  Trash2,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  ChevronDown,
+  ChevronUp,
+  MessageSquare,
+  User,
+} from "lucide-react";
 import { format } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/eos/rocks")({
@@ -60,9 +74,11 @@ type Milestone = {
 };
 
 function RocksPage() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, roles } = useAuth();
+  const isOperations =
+    isAdmin || roles.includes("marketing_coordinator") || roles.includes("client_care");
   const qc = useQueryClient();
-  const [view, setView] = useState<"mine" | "team">(isAdmin ? "team" : "mine");
+  const [view, setView] = useState<"mine" | "team">(isOperations ? "team" : "mine");
   const [quarter, setQuarter] = useState(currentQuarter());
   const [editing, setEditing] = useState<Rock | null>(null);
   const [creating, setCreating] = useState(false);
@@ -129,117 +145,237 @@ function RocksPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // KPI Metrics
+  const onTrackCount = visible.filter((r) => r.status === "on_track").length;
+  const offTrackCount = visible.filter((r) => r.status === "off_track").length;
+  const completeCount = visible.filter((r) => r.status === "complete").length;
+
   return (
-    <div className="p-6 lg:p-8 max-w-7xl mx-auto">
-      <header className="mb-6 flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Target className="h-7 w-7 text-gold" /> Rocks
-          </h1>
-          <p className="text-muted-foreground mt-1">Quarterly priorities for the team.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Input value={quarter} onChange={(e) => setQuarter(e.target.value)} className="w-28" />
-          {isAdmin && (
-            <div className="flex rounded-md border border-border overflow-hidden">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+      <PageHeader
+        title="EOS Quarterly Rocks"
+        description="90-day SMART company and individual priorities. Track accountability, milestone check-ins, and on-track status."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 bg-surface-2 border border-border/80 rounded-lg px-2.5 py-1">
+              <span className="text-[11px] font-mono text-muted-foreground uppercase font-bold">
+                Qtr:
+              </span>
+              <Input
+                value={quarter}
+                onChange={(e) => setQuarter(e.target.value)}
+                className="w-24 h-7 text-xs font-mono bg-transparent border-0 p-0 focus-visible:ring-0 text-foreground font-semibold"
+              />
+            </div>
+
+            <div className="flex rounded-lg border border-border/80 p-0.5 bg-surface-2">
               <button
                 onClick={() => setView("team")}
                 className={cn(
-                  "px-3 py-1.5 text-sm",
-                  view === "team" ? "bg-gold/15 text-gold" : "text-muted-foreground",
+                  "px-3 py-1 text-xs font-semibold rounded-md transition-all",
+                  view === "team"
+                    ? "bg-card text-foreground shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                Team
+                Team ({rocks.length})
               </button>
               <button
                 onClick={() => setView("mine")}
                 className={cn(
-                  "px-3 py-1.5 text-sm",
-                  view === "mine" ? "bg-gold/15 text-gold" : "text-muted-foreground",
+                  "px-3 py-1 text-xs font-semibold rounded-md transition-all",
+                  view === "mine"
+                    ? "bg-card text-foreground shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                Mine
+                My Rocks ({rocks.filter((r) => r.owner === user?.id).length})
               </button>
             </div>
-          )}
-          {isAdmin && (
-            <Button size="sm" onClick={() => setCreating(true)}>
-              <Plus className="h-4 w-4 mr-1" /> New Rock
+
+            <Button
+              size="sm"
+              onClick={() => setCreating(true)}
+              className="h-9 bg-gold text-navy font-semibold hover:bg-gold/90 shadow-xs"
+            >
+              <Plus className="h-4 w-4 mr-1.5" /> New Rock
             </Button>
-          )}
+          </div>
+        }
+      />
+
+      {/* KPI Metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-card border border-border/80 rounded-xl p-4 flex items-center justify-between shadow-2xs">
+          <div>
+            <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
+              Total Priorities
+            </div>
+            <div className="text-2xl font-bold font-mono tracking-tight mt-1 text-foreground">
+              {visible.length}
+            </div>
+          </div>
+          <div className="p-2.5 rounded-lg bg-surface-2 text-gold border border-border/60">
+            <Target className="h-5 w-5" />
+          </div>
         </div>
-      </header>
+
+        <div className="bg-card border border-border/80 rounded-xl p-4 flex items-center justify-between shadow-2xs">
+          <div>
+            <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
+              On Track
+            </div>
+            <div className="text-2xl font-bold font-mono tracking-tight mt-1 text-emerald-400">
+              {onTrackCount}
+            </div>
+          </div>
+          <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <CheckCircle2 className="h-5 w-5" />
+          </div>
+        </div>
+
+        <div className="bg-card border border-border/80 rounded-xl p-4 flex items-center justify-between shadow-2xs">
+          <div>
+            <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
+              Off Track / At Risk
+            </div>
+            <div className="text-2xl font-bold font-mono tracking-tight mt-1 text-amber-400">
+              {offTrackCount}
+            </div>
+          </div>
+          <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <AlertTriangle className="h-5 w-5" />
+          </div>
+        </div>
+
+        <div className="bg-card border border-border/80 rounded-xl p-4 flex items-center justify-between shadow-2xs">
+          <div>
+            <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
+              Completed
+            </div>
+            <div className="text-2xl font-bold font-mono tracking-tight mt-1 text-sky-400">
+              {completeCount}
+            </div>
+          </div>
+          <div className="p-2.5 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">
+            <CheckCircle2 className="h-5 w-5" />
+          </div>
+        </div>
+      </div>
 
       {Object.keys(grouped).length === 0 && (
-        <div className="p-10 text-center text-muted-foreground bg-card border border-border rounded-xl">
-          No rocks for {quarter}.
+        <div className="p-12 text-center text-muted-foreground bg-card border border-border/80 rounded-xl space-y-3 shadow-2xs">
+          <Target className="h-10 w-10 text-muted-foreground mx-auto opacity-50" />
+          <div className="font-semibold text-foreground">No rocks recorded for {quarter}</div>
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+            Click "New Rock" to define a 90-day priority and assign an owner for this quarter.
+          </p>
+          <Button
+            size="sm"
+            onClick={() => setCreating(true)}
+            className="bg-gold text-navy font-semibold hover:bg-gold/90 text-xs h-8"
+          >
+            <Plus className="h-3.5 w-3.5 mr-1" /> Create First Rock
+          </Button>
         </div>
       )}
 
-      <div className="space-y-6">
+      <div className="space-y-5">
         {Object.entries(grouped).map(([ownerId, list]) => (
-          <section key={ownerId} className="bg-card border border-border rounded-xl">
-            <div className="px-5 py-3 border-b border-border font-semibold text-sm">
-              {nameOf(ownerId)}
-              <span className="text-muted-foreground font-normal ml-2">
-                · {list.length} rock{list.length === 1 ? "" : "s"}
-              </span>
+          <section
+            key={ownerId}
+            className="bg-card border border-border/80 rounded-xl overflow-hidden shadow-2xs"
+          >
+            <div className="px-5 py-3 border-b border-border/80 bg-surface-2/50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 rounded-full bg-gold/15 text-gold font-bold flex items-center justify-center text-[10px] border border-gold/30">
+                  <User className="h-3.5 w-3.5" />
+                </div>
+                <span className="font-bold text-sm text-foreground">{nameOf(ownerId)}</span>
+                <span className="text-xs text-muted-foreground font-mono">
+                  · {list.length} rock{list.length === 1 ? "" : "s"}
+                </span>
+              </div>
             </div>
-            <div className="divide-y divide-border">
+
+            <div className="divide-y divide-border/60">
               {list.map((r) => {
-                const canEdit = isAdmin;
-                const canStatus = isAdmin || r.owner === user?.id;
+                const canEdit = isOperations || r.owner === user?.id;
+                const canStatus = isOperations || r.owner === user?.id;
+                const isExpanded = expanded === r.id;
+
                 return (
-                  <div key={r.id} className="p-4">
-                    <div className="flex items-start gap-3">
+                  <div key={r.id} className="p-4 hover:bg-accent/30 transition-colors">
+                    <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
                       <div className="flex-1 min-w-0">
                         <button
-                          onClick={() => setExpanded(expanded === r.id ? null : r.id)}
-                          className="text-left"
+                          onClick={() => setExpanded(isExpanded ? null : r.id)}
+                          className="text-left w-full group"
                         >
-                          <div className="font-medium">{r.title}</div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm text-foreground group-hover:text-gold transition-colors">
+                              {r.title}
+                            </span>
+                            {isExpanded ? (
+                              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
                           {r.due_date && (
-                            <div className="text-xs text-muted-foreground mt-0.5">
-                              Due {r.due_date}
+                            <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1 font-mono">
+                              <Clock className="h-3 w-3" /> Due {r.due_date}
                             </div>
                           )}
                         </button>
                       </div>
-                      <Select
-                        value={r.status}
-                        disabled={!canStatus}
-                        onValueChange={(v) =>
-                          updateStatus.mutate({ id: r.id, status: v as RockStatus })
-                        }
-                      >
-                        <SelectTrigger className={cn("w-36 text-xs", ROCK_STATUS_CLASS[r.status])}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(["on_track", "off_track", "complete"] as RockStatus[]).map((s) => (
-                            <SelectItem key={s} value={s}>
-                              {ROCK_STATUS_LABEL[s]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {canEdit && (
-                        <Button size="sm" variant="ghost" onClick={() => setEditing(r)}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                      {canEdit && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setDeleting(r)}
-                          className="text-destructive hover:text-destructive"
+
+                      <div className="flex items-center gap-2">
+                        <Select
+                          value={r.status}
+                          disabled={!canStatus}
+                          onValueChange={(v) =>
+                            updateStatus.mutate({ id: r.id, status: v as RockStatus })
+                          }
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
+                          <SelectTrigger className={cn("w-36 text-xs h-8", ROCK_STATUS_CLASS[r.status])}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(["on_track", "off_track", "complete"] as RockStatus[]).map((s) => (
+                              <SelectItem key={s} value={s}>
+                                {ROCK_STATUS_LABEL[s]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditing(r)}
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                            title="Edit Rock"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setDeleting(r)}
+                            className="h-8 w-8 p-0 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+                            title="Delete Rock"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    {expanded === r.id && <RockDetail rock={r} />}
+
+                    {isExpanded && <RockDetail rock={r} />}
                   </div>
                 );
               })}
@@ -291,7 +427,9 @@ function RocksPage() {
 }
 
 function RockDetail({ rock }: { rock: Rock }) {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, roles } = useAuth();
+  const isOperations =
+    isAdmin || roles.includes("marketing_coordinator") || roles.includes("client_care");
   const qc = useQueryClient();
   const [note, setNote] = useState("");
 
@@ -326,40 +464,51 @@ function RockDetail({ rock }: { rock: Rock }) {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const canAdd = isAdmin || rock.owner === user?.id;
+  const canAdd = isOperations || rock.owner === user?.id;
 
   return (
-    <div className="mt-3 pt-3 border-t border-border space-y-3">
+    <div className="mt-3.5 pt-3.5 border-t border-border/60 space-y-3">
       {rock.description && (
-        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{rock.description}</p>
+        <div className="p-3 bg-surface-2/60 rounded-lg border border-border/60 text-xs text-foreground/90 whitespace-pre-wrap leading-relaxed">
+          {rock.description}
+        </div>
       )}
       <div>
-        <div className="text-xs font-semibold mb-2 uppercase tracking-wide text-muted-foreground">
-          Milestones / Check-ins
+        <div className="text-[10px] font-bold mb-2 uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+          <MessageSquare className="h-3 w-3 text-gold" />
+          Milestones &amp; Check-ins ({milestones.length})
         </div>
         <div className="space-y-2">
           {milestones.length === 0 && (
-            <div className="text-xs text-muted-foreground">No notes yet.</div>
+            <div className="text-xs text-muted-foreground/70 py-2">
+              No milestone updates posted yet.
+            </div>
           )}
           {milestones.map((m) => (
-            <div key={m.id} className="bg-muted/40 rounded p-2 text-sm">
-              <div className="whitespace-pre-wrap">{m.note}</div>
-              <div className="text-[10px] text-muted-foreground mt-1">
+            <div key={m.id} className="bg-surface-2 rounded-lg p-2.5 text-xs border border-border/50">
+              <div className="whitespace-pre-wrap text-foreground">{m.note}</div>
+              <div className="text-[10px] text-muted-foreground font-mono mt-1">
                 {format(new Date(m.created_at), "MMM d, yyyy · h:mm a")}
               </div>
             </div>
           ))}
         </div>
         {canAdd && (
-          <div className="mt-2 flex gap-2">
+          <div className="mt-3 flex gap-2">
             <Textarea
               rows={2}
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Weekly or monthly check-in note..."
+              placeholder="Post milestone or weekly check-in note…"
+              className="text-xs bg-surface-2 border-border/80"
             />
-            <Button size="sm" onClick={() => add.mutate()} disabled={add.isPending}>
-              Add
+            <Button
+              size="sm"
+              onClick={() => add.mutate()}
+              disabled={add.isPending || !note.trim()}
+              className="bg-gold text-navy font-semibold hover:bg-gold/90 text-xs shrink-0 self-end"
+            >
+              Post Note
             </Button>
           </div>
         )}
@@ -421,18 +570,26 @@ function RockFormDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{rock ? "Edit Rock" : "New Rock"}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5 text-gold" />
+            {rock ? "Edit Rock" : "New Quarterly Rock"}
+          </DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="space-y-3.5 pt-1">
           <div>
-            <label className="text-xs text-muted-foreground">Title</label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+            <label className="text-xs font-semibold text-muted-foreground">Title *</label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Standardize video editing workflow across channels"
+              className="mt-1 bg-surface-2 border-border/80"
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-muted-foreground">Owner</label>
+              <label className="text-xs font-semibold text-muted-foreground">Owner *</label>
               <Select value={owner} onValueChange={setOwner}>
-                <SelectTrigger>
+                <SelectTrigger className="mt-1 bg-surface-2 border-border/80">
                   <SelectValue placeholder="Select owner" />
                 </SelectTrigger>
                 <SelectContent>
@@ -445,21 +602,27 @@ function RockFormDialog({
               </Select>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground">Quarter</label>
+              <label className="text-xs font-semibold text-muted-foreground">Quarter *</label>
               <Input
                 value={quarter}
                 onChange={(e) => setQuarter(e.target.value)}
-                placeholder="Q3 2026"
+                placeholder="Q4 2026"
+                className="mt-1 bg-surface-2 border-border/80 font-mono"
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground">Due date</label>
-              <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+              <label className="text-xs font-semibold text-muted-foreground">Target Due Date</label>
+              <Input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="mt-1 bg-surface-2 border-border/80"
+              />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground">Status</label>
+              <label className="text-xs font-semibold text-muted-foreground">Initial Status</label>
               <Select value={status} onValueChange={(v) => setStatus(v as RockStatus)}>
-                <SelectTrigger>
+                <SelectTrigger className="mt-1 bg-surface-2 border-border/80">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -473,20 +636,28 @@ function RockFormDialog({
             </div>
           </div>
           <div>
-            <label className="text-xs text-muted-foreground">Description</label>
+            <label className="text-xs font-semibold text-muted-foreground">
+              SMART Criteria &amp; Description
+            </label>
             <Textarea
               rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              placeholder="Specific, measurable details and definition of done..."
+              className="mt-1 bg-surface-2 border-border/80 text-xs"
             />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-0 pt-2">
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending}>
-            {save.isPending ? "Saving..." : "Save"}
+          <Button
+            onClick={() => save.mutate()}
+            disabled={save.isPending || !title.trim()}
+            className="bg-gold text-navy font-semibold hover:bg-gold/90"
+          >
+            {save.isPending ? "Saving..." : "Save Rock"}
           </Button>
         </DialogFooter>
       </DialogContent>

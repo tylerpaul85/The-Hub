@@ -36,6 +36,9 @@ import {
 } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/empty-state";
+import { LoadingState } from "@/components/loading-state";
 import { toast } from "sonner";
 import {
   format,
@@ -300,81 +303,72 @@ export function SpecialEventsPage() {
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/60 pb-6">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-gold/15 text-gold border border-gold/30">
-              <Sparkles className="h-5 w-5" />
+      <PageHeader
+        title="Special Events"
+        description="Internal celebrations, community outreach, and team tournaments."
+        actions={
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <Tabs
+              value={activeTab}
+              onValueChange={(v) => setActiveTab(v as any)}
+              className="h-9"
+            >
+              <TabsList className="bg-[var(--surface-2)] p-0.5 border border-[var(--border)] h-9">
+                <TabsTrigger value="upcoming" className="text-xs px-3 font-semibold data-[state=active]:bg-[var(--surface-1)] data-[state=active]:text-[var(--text-primary)]">
+                  Upcoming
+                </TabsTrigger>
+                <TabsTrigger value="past" className="text-xs px-3 font-semibold data-[state=active]:bg-[var(--surface-1)] data-[state=active]:text-[var(--text-primary)]">
+                  Past Events
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            <div className="flex items-center border border-[var(--border)] rounded-lg p-0.5 bg-[var(--surface-2)]">
+              <button
+                onClick={() => setViewMode("cards")}
+                className={cn(
+                  "p-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer",
+                  viewMode === "cards"
+                    ? "bg-[var(--surface-1)] text-[var(--text-primary)] shadow-sm"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]",
+                )}
+                title="Cards Grid View"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setViewMode("calendar")}
+                className={cn(
+                  "p-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer",
+                  viewMode === "calendar"
+                    ? "bg-[var(--surface-1)] text-[var(--text-primary)] shadow-sm"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]",
+                )}
+                title="Calendar Month View"
+              >
+                <CalendarIcon className="h-4 w-4" />
+              </button>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Special Events</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Internal celebrations, community outreach, and team tournaments
-              </p>
-            </div>
+
+            {canManage && (
+              <Button
+                onClick={() => {
+                  setEditingEvent(null);
+                  setEditorOpen(true);
+                }}
+                size="sm"
+                className="bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] font-semibold h-9 text-xs shadow-sm"
+              >
+                <Plus className="h-4 w-4 mr-1.5" /> New Event
+              </Button>
+            )}
           </div>
-        </div>
-
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <Tabs
-            value={activeTab}
-            onValueChange={(v) => setActiveTab(v as any)}
-            className="h-9"
-          >
-            <TabsList className="bg-muted/50 p-0.5 border border-border">
-              <TabsTrigger value="upcoming" className="text-xs px-3">
-                Upcoming
-              </TabsTrigger>
-              <TabsTrigger value="past" className="text-xs px-3">
-                Past Events
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <div className="flex items-center border border-border rounded-lg p-0.5 bg-muted/40">
-            <button
-              onClick={() => setViewMode("cards")}
-              className={cn(
-                "p-1.5 rounded-md text-xs font-medium transition-colors",
-                viewMode === "cards"
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-              title="Cards Grid View"
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setViewMode("calendar")}
-              className={cn(
-                "p-1.5 rounded-md text-xs font-medium transition-colors",
-                viewMode === "calendar"
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-              title="Calendar Month View"
-            >
-              <CalendarIcon className="h-4 w-4" />
-            </button>
-          </div>
-
-          {canManage && (
-            <Button
-              onClick={() => {
-                setEditingEvent(null);
-                setEditorOpen(true);
-              }}
-              className="bg-gold text-gold-foreground hover:bg-gold/90 shadow-sm"
-            >
-              <Plus className="h-4 w-4 mr-1.5" /> New Event
-            </Button>
-          )}
-        </div>
-      </div>
+        }
+      />
 
       {/* Filter Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
           {(
             [
               ["all", "All Events"],
@@ -387,10 +381,10 @@ export function SpecialEventsPage() {
               key={val}
               onClick={() => setSelectedType(val)}
               className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap border",
+                "px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap border cursor-pointer",
                 selectedType === val
-                  ? "bg-gold text-gold-foreground border-gold shadow-sm"
-                  : "bg-muted/40 text-muted-foreground border-border hover:bg-muted/70 hover:text-foreground",
+                  ? "bg-[var(--accent)] text-white border-[var(--accent)] shadow-sm"
+                  : "bg-[var(--surface-1)] text-[var(--text-secondary)] border-[var(--border)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]",
               )}
             >
               {label}
@@ -399,46 +393,42 @@ export function SpecialEventsPage() {
         </div>
 
         <div className="relative w-full sm:w-64">
-          <Search className="h-4 w-4 absolute left-2.5 top-2.5 text-muted-foreground" />
+          <Search className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search events or locations…"
-            className="pl-8 text-xs h-9 bg-muted/20"
+            className="pl-8 text-xs h-9 bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus-visible:ring-1 focus-visible:ring-[var(--accent)]"
           />
         </div>
       </div>
 
       {/* Main Content Area */}
       {loadingEvents ? (
-        <div className="py-20 text-center text-muted-foreground animate-pulse">
-          Loading special events…
-        </div>
+        <LoadingState message="Loading special events…" minHeight="300px" />
       ) : filteredEvents.length === 0 ? (
-        <div className="py-20 text-center border border-dashed border-border rounded-2xl bg-card/40 p-8 space-y-3">
-          <CalendarCheck className="h-10 w-10 text-gold/40 mx-auto" />
-          <h3 className="text-base font-semibold">No events found</h3>
-          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-            {searchQuery
+        <EmptyState
+          icon={CalendarCheck}
+          title="No events found"
+          description={
+            searchQuery
               ? "No events matching your search query. Try clearing filters."
               : activeTab === "upcoming"
                 ? "There are no upcoming special events scheduled right now. Check back soon!"
-                : "No past events found."}
-          </p>
-          {canManage && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setEditingEvent(null);
-                setEditorOpen(true);
-              }}
-              className="mt-2 border-gold/40 text-gold"
-            >
-              <Plus className="h-4 w-4 mr-1.5" /> Create an event
-            </Button>
-          )}
-        </div>
+                : "No past events found."
+          }
+          action={
+            canManage
+              ? {
+                  label: "Create an event",
+                  onClick: () => {
+                    setEditingEvent(null);
+                    setEditorOpen(true);
+                  },
+                }
+              : undefined
+          }
+        />
       ) : viewMode === "cards" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredEvents.map((ev) => {
@@ -625,9 +615,9 @@ function SpecialEventCard({
   }).length;
 
   return (
-    <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-gold/40 transition-all flex flex-col group">
+    <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-[var(--accent)]/50 transition-all flex flex-col group">
       {/* Cover Image Banner */}
-      <div className="relative h-44 w-full bg-gradient-to-br from-navy-800 via-navy-900 to-black overflow-hidden flex items-center justify-center">
+      <div className="relative h-44 w-full bg-gradient-to-br from-[var(--surface-2)] via-[var(--surface-1)] to-[#0C0F17] overflow-hidden flex items-center justify-center">
         {event.cover_image_url ? (
           <img
             src={event.cover_image_url}
@@ -635,24 +625,24 @@ function SpecialEventCard({
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-tr from-gold/10 via-navy-800 to-gold/5 p-6 text-center">
-            <Sparkles className="h-10 w-10 text-gold/30" />
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-tr from-[var(--accent)]/10 via-[var(--surface-2)] to-[var(--accent)]/5 p-6 text-center">
+            <Sparkles className="h-10 w-10 text-[var(--accent)]/30" />
           </div>
         )}
 
         {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--surface-1)] via-black/30 to-transparent" />
 
         {/* Top Badges */}
         <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
           <Badge
             variant="outline"
-            className={cn("text-[11px] font-semibold tracking-wide backdrop-blur-md shadow-sm", SPECIAL_EVENT_TYPE_BADGES[event.event_type])}
+            className={cn("text-[11px] font-semibold tracking-wide backdrop-blur-md shadow-sm border-[var(--border)] bg-[var(--surface-1)]/80 text-[var(--text-primary)]")}
           >
             {SPECIAL_EVENT_TYPE_LABELS[event.event_type]}
           </Badge>
           {event.archived && (
-            <Badge variant="secondary" className="text-[10px] bg-muted/80">
+            <Badge variant="secondary" className="text-[10px] bg-[var(--surface-2)] text-[var(--text-muted)] border border-[var(--border)]">
               Archived
             </Badge>
           )}
@@ -666,19 +656,19 @@ function SpecialEventCard({
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-8 w-8 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md"
+                  className="h-8 w-8 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md cursor-pointer"
                 >
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={onOpenRoster}>
-                  <Users className="h-4 w-4 mr-2 text-gold" /> Manage Roster
+              <DropdownMenuContent align="end" className="w-48 bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-primary)]">
+                <DropdownMenuItem onClick={onOpenRoster} className="cursor-pointer">
+                  <Users className="h-4 w-4 mr-2 text-[var(--accent)]" /> Manage Roster
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={onEditEvent}>
+                <DropdownMenuItem onClick={onEditEvent} className="cursor-pointer">
                   <Pencil className="h-4 w-4 mr-2" /> Edit Details
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={onToggleArchive}>
+                <DropdownMenuItem onClick={onToggleArchive} className="cursor-pointer">
                   {event.archived ? (
                     <>
                       <ArchiveRestore className="h-4 w-4 mr-2" /> Restore Event
@@ -689,10 +679,10 @@ function SpecialEventCard({
                     </>
                   )}
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-[var(--border)]" />
                 <DropdownMenuItem
                   onClick={onDeleteEvent}
-                  className="text-destructive focus:text-destructive"
+                  className="text-rose-400 focus:text-rose-400 cursor-pointer"
                 >
                   <Trash2 className="h-4 w-4 mr-2" /> Delete Event
                 </DropdownMenuItem>
@@ -703,7 +693,8 @@ function SpecialEventCard({
 
         {/* Date / Time Overlay Tag */}
         <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-xs text-white drop-shadow">
-          <span className="font-semibold text-sm truncate text-white">
+          <span className="font-bold text-sm truncate text-white flex items-center gap-1.5 font-mono">
+            <CalendarIcon className="h-3.5 w-3.5 text-[var(--accent)] inline" />
             {format(parseISO(event.event_date), "MMM d, yyyy")}
             {event.start_time && ` · ${formatEventTime(event.start_time)}`}
           </span>
@@ -712,67 +703,67 @@ function SpecialEventCard({
 
       {/* Card Body */}
       <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-        <div className="space-y-2.5">
-          <h2 className="font-bold text-lg text-foreground line-clamp-2 group-hover:text-gold transition-colors">
+        <div className="space-y-2">
+          <h2 className="font-bold text-base sm:text-lg text-[var(--text-primary)] line-clamp-2 group-hover:text-[var(--accent)] transition-colors">
             {event.title}
           </h2>
 
           {event.location && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <MapPin className="h-3.5 w-3.5 text-gold shrink-0" />
+            <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
+              <MapPin className="h-3.5 w-3.5 text-[var(--accent)] shrink-0" />
               <span className="truncate">{event.location}</span>
             </div>
           )}
 
           {event.description && (
-            <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+            <p className="text-xs text-[var(--text-secondary)] line-clamp-3 leading-relaxed">
               {event.description}
             </p>
           )}
         </div>
 
         {/* Capacity / Group Details Section */}
-        <div className="pt-3 border-t border-border/50 space-y-2.5">
+        <div className="pt-3 border-t border-[var(--border)] space-y-2.5">
           {event.requires_rsvp ? (
             isCapped ? (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Attendee Spots</span>
-                  <span className={cn("font-medium", isFull ? "text-amber-400" : "text-foreground")}>
+                  <span className="text-[var(--text-secondary)] font-medium">Attendee Spots</span>
+                  <span className={cn("font-bold font-mono", isFull ? "text-amber-400" : "text-[var(--text-primary)]")}>
                     {confirmedSignups.length} of {event.max_capacity} filled
                     {isFull && " (Full)"}
                   </span>
                 </div>
-                <Progress value={capacityPercent} className="h-2 bg-muted/60" />
+                <Progress value={capacityPercent} className="h-2 bg-[var(--surface-2)]" />
                 {waitlistSignups.length > 0 && (
-                  <p className="text-[11px] text-amber-400">
+                  <p className="text-[11px] text-amber-400 font-medium">
                     {waitlistSignups.length} person{waitlistSignups.length === 1 ? "" : "s"} on waitlist
                   </p>
                 )}
               </div>
             ) : isGroupMode ? (
-              <div className="bg-muted/30 border border-border/60 rounded-lg p-2.5 space-y-1">
+              <div className="bg-[var(--surface-2)]/60 border border-[var(--border)] rounded-xl p-2.5 space-y-1">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium flex items-center gap-1">
-                    <Layers className="h-3.5 w-3.5 text-gold" />
+                  <span className="font-bold text-[var(--text-primary)] flex items-center gap-1.5">
+                    <Layers className="h-3.5 w-3.5 text-[var(--accent)]" />
                     Team Sign-Up ({maxPerGroup} per group)
                   </span>
-                  <span className="text-[11px] text-gold font-medium">
+                  <span className="text-[11px] text-[var(--accent)] font-semibold">
                     {openGroupsCount} open group{openGroupsCount === 1 ? "" : "s"}
                   </span>
                 </div>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-[11px] text-[var(--text-secondary)]">
                   {confirmedSignups.length} player{confirmedSignups.length === 1 ? "" : "s"} registered across {groups.length} group{groups.length === 1 ? "" : "s"}
                 </p>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
                 <UserCheck className="h-3.5 w-3.5 text-emerald-400" />
                 <span>{confirmedSignups.length} attendee{confirmedSignups.length === 1 ? "" : "s"} registered (Open RSVP)</span>
               </div>
             )
           ) : (
-            <div className="text-xs text-muted-foreground italic">
+            <div className="text-xs text-[var(--text-muted)] italic">
               No RSVP required — open attendance for all agents
             </div>
           )}
@@ -780,10 +771,10 @@ function SpecialEventCard({
           {/* Committee count badge */}
           {event.allows_committee && (
             <div className="flex items-center justify-between text-xs pt-1">
-              <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                <Star className="h-3 w-3 text-gold" /> Event Committee:
+              <span className="text-[11px] text-[var(--text-secondary)] flex items-center gap-1">
+                <Star className="h-3 w-3 text-[var(--accent)] fill-current" /> Event Committee:
               </span>
-              <span className="text-[11px] font-medium text-gold">
+              <span className="text-[11px] font-bold text-[var(--accent)]">
                 {committee.length} volunteer{committee.length === 1 ? "" : "s"}
               </span>
             </div>
@@ -791,39 +782,39 @@ function SpecialEventCard({
         </div>
 
         {/* Action Buttons */}
-        <div className="pt-3 border-t border-border/50 flex flex-col gap-2">
+        <div className="pt-3 border-t border-[var(--border)] flex flex-col gap-2">
           {/* Main RSVP Area */}
           {event.requires_rsvp && (
             mySignup ? (
               <div className="flex items-center gap-2">
-                <div className="flex-1 bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-3 py-1.5 flex items-center justify-between">
+                <div className="flex-1 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-1.5 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                    <span className="text-xs font-medium text-emerald-300">
+                    <span className="text-xs font-bold text-emerald-300">
                       {mySignup.status === "confirmed" ? "You're Going!" : "On Waitlist"}
                     </span>
                   </div>
                   {isGroupMode && mySignup.group_id && (
-                    <span className="text-[10px] text-emerald-400/80 max-w-[100px] truncate">
+                    <span className="text-[10px] text-emerald-400/80 max-w-[100px] truncate font-medium">
                       {groups.find((g) => g.id === mySignup.group_id)?.name}
                     </span>
                   )}
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 px-2 text-xs">
+                    <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-[var(--border)] text-[var(--text-secondary)]">
                       Options
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-primary)]">
                     {isGroupMode && (
-                      <DropdownMenuItem onClick={onOpenGroupSignup}>
+                      <DropdownMenuItem onClick={onOpenGroupSignup} className="cursor-pointer">
                         <Layers className="h-3.5 w-3.5 mr-2" /> Change Group
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem
                       onClick={onCancelSignup}
-                      className="text-destructive focus:text-destructive"
+                      className="text-rose-400 focus:text-rose-400 cursor-pointer"
                     >
                       <Trash2 className="h-3.5 w-3.5 mr-2" /> Cancel RSVP
                     </DropdownMenuItem>
@@ -833,7 +824,7 @@ function SpecialEventCard({
             ) : isGroupMode ? (
               <Button
                 onClick={onOpenGroupSignup}
-                className="w-full bg-gold text-gold-foreground hover:bg-gold/90 text-xs font-semibold h-9 shadow-sm"
+                className="w-full bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] text-xs font-semibold h-9 shadow-sm"
               >
                 <UserPlus className="h-4 w-4 mr-1.5" /> Join or Create Group
               </Button>
@@ -847,14 +838,14 @@ function SpecialEventCard({
                   <Clock className="h-4 w-4 mr-1.5" /> Join Waitlist
                 </Button>
               ) : (
-                <Button disabled className="w-full text-xs h-9 bg-muted text-muted-foreground">
+                <Button disabled className="w-full text-xs h-9 bg-[var(--surface-2)] text-[var(--text-muted)] border border-[var(--border)]">
                   Event Full (Capacity Reached)
                 </Button>
               )
             ) : (
               <Button
                 onClick={() => onSimpleSignup("confirmed")}
-                className="w-full bg-gold text-gold-foreground hover:bg-gold/90 text-xs font-semibold h-9 shadow-sm"
+                className="w-full bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] text-xs font-semibold h-9 shadow-sm"
               >
                 <UserCheck className="h-4 w-4 mr-1.5" /> RSVP — Attend Event
               </Button>
@@ -869,10 +860,10 @@ function SpecialEventCard({
                 variant="outline"
                 size="sm"
                 className={cn(
-                  "flex-1 text-xs h-8",
+                  "flex-1 text-xs h-8 border-[var(--border)] font-medium transition-colors",
                   onCommittee
-                    ? "bg-gold/15 text-gold border-gold/40 hover:bg-gold/25"
-                    : "border-border text-muted-foreground hover:text-gold hover:border-gold/40",
+                    ? "bg-[var(--accent)]/15 text-[var(--accent)] border-[var(--accent)]/40 hover:bg-[var(--accent)]/25"
+                    : "text-[var(--text-secondary)] hover:text-[var(--accent)] hover:border-[var(--accent)]/40",
                 )}
                 title="Volunteer to help plan and organize this event"
               >
@@ -887,19 +878,20 @@ function SpecialEventCard({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-xs h-8 px-2.5 text-muted-foreground hover:text-foreground"
+                  className="text-xs h-8 px-2.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] border-[var(--border)]"
                   title="Add to Calendar"
                 >
-                  <CalendarIcon className="h-3.5 w-3.5 mr-1" /> Add to Cal
+                  <CalendarIcon className="h-3.5 w-3.5 mr-1 text-[var(--accent)]" /> Add to Cal
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuContent align="end" className="w-52 bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-primary)]">
                 <DropdownMenuItem
                   onClick={() => window.open(buildGoogleCalendarUrl(event), "_blank")}
+                  className="cursor-pointer"
                 >
-                  <ExternalLink className="h-3.5 w-3.5 mr-2 text-gold" /> Google Calendar
+                  <ExternalLink className="h-3.5 w-3.5 mr-2 text-[var(--accent)]" /> Google Calendar
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => downloadIcsFile(event)}>
+                <DropdownMenuItem onClick={() => downloadIcsFile(event)} className="cursor-pointer">
                   <Download className="h-3.5 w-3.5 mr-2" /> Apple / Outlook (.ics)
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -910,7 +902,7 @@ function SpecialEventCard({
               variant="ghost"
               size="sm"
               onClick={onOpenRoster}
-              className="text-xs h-8 px-2 text-muted-foreground hover:text-foreground"
+              className="text-xs h-8 px-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)]"
               title="View Attendee & Committee Roster"
             >
               <Users className="h-3.5 w-3.5" />
@@ -951,24 +943,24 @@ function SpecialEventsCalendarView({
   const blanks = Array.from({ length: startDay });
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-4 md:p-6 shadow-sm space-y-4">
+    <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-2xl p-4 md:p-6 shadow-sm space-y-4">
       {/* Month Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-border">
-        <h2 className="text-lg font-bold text-foreground">
+      <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+        <h2 className="text-lg font-bold text-[var(--text-primary)]">
           {format(currentMonth, "MMMM yyyy")}
         </h2>
         <div className="flex items-center gap-1.5">
-          <Button variant="outline" size="icon" onClick={onPrevMonth} className="h-8 w-8">
+          <Button variant="outline" size="icon" onClick={onPrevMonth} className="h-8 w-8 border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--surface-2)] cursor-pointer">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={onNextMonth} className="h-8 w-8">
+          <Button variant="outline" size="icon" onClick={onNextMonth} className="h-8 w-8 border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--surface-2)] cursor-pointer">
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
       {/* Weekday Labels */}
-      <div className="grid grid-cols-7 text-center text-xs font-semibold text-muted-foreground py-1">
+      <div className="grid grid-cols-7 text-center text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] py-1">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
           <div key={day}>{day}</div>
         ))}
@@ -977,7 +969,7 @@ function SpecialEventsCalendarView({
       {/* Days Grid */}
       <div className="grid grid-cols-7 gap-1.5 md:gap-2">
         {blanks.map((_, i) => (
-          <div key={`blank-${i}`} className="min-h-[90px] rounded-lg bg-muted/10" />
+          <div key={`blank-${i}`} className="min-h-[90px] rounded-xl bg-[var(--surface-2)]/30 border border-transparent" />
         ))}
         {days.map((day) => {
           const dateStr = format(day, "yyyy-MM-dd");
@@ -990,16 +982,16 @@ function SpecialEventsCalendarView({
               className={cn(
                 "min-h-[90px] rounded-xl border p-2 flex flex-col justify-between transition-colors",
                 isCurrentDay
-                  ? "border-gold/60 bg-gold/5"
-                  : "border-border/60 bg-card hover:border-gold/30",
+                  ? "border-[var(--accent)]/60 bg-[var(--accent)]/5"
+                  : "border-[var(--border)]/70 bg-[var(--surface-1)] hover:border-[var(--accent)]/30",
               )}
             >
               <div className="flex items-center justify-between text-xs font-medium mb-1">
-                <span className={cn("px-1.5 py-0.5 rounded-full", isCurrentDay && "bg-gold text-gold-foreground font-bold")}>
+                <span className={cn("px-1.5 py-0.5 rounded-full font-mono text-xs", isCurrentDay ? "bg-[var(--accent)] text-white font-bold" : "text-[var(--text-secondary)]")}>
                   {format(day, "d")}
                 </span>
                 {dayEvents.length > 0 && (
-                  <span className="text-[10px] text-muted-foreground font-semibold">
+                  <span className="text-[10px] text-[var(--text-muted)] font-semibold">
                     {dayEvents.length} event{dayEvents.length === 1 ? "" : "s"}
                   </span>
                 )}
@@ -1014,12 +1006,9 @@ function SpecialEventsCalendarView({
                     <button
                       key={ev.id}
                       onClick={() => onSelectEvent(ev)}
-                      className={cn(
-                        "w-full text-left px-1.5 py-1 rounded-md text-[11px] truncate block font-medium transition-transform hover:scale-[1.02]",
-                        SPECIAL_EVENT_TYPE_BADGES[ev.event_type],
-                      )}
+                      className="w-full text-left px-2 py-1 rounded-lg text-[11px] truncate block font-medium bg-[var(--surface-2)] border border-[var(--border)] text-[var(--text-primary)] hover:border-[var(--accent)]/50 transition-all cursor-pointer"
                     >
-                      {isAttending && "✓ "}
+                      {isAttending && <span className="text-emerald-400 font-bold mr-1">✓</span>}
                       {ev.title}
                     </button>
                   );

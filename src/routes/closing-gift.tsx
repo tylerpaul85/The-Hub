@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Gift, CheckCircle2, Lock, ChevronLeft } from "lucide-react";
+import { Gift, CheckCircle2, Lock, ChevronLeft, ArrowLeft, Shirt, Sparkles, Building, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { verifyToolboxCode } from "@/lib/toolbox-public.functions";
 import logo from "@/assets/msreg-logo.png";
+import { cn } from "@/lib/utils";
 
 const SIZES = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"] as const;
 
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/closing-gift")({
   component: ClosingGiftRequestPage,
   head: () => ({
     meta: [
-      { title: "Closing Gift Request — MSREG Hub" },
+      { title: "Closing Gift Package — MSREG Hub" },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -80,7 +81,6 @@ function ClosingGiftRequestPage() {
   function setShirtField(idx: number, field: keyof Shirt, value: string) {
     setShirts((prev) => {
       const next = prev.map((s, i) => (i === idx ? { ...s, [field]: value } : s));
-      // Clear color if invalid after size change
       if (field === "size") next[idx].color = "";
       return next;
     });
@@ -104,7 +104,7 @@ function ClosingGiftRequestPage() {
       setUnlocked(true);
       setCodeError(null);
     } catch {
-      setCodeError("Incorrect code. Please try again.");
+      setCodeError("Incorrect passcode. Please check with your team lead or operations.");
     }
   }
 
@@ -119,26 +119,24 @@ function ClosingGiftRequestPage() {
       return;
     }
     if (!closingLocation) {
-      toast.error("Closing location is required.");
+      toast.error("Closing office location is required.");
       return;
     }
     if (shirts.some((s) => !s.size || !s.color)) {
-      toast.error("Pick a size and color for every shirt.");
+      toast.error("Please pick a size and in-stock color for each shirt.");
       return;
     }
     setBusy(true);
     try {
-      // 1. Fetch current inventory details for the requested sizes/colors
       const sizes = Array.from(new Set(shirts.map((s) => s.size)));
-      const colors = Array.from(new Set(shirts.map((s) => s.color)));
+      const colorsToFetch = Array.from(new Set(shirts.map((s) => s.color)));
       const { data: inv, error: invErr } = await supabase
         .from("closing_gift_inventory")
         .select("id,size,color,color_hex,quantity_available")
         .in("size", sizes)
-        .in("color", colors);
+        .in("color", colorsToFetch);
       if (invErr) throw invErr;
 
-      // 2. Tally and validate stock
       const tally = new Map<string, number>();
       for (const s of shirts) {
         const key = `${s.size}|${s.color}`;
@@ -162,7 +160,6 @@ function ClosingGiftRequestPage() {
         enrichedShirts.push({ size: s.size, color: s.color, color_hex: row.color_hex });
       }
 
-      // 3. Insert request
       const { error: insErr } = await supabase.from("closing_gift_requests").insert({
         agent_name: agentName.trim(),
         client_first_name: clientFirst.trim(),
@@ -175,7 +172,6 @@ function ClosingGiftRequestPage() {
       });
       if (insErr) throw insErr;
 
-      // 4. Decrement inventory
       for (const [key, count] of tally.entries()) {
         const row = invByKey.get(key);
         const { error: updErr } = await supabase
@@ -193,25 +189,33 @@ function ClosingGiftRequestPage() {
     }
   }
 
-  // --------- RENDER ---------
   if (submitted) {
     return (
       <Shell>
-        <div className="text-center py-12">
-          <div className="mx-auto h-16 w-16 rounded-full bg-gold/15 text-gold flex items-center justify-center mb-4">
+        <div className="text-center py-10 space-y-5">
+          <div className="mx-auto h-16 w-16 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shadow-lg shadow-emerald-500/10">
             <CheckCircle2 className="h-8 w-8" />
           </div>
-          <h2 className="text-2xl font-semibold">Request Submitted</h2>
-          <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
-            Thanks! Your closing gift request has been sent to the Client Care team. You'll hear
-            back shortly.
-          </p>
-          <div className="mt-8 flex justify-center gap-3">
-            <Button asChild variant="outline">
-              <Link to="/agents">Back to Home</Link>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold tracking-tight text-foreground">
+              Package Request Submitted!
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+              Your closing gift request for{" "}
+              <strong className="text-foreground">
+                {clientFirst} {clientLast}
+              </strong>{" "}
+              has been routed to the Client Care operations team. Apparel inventory has been reserved.
+            </p>
+          </div>
+          <div className="pt-4 flex justify-center gap-3">
+            <Button asChild variant="outline" className="border-border/80">
+              <Link to="/agents">
+                <ChevronLeft className="h-4 w-4 mr-1" /> Back to Agent Hub
+              </Link>
             </Button>
             <Button
-              className="bg-gold text-navy hover:bg-gold/90"
+              className="bg-gold text-navy font-semibold hover:bg-gold/90 shadow-xs"
               onClick={() => {
                 setSubmitted(false);
                 setAgentName("");
@@ -224,7 +228,7 @@ function ClosingGiftRequestPage() {
                 setShirts([{ size: "", color: "" }]);
               }}
             >
-              Submit Another
+              Order Another Package
             </Button>
           </div>
         </div>
@@ -235,27 +239,42 @@ function ClosingGiftRequestPage() {
   if (!unlocked) {
     return (
       <Shell>
-        <form onSubmit={handleUnlock} className="max-w-sm mx-auto py-6">
-          <div className="mx-auto h-14 w-14 rounded-full bg-gold/15 text-gold flex items-center justify-center mb-4">
+        <form onSubmit={handleUnlock} className="max-w-sm mx-auto py-6 space-y-5">
+          <div className="mx-auto h-14 w-14 rounded-2xl bg-gold/15 text-gold border border-gold/30 flex items-center justify-center shadow-inner">
             <Lock className="h-6 w-6" />
           </div>
-          <h2 className="text-center text-xl font-semibold">Enter Access Code</h2>
-          <p className="text-center text-sm text-muted-foreground mt-1">
-            This form is for MSREG team members.
-          </p>
-          <div className="mt-6 space-y-2">
-            <Label htmlFor="code">Security code</Label>
+          <div className="text-center space-y-1">
+            <h2 className="text-xl font-bold tracking-tight text-foreground">
+              Security Access Required
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Please enter the MSREG team toolbox passcode to access client care inventory.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="code" className="text-xs font-semibold text-muted-foreground">
+              Passcode
+            </Label>
             <Input
               id="code"
+              type="password"
               value={codeInput}
               onChange={(e) => setCodeInput(e.target.value)}
-              placeholder="MSREG••••"
+              placeholder="••••••••"
               autoFocus
+              className="bg-surface-2 border-border/80 text-center text-lg tracking-widest font-mono"
             />
-            {codeError && <p className="text-xs text-destructive">{codeError}</p>}
+            {codeError && (
+              <p className="text-xs text-destructive text-center font-medium">{codeError}</p>
+            )}
           </div>
-          <Button type="submit" className="w-full mt-6 bg-gold text-navy hover:bg-gold/90">
-            Continue
+
+          <Button
+            type="submit"
+            className="w-full bg-gold text-navy font-semibold hover:bg-gold/90 h-10 shadow-xs"
+          >
+            Unlock Form
           </Button>
         </form>
       </Shell>
@@ -265,168 +284,246 @@ function ClosingGiftRequestPage() {
   return (
     <Shell>
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="md:col-span-2">
-            <Label htmlFor="agent">Agent Name *</Label>
-            <Input
-              id="agent"
-              value={agentName}
-              onChange={(e) => setAgentName(e.target.value)}
-              required
-            />
+        {/* Step 1: Agent & Client Details */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 border-b border-border/60 pb-2">
+            <Building className="h-4 w-4 text-gold" />
+            <h3 className="text-xs uppercase tracking-wider font-bold text-foreground">
+              1. Transaction &amp; Client Details
+            </h3>
           </div>
-          <div>
-            <Label htmlFor="cfirst">Client First Name *</Label>
-            <Input
-              id="cfirst"
-              value={clientFirst}
-              onChange={(e) => setClientFirst(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="clast">Client Last Name *</Label>
-            <Input
-              id="clast"
-              value={clientLast}
-              onChange={(e) => setClientLast(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="cdate">Closing Date *</Label>
-            <Input
-              id="cdate"
-              type="date"
-              value={closingDate}
-              onChange={(e) => setClosingDate(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="cloc">Closing Location *</Label>
-            <Select
-              value={closingLocation || undefined}
-              onValueChange={(v) => setClosingLocation(v as any)}
-            >
-              <SelectTrigger id="cloc">
-                <SelectValue placeholder="Select location" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="rolla">Rolla</SelectItem>
-                <SelectItem value="str">STR (St. Robert)</SelectItem>
-                <SelectItem value="osage_beach">Osage Beach</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="md:col-span-2">
-            <Label htmlFor="ccomments">Comments</Label>
-            <Textarea
-              id="ccomments"
-              value={comments}
-              onChange={(e) => setComments(e.target.value)}
-              placeholder="Anything the Client Care team should know? (optional)"
-              rows={3}
-            />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">
+              <Label htmlFor="agent" className="text-xs font-semibold">
+                Agent Name *
+              </Label>
+              <Input
+                id="agent"
+                value={agentName}
+                onChange={(e) => setAgentName(e.target.value)}
+                placeholder="e.g. Bryant Jenkins"
+                required
+                className="mt-1 bg-surface-2 border-border/80"
+              />
+            </div>
+            <div>
+              <Label htmlFor="cfirst" className="text-xs font-semibold">
+                Client First Name *
+              </Label>
+              <Input
+                id="cfirst"
+                value={clientFirst}
+                onChange={(e) => setClientFirst(e.target.value)}
+                placeholder="e.g. John"
+                required
+                className="mt-1 bg-surface-2 border-border/80"
+              />
+            </div>
+            <div>
+              <Label htmlFor="clast" className="text-xs font-semibold">
+                Client Last Name *
+              </Label>
+              <Input
+                id="clast"
+                value={clientLast}
+                onChange={(e) => setClientLast(e.target.value)}
+                placeholder="e.g. Smith"
+                required
+                className="mt-1 bg-surface-2 border-border/80"
+              />
+            </div>
+            <div>
+              <Label htmlFor="cdate" className="text-xs font-semibold">
+                Closing Date *
+              </Label>
+              <Input
+                id="cdate"
+                type="date"
+                value={closingDate}
+                onChange={(e) => setClosingDate(e.target.value)}
+                required
+                className="mt-1 bg-surface-2 border-border/80 font-mono"
+              />
+            </div>
+            <div>
+              <Label htmlFor="cloc" className="text-xs font-semibold">
+                Closing Office Location *
+              </Label>
+              <Select
+                value={closingLocation || undefined}
+                onValueChange={(v) => setClosingLocation(v as any)}
+              >
+                <SelectTrigger id="cloc" className="mt-1 bg-surface-2 border-border/80">
+                  <SelectValue placeholder="Select office" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="rolla">Rolla Office</SelectItem>
+                  <SelectItem value="str">St. Robert (STR)</SelectItem>
+                  <SelectItem value="osage_beach">Osage Beach (Lake)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="sm:col-span-2">
+              <Label htmlFor="ccomments" className="text-xs font-semibold">
+                Special Instructions / Notes
+              </Label>
+              <Textarea
+                id="ccomments"
+                value={comments}
+                onChange={(e) => setComments(e.target.value)}
+                placeholder="Closing gift pickup instructions, client preferences, or delivery notes (optional)"
+                rows={2}
+                className="mt-1 bg-surface-2 border-border/80 text-xs"
+              />
+            </div>
           </div>
         </div>
 
-        <div>
-          <Label className="block mb-2">How many shirts? *</Label>
-          <div className="inline-flex rounded-lg border border-border overflow-hidden">
-            {([1, 2, 3] as const).map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setCount(n)}
-                className={
-                  "px-5 py-2 text-sm font-medium border-r border-border last:border-r-0 transition-colors " +
-                  (shirtCount === n ? "bg-gold text-navy" : "bg-card hover:bg-accent/40")
-                }
+        {/* Step 2: Shirt Package */}
+        <div className="space-y-4 pt-2">
+          <div className="flex items-center justify-between border-b border-border/60 pb-2 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <Shirt className="h-4 w-4 text-gold" />
+              <h3 className="text-xs uppercase tracking-wider font-bold text-foreground">
+                2. Client Apparel Package Selection
+              </h3>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground font-medium">Quantity:</span>
+              <div className="inline-flex rounded-lg border border-border/80 bg-surface-2 p-0.5">
+                {([1, 2, 3] as const).map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setCount(n)}
+                    className={cn(
+                      "px-3 py-1 text-xs font-bold rounded-md transition-all",
+                      shirtCount === n
+                        ? "bg-gold text-navy shadow-2xs"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {n} Shirt{n > 1 ? "s" : ""}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3.5">
+            {shirts.map((shirt, idx) => (
+              <div
+                key={idx}
+                className="rounded-2xl border border-border/80 bg-surface-2/40 p-4 sm:p-5 space-y-3 shadow-2xs"
               >
-                {n}
-              </button>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="h-6 w-6 rounded-lg bg-gold/15 text-gold font-bold flex items-center justify-center text-xs border border-gold/30">
+                      #{idx + 1}
+                    </span>
+                    <span className="text-sm font-semibold text-foreground">
+                      Client Shirt #{idx + 1}
+                    </span>
+                  </div>
+                  {shirt.size && shirt.color && (
+                    <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      {shirt.size} · {shirt.color}
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                  <div>
+                    <Label className="mb-1.5 block text-xs font-semibold text-muted-foreground">
+                      Select Size
+                    </Label>
+                    <Select
+                      value={shirt.size || undefined}
+                      onValueChange={(v) => setShirtField(idx, "size", v)}
+                    >
+                      <SelectTrigger className="bg-surface-2 border-border/80">
+                        <SelectValue placeholder="Choose shirt size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SIZES.map((s) => {
+                          const inStock = sizeHasAnyStock(s);
+                          return (
+                            <SelectItem key={s} value={s} disabled={!inStock}>
+                              {s}
+                              {!inStock ? " (Out of stock)" : ""}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="mb-1.5 block text-xs font-semibold text-muted-foreground">
+                      Select In-Stock Color
+                    </Label>
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                      {colors.length === 0 && (
+                        <p className="text-xs text-muted-foreground py-2">Loading color options…</p>
+                      )}
+                      {colors.map(({ color, hex }) => {
+                        const qty = shirt.size ? availableQty(shirt.size, color) : 0;
+                        const disabled = !shirt.size || qty <= 0;
+                        const selected = shirt.color === color;
+                        return (
+                          <button
+                            type="button"
+                            key={color}
+                            disabled={disabled}
+                            onClick={() => setShirtField(idx, "color", color)}
+                            className={cn(
+                              "w-full flex items-center justify-between gap-2.5 px-3 py-2 rounded-xl border text-xs transition-all",
+                              selected
+                                ? "border-gold bg-gold/15 text-foreground shadow-xs font-semibold"
+                                : "border-border/60 bg-surface-2/60 text-muted-foreground hover:bg-surface-2 hover:text-foreground",
+                              disabled && "opacity-35 cursor-not-allowed hover:bg-surface-2/60",
+                            )}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="h-3.5 w-3.5 rounded-full border border-border shrink-0 shadow-2xs"
+                                style={{ backgroundColor: hex }}
+                              />
+                              <span>{color}</span>
+                            </div>
+                            <span className="font-mono text-[10px]">
+                              {shirt.size
+                                ? qty > 0
+                                  ? `${qty} left`
+                                  : "Out of stock"
+                                : "Select size first"}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         </div>
 
-        <div className="space-y-4">
-          {shirts.map((shirt, idx) => (
-            <div key={idx} className="rounded-xl border border-gold/20 bg-card p-4">
-              <div className="text-sm font-semibold text-gold mb-3">Shirt #{idx + 1}</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="mb-1 block">Size</Label>
-                  <Select
-                    value={shirt.size || undefined}
-                    onValueChange={(v) => setShirtField(idx, "size", v)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select size" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SIZES.map((s) => {
-                        const inStock = sizeHasAnyStock(s);
-                        return (
-                          <SelectItem key={s} value={s} disabled={!inStock}>
-                            {s}
-                            {!inStock ? " — out of stock" : ""}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="mb-1 block">Color</Label>
-                  <div className="space-y-2">
-                    {colors.length === 0 && (
-                      <p className="text-xs text-muted-foreground">Loading colors…</p>
-                    )}
-                    {colors.map(({ color, hex }) => {
-                      const qty = shirt.size ? availableQty(shirt.size, color) : 0;
-                      const disabled = !shirt.size || qty <= 0;
-                      const selected = shirt.color === color;
-                      return (
-                        <button
-                          type="button"
-                          key={color}
-                          disabled={disabled}
-                          onClick={() => setShirtField(idx, "color", color)}
-                          className={
-                            "w-full flex items-center gap-3 px-3 py-2 rounded-lg border text-sm transition-colors " +
-                            (selected
-                              ? "border-gold bg-gold/10"
-                              : "border-border bg-background hover:bg-accent/40") +
-                            (disabled ? " opacity-40 cursor-not-allowed" : "")
-                          }
-                        >
-                          <span
-                            className="h-5 w-5 rounded-full border border-border shrink-0"
-                            style={{ backgroundColor: hex }}
-                          />
-                          <span className="flex-1 text-left">{color}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {shirt.size ? (qty > 0 ? `${qty} avail` : "Out") : "Pick size"}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex items-center justify-between pt-4 border-t border-border">
-          <Button asChild variant="ghost">
+        {/* Action Footer */}
+        <div className="flex items-center justify-between pt-4 border-t border-border/60">
+          <Button asChild variant="ghost" className="text-xs">
             <Link to="/agents">
-              <ChevronLeft className="h-4 w-4 mr-1" /> Cancel
+              <ChevronLeft className="h-4 w-4 mr-1" /> Return to Hub
             </Link>
           </Button>
-          <Button type="submit" disabled={busy} className="bg-gold text-navy hover:bg-gold/90">
-            {busy ? "Submitting…" : "Submit Request"}
+          <Button
+            type="submit"
+            disabled={busy}
+            className="bg-gold text-navy font-semibold hover:bg-gold/90 px-6 h-10 shadow-xs"
+          >
+            {busy ? "Submitting…" : "Submit Gift Package"}
           </Button>
         </div>
       </form>
@@ -436,22 +533,55 @@ function ClosingGiftRequestPage() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background px-4 py-10 pt-[max(2rem,env(safe-area-inset-top))]">
-      <div className="max-w-2xl mx-auto">
-        <header className="text-center mb-8">
-          <img src={logo} alt="MSREG" className="h-20 w-auto mx-auto" />
-          <p className="text-[11px] uppercase tracking-[0.2em] text-gold/80 mt-3">
-            Closing Gift Request
-          </p>
-          <h1 className="text-2xl font-semibold mt-2 flex items-center justify-center gap-2">
-            <Gift className="h-6 w-6 text-gold" /> Request Closing Gift
+    <div className="relative min-h-screen bg-background text-foreground overflow-x-hidden selection:bg-gold/30 selection:text-white px-4 py-8 sm:py-12 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
+      {/* Ambient Top Spotlight Halo */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] sm:w-[900px] h-[350px] bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(196,90,44,0.12),transparent)] pointer-events-none -z-10" />
+
+      {/* Subtle Brand Watermark */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] pointer-events-none opacity-[0.03] -z-10 select-none">
+        <img
+          src={logo}
+          alt=""
+          className="w-full h-full object-contain filter grayscale contrast-200"
+        />
+      </div>
+
+      <div className="max-w-2xl mx-auto space-y-6 relative z-10">
+        {/* Nav Back */}
+        <div className="flex items-center justify-between">
+          <Link
+            to="/agents"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/80 bg-surface-2/70 hover:bg-surface-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-all shadow-2xs"
+          >
+            <ArrowLeft className="h-3.5 w-3.5 text-gold" />
+            <span>Agent Hub</span>
+          </Link>
+          <div className="text-[11px] font-mono text-muted-foreground">
+            Matt Smith Real Estate Group
+          </div>
+        </div>
+
+        {/* Header */}
+        <header className="text-center space-y-2">
+          <img src={logo} alt="MSREG" className="h-16 w-auto mx-auto drop-shadow-sm" />
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gold/15 border border-gold/30 text-gold text-[10px] font-bold uppercase tracking-wider">
+            <Gift className="h-3 w-3" /> Client Care Package
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            Request Client Closing Gift
           </h1>
+          <p className="text-xs text-muted-foreground max-w-md mx-auto">
+            Order branded shirts and delivery packages for your buyers and sellers at closing.
+          </p>
         </header>
-        <div className="rounded-2xl border border-gold/30 bg-card p-6 sm:p-8 shadow-lg">
+
+        {/* Main Card */}
+        <div className="rounded-3xl border border-border/80 bg-card/85 backdrop-blur-xl p-6 sm:p-8 shadow-2xl ring-1 ring-inset ring-white/[0.04]">
           {children}
         </div>
-        <footer className="mt-8 text-center text-[11px] text-muted-foreground">
-          © Matt Smith Real Estate Group
+
+        <footer className="text-center text-[11px] text-muted-foreground pt-2">
+          © Matt Smith Real Estate Group · Client Care Department
         </footer>
       </div>
     </div>

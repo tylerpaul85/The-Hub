@@ -59,11 +59,24 @@ export const listPublicListings = createServerFn({ method: "POST" })
     const ids = (listings ?? []).map((l: any) => l.id);
     let thumbs: Record<string, string> = {};
     if (ids.length) {
-      const { data: assets } = await sb
-        .from("toolbox_assets")
-        .select("listing_id,thumbnail_url,file_url,drive_url,asset_type,created_at")
-        .in("listing_id", ids)
-        .order("created_at", { ascending: true });
+      // Chunk ids into batches of 25 to prevent hitting the Supabase 1,000 row limit on assets
+      const CHUNK_SIZE = 25;
+      const batches: string[][] = [];
+      for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+        batches.push(ids.slice(i, i + CHUNK_SIZE));
+      }
+
+      const results = await Promise.all(
+        batches.map((batchIds) =>
+          sb
+            .from("toolbox_assets")
+            .select("listing_id,thumbnail_url,file_url,drive_url,asset_type,created_at")
+            .in("listing_id", batchIds)
+            .order("created_at", { ascending: true })
+        )
+      );
+
+      const assets = results.flatMap((r: any) => r.data ?? []);
 
       const toPreview = (url: string): string => {
         if (typeof url !== "string") return "";
@@ -149,6 +162,22 @@ export const listPublicEdu = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false });
     if (error) throw error;
     return { items: rows ?? [] };
+  });
+
+export const getPublicEdu = createServerFn({ method: "POST" })
+  .inputValidator((d: { token: string; id: string }) =>
+    z.object({ token: z.string().min(1).max(200), id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    assertToken(data.token);
+    const sb = await admin();
+    const { data: item, error } = await sb
+      .from("toolbox_educational")
+      .select("id,title,category,file_url,drive_url,caption,file_size,created_at")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error || !item) throw new Error("Educational content not found");
+    return { item };
   });
 
 export const listPublicOpenHouses = createServerFn({ method: "POST" })

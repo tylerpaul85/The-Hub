@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "@/hooks/use-auth";
 import { AgentAuthProvider } from "@/hooks/use-agent-auth";
+import { ThemeProvider } from "@/components/theme-provider";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import favicon from "@/assets/msreg-logo.png";
@@ -112,7 +113,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { name: "theme-color", content: "#0d1424" },
+      { name: "theme-color", content: "#0C0F17" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
@@ -151,7 +152,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..900&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..900&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap",
       },
       { rel: "stylesheet", href: appCss },
       { rel: "icon", type: "image/png", href: favicon },
@@ -169,6 +170,11 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="dark">
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("msreg-theme-preference")||"dark";var d=t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;r.classList.remove("dark","light");r.classList.add(d?"dark":"light");r.style.colorScheme=d?"dark":"light";}catch(e){}})()`,
+          }}
+        />
         <HeadContent />
       </head>
       <body>
@@ -200,13 +206,15 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AgentAuthProvider>
-          <Outlet />
-          <Toaster />
-          <IosInstallPrompt />
-        </AgentAuthProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AgentAuthProvider>
+            <Outlet />
+            <Toaster />
+            <IosInstallPrompt />
+          </AgentAuthProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

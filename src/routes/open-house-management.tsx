@@ -188,46 +188,60 @@ function Gate({ onUnlock }: { onUnlock: (token: string) => void }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background text-foreground">
-      <Card className="max-w-md w-full p-6 sm:p-8 space-y-6 text-center border-border shadow-2xl">
-        <img src={logo} alt="MSREG Logo" className="h-16 w-auto mx-auto" />
+    <div className="relative min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))] overflow-hidden selection:bg-gold/30 selection:text-white">
+      {/* Ambient Top Spotlight Halo */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[700px] sm:w-[900px] h-[350px] bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(196,90,44,0.16),transparent)] pointer-events-none -z-10" />
+
+      {/* Brand Emblem Watermark in Background */}
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] sm:w-[600px] h-[420px] sm:h-[600px] pointer-events-none opacity-[0.035] -z-10 select-none">
+        <img
+          src={logo}
+          alt=""
+          className="w-full h-full object-contain filter grayscale contrast-200"
+        />
+      </div>
+
+      <div className="max-w-md w-full p-7 sm:p-8 space-y-6 text-center border border-border/80 bg-surface-1/90 backdrop-blur-md rounded-3xl shadow-2xl ring-1 ring-inset ring-white/[0.05] relative z-10">
+        <img src={logo} alt="MSREG Logo" className="h-16 w-auto mx-auto drop-shadow-sm" />
         <div className="space-y-1">
-          <h1 className="text-xl font-serif font-bold">Open House Management</h1>
-          <p className="text-xs text-muted-foreground">
-            Enter the agent team passcode to access open house tools, live visitor sign-in, and checklists.
+          <h1 className="text-xl font-bold tracking-tight text-foreground">Open House Management</h1>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Enter the agent team passcode to access open house kiosks, visitor registration, and lead exports.
           </p>
         </div>
 
         <form onSubmit={submit} className="space-y-4">
-          <div className="space-y-1 text-left">
-            <Label className="text-xs font-semibold">Passcode</Label>
+          <div className="space-y-1.5 text-left">
+            <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <Lock className="h-3 w-3 text-gold" /> Team Passcode
+            </Label>
             <Input
               type="password"
               autoFocus
-              placeholder="Enter passcode"
+              placeholder="••••••••"
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className="text-center font-mono tracking-widest text-base h-11"
+              className="text-center font-mono tracking-widest text-lg h-12 rounded-xl bg-surface-2/90 border-border/80 focus-visible:ring-gold"
             />
           </div>
 
-          {err && <div className="text-xs text-rose-500 font-medium">{err}</div>}
+          {err && <div className="text-xs text-rose-400 font-medium">{err}</div>}
 
           <Button
             type="submit"
             disabled={busy || !code}
-            className="w-full bg-gold text-navy hover:bg-gold/90 font-bold h-11"
+            className="w-full bg-gold text-navy hover:bg-gold/90 font-bold h-12 rounded-xl shadow-md shadow-gold/20 active:scale-[0.985] transition-all cursor-pointer"
           >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "Unlock Open House Hub"}
+            {busy ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "Unlock Open House Portal"}
           </Button>
         </form>
 
-        <div className="pt-2 border-t border-border/60 text-[11px] text-muted-foreground">
-          <Link to="/agents" className="text-gold hover:underline">
-            &larr; Back to Agent Hub Home
+        <div className="pt-2 border-t border-border/60 text-xs text-muted-foreground">
+          <Link to="/agents" className="text-gold hover:underline inline-flex items-center gap-1 font-medium">
+            <ArrowLeft className="h-3 w-3" /> Back to Agent Hub
           </Link>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
@@ -301,9 +315,21 @@ function OpenHouseManagerMain({ token, onLock }: { token: string; onLock: () => 
   const archivedCount = openHouses.filter((oh) => oh.archived).length;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative min-h-screen bg-background overflow-x-hidden selection:bg-gold/30 selection:text-white">
+      {/* Ambient Top Spotlight Halo */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[700px] sm:w-[950px] h-[350px] bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(196,90,44,0.14),transparent)] pointer-events-none -z-10" />
+
+      {/* Subtle Brand Emblem Watermark in Background */}
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] sm:w-[650px] h-[420px] sm:h-[650px] pointer-events-none opacity-[0.03] -z-10 select-none">
+        <img
+          src={logo}
+          alt=""
+          className="w-full h-full object-contain filter grayscale contrast-200"
+        />
+      </div>
+
       {/* Sticky Header */}
-      <header className="sticky top-0 z-30 bg-sidebar/95 backdrop-blur border-b border-border pt-[max(0.5rem,env(safe-area-inset-top))]">
+      <header className="sticky top-0 z-30 bg-surface-1/90 backdrop-blur-md border-b border-border pt-[max(0.5rem,env(safe-area-inset-top))]">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <Link to="/agents" className="shrink-0 hover:opacity-80 transition-opacity">
@@ -474,15 +500,18 @@ function OpenHouseManagerMain({ token, onLock }: { token: string; onLock: () => 
               const isArchived = !!oh.archived;
 
               return (
-                <Card
+                <div
                   key={oh.id}
                   className={cn(
-                    "overflow-hidden flex flex-col border border-border/80 hover:border-gold/60 transition-all duration-300 shadow-sm bg-card group min-w-0 w-full",
+                    "group relative flex flex-col rounded-2xl border border-border/80 bg-surface-1/95 hover:bg-surface-1 hover:border-gold/50 shadow-sm hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.65),0_0_24px_-4px_rgba(196,90,44,0.22)] hover:-translate-y-1 active:scale-[0.985] transition-all duration-300 ring-1 ring-inset ring-white/[0.06] overflow-hidden min-w-0 w-full",
                     isArchived && "opacity-80"
                   )}
                 >
+                  {/* Top subtle ambient glow highlight */}
+                  <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 group-hover:via-gold/50 to-transparent transition-all duration-300 z-10" />
+
                   {/* Image Hero Banner */}
-                  <div className="aspect-[16/10] bg-muted relative overflow-hidden">
+                  <div className="aspect-[16/10] bg-surface-2 relative overflow-hidden">
                     {oh.thumbnail ? (
                       <img
                         src={oh.thumbnail}
@@ -493,37 +522,37 @@ function OpenHouseManagerMain({ token, onLock }: { token: string; onLock: () => 
                         )}
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground/40 bg-gradient-to-br from-muted/80 to-muted">
-                        <Home className="h-10 w-10" />
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground/40 bg-gradient-to-br from-surface-2 to-surface-1">
+                        <Home className="h-10 w-10 stroke-[1.5]" />
                       </div>
                     )}
 
-                    <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                      <Badge className="bg-background/90 text-foreground border border-border/60 text-xs backdrop-blur-sm shadow-sm font-medium">
+                    <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10">
+                      <Badge className="bg-surface-1/90 text-foreground border border-border/60 text-[10px] backdrop-blur-md shadow-2xs font-semibold px-2 py-0.5">
                         {oh.status === "upcoming" ? "Upcoming" : "Past"}
                       </Badge>
                       {isThisWeekend(oh.open_house_at) && !isArchived && (
-                        <Badge className="bg-gold text-navy font-bold text-xs shadow-sm">
+                        <Badge className="bg-gold text-navy font-bold text-[10px] shadow-2xs px-2 py-0.5">
                           This Weekend
                         </Badge>
                       )}
                     </div>
 
-                    <div className="absolute top-2.5 right-2.5 flex items-center gap-1">
+                    <div className="absolute top-2.5 right-2.5 flex items-center gap-1 z-10">
                       {signins > 0 && (
-                        <Badge className="bg-emerald-600 text-white font-semibold text-xs shadow-sm flex items-center gap-1">
+                        <Badge className="bg-emerald-600 text-white font-semibold text-[10px] shadow-2xs flex items-center gap-1 px-2 py-0.5">
                           <Users className="h-3 w-3" /> {signins} Lead{signins === 1 ? "" : "s"}
                         </Badge>
                       )}
                       {isArchived && (
-                        <Badge className="bg-navy/90 text-gold border border-gold/40 text-xs">
+                        <Badge className="bg-navy/90 text-gold border border-gold/40 text-[10px] px-2 py-0.5">
                           Archived
                         </Badge>
                       )}
                     </div>
 
                     {oh.open_house_at && (
-                      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2.5 pt-6 text-white text-xs flex items-center gap-1.5">
+                      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent p-2.5 pt-6 text-white text-xs flex items-center gap-1.5">
                         <Calendar className="h-3.5 w-3.5 text-gold shrink-0" />
                         <span className="font-medium truncate">{fmtDateTime(oh.open_house_at)}</span>
                       </div>
@@ -531,35 +560,35 @@ function OpenHouseManagerMain({ token, onLock }: { token: string; onLock: () => 
                   </div>
 
                   {/* Body Content */}
-                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                  <div className="p-4 sm:p-4.5 flex-1 flex flex-col justify-between space-y-3">
                     <div className="space-y-1">
-                      <h3 className="font-serif font-semibold text-lg text-foreground line-clamp-1 group-hover:text-gold transition-colors">
+                      <h3 className="font-semibold text-base sm:text-lg text-foreground line-clamp-1 group-hover:text-gold transition-colors leading-snug">
                         {oh.address}
                       </h3>
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <User className="h-3.5 w-3.5 text-gold/80 shrink-0" />
+                        <User className="h-3.5 w-3.5 text-gold shrink-0" />
                         <span className="truncate">{oh.agent_name || "Unassigned"}</span>
                       </div>
                     </div>
 
                     {/* Checklist progress tracker */}
-                    <div className="space-y-1 bg-muted/30 p-2.5 rounded-lg border border-border/50">
+                    <div className="space-y-1.5 bg-surface-2/60 p-2.5 rounded-xl border border-border/60">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground font-medium flex items-center gap-1">
+                        <span className="text-muted-foreground font-medium flex items-center gap-1.5 text-[11px]">
                           <ClipboardCheck className="h-3.5 w-3.5 text-gold" /> Process Checklist
                         </span>
-                        <span className="font-semibold text-foreground">
+                        <span className="font-semibold text-foreground text-[11px]">
                           {doneTasks}/{totalTasks} ({pct}%)
                         </span>
                       </div>
-                      <Progress value={pct} className="h-1.5" />
+                      <Progress value={pct} className="h-1.5 bg-surface-2" />
                     </div>
 
                     {/* Card Actions */}
-                    <div className="pt-2 flex items-center gap-2 border-t border-border/60">
+                    <div className="pt-2.5 flex items-center gap-2 border-t border-border/50">
                       <Button
                         onClick={() => setSelectedOHId(oh.id)}
-                        className="flex-1 bg-gold text-navy hover:bg-gold/90 font-semibold text-xs h-8"
+                        className="flex-1 bg-gold text-navy hover:bg-gold/90 font-bold text-xs h-9 rounded-xl shadow-2xs active:scale-[0.98]"
                       >
                         Manage Open House
                       </Button>
@@ -567,14 +596,14 @@ function OpenHouseManagerMain({ token, onLock }: { token: string; onLock: () => 
                         size="icon"
                         variant="outline"
                         onClick={() => setSelectedOHId(oh.id)}
-                        className="h-8 w-8 text-foreground hover:text-gold shrink-0"
+                        className="h-9 w-9 rounded-xl border-border bg-surface-2 text-foreground hover:text-gold hover:border-gold/40 shrink-0"
                         title="View QR Code & Placard"
                       >
-                        <QrIcon className="h-3.5 w-3.5" />
+                        <QrIcon className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
-                </Card>
+                </div>
               );
             })}
           </div>

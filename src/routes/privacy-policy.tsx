@@ -41,9 +41,21 @@ export function PrivacyPolicyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-gold/20 selection:text-gold pb-16">
+    <div className="relative min-h-screen bg-background text-foreground selection:bg-gold/30 selection:text-white pb-16 overflow-x-hidden">
+      {/* Ambient Top Spotlight Halo */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[700px] sm:w-[950px] h-[350px] bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(196,90,44,0.14),transparent)] pointer-events-none -z-10" />
+
+      {/* Subtle Brand Emblem Watermark in Background */}
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] sm:w-[650px] h-[420px] sm:h-[650px] pointer-events-none opacity-[0.03] -z-10 select-none">
+        <img
+          src={logo}
+          alt=""
+          className="w-full h-full object-contain filter grayscale contrast-200"
+        />
+      </div>
+
       {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-30 border-b border-border/40 bg-background/85 backdrop-blur-md">
+      <header className="sticky top-0 z-30 border-b border-border/40 bg-surface-1/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
           <Link to="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
             <img src={logo} alt="MSREG Logo" className="h-8 w-auto" />

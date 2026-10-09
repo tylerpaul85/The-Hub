@@ -14,7 +14,6 @@ import {
   Edit3,
   ArrowLeft,
   Check,
-  Lock,
   Building,
   Phone,
   Mail,
@@ -22,6 +21,12 @@ import {
   DollarSign,
   AlertCircle,
   FileText,
+  Search,
+  Eye,
+  SlidersHorizontal,
+  FileSpreadsheet,
+  Calendar,
+  Percent,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAgentAuth, isValidAgentEmail, type AgentAccount } from "@/hooks/use-agent-auth";
@@ -38,7 +43,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ToolCanvas } from "@/components/tool-canvas";
+import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
 import { generateSellerNetPdf } from "@/lib/generate-seller-net-pdf";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/seller-net-proceeds")({
   ssr: false,
@@ -162,9 +171,9 @@ function SellerNetProceedsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
+      <div className="min-h-screen bg-bg text-foreground flex items-center justify-center p-4">
         <div className="text-center space-y-3">
-          <Calculator className="h-8 w-8 animate-bounce text-gold mx-auto" />
+          <Calculator className="h-8 w-8 animate-pulse text-accent mx-auto" />
           <p className="text-sm text-muted-foreground">Loading Seller Net Proceeds...</p>
         </div>
       </div>
@@ -176,36 +185,48 @@ function SellerNetProceedsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      {/* Top Navy/Gold Agent Header */}
-      <header className="bg-card border-b border-border px-4 py-3 sm:px-6 shadow-md print:hidden pt-[max(0.75rem,env(safe-area-inset-top,0px))]">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+    <div className="relative min-h-screen bg-bg text-foreground flex flex-col antialiased overflow-x-hidden selection:bg-gold/30 selection:text-white">
+      {/* Ambient Top Spotlight Halo */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[700px] sm:w-[950px] h-[350px] bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(196,90,44,0.14),transparent)] pointer-events-none -z-10" />
+
+      {/* Subtle Brand Emblem Watermark in Background */}
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] sm:w-[650px] h-[420px] sm:h-[650px] pointer-events-none opacity-[0.03] -z-10 select-none">
+        <img
+          src={logo}
+          alt=""
+          className="w-full h-full object-contain filter grayscale contrast-200"
+        />
+      </div>
+
+      {/* Top Header */}
+      <header className="bg-surface-1/90 backdrop-blur-md border-b border-border px-4 py-3 sm:px-6 shadow-2xs print:hidden">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
             <Link
               to="/agents"
-              className="flex items-center gap-2 text-xs font-semibold text-gold hover:underline"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline"
             >
-              <ArrowLeft className="h-4 w-4" /> Agent Hub
+              <ArrowLeft className="h-3.5 w-3.5" /> Agent Portal
             </Link>
             <div className="h-4 w-px bg-border hidden sm:block" />
             <div className="flex items-center gap-2">
               <img src={logo} alt="MSREG Logo" className="h-7 w-auto" />
-              <span className="text-xs uppercase tracking-widest text-gold font-bold">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
                 Seller Net Proceeds
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-            <div className="text-xs text-muted-foreground">
-              Agent: <span className="font-semibold text-white">{agent.full_name}</span>{" "}
-              <span className="text-muted-foreground/80">({agent.email})</span>
+            <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <span>Agent:</span>
+              <span className="font-semibold text-foreground">{agent.full_name}</span>
             </div>
             <Button
               size="sm"
               variant="outline"
               onClick={signOutAgent}
-              className="text-xs border-gold/40 text-gold hover:bg-gold hover:text-navy h-8 transition-colors duration-200"
+              className="text-xs border-border hover:bg-surface-2 text-muted-foreground hover:text-foreground h-8"
             >
               <LogOut className="h-3.5 w-3.5 mr-1" /> Sign Out
             </Button>
@@ -214,7 +235,7 @@ function SellerNetProceedsPage() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
         {activeTab === "dashboard" ? (
           <DashboardView
             agent={agent}
@@ -236,8 +257,8 @@ function SellerNetProceedsPage() {
         )}
       </main>
 
-      <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-800 print:hidden">
-        © Matt Smith Real Estate Group / eXp Realty
+      <footer className="py-4 text-center text-xs text-muted-foreground border-t border-border print:hidden">
+        © Matt Smith Real Estate Group · eXp Realty
       </footer>
     </div>
   );
@@ -248,29 +269,35 @@ function SellerNetProceedsPage() {
 /* -------------------------------------------------------------------------- */
 
 function AgentAuthView() {
-  const { signUpAgent, signInAgent, resetAgentPassword } = useAgentAuth();
+  const { signInAgent, signUpAgent, resetAgentPassword } = useAgentAuth();
   const [authTab, setAuthTab] = useState<"signin" | "signup" | "reset">("signin");
   const [busy, setBusy] = useState(false);
 
-  // Sign In Form State
+  // Sign in state
   const [signInEmail, setSignInEmail] = useState("");
   const [signInPassword, setSignInPassword] = useState("");
 
-  // Sign Up Form State
+  // Sign up state
   const [signUpName, setSignUpName] = useState("");
-  const [signUpPhone, setSignUpPhone] = useState("");
   const [signUpEmail, setSignUpEmail] = useState("");
+  const [signUpPhone, setSignUpPhone] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
 
-  // Reset Password Form State
+  // Reset state
   const [resetEmail, setResetEmail] = useState("");
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidAgentEmail(signInEmail)) {
+      toast.error("Please enter a valid @mattsmithrealestategroup.com email");
+      return;
+    }
     setBusy(true);
     try {
       await signInAgent(signInEmail, signInPassword);
-    } catch {
+      toast.success("Welcome back!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to sign in");
     } finally {
       setBusy(false);
     }
@@ -278,122 +305,109 @@ function AgentAuthView() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidAgentEmail(signUpEmail)) {
+      toast.error("Must use @mattsmithrealestategroup.com email");
+      return;
+    }
+    if (signUpPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
     setBusy(true);
     try {
       await signUpAgent(signUpEmail, signUpPassword, signUpName, signUpPhone);
-    } catch {
+      toast.success("Account created! You are now signed in.");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create account");
     } finally {
       setBusy(false);
     }
   };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
+  const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidAgentEmail(resetEmail)) {
+      toast.error("Must use @mattsmithrealestategroup.com email");
+      return;
+    }
     setBusy(true);
     try {
       await resetAgentPassword(resetEmail);
+      toast.success("Password reset instructions sent to your email!");
       setAuthTab("signin");
-    } catch {
+    } catch (err: any) {
+      toast.error(err.message || "Failed to send reset email");
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="relative min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4 pt-[max(2rem,env(safe-area-inset-top))] overflow-hidden before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top_right,oklch(0.20_0.08_85_/_0.08),transparent_45%)] after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_bottom_left,oklch(0.18_0.05_260_/_0.2),transparent_60%)]">
+    <div className="relative min-h-screen bg-bg flex flex-col justify-center items-center px-4 py-8 overflow-hidden selection:bg-gold/30 selection:text-white">
+      {/* Ambient Top Spotlight Halo */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[650px] sm:w-[850px] h-[350px] bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(196,90,44,0.16),transparent)] pointer-events-none -z-10" />
+
+      {/* Subtle Brand Emblem Watermark in Background */}
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] sm:w-[550px] h-[380px] sm:h-[550px] pointer-events-none opacity-[0.035] -z-10 select-none">
+        <img
+          src={logo}
+          alt=""
+          className="w-full h-full object-contain filter grayscale contrast-200"
+        />
+      </div>
+
       <div className="relative z-10 w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <Link
-            to="/agents"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gold hover:underline mb-2"
-          >
-            <ArrowLeft className="h-4 w-4" /> Back to Agent Hub
-          </Link>
-          <img src={logo} alt="Matt Smith Real Estate Group" className="h-20 w-auto mx-auto" />
-          <div className="text-[11px] uppercase tracking-[0.2em] text-gold font-semibold">
-            Agent Account Access
-          </div>
-          <h1 className="text-2xl font-semibold text-white">Seller Net Proceeds Tool</h1>
+          <img src={logo} alt="MSREG" className="h-16 w-auto mx-auto drop-shadow-sm" />
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Seller Net Proceeds
+          </h1>
           <p className="text-xs text-muted-foreground">
-            Sign in or create your agent account to save and manage net sheets.
+            Sign in with your MSREG agent account to create and manage net sheets.
           </p>
         </div>
 
-        {/* Required Email Domain Restriction Notice */}
-        <div className="rounded-lg border border-gold/30 bg-gold/5 p-3.5 flex items-start gap-3 text-xs">
-          <AlertCircle className="h-5 w-5 text-gold shrink-0 mt-0.5" />
-          <div>
-            <div className="font-semibold text-gold">Agent Domain Restriction</div>
-            <p className="text-muted-foreground mt-0.5">
-              Accounts are limited to{" "}
-              <span className="font-bold text-white">@mattsmithrealestategroup.com</span> email
-              addresses.
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-card/75 border border-border/80 rounded-xl p-6 shadow-2xl backdrop-blur-md relative z-10">
+        <div className="bg-surface-1/95 border border-border/80 rounded-2xl p-6 sm:p-7 shadow-2xl backdrop-blur-md ring-1 ring-inset ring-white/[0.06]">
           {authTab === "reset" ? (
-            <form onSubmit={handleResetPassword} className="space-y-4">
-              <h2 className="text-base font-semibold text-[#C9A84C]">Reset Agent Password</h2>
-              <p className="text-xs text-slate-300">
-                Enter your @mattsmithrealestategroup.com email address to receive password reset
-                instructions.
-              </p>
-              <div className="space-y-1.5">
-                <Label htmlFor="reset-email" className="text-xs text-slate-300">
-                  Agent Email
+            <form onSubmit={handleReset} className="space-y-4">
+              <div className="space-y-1">
+                <Label htmlFor="reset-email" className="text-xs text-muted-foreground">
+                  Your MSREG Email
                 </Label>
                 <Input
                   id="reset-email"
                   type="email"
-                  placeholder="agent@mattsmithrealestategroup.com"
+                  placeholder="name@mattsmithrealestategroup.com"
                   value={resetEmail}
                   onChange={(e) => setResetEmail(e.target.value)}
-                  className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
+                  className="bg-surface-2 border-border"
                   required
                 />
               </div>
-              <div className="flex items-center gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setAuthTab("signin")}
-                  className="flex-1 text-xs border-slate-700 text-slate-300"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={busy}
-                  className="flex-1 bg-[#C9A84C] text-[#1B2F5B] hover:bg-[#C9A84C]/90 font-bold text-xs"
-                >
-                  {busy ? "Sending..." : "Send Reset Email"}
-                </Button>
-              </div>
+              <Button type="submit" disabled={busy} className="w-full bg-accent text-white hover:bg-accent/90 text-xs h-10">
+                {busy ? "Sending..." : "Send Reset Link"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setAuthTab("signin")}
+                className="w-full text-xs text-muted-foreground"
+              >
+                Back to Sign In
+              </Button>
             </form>
           ) : (
             <Tabs value={authTab} onValueChange={(v) => setAuthTab(v as any)}>
-              <TabsList className="grid grid-cols-2 bg-background mb-5 p-1 border border-border rounded-lg">
-                <TabsTrigger
-                  value="signin"
-                  className="text-xs data-[state=active]:bg-gold data-[state=active]:text-navy font-semibold rounded-md transition-colors duration-200"
-                >
-                  <LogIn className="h-3.5 w-3.5 mr-1.5" /> Sign In
-                </TabsTrigger>
-                <TabsTrigger
-                  value="signup"
-                  className="text-xs data-[state=active]:bg-gold data-[state=active]:text-navy font-semibold rounded-md transition-colors duration-200"
-                >
-                  <UserPlus className="h-3.5 w-3.5 mr-1.5" /> Create Account
-                </TabsTrigger>
+              <TabsList className="grid grid-cols-2 bg-surface-2 p-1 mb-5">
+                <TabsTrigger value="signin" className="text-xs">Sign In</TabsTrigger>
+                <TabsTrigger value="signup" className="text-xs">Create Account</TabsTrigger>
               </TabsList>
 
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <Label htmlFor="signin-email" className="text-xs text-muted-foreground">
-                      Agent Email
+                      Email
                     </Label>
                     <Input
                       id="signin-email"
@@ -401,11 +415,11 @@ function AgentAuthView() {
                       placeholder="name@mattsmithrealestategroup.com"
                       value={signInEmail}
                       onChange={(e) => setSignInEmail(e.target.value)}
-                      className="bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-gold"
+                      className="bg-surface-2 border-border"
                       required
                     />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="signin-pass" className="text-xs text-muted-foreground">
                         Password
@@ -413,7 +427,7 @@ function AgentAuthView() {
                       <button
                         type="button"
                         onClick={() => setAuthTab("reset")}
-                        className="text-[11px] text-gold hover:underline cursor-pointer"
+                        className="text-[11px] text-accent hover:underline cursor-pointer"
                       >
                         Forgot password?
                       </button>
@@ -424,7 +438,7 @@ function AgentAuthView() {
                       placeholder="••••••••"
                       value={signInPassword}
                       onChange={(e) => setSignInPassword(e.target.value)}
-                      className="bg-background border-border text-foreground focus-visible:ring-gold"
+                      className="bg-surface-2 border-border"
                       required
                     />
                   </div>
@@ -432,9 +446,9 @@ function AgentAuthView() {
                   <Button
                     type="submit"
                     disabled={busy}
-                    className="w-full bg-gold text-navy hover:bg-gold/90 font-semibold text-xs py-2.5 h-10 transition-colors duration-200"
+                    className="w-full bg-accent text-white hover:bg-accent/90 text-xs h-10 font-semibold shadow-xs"
                   >
-                    {busy ? "Signing in..." : "Sign In to Agent Hub"}
+                    {busy ? "Signing in..." : "Sign In"}
                   </Button>
                 </form>
               </TabsContent>
@@ -450,7 +464,7 @@ function AgentAuthView() {
                       placeholder="Jane Smith"
                       value={signUpName}
                       onChange={(e) => setSignUpName(e.target.value)}
-                      className="bg-background border-border text-foreground focus-visible:ring-gold"
+                      className="bg-surface-2 border-border"
                       required
                     />
                   </div>
@@ -463,15 +477,12 @@ function AgentAuthView() {
                       placeholder="(573) 555-0199"
                       value={signUpPhone}
                       onChange={(e) => setSignUpPhone(e.target.value)}
-                      className="bg-background border-border text-foreground focus-visible:ring-gold"
+                      className="bg-surface-2 border-border"
                     />
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="signup-email" className="text-xs text-muted-foreground">
-                      MSREG Email{" "}
-                      <span className="text-gold font-semibold">
-                        (@mattsmithrealestategroup.com)
-                      </span>
+                      MSREG Email
                     </Label>
                     <Input
                       id="signup-email"
@@ -479,7 +490,7 @@ function AgentAuthView() {
                       placeholder="name@mattsmithrealestategroup.com"
                       value={signUpEmail}
                       onChange={(e) => setSignUpEmail(e.target.value)}
-                      className="bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-gold"
+                      className="bg-surface-2 border-border"
                       required
                     />
                   </div>
@@ -493,7 +504,7 @@ function AgentAuthView() {
                       placeholder="Minimum 6 characters"
                       value={signUpPassword}
                       onChange={(e) => setSignUpPassword(e.target.value)}
-                      className="bg-background border-border text-foreground focus-visible:ring-gold"
+                      className="bg-surface-2 border-border"
                       minLength={6}
                       required
                     />
@@ -502,9 +513,9 @@ function AgentAuthView() {
                   <Button
                     type="submit"
                     disabled={busy}
-                    className="w-full bg-gold text-navy hover:bg-gold/90 font-semibold text-xs py-2.5 mt-2 h-10 transition-colors duration-200"
+                    className="w-full bg-accent text-white hover:bg-accent/90 text-xs h-10 font-semibold shadow-xs mt-2"
                   >
-                    {busy ? "Creating Account..." : "Create Agent Account"}
+                    {busy ? "Creating Account..." : "Create Account"}
                   </Button>
                 </form>
               </TabsContent>
@@ -532,6 +543,7 @@ function DashboardView({
   const qc = useQueryClient();
   const { sellerSupabase } = useAgentAuth();
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const { data: sheets = [], isLoading } = useQuery({
     queryKey: ["agent-net-sheets", agent.id],
@@ -560,135 +572,168 @@ function DashboardView({
     onError: (e: any) => toast.error(e.message || "Failed to delete"),
   });
 
+  const filteredSheets = useMemo(() => {
+    if (!search.trim()) return sheets;
+    const q = search.toLowerCase();
+    return sheets.filter((s) => s.property_address.toLowerCase().includes(q));
+  }, [sheets, search]);
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card border border-border rounded-xl p-4 sm:p-6 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-white flex items-center gap-2">
-            <FileText className="h-6 w-6 text-gold" /> Saved Seller Net Sheets
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <FileSpreadsheet className="h-6 w-6 text-accent" />
+            Saved Seller Net Sheets
           </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Access and manage all saved estimated net proceeds worksheets tied to your agent
-            account.
+          <p className="text-xs text-muted-foreground mt-1">
+            Access and manage saved estimated net proceeds worksheets for your listing presentations.
           </p>
         </div>
         <Button
           onClick={onOpenNew}
-          className="bg-gold text-navy hover:bg-gold/90 font-semibold text-xs py-2.5 px-4 shadow-md shrink-0 h-10 transition-colors duration-200"
+          className="bg-accent text-white hover:bg-accent/90 text-xs font-semibold h-9.5 px-4 shadow-xs shrink-0"
         >
           <Plus className="h-4 w-4 mr-1.5" /> New Net Sheet
         </Button>
       </div>
 
-      {isLoading ? (
-        <div className="text-center py-12 text-muted-foreground text-sm">
-          Loading saved sheets...
-        </div>
-      ) : sheets.length === 0 ? (
-        <div className="bg-card/45 border border-border rounded-xl p-8 text-center space-y-4 shadow-sm">
-          <Calculator className="h-12 w-12 text-gold/30 mx-auto" />
-          <h3 className="text-base font-semibold text-white">No saved net sheets yet</h3>
-          <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
-            Click "New Net Sheet" above to calculate seller net proceeds with up to 3 price
-            scenarios and save it to your account.
-          </p>
-          <Button
-            onClick={onOpenNew}
-            size="sm"
-            className="bg-gold text-navy hover:bg-gold/90 font-semibold text-xs h-9 transition-colors"
-          >
-            <Plus className="h-4 w-4 mr-1" /> Create First Net Sheet
-          </Button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {sheets.map((sheet) => {
-            const data = sheet.sheet_data;
-            const createdDate = new Date(sheet.created_at).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            });
-
-            const p1 = data.scenario1_price ?? 0;
-            const p2 = data.num_scenarios >= 2 ? data.scenario2_price : null;
-            const p3 = data.num_scenarios >= 3 ? data.scenario3_price : null;
-
-            return (
-              <div
-                key={sheet.id}
-                className="bg-card border border-border hover:border-gold/40 rounded-xl p-4 space-y-4 transition-all duration-300 shadow-sm flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-white text-sm leading-tight truncate">
-                      {sheet.property_address || "Untitled Property"}
-                    </h3>
-                    <span className="text-[10px] font-semibold bg-gold/10 text-gold px-2 py-0.5 rounded border border-gold/20 shrink-0">
-                      {createdDate}
-                    </span>
-                  </div>
-
-                  <div className="mt-3 text-xs text-muted-foreground space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground/80">
-                        Scenarios ({data.num_scenarios}):
-                      </span>
-                      <span className="font-semibold text-gold">
-                        {formatCurrency(p1)}
-                        {p2 !== null && ` / ${formatCurrency(p2)}`}
-                        {p3 !== null && ` / ${formatCurrency(p3)}`}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onEditSheet(sheet)}
-                    className="text-xs border-border text-foreground hover:bg-gold hover:text-navy hover:border-gold transition-colors duration-200 h-8"
-                  >
-                    <Edit3 className="h-3.5 w-3.5 mr-1" /> Open / Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setDeleteId(sheet.id)}
-                    className="text-xs text-rose-400 hover:bg-rose-950/30 hover:text-rose-300 h-8"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
+      {sheets.length > 0 && (
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by property address..."
+            className="pl-9 h-9 text-xs bg-surface-1 border-border"
+          />
         </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
-        <DialogContent className="bg-slate-900 border-slate-800 text-white">
+      {isLoading ? (
+        <div className="text-center py-12 text-muted-foreground text-xs">
+          Loading saved sheets...
+        </div>
+      ) : filteredSheets.length === 0 ? (
+        search.trim() ? (
+          <div className="text-center py-12 text-muted-foreground text-xs">
+            No net sheets matching "{search}".
+          </div>
+        ) : (
+          <EmptyState
+            icon={Calculator}
+            title="No saved net sheets yet"
+            description="Create your first seller net proceeds estimate with up to 3 price scenarios for listing appointments."
+            action={{
+              label: "Create First Net Sheet",
+              onClick: onOpenNew,
+            }}
+          />
+        )
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredSheets.map((sheet) => (
+            <div
+              key={sheet.id}
+              className="group rounded-xl border border-border bg-surface-1 p-5 shadow-xs hover:shadow-sm hover:border-accent/40 transition-all flex flex-col justify-between"
+            >
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="p-2 rounded-lg bg-surface-2 border border-border text-foreground">
+                      <MapPin className="h-4 w-4 text-accent" />
+                    </span>
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-surface-2 text-muted-foreground border border-border">
+                      {sheet.num_scenarios} {sheet.num_scenarios === 1 ? "Scenario" : "Scenarios"}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground line-clamp-1 group-hover:text-accent transition-colors">
+                    {sheet.property_address}
+                  </h3>
+                  <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
+                    <Calendar className="h-3 w-3" />
+                    <span>Created {new Date(sheet.created_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+
+                {sheet.sheet_data && (
+                  <div className="pt-2 border-t border-border/60 grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <div className="text-[10px] text-muted-foreground uppercase font-semibold">List Price</div>
+                      <div className="font-mono font-medium text-foreground">
+                        {formatCurrency(sheet.sheet_data.scenario1_price)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-muted-foreground uppercase font-semibold">Estimated Taxes</div>
+                      <div className="font-mono text-muted-foreground">
+                        {formatCurrency(sheet.sheet_data.estimated_taxes || 0)}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between gap-2 pt-4 mt-4 border-t border-border/60">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onEditSheet(sheet)}
+                  className="text-xs h-8 flex-1"
+                >
+                  <Edit3 className="h-3.5 w-3.5 mr-1" /> Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    const toastId = toast.loading("Generating PDF...");
+                    try {
+                      await generateSellerNetPdf(sheet.sheet_data);
+                      toast.success("PDF Downloaded!", { id: toastId });
+                    } catch (e: any) {
+                      toast.error("Failed to generate PDF", { id: toastId });
+                    }
+                  }}
+                  className="text-xs h-8 px-2.5"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setDeleteId(sheet.id)}
+                  className="text-xs h-8 px-2.5 text-muted-foreground hover:text-red-500"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <DialogContent className="max-w-md bg-surface-1 border-border">
           <DialogHeader>
-            <DialogTitle>Delete Seller Net Sheet?</DialogTitle>
-            <DialogDescription className="text-slate-400 text-xs">
-              This action cannot be undone. This sheet will be permanently removed from your agent
-              account.
+            <DialogTitle>Delete Seller Net Sheet</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Are you sure you want to permanently delete this net sheet? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setDeleteId(null)}
-              className="text-xs border-slate-700 text-slate-300"
-            >
+            <Button variant="outline" size="sm" onClick={() => setDeleteId(null)}>
               Cancel
             </Button>
             <Button
+              size="sm"
               disabled={deleteMutation.isPending}
               onClick={() => deleteId && deleteMutation.mutate(deleteId)}
-              className="bg-rose-600 text-white hover:bg-rose-700 text-xs font-bold"
+              className="bg-red-600 text-white hover:bg-red-700 text-xs font-semibold"
             >
               {deleteMutation.isPending ? "Deleting..." : "Delete Permanently"}
             </Button>
@@ -715,6 +760,7 @@ function CalculatorView({
   const qc = useQueryClient();
   const { sellerSupabase } = useAgentAuth();
   const printRef = useRef<HTMLDivElement>(null);
+  const [mobileTab, setMobileTab] = useState<"edit" | "preview">("edit");
 
   // Initialize sheet data
   const [data, setData] = useState<SheetData>(() => {
@@ -802,7 +848,7 @@ function CalculatorView({
     setData((prev) => {
       const next = { ...prev, [`${fieldKey}_${scenarioIndex}`]: value };
       if (scenarioIndex === 1) {
-        next[fieldKey] = value; // keep legacy key in sync for backwards compatibility
+        next[fieldKey] = value;
       }
       return next;
     });
@@ -868,28 +914,6 @@ function CalculatorView({
     const priceUnder50k = activeCalcs.some((c) => c.salesPrice > 0 && c.salesPrice <= 50000);
     return priceUnder50k || data.listing_comm_type === "flat" || data.selling_comm_type === "flat";
   }, [activeCalcs, data.listing_comm_type, data.selling_comm_type]);
-
-  const allProceedsNegative = activeCalcs.every((c) => c.cashToSeller < 0);
-  const allProceedsPositive = activeCalcs.every((c) => c.cashToSeller >= 0);
-
-  const rowProceedsClasses = allProceedsNegative
-    ? "bg-red-950/40 print:bg-red-100 font-extrabold border-t-2 border-red-500/50 text-red-400 print:text-red-900 text-sm"
-    : allProceedsPositive
-    ? "bg-emerald-950/40 print:bg-emerald-100 font-extrabold border-t-2 border-emerald-500/50 text-emerald-400 print:text-emerald-900 text-sm"
-    : "bg-sidebar/50 print:bg-slate-100 font-extrabold border-t-2 border-border print:border-slate-300 text-foreground print:text-black text-sm";
-
-  const labelProceedsClasses = allProceedsNegative
-    ? "p-3.5 uppercase tracking-wider text-red-400 print:text-red-900"
-    : allProceedsPositive
-    ? "p-3.5 uppercase tracking-wider text-emerald-400 print:text-emerald-900"
-    : "p-3.5 uppercase tracking-wider text-muted-foreground print:text-slate-700";
-
-  const getProceedsCellClasses = (cash: number) => {
-    if (cash < 0) {
-      return "p-3.5 text-center font-mono text-base border-l border-red-800/60 print:border-red-300 bg-red-500/10 print:bg-red-200 text-red-400 print:text-red-900";
-    }
-    return "p-3.5 text-center font-mono text-base border-l border-emerald-800/60 print:border-emerald-300 bg-emerald-500/10 print:bg-emerald-200 text-emerald-400 print:text-emerald-900";
-  };
 
   // Save mutation
   const saveMutation = useMutation({
@@ -986,678 +1010,640 @@ function CalculatorView({
   return (
     <div className="space-y-6">
       {/* Top Action Controls Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-card border border-border p-3 sm:p-4 rounded-xl print:hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-surface-1 border border-border p-3.5 rounded-xl shadow-2xs print:hidden">
         <Button
           size="sm"
           variant="outline"
           onClick={onBackToDashboard}
-          className="text-xs border-border text-foreground hover:bg-card"
+          className="text-xs border-border hover:bg-surface-2 text-foreground"
         >
-          <ArrowLeft className="h-4 w-4 mr-1" /> Back to Saved Sheets
+          <ArrowLeft className="h-4 w-4 mr-1.5" /> Back to Saved Sheets
         </Button>
+
+        {/* Mobile View Toggle */}
+        <div className="lg:hidden flex items-center rounded-lg border border-border bg-surface-2 p-0.5 text-xs">
+          <button
+            type="button"
+            onClick={() => setMobileTab("edit")}
+            className={cn(
+              "px-3 py-1 rounded-md transition-colors font-medium flex items-center gap-1.5",
+              mobileTab === "edit" ? "bg-surface-1 text-foreground shadow-2xs font-semibold" : "text-muted-foreground",
+            )}
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" /> Inputs
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("preview")}
+            className={cn(
+              "px-3 py-1 rounded-md transition-colors font-medium flex items-center gap-1.5",
+              mobileTab === "preview" ? "bg-surface-1 text-foreground shadow-2xs font-semibold" : "text-muted-foreground",
+            )}
+          >
+            <Eye className="h-3.5 w-3.5" /> Client Preview
+          </button>
+        </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
             variant="outline"
             onClick={handleResetDefaults}
-            className="text-xs border-border text-foreground hover:bg-card"
+            className="text-xs border-border hover:bg-surface-2 text-muted-foreground hover:text-foreground"
           >
-            <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset Defaults
+            <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset
           </Button>
           <Button
             size="sm"
             variant="outline"
             onClick={handlePrintPdf}
-            className="text-xs border-gold/40 text-gold hover:bg-gold hover:text-navy transition-colors duration-200"
+            className="text-xs border-border hover:bg-surface-2 text-foreground"
           >
-            <Download className="h-3.5 w-3.5 mr-1" /> Download PDF / Print
+            <Download className="h-3.5 w-3.5 mr-1 text-accent" /> Export PDF
           </Button>
           <Button
             size="sm"
             onClick={() => saveMutation.mutate()}
             disabled={saveMutation.isPending}
-            className="bg-gold text-navy hover:bg-gold/90 font-semibold text-xs transition-colors h-9"
+            className="bg-accent text-white hover:bg-accent/90 font-semibold text-xs h-9 px-4 shadow-xs"
           >
-            <Save className="h-3.5 w-3.5 mr-1" />{" "}
+            <Save className="h-3.5 w-3.5 mr-1.5" />
             {saveMutation.isPending ? "Saving..." : "Save Sheet"}
           </Button>
         </div>
       </div>
 
-      {/* Screenshot-Ready / Printable Worksheet Container */}
-      <div
-        ref={printRef}
-        className="bg-card border border-border rounded-xl p-4 sm:p-8 space-y-6 print:bg-white print:text-black print:p-0 print:border-none print:shadow-none"
-      >
-        {/* Worksheet Header: Logos & Office Info */}
-        <div className="border-b border-gold/30 pb-6 space-y-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <img src={logo} alt="Matt Smith Real Estate Group" className="h-16 sm:h-20 w-auto" />
-              <div className="border-l border-border print:border-slate-300 pl-3">
-                <div className="text-xs uppercase tracking-widest text-gold font-bold">
-                  eXp Realty
-                </div>
-                <div className="text-base sm:text-lg font-semibold text-white print:text-black tracking-tight">
-                  SELLER ESTIMATED NET PROCEEDS
-                </div>
+      {/* Two Column Layout on Desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column: Input Parameter Form */}
+        <div
+          className={cn(
+            "lg:col-span-5 space-y-4",
+            mobileTab === "preview" ? "hidden lg:block" : "block",
+          )}
+        >
+          {/* Section 1: Property & Scenarios */}
+          <div className="bg-surface-1 border border-border rounded-xl p-4 sm:p-5 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-accent" />
+                Property & Scenarios
+              </h2>
+              {/* Scenarios count toggle */}
+              <div className="flex items-center gap-1 bg-surface-2 p-0.5 rounded-lg border border-border text-xs">
+                {([1, 2, 3] as const).map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => updateField("num_scenarios", n)}
+                    className={cn(
+                      "px-2.5 py-0.5 rounded-md font-medium text-xs transition-colors",
+                      data.num_scenarios === n
+                        ? "bg-accent text-white font-semibold shadow-2xs"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {n} {n === 1 ? "Price" : "Prices"}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Scenario Selection Toggle (Hidden in print) */}
-            <div className="flex items-center gap-2 bg-background print:hidden p-1.5 rounded-lg border border-border">
-              <span className="text-xs text-muted-foreground font-medium px-2">Scenarios:</span>
-              {([1, 2, 3] as const).map((n) => (
-                <button
-                  key={n}
-                  onClick={() => updateField("num_scenarios", n)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                    data.num_scenarios === n
-                      ? "bg-gold text-navy shadow-sm"
-                      : "text-muted-foreground hover:text-white"
-                  }`}
-                >
-                  {n} {n === 1 ? "Price" : "Prices"}
-                </button>
-              ))}
-            </div>
-          </div>
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="prop-address" className="text-xs font-medium text-foreground">
+                  Property Address <span className="text-accent">*</span>
+                </Label>
+                <Input
+                  id="prop-address"
+                  value={data.property_address}
+                  onChange={(e) => updateField("property_address", e.target.value)}
+                  placeholder="e.g. 1244 Oak Ridge Dr, Rolla, MO"
+                  className="mt-1 h-9 text-xs bg-surface-2 border-border"
+                  required
+                />
+              </div>
 
-          {/* Agent Information Header Block */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-background print:bg-slate-50 border border-border print:border-slate-300 p-3 sm:p-4 rounded-xl text-xs">
-            <div>
-              <label className="text-[10px] uppercase font-bold text-gold">Agent Name</label>
-              <Input
-                value={data.agent_name}
-                onChange={(e) => updateField("agent_name", e.target.value)}
-                className="h-8 text-xs bg-card print:bg-white text-white print:text-black border-border print:border-slate-300 mt-1 focus-visible:ring-gold"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] uppercase font-bold text-gold">Cell Phone</label>
-              <Input
-                value={data.agent_cell}
-                onChange={(e) => updateField("agent_cell", e.target.value)}
-                className="h-8 text-xs bg-card print:bg-white text-white print:text-black border-border print:border-slate-300 mt-1 focus-visible:ring-gold"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] uppercase font-bold text-gold">Agent Email</label>
-              <Input
-                value={data.agent_email}
-                onChange={(e) => updateField("agent_email", e.target.value)}
-                className="h-8 text-xs bg-card print:bg-white text-white print:text-black border-border print:border-slate-300 mt-1 focus-visible:ring-gold"
-              />
-            </div>
-          </div>
-
-          {/* Property Address Input */}
-          <div className="bg-gold/5 print:bg-slate-100 border border-gold/20 p-3.5 rounded-xl space-y-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-gold flex items-center gap-1.5">
-              <MapPin className="h-4 w-4" /> Property Address{" "}
-              <span className="text-rose-400">*</span>
-            </label>
-            <Input
-              placeholder="e.g. 123 Main Street, Rolla, MO 65401"
-              value={data.property_address}
-              onChange={(e) => updateField("property_address", e.target.value)}
-              className="bg-background print:bg-white text-white print:text-black font-semibold border-border print:border-slate-300 placeholder:text-muted-foreground/50 focus-visible:ring-gold"
-            />
-          </div>
-        </div>
-
-        {/* WORKSHEET TABLE GRID */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left border-collapse">
-            <thead>
-              <tr className="border-b border-border bg-sidebar/80 text-white">
-                <th className="p-3 font-bold uppercase text-[11px] tracking-wider w-1/3">
-                  Line Item / Expense
-                </th>
-                <th className="p-3 font-bold uppercase text-[11px] tracking-wider text-center border-l border-border">
-                  Scenario 1
-                </th>
-                {data.num_scenarios >= 2 && (
-                  <th className="p-3 font-bold uppercase text-[11px] tracking-wider text-center border-l border-border">
-                    Scenario 2
-                  </th>
-                )}
-                {data.num_scenarios >= 3 && (
-                  <th className="p-3 font-bold uppercase text-[11px] tracking-wider text-center border-l border-border">
-                    Scenario 3
-                  </th>
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border print:divide-slate-200">
-              {/* Sales Price Row */}
-              <tr className="bg-background/40 print:bg-slate-100 font-bold">
-                <td className="p-2.5 text-white print:text-black">Sales Price</td>
-                <td className="p-2 border-l border-border print:border-slate-200">
+              {/* Price inputs for scenarios */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                <div>
+                  <Label className="text-[11px] text-muted-foreground">Scenario 1 Price</Label>
                   <Input
                     type="number"
+                    step="5000"
                     value={data.scenario1_price || ""}
-                    onChange={(e) =>
-                      updateField("scenario1_price", parseFloat(e.target.value) || 0)
-                    }
-                    className="h-8 font-bold text-center text-xs bg-card print:bg-white text-gold border-border focus-visible:ring-gold"
+                    onChange={(e) => updateField("scenario1_price", parseFloat(e.target.value) || 0)}
+                    className="mt-1 h-8 text-xs font-mono bg-surface-2 border-border"
                   />
-                </td>
+                </div>
                 {data.num_scenarios >= 2 && (
-                  <td className="p-2 border-l border-border print:border-slate-200">
+                  <div>
+                    <Label className="text-[11px] text-muted-foreground">Scenario 2 Price</Label>
                     <Input
                       type="number"
+                      step="5000"
                       value={data.scenario2_price || ""}
-                      onChange={(e) =>
-                        updateField("scenario2_price", parseFloat(e.target.value) || 0)
-                      }
-                      className="h-8 font-bold text-center text-xs bg-card print:bg-white text-gold border-border focus-visible:ring-gold"
+                      onChange={(e) => updateField("scenario2_price", parseFloat(e.target.value) || 0)}
+                      className="mt-1 h-8 text-xs font-mono bg-surface-2 border-border"
                     />
-                  </td>
+                  </div>
                 )}
                 {data.num_scenarios >= 3 && (
-                  <td className="p-2 border-l border-border print:border-slate-200">
+                  <div>
+                    <Label className="text-[11px] text-muted-foreground">Scenario 3 Price</Label>
                     <Input
                       type="number"
+                      step="5000"
                       value={data.scenario3_price || ""}
-                      onChange={(e) =>
-                        updateField("scenario3_price", parseFloat(e.target.value) || 0)
-                      }
-                      className="h-8 font-bold text-center text-xs bg-card print:bg-white text-gold border-border focus-visible:ring-gold"
+                      onChange={(e) => updateField("scenario3_price", parseFloat(e.target.value) || 0)}
+                      className="mt-1 h-8 text-xs font-mono bg-surface-2 border-border"
                     />
-                  </td>
-                )}
-              </tr>
-
-              {/* Sub-$50k Minimum Commission Notice */}
-              {hasSub50k && (
-                <tr className="bg-gold/10 border-y border-gold/30 print:hidden">
-                  <td colSpan={1 + data.num_scenarios} className="p-3">
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs">
-                      <div className="flex items-center gap-2.5 text-gold">
-                        <AlertCircle className="h-4 w-4 shrink-0 text-gold" />
-                        <div>
-                          <span className="font-bold">Transaction $50,000 or less detected.</span>
-                          <span className="text-slate-300 ml-1.5">
-                            MSREG offers a <strong>$1,500 flat fee</strong> minimum option instead of percentage.
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={data.listing_comm_type === "flat" && data.selling_comm_type === "flat" ? "default" : "outline"}
-                          onClick={() => {
-                            updateField("listing_comm_type", "flat");
-                            updateField("selling_comm_type", "flat");
-                            toast.success("Applied $1,500 flat fee to both sides for ≤$50k transactions");
-                          }}
-                          className={`h-7 text-xs px-2.5 font-medium border-gold/40 ${
-                            data.listing_comm_type === "flat" && data.selling_comm_type === "flat"
-                              ? "bg-gold text-navy-dark hover:bg-gold-light"
-                              : "text-gold hover:bg-gold/20"
-                          }`}
-                        >
-                          $1,500 Flat (Both Sides)
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={data.listing_comm_type === "flat" && data.selling_comm_type !== "flat" ? "default" : "outline"}
-                          onClick={() => {
-                            updateField("listing_comm_type", "flat");
-                            updateField("selling_comm_type", "percent");
-                            toast.success("Applied $1,500 flat fee to Listing Agent for ≤$50k transactions");
-                          }}
-                          className={`h-7 text-xs px-2.5 font-medium border-gold/40 ${
-                            data.listing_comm_type === "flat" && data.selling_comm_type !== "flat"
-                              ? "bg-gold text-navy-dark hover:bg-gold-light"
-                              : "text-gold hover:bg-gold/20"
-                          }`}
-                        >
-                          $1,500 Flat (Listing Only)
-                        </Button>
-                        {(data.listing_comm_type === "flat" || data.selling_comm_type === "flat") && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              updateField("listing_comm_type", "percent");
-                              updateField("selling_comm_type", "percent");
-                              toast.info("Reset commission to percentage");
-                            }}
-                            className="h-7 text-xs px-2 text-slate-400 hover:text-white"
-                          >
-                            Reset to %
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              )}
-
-              {/* Listing Agent Commission */}
-              <tr>
-                <td className="p-2.5 text-slate-300 print:text-slate-800 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span>Listing Agent Commission</span>
-                    {data.listing_comm_type === "flat" && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gold/20 text-gold border border-gold/40 print:text-slate-700 print:bg-slate-100 print:border-slate-300">
-                        $1,500 Flat Fee on &le;$50k
-                      </span>
-                    )}
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    {/* Toggle between % and Flat Fee when sub-50k applies */}
-                    {hasSub50k && (
-                      <div className="flex items-center rounded border border-border bg-background p-0.5 text-[10px] print:hidden">
-                        <button
-                          type="button"
-                          onClick={() => updateField("listing_comm_type", "percent")}
-                          className={`px-1.5 py-0.5 rounded transition-colors ${
-                            data.listing_comm_type !== "flat"
-                              ? "bg-gold text-navy-dark font-bold shadow-xs"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          %
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => updateField("listing_comm_type", "flat")}
-                          className={`px-1.5 py-0.5 rounded transition-colors ${
-                            data.listing_comm_type === "flat"
-                              ? "bg-gold text-navy-dark font-bold shadow-xs"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          $1,500 Flat
-                        </button>
-                      </div>
-                    )}
-                    {data.listing_comm_type === "flat" ? (
-                      <div className="flex items-center gap-1">
-                        <span className="text-slate-400 text-xs">$</span>
-                        <Input
-                          type="number"
-                          step="50"
-                          value={data.listing_comm_flat_fee ?? 1500}
-                          onChange={(e) =>
-                            updateField("listing_comm_flat_fee", parseFloat(e.target.value) || 0)
-                          }
-                          className="h-6 w-16 text-center text-[11px] bg-background print:bg-white border-border px-1 focus-visible:ring-gold"
-                        />
-                        <span className="text-gold font-semibold text-[10px] uppercase">Flat</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1">
-                        <Input
-                          type="number"
-                          step="0.1"
-                          value={data.listing_comm_pct}
-                          onChange={(e) =>
-                            updateField("listing_comm_pct", parseFloat(e.target.value) || 0)
-                          }
-                          className="h-6 w-14 text-center text-[11px] bg-background print:bg-white border-border px-1 focus-visible:ring-gold"
-                        />
-                        <span className="text-slate-400">%</span>
-                      </div>
-                    )}
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Brokerage Commissions */}
+          <div className="bg-surface-1 border border-border rounded-xl p-4 sm:p-5 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Percent className="h-4 w-4 text-accent" />
+                Commissions
+              </h2>
+            </div>
+
+            {hasSub50k && (
+              <div className="p-2.5 rounded-lg bg-accent/8 border border-accent/20 text-xs space-y-2">
+                <div className="text-[11px] font-semibold text-accent">Sub-$50,000 Transaction Detected:</div>
+                <div className="flex flex-wrap gap-1.5">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      updateField("listing_comm_type", "flat");
+                      updateField("selling_comm_type", "flat");
+                      toast.success("Applied $1,500 flat fee to both agents");
+                    }}
+                    className="h-6 text-[10px] px-2 border-accent/40 text-accent hover:bg-accent/20"
+                  >
+                    $1,500 Flat (Both Sides)
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      updateField("listing_comm_type", "flat");
+                      updateField("selling_comm_type", "percent");
+                      toast.success("Applied $1,500 flat fee to listing side");
+                    }}
+                    className="h-6 text-[10px] px-2 border-accent/40 text-accent hover:bg-accent/20"
+                  >
+                    $1,500 Flat (Listing Only)
+                  </Button>
+                  {(data.listing_comm_type === "flat" || data.selling_comm_type === "flat") && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        updateField("listing_comm_type", "percent");
+                        updateField("selling_comm_type", "percent");
+                        toast.info("Reset to standard %");
+                      }}
+                      className="h-6 text-[10px] px-2 text-muted-foreground"
+                    >
+                      Reset to %
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Listing Agent</Label>
+                {data.listing_comm_type === "flat" ? (
+                  <div className="flex items-center gap-1 mt-1">
+                    <span className="text-xs text-muted-foreground">$</span>
+                    <Input
+                      type="number"
+                      value={data.listing_comm_flat_fee ?? 1500}
+                      onChange={(e) => updateField("listing_comm_flat_fee", parseFloat(e.target.value) || 0)}
+                      className="h-8 text-xs font-mono bg-surface-2 border-border"
+                    />
+                    <span className="text-[10px] uppercase font-bold text-accent">Flat</span>
                   </div>
-                </td>
-                <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
-                  <div>{formatCurrency(calc1.listingComm)}</div>
-                  {data.listing_comm_type === "flat" && calc1.salesPrice > 0 && calc1.salesPrice <= 50000 && (
-                    <div className="text-[10px] text-gold font-sans font-medium print:text-slate-500">
-                      Flat Fee
-                    </div>
-                  )}
-                  {data.listing_comm_type === "flat" && calc1.salesPrice > 50000 && (
-                    <div className="text-[10px] text-muted-foreground font-sans print:text-slate-500">
-                      {data.listing_comm_pct}% (&gt;$50k)
-                    </div>
-                  )}
-                </td>
-                {data.num_scenarios >= 2 && (
-                  <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
-                    <div>{formatCurrency(calc2.listingComm)}</div>
-                    {data.listing_comm_type === "flat" && calc2.salesPrice > 0 && calc2.salesPrice <= 50000 && (
-                      <div className="text-[10px] text-gold font-sans font-medium print:text-slate-500">
-                        Flat Fee
-                      </div>
-                    )}
-                    {data.listing_comm_type === "flat" && calc2.salesPrice > 50000 && (
-                      <div className="text-[10px] text-muted-foreground font-sans print:text-slate-500">
-                        {data.listing_comm_pct}% (&gt;$50k)
-                      </div>
-                    )}
-                  </td>
-                )}
-                {data.num_scenarios >= 3 && (
-                  <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
-                    <div>{formatCurrency(calc3.listingComm)}</div>
-                    {data.listing_comm_type === "flat" && calc3.salesPrice > 0 && calc3.salesPrice <= 50000 && (
-                      <div className="text-[10px] text-gold font-sans font-medium print:text-slate-500">
-                        Flat Fee
-                      </div>
-                    )}
-                    {data.listing_comm_type === "flat" && calc3.salesPrice > 50000 && (
-                      <div className="text-[10px] text-muted-foreground font-sans print:text-slate-500">
-                        {data.listing_comm_pct}% (&gt;$50k)
-                      </div>
-                    )}
-                  </td>
-                )}
-              </tr>
-
-              {/* Selling Agent Commission */}
-              <tr>
-                <td className="p-2.5 text-slate-300 print:text-slate-800 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span>Selling Agent Commission</span>
-                    {data.selling_comm_type === "flat" && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gold/20 text-gold border border-gold/40 print:text-slate-700 print:bg-slate-100 print:border-slate-300">
-                        $1,500 Flat Fee on &le;$50k
-                      </span>
-                    )}
+                ) : (
+                  <div className="flex items-center gap-1 mt-1">
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={data.listing_comm_pct}
+                      onChange={(e) => updateField("listing_comm_pct", parseFloat(e.target.value) || 0)}
+                      className="h-8 text-xs font-mono bg-surface-2 border-border"
+                    />
+                    <span className="text-xs text-muted-foreground">%</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    {/* Toggle between % and Flat Fee when sub-50k applies */}
-                    {hasSub50k && (
-                      <div className="flex items-center rounded border border-border bg-background p-0.5 text-[10px] print:hidden">
-                        <button
-                          type="button"
-                          onClick={() => updateField("selling_comm_type", "percent")}
-                          className={`px-1.5 py-0.5 rounded transition-colors ${
-                            data.selling_comm_type !== "flat"
-                              ? "bg-gold text-navy-dark font-bold shadow-xs"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          %
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => updateField("selling_comm_type", "flat")}
-                          className={`px-1.5 py-0.5 rounded transition-colors ${
-                            data.selling_comm_type === "flat"
-                              ? "bg-gold text-navy-dark font-bold shadow-xs"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          $1,500 Flat
-                        </button>
-                      </div>
-                    )}
-                    {data.selling_comm_type === "flat" ? (
-                      <div className="flex items-center gap-1">
-                        <span className="text-slate-400 text-xs">$</span>
-                        <Input
-                          type="number"
-                          step="50"
-                          value={data.selling_comm_flat_fee ?? 1500}
-                          onChange={(e) =>
-                            updateField("selling_comm_flat_fee", parseFloat(e.target.value) || 0)
-                          }
-                          className="h-6 w-16 text-center text-[11px] bg-background print:bg-white border-border px-1 focus-visible:ring-gold"
-                        />
-                        <span className="text-gold font-semibold text-[10px] uppercase">Flat</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1">
-                        <Input
-                          type="number"
-                          step="0.1"
-                          value={data.selling_comm_pct}
-                          onChange={(e) =>
-                            updateField("selling_comm_pct", parseFloat(e.target.value) || 0)
-                          }
-                          className="h-6 w-14 text-center text-[11px] bg-background print:bg-white border-border px-1 focus-visible:ring-gold"
-                        />
-                        <span className="text-slate-400">%</span>
-                      </div>
-                    )}
+                )}
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground">Selling (Buyer) Agent</Label>
+                {data.selling_comm_type === "flat" ? (
+                  <div className="flex items-center gap-1 mt-1">
+                    <span className="text-xs text-muted-foreground">$</span>
+                    <Input
+                      type="number"
+                      value={data.selling_comm_flat_fee ?? 1500}
+                      onChange={(e) => updateField("selling_comm_flat_fee", parseFloat(e.target.value) || 0)}
+                      className="h-8 text-xs font-mono bg-surface-2 border-border"
+                    />
+                    <span className="text-[10px] uppercase font-bold text-accent">Flat</span>
                   </div>
-                </td>
-                <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
-                  <div>{formatCurrency(calc1.sellingComm)}</div>
-                  {data.selling_comm_type === "flat" && calc1.salesPrice > 0 && calc1.salesPrice <= 50000 && (
-                    <div className="text-[10px] text-gold font-sans font-medium print:text-slate-500">
-                      Flat Fee
-                    </div>
-                  )}
-                  {data.selling_comm_type === "flat" && calc1.salesPrice > 50000 && (
-                    <div className="text-[10px] text-muted-foreground font-sans print:text-slate-500">
-                      {data.selling_comm_pct}% (&gt;$50k)
-                    </div>
-                  )}
-                </td>
-                {data.num_scenarios >= 2 && (
-                  <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
-                    <div>{formatCurrency(calc2.sellingComm)}</div>
-                    {data.selling_comm_type === "flat" && calc2.salesPrice > 0 && calc2.salesPrice <= 50000 && (
-                      <div className="text-[10px] text-gold font-sans font-medium print:text-slate-500">
-                        Flat Fee
-                      </div>
-                    )}
-                    {data.selling_comm_type === "flat" && calc2.salesPrice > 50000 && (
-                      <div className="text-[10px] text-muted-foreground font-sans print:text-slate-500">
-                        {data.selling_comm_pct}% (&gt;$50k)
-                      </div>
-                    )}
-                  </td>
+                ) : (
+                  <div className="flex items-center gap-1 mt-1">
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={data.selling_comm_pct}
+                      onChange={(e) => updateField("selling_comm_pct", parseFloat(e.target.value) || 0)}
+                      className="h-8 text-xs font-mono bg-surface-2 border-border"
+                    />
+                    <span className="text-xs text-muted-foreground">%</span>
+                  </div>
                 )}
-                {data.num_scenarios >= 3 && (
-                  <td className="p-2.5 text-center font-mono border-l border-border print:border-slate-200 text-slate-200 print:text-black">
-                    <div>{formatCurrency(calc3.sellingComm)}</div>
-                    {data.selling_comm_type === "flat" && calc3.salesPrice > 0 && calc3.salesPrice <= 50000 && (
-                      <div className="text-[10px] text-gold font-sans font-medium print:text-slate-500">
-                        Flat Fee
-                      </div>
-                    )}
-                    {data.selling_comm_type === "flat" && calc3.salesPrice > 50000 && (
-                      <div className="text-[10px] text-muted-foreground font-sans print:text-slate-500">
-                        {data.selling_comm_pct}% (&gt;$50k)
-                      </div>
-                    )}
-                  </td>
-                )}
-              </tr>
+              </div>
+            </div>
+          </div>
 
-              {/* Fixed Expenses Rows */}
-              <ScenarioNumberRow
-                label="Principal Mortgage Payoff"
-                fieldKey="mortgage_payoff_1"
-                data={data}
-                updateScenarioField={updateScenarioField}
-              />
-              <ScenarioNumberRow
-                label="Second Mortgage Payoff"
-                fieldKey="mortgage_payoff_2"
-                data={data}
-                updateScenarioField={updateScenarioField}
-              />
-              <ScenarioNumberRow
-                label="Closing Protection Letter"
-                fieldKey="closing_protection_letter"
-                data={data}
-                updateScenarioField={updateScenarioField}
-              />
-              <ScenarioNumberRow
-                label="Seller's Title Company Closing Fee"
-                fieldKey="seller_title_closing_fee"
-                data={data}
-                updateScenarioField={updateScenarioField}
-              />
-              <ScenarioNumberRow
-                label="Title Search Fee"
-                fieldKey="title_search_fee"
-                data={data}
-                updateScenarioField={updateScenarioField}
-              />
-              <ScenarioNumberRow
-                label="Warranty Deed Fee"
-                fieldKey="warranty_deed_fee"
-                data={data}
-                updateScenarioField={updateScenarioField}
-              />
-              <ScenarioNumberRow
-                label="Termite Letter"
-                fieldKey="termite_letter"
-                data={data}
-                updateScenarioField={updateScenarioField}
-              />
-              <ScenarioNumberRow
-                label="Well, Water, Septic, Lagoon Inspection"
-                fieldKey="inspections"
-                data={data}
-                updateScenarioField={updateScenarioField}
-              />
-              <ScenarioNumberRow
-                label="Home Warranty (negotiable w/ buyer)"
-                fieldKey="home_warranty"
-                data={data}
-                updateScenarioField={updateScenarioField}
-              />
-              <ScenarioNumberRow
-                label="Transaction Fee"
-                fieldKey="transaction_fee"
-                data={data}
-                updateScenarioField={updateScenarioField}
-              />
-              <ScenarioNumberRow
-                label="Estimated Taxes"
-                fieldKey="estimated_taxes"
-                data={data}
-                updateScenarioField={updateScenarioField}
-              />
-              <ScenarioNumberRow
-                label="Miscellaneous"
-                fieldKey="miscellaneous"
-                data={data}
-                updateScenarioField={updateScenarioField}
-              />
-              <ScenarioNumberRow
-                label="Sellers Concessions (negotiable w/ buyer)"
-                fieldKey="seller_concessions"
-                data={data}
-                updateScenarioField={updateScenarioField}
-              />
+          {/* Section 3: Mortgages, Liens & Concessions */}
+          <div className="bg-surface-1 border border-border rounded-xl p-4 sm:p-5 shadow-xs space-y-4">
+            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2 border-b border-border/60 pb-3">
+              <DollarSign className="h-4 w-4 text-accent" />
+              Mortgages & Concessions
+            </h2>
 
-              {/* TOTAL SELLING COSTS (BOLD) */}
-              <tr className="bg-sidebar/50 print:bg-slate-200 font-bold border-t-2 border-gold/40 text-white print:text-black text-sm">
-                <td className="p-3 uppercase tracking-wider text-gold print:text-black">
-                  TOTAL SELLING COSTS
-                </td>
-                <td className="p-3 text-center font-mono border-l border-border print:border-slate-300">
-                  {formatCurrency(calc1.totalSellingCosts)}
-                </td>
-                {data.num_scenarios >= 2 && (
-                  <td className="p-3 text-center font-mono border-l border-border print:border-slate-300">
-                    {formatCurrency(calc2.totalSellingCosts)}
-                  </td>
-                )}
-                {data.num_scenarios >= 3 && (
-                  <td className="p-3 text-center font-mono border-l border-border print:border-slate-300">
-                    {formatCurrency(calc3.totalSellingCosts)}
-                  </td>
-                )}
-              </tr>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-[11px] text-muted-foreground">1st Mortgage Payoff</Label>
+                <Input
+                  type="number"
+                  value={getFieldValue(data, "mortgage_payoff_1", 1) || ""}
+                  onChange={(e) => updateScenarioField("mortgage_payoff_1", 1, parseFloat(e.target.value) || 0)}
+                  placeholder="0"
+                  className="mt-1 h-8 text-xs font-mono bg-surface-2 border-border"
+                />
+              </div>
+              <div>
+                <Label className="text-[11px] text-muted-foreground">2nd Mortgage Payoff</Label>
+                <Input
+                  type="number"
+                  value={getFieldValue(data, "mortgage_payoff_2", 1) || ""}
+                  onChange={(e) => updateScenarioField("mortgage_payoff_2", 1, parseFloat(e.target.value) || 0)}
+                  placeholder="0"
+                  className="mt-1 h-8 text-xs font-mono bg-surface-2 border-border"
+                />
+              </div>
+              <div>
+                <Label className="text-[11px] text-muted-foreground">Seller Concessions</Label>
+                <Input
+                  type="number"
+                  value={getFieldValue(data, "seller_concessions", 1) || ""}
+                  onChange={(e) => updateScenarioField("seller_concessions", 1, parseFloat(e.target.value) || 0)}
+                  placeholder="5000"
+                  className="mt-1 h-8 text-xs font-mono bg-surface-2 border-border"
+                />
+              </div>
+              <div>
+                <Label className="text-[11px] text-muted-foreground">Estimated Taxes</Label>
+                <Input
+                  type="number"
+                  value={getFieldValue(data, "estimated_taxes", 1) || ""}
+                  onChange={(e) => updateScenarioField("estimated_taxes", 1, parseFloat(e.target.value) || 0)}
+                  placeholder="1283"
+                  className="mt-1 h-8 text-xs font-mono bg-surface-2 border-border"
+                />
+              </div>
+            </div>
+          </div>
 
-              {/* ESTIMATED CASH TO SELLER (RED IF NEGATIVE, GREEN IF POSITIVE) */}
-              <tr className={rowProceedsClasses}>
-                <td className={labelProceedsClasses}>
-                  ESTIMATED CASH TO SELLER
-                </td>
-                <td className={getProceedsCellClasses(calc1.cashToSeller)}>
-                  {formatCurrency(calc1.cashToSeller)}
-                </td>
-                {data.num_scenarios >= 2 && (
-                  <td className={getProceedsCellClasses(calc2.cashToSeller)}>
-                    {formatCurrency(calc2.cashToSeller)}
-                  </td>
-                )}
-                {data.num_scenarios >= 3 && (
-                  <td className={getProceedsCellClasses(calc3.cashToSeller)}>
-                    {formatCurrency(calc3.cashToSeller)}
-                  </td>
-                )}
-              </tr>
-            </tbody>
-          </table>
+          {/* Section 4: Title & Closing Fees */}
+          <div className="bg-surface-1 border border-border rounded-xl p-4 sm:p-5 shadow-xs space-y-4">
+            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2 border-b border-border/60 pb-3">
+              <Building className="h-4 w-4 text-accent" />
+              Title & Closing Fees
+            </h2>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+              <div>
+                <Label className="text-[10px] text-muted-foreground">Title Closing Fee</Label>
+                <Input
+                  type="number"
+                  value={getFieldValue(data, "seller_title_closing_fee", 1) || ""}
+                  onChange={(e) => updateScenarioField("seller_title_closing_fee", 1, parseFloat(e.target.value) || 0)}
+                  className="mt-1 h-7 text-xs font-mono bg-surface-2 border-border"
+                />
+              </div>
+              <div>
+                <Label className="text-[10px] text-muted-foreground">Title Search Fee</Label>
+                <Input
+                  type="number"
+                  value={getFieldValue(data, "title_search_fee", 1) || ""}
+                  onChange={(e) => updateScenarioField("title_search_fee", 1, parseFloat(e.target.value) || 0)}
+                  className="mt-1 h-7 text-xs font-mono bg-surface-2 border-border"
+                />
+              </div>
+              <div>
+                <Label className="text-[10px] text-muted-foreground">Transaction Fee</Label>
+                <Input
+                  type="number"
+                  value={getFieldValue(data, "transaction_fee", 1) || ""}
+                  onChange={(e) => updateScenarioField("transaction_fee", 1, parseFloat(e.target.value) || 0)}
+                  className="mt-1 h-7 text-xs font-mono bg-surface-2 border-border"
+                />
+              </div>
+              <div>
+                <Label className="text-[10px] text-muted-foreground">Closing Prot. Letter</Label>
+                <Input
+                  type="number"
+                  value={getFieldValue(data, "closing_protection_letter", 1) || ""}
+                  onChange={(e) => updateScenarioField("closing_protection_letter", 1, parseFloat(e.target.value) || 0)}
+                  className="mt-1 h-7 text-xs font-mono bg-surface-2 border-border"
+                />
+              </div>
+              <div>
+                <Label className="text-[10px] text-muted-foreground">Warranty Deed Fee</Label>
+                <Input
+                  type="number"
+                  value={getFieldValue(data, "warranty_deed_fee", 1) || ""}
+                  onChange={(e) => updateScenarioField("warranty_deed_fee", 1, parseFloat(e.target.value) || 0)}
+                  className="mt-1 h-7 text-xs font-mono bg-surface-2 border-border"
+                />
+              </div>
+              <div>
+                <Label className="text-[10px] text-muted-foreground">Termite Letter</Label>
+                <Input
+                  type="number"
+                  value={getFieldValue(data, "termite_letter", 1) || ""}
+                  onChange={(e) => updateScenarioField("termite_letter", 1, parseFloat(e.target.value) || 0)}
+                  className="mt-1 h-7 text-xs font-mono bg-surface-2 border-border"
+                />
+              </div>
+              <div>
+                <Label className="text-[10px] text-muted-foreground">Inspections</Label>
+                <Input
+                  type="number"
+                  value={getFieldValue(data, "inspections", 1) || ""}
+                  onChange={(e) => updateScenarioField("inspections", 1, parseFloat(e.target.value) || 0)}
+                  className="mt-1 h-7 text-xs font-mono bg-surface-2 border-border"
+                />
+              </div>
+              <div>
+                <Label className="text-[10px] text-muted-foreground">Home Warranty</Label>
+                <Input
+                  type="number"
+                  value={getFieldValue(data, "home_warranty", 1) || ""}
+                  onChange={(e) => updateScenarioField("home_warranty", 1, parseFloat(e.target.value) || 0)}
+                  className="mt-1 h-7 text-xs font-mono bg-surface-2 border-border"
+                />
+              </div>
+              <div>
+                <Label className="text-[10px] text-muted-foreground">Miscellaneous</Label>
+                <Input
+                  type="number"
+                  value={getFieldValue(data, "miscellaneous", 1) || ""}
+                  onChange={(e) => updateScenarioField("miscellaneous", 1, parseFloat(e.target.value) || 0)}
+                  className="mt-1 h-7 text-xs font-mono bg-surface-2 border-border"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Verbatim Disclaimer Footer */}
-        <div className="pt-4 border-t border-border print:border-slate-300">
-          <p className="text-[10px] text-muted-foreground print:text-slate-600 font-mono text-center leading-relaxed max-w-4xl mx-auto">
-            NOTE: THIS FORM IS INTENDED AS AN ESTIMATE ONLY. IT DOES NOT INCLUDE TAX PRORATION,
-            ESCROW ADJUSTMENTS AND OTHER MISCELLANEOUS COSTS SOMETIMES ASSOCIATED WITH CLOSING. MATT
-            SMITH REAL ESTATE GROUP/EXP REALTY ACCEPTS NO RESPONSIBILITY FOR THIS ESTIMATE.
-          </p>
+        {/* Right Column: Live Recipient ToolCanvas Preview */}
+        <div
+          className={cn(
+            "lg:col-span-7 sticky top-4 space-y-4",
+            mobileTab === "edit" ? "hidden lg:block" : "block",
+          )}
+        >
+          <ToolCanvas
+            label="Client Output Preview"
+            badge={
+              <span className="text-[11px] font-mono text-muted-foreground">
+                {data.num_scenarios} {data.num_scenarios === 1 ? "Price Column" : "Price Columns"}
+              </span>
+            }
+          >
+            <div ref={printRef} className="space-y-6 text-slate-900 font-sans">
+              {/* Header: MSREG / eXp Brand */}
+              <div className="border-b-2 border-amber-600/60 pb-5">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <img src={logo} alt="Matt Smith Real Estate Group" className="h-14 sm:h-16 w-auto" />
+                    <div className="border-l border-slate-300 pl-3">
+                      <div className="text-[11px] uppercase tracking-wider text-amber-700 font-bold">
+                        eXp Realty
+                      </div>
+                      <div className="text-base sm:text-lg font-bold tracking-tight text-slate-950">
+                        SELLER ESTIMATED NET PROCEEDS
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-slate-200 text-xs text-slate-600">
+                  <div>
+                    <div className="font-semibold text-slate-900">{data.property_address || "Property Address Pending"}</div>
+                    <div className="text-[11px] text-slate-500">Prepared for Seller Presentation</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-semibold text-slate-900">{data.agent_name}</div>
+                    <div className="text-[11px] text-slate-500">{data.agent_cell} · {data.agent_email}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Comparison Table */}
+              <div className="overflow-x-auto rounded-lg border border-slate-200 shadow-2xs">
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-700 border-b border-slate-200 text-left font-semibold">
+                      <th className="p-2.5">Item / Expense</th>
+                      <th className="p-2.5 text-center font-mono border-l border-slate-200">
+                        Scenario 1
+                        <div className="text-sm font-bold text-slate-950">{formatCurrency(calc1.salesPrice)}</div>
+                      </th>
+                      {data.num_scenarios >= 2 && (
+                        <th className="p-2.5 text-center font-mono border-l border-slate-200">
+                          Scenario 2
+                          <div className="text-sm font-bold text-slate-950">{formatCurrency(calc2.salesPrice)}</div>
+                        </th>
+                      )}
+                      {data.num_scenarios >= 3 && (
+                        <th className="p-2.5 text-center font-mono border-l border-slate-200">
+                          Scenario 3
+                          <div className="text-sm font-bold text-slate-950">{formatCurrency(calc3.salesPrice)}</div>
+                        </th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 text-slate-700">
+                    {/* Commissions */}
+                    <tr>
+                      <td className="p-2">Listing Agent Commission</td>
+                      <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(calc1.listingComm)}</td>
+                      {data.num_scenarios >= 2 && (
+                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(calc2.listingComm)}</td>
+                      )}
+                      {data.num_scenarios >= 3 && (
+                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(calc3.listingComm)}</td>
+                      )}
+                    </tr>
+                    <tr>
+                      <td className="p-2">Selling (Buyer) Commission</td>
+                      <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(calc1.sellingComm)}</td>
+                      {data.num_scenarios >= 2 && (
+                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(calc2.sellingComm)}</td>
+                      )}
+                      {data.num_scenarios >= 3 && (
+                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(calc3.sellingComm)}</td>
+                      )}
+                    </tr>
+
+                    {/* Mortgages & Payoffs */}
+                    <tr>
+                      <td className="p-2">Principal Mortgage Payoff</td>
+                      <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "mortgage_payoff_1", 1))}</td>
+                      {data.num_scenarios >= 2 && (
+                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "mortgage_payoff_1", 2))}</td>
+                      )}
+                      {data.num_scenarios >= 3 && (
+                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "mortgage_payoff_1", 3))}</td>
+                      )}
+                    </tr>
+                    {getFieldValue(data, "mortgage_payoff_2", 1) > 0 && (
+                      <tr>
+                        <td className="p-2">Second Mortgage Payoff</td>
+                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "mortgage_payoff_2", 1))}</td>
+                        {data.num_scenarios >= 2 && (
+                          <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "mortgage_payoff_2", 2))}</td>
+                        )}
+                        {data.num_scenarios >= 3 && (
+                          <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "mortgage_payoff_2", 3))}</td>
+                        )}
+                      </tr>
+                    )}
+
+                    {/* Title & Closing */}
+                    <tr>
+                      <td className="p-2">Title Company Closing Fee</td>
+                      <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "seller_title_closing_fee", 1))}</td>
+                      {data.num_scenarios >= 2 && (
+                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "seller_title_closing_fee", 2))}</td>
+                      )}
+                      {data.num_scenarios >= 3 && (
+                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "seller_title_closing_fee", 3))}</td>
+                      )}
+                    </tr>
+                    <tr>
+                      <td className="p-2">Title Search & Deed Fees</td>
+                      <td className="p-2 text-center font-mono border-l border-slate-200">
+                        {formatCurrency(getFieldValue(data, "title_search_fee", 1) + getFieldValue(data, "warranty_deed_fee", 1))}
+                      </td>
+                      {data.num_scenarios >= 2 && (
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(getFieldValue(data, "title_search_fee", 2) + getFieldValue(data, "warranty_deed_fee", 2))}
+                        </td>
+                      )}
+                      {data.num_scenarios >= 3 && (
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(getFieldValue(data, "title_search_fee", 3) + getFieldValue(data, "warranty_deed_fee", 3))}
+                        </td>
+                      )}
+                    </tr>
+
+                    {/* Taxes & Concessions */}
+                    <tr>
+                      <td className="p-2">Estimated Taxes</td>
+                      <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "estimated_taxes", 1))}</td>
+                      {data.num_scenarios >= 2 && (
+                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "estimated_taxes", 2))}</td>
+                      )}
+                      {data.num_scenarios >= 3 && (
+                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "estimated_taxes", 3))}</td>
+                      )}
+                    </tr>
+                    <tr>
+                      <td className="p-2">Seller Concessions (buyer credit)</td>
+                      <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "seller_concessions", 1))}</td>
+                      {data.num_scenarios >= 2 && (
+                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "seller_concessions", 2))}</td>
+                      )}
+                      {data.num_scenarios >= 3 && (
+                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "seller_concessions", 3))}</td>
+                      )}
+                    </tr>
+
+                    {/* Total Selling Costs */}
+                    <tr className="bg-slate-100 font-bold border-t-2 border-slate-300 text-slate-900">
+                      <td className="p-2.5 uppercase tracking-wider text-[11px]">Total Selling Costs</td>
+                      <td className="p-2.5 text-center font-mono border-l border-slate-200">{formatCurrency(calc1.totalSellingCosts)}</td>
+                      {data.num_scenarios >= 2 && (
+                        <td className="p-2.5 text-center font-mono border-l border-slate-200">{formatCurrency(calc2.totalSellingCosts)}</td>
+                      )}
+                      {data.num_scenarios >= 3 && (
+                        <td className="p-2.5 text-center font-mono border-l border-slate-200">{formatCurrency(calc3.totalSellingCosts)}</td>
+                      )}
+                    </tr>
+
+                    {/* Estimated Cash to Seller Highlight */}
+                    <tr className="bg-emerald-50 text-emerald-950 font-extrabold border-t-2 border-emerald-600/60">
+                      <td className="p-3 uppercase tracking-wider text-xs text-emerald-900">
+                        Estimated Cash to Seller
+                      </td>
+                      <td className={cn(
+                        "p-3 text-center font-mono text-sm border-l border-emerald-200",
+                        calc1.cashToSeller < 0 ? "bg-red-50 text-red-900" : "text-emerald-900",
+                      )}>
+                        {formatCurrency(calc1.cashToSeller)}
+                      </td>
+                      {data.num_scenarios >= 2 && (
+                        <td className={cn(
+                          "p-3 text-center font-mono text-sm border-l border-emerald-200",
+                          calc2.cashToSeller < 0 ? "bg-red-50 text-red-900" : "text-emerald-900",
+                        )}>
+                          {formatCurrency(calc2.cashToSeller)}
+                        </td>
+                      )}
+                      {data.num_scenarios >= 3 && (
+                        <td className={cn(
+                          "p-3 text-center font-mono text-sm border-l border-emerald-200",
+                          calc3.cashToSeller < 0 ? "bg-red-50 text-red-900" : "text-emerald-900",
+                        )}>
+                          {formatCurrency(calc3.cashToSeller)}
+                        </td>
+                      )}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Disclaimer */}
+              <div className="pt-3 border-t border-slate-200">
+                <p className="text-[9px] text-slate-500 font-mono text-center leading-relaxed">
+                  NOTE: THIS FORM IS INTENDED AS AN ESTIMATE ONLY. IT DOES NOT INCLUDE TAX PRORATION,
+                  ESCROW ADJUSTMENTS AND OTHER MISCELLANEOUS COSTS SOMETIMES ASSOCIATED WITH CLOSING. MATT
+                  SMITH REAL ESTATE GROUP/EXP REALTY ACCEPTS NO RESPONSIBILITY FOR THIS ESTIMATE.
+                </p>
+              </div>
+            </div>
+          </ToolCanvas>
         </div>
       </div>
     </div>
-  );
-}
-
-function ScenarioNumberRow({
-  label,
-  fieldKey,
-  data,
-  updateScenarioField,
-}: {
-  label: string;
-  fieldKey: string;
-  data: SheetData;
-  updateScenarioField: (fieldKey: string, scenarioIndex: 1 | 2 | 3, value: number) => void;
-}) {
-  return (
-    <tr>
-      <td className="p-2.5 text-slate-300 print:text-slate-800">{label}</td>
-      <td className="p-2 border-l border-border print:border-slate-200">
-        <div className="flex items-center justify-center gap-1 max-w-[200px] mx-auto">
-          <span className="text-slate-500 text-xs">$</span>
-          <Input
-            type="number"
-            value={getFieldValue(data, fieldKey, 1) || ""}
-            onChange={(e) => updateScenarioField(fieldKey, 1, parseFloat(e.target.value) || 0)}
-            placeholder="0"
-            className="h-7 text-center text-xs bg-background print:bg-white text-white print:text-black border-border print:border-slate-300 focus-visible:ring-gold"
-          />
-        </div>
-      </td>
-      {data.num_scenarios >= 2 && (
-        <td className="p-2 border-l border-border print:border-slate-200">
-          <div className="flex items-center justify-center gap-1 max-w-[200px] mx-auto">
-            <span className="text-slate-500 text-xs">$</span>
-            <Input
-              type="number"
-              value={getFieldValue(data, fieldKey, 2) || ""}
-              onChange={(e) => updateScenarioField(fieldKey, 2, parseFloat(e.target.value) || 0)}
-              placeholder="0"
-              className="h-7 text-center text-xs bg-background print:bg-white text-white print:text-black border-border print:border-slate-300 focus-visible:ring-gold"
-            />
-          </div>
-        </td>
-      )}
-      {data.num_scenarios >= 3 && (
-        <td className="p-2 border-l border-border print:border-slate-200">
-          <div className="flex items-center justify-center gap-1 max-w-[200px] mx-auto">
-            <span className="text-slate-500 text-xs">$</span>
-            <Input
-              type="number"
-              value={getFieldValue(data, fieldKey, 3) || ""}
-              onChange={(e) => updateScenarioField(fieldKey, 3, parseFloat(e.target.value) || 0)}
-              placeholder="0"
-              className="h-7 text-center text-xs bg-background print:bg-white text-white print:text-black border-border print:border-slate-300 focus-visible:ring-gold"
-            />
-          </div>
-        </td>
-      )}
-    </tr>
   );
 }

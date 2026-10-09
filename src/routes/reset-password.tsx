@@ -86,44 +86,60 @@ function ResetPasswordPage() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-background px-4 overflow-hidden before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top_right,oklch(0.20_0.08_85_/_0.08),transparent_45%)] after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_bottom_left,oklch(0.18_0.05_260_/_0.2),transparent_60%)]">
-      <div className="relative z-10 w-full max-w-md">
-        <div className="flex flex-col items-center mb-8">
-          <img src={logo} alt="Matt Smith Real Estate Group" className="h-32 w-auto mb-4" />
-          <h1 className="text-xl font-semibold tracking-tight text-center">Content Hub</h1>
-          <p className="text-sm text-muted-foreground mt-1">Set your password</p>
+    <div className="relative min-h-screen flex items-center justify-center bg-background px-4 py-8 overflow-hidden selection:bg-gold/30 selection:text-white">
+      {/* Ambient Top Spotlight Halo */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[650px] sm:w-[850px] h-[350px] bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(196,90,44,0.16),transparent)] pointer-events-none -z-10" />
+
+      {/* Subtle Brand Emblem Watermark in Background */}
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] sm:w-[550px] h-[380px] sm:h-[550px] pointer-events-none opacity-[0.035] -z-10 select-none">
+        <img
+          src={logo}
+          alt=""
+          className="w-full h-full object-contain filter grayscale contrast-200"
+        />
+      </div>
+
+      <div className="relative z-10 w-full max-w-md space-y-6">
+        <div className="flex flex-col items-center text-center space-y-2">
+          <img src={logo} alt="Matt Smith Real Estate Group" className="h-20 w-auto mb-1 drop-shadow-sm" />
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Set New Password</h1>
+          <p className="text-xs text-muted-foreground">Matt Smith Real Estate Group Hub</p>
         </div>
 
-        <div className="bg-card border border-border rounded-xl p-6 shadow-xl">
-          <h2 className="text-lg font-bold mb-1">Choose a password</h2>
-          <p className="text-sm text-muted-foreground mb-5">
-            {ready
-              ? "Choose a secure password for your account."
-              : "Verifying recovery session link…"}
-          </p>
+        <div className="bg-surface-1/95 border border-border/80 rounded-2xl p-6 sm:p-7 shadow-2xl backdrop-blur-md ring-1 ring-inset ring-white/[0.06] space-y-5">
+          <div className="space-y-1">
+            <h2 className="text-base font-bold text-foreground">Choose your new password</h2>
+            <p className="text-xs text-muted-foreground">
+              {ready
+                ? "Enter your new account password below (min 8 characters)."
+                : "Verifying secure recovery link…"}
+            </p>
+          </div>
 
           <form onSubmit={onSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="pw">New password</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="pw" className="text-xs font-semibold text-foreground">New Password</Label>
               <Input
                 id="pw"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1.5"
+                placeholder="••••••••"
+                className="h-10 text-xs sm:text-sm bg-surface-2 border-border/80 rounded-xl focus-visible:ring-gold"
                 required
                 minLength={8}
                 disabled={!ready}
               />
             </div>
-            <div>
-              <Label htmlFor="pw2">Confirm password</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="pw2" className="text-xs font-semibold text-foreground">Confirm New Password</Label>
               <Input
                 id="pw2"
                 type="password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
-                className="mt-1.5"
+                placeholder="••••••••"
+                className="h-10 text-xs sm:text-sm bg-surface-2 border-border/80 rounded-xl focus-visible:ring-gold"
                 required
                 minLength={8}
                 disabled={!ready}
@@ -132,11 +148,20 @@ function ResetPasswordPage() {
             <Button
               type="submit"
               disabled={!ready || saving}
-              className="w-full bg-gold text-gold-foreground hover:bg-gold/90 cursor-pointer"
+              className="w-full bg-gold text-navy hover:bg-gold/90 font-bold text-xs sm:text-sm h-10 rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer"
             >
-              {saving ? "Saving…" : "Set password"}
+              {saving ? "Saving…" : "Set Password & Proceed"}
             </Button>
           </form>
+        </div>
+
+        <div className="text-center">
+          <button
+            onClick={() => navigate({ to: "/auth" })}
+            className="text-xs text-muted-foreground hover:text-gold transition-colors"
+          >
+            ← Back to Sign In
+          </button>
         </div>
       </div>
     </div>

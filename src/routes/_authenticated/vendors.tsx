@@ -29,6 +29,7 @@ import {
   Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/page-header";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -420,57 +421,56 @@ export function AdminVendorsPage() {
   };
 
   return (
-    <div className="space-y-6 pb-20">
-      {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border pb-5">
-        <div>
+    <div className="space-y-6 pb-20 max-w-7xl mx-auto w-full">
+      {/* Page Header */}
+      <PageHeader
+        category="Operations & Directory"
+        title="Vendor Directory"
+        description="Maintain verified service vendors across St. Robert/Rolla and Lake of the Ozarks, manage categories, and review agent recommendations."
+        badge={
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full border border-border bg-surface-2 text-foreground">
+            {vendors.length} Verified Vendors
+          </span>
+        }
+        actions={
           <div className="flex items-center gap-2">
-            <Store className="h-6 w-6 text-gold" />
-            <h1 className="text-2xl font-bold tracking-tight text-white">
-              Vendor Directory Management
-            </h1>
+            <Button
+              onClick={handleExportCsv}
+              variant="outline"
+              size="sm"
+              className="text-xs h-8 border-border"
+            >
+              <Download className="h-3.5 w-3.5 mr-1.5" /> Export CSV
+            </Button>
+            <Button
+              onClick={() => openVendorEditor()}
+              size="sm"
+              className="bg-[var(--accent)] hover:opacity-90 text-white font-medium text-xs h-8 shadow-sm"
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" /> Add Vendor
+            </Button>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Maintain trusted vendors across St. Robert/Rolla & Lake of the Ozarks, manage categories, and review agent recommendations.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            onClick={() => openVendorEditor()}
-            className="bg-gold text-navy hover:bg-gold/90 text-xs font-semibold h-9"
-          >
-            <Plus className="h-4 w-4 mr-1" /> Add Vendor
-          </Button>
-          <Button
-            onClick={handleExportCsv}
-            variant="outline"
-            size="sm"
-            className="text-xs h-9 border-border"
-          >
-            <Download className="h-3.5 w-3.5 mr-1" /> Export CSV
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full sm:w-auto h-11 grid grid-cols-4 bg-muted/60 p-1">
-          <TabsTrigger value="directory" className="text-xs sm:text-sm">
+        <TabsList className="w-full sm:w-auto h-10 p-1 bg-surface-2 border border-border/70 rounded-xl flex items-center gap-1">
+          <TabsTrigger value="directory" className="text-xs font-medium rounded-lg">
             Directory ({vendors.length})
           </TabsTrigger>
-          <TabsTrigger value="requests" className="text-xs sm:text-sm relative">
+          <TabsTrigger value="requests" className="text-xs font-medium rounded-lg relative">
             Review Queue
             {pendingRequests.length > 0 && (
-              <Badge className="ml-1.5 h-5 px-1.5 bg-rose-500 text-white font-bold text-[10px] rounded-full">
+              <Badge className="ml-1.5 h-4.5 px-1.5 bg-rose-500 text-white font-bold text-[10px] rounded-full">
                 {pendingRequests.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="categories" className="text-xs sm:text-sm">
+          <TabsTrigger value="categories" className="text-xs font-medium rounded-lg">
             Categories ({categories.length})
           </TabsTrigger>
-          <TabsTrigger value="import" className="text-xs sm:text-sm">
+          <TabsTrigger value="import" className="text-xs font-medium rounded-lg">
             Bulk Import / CSV
           </TabsTrigger>
         </TabsList>
@@ -478,7 +478,7 @@ export function AdminVendorsPage() {
         {/* Tab 1: Directory Table */}
         <TabsContent value="directory" className="space-y-4 mt-6">
           {/* Filters */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-card p-3 rounded-xl border border-border">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-card p-3 rounded-xl border border-border/70 shadow-sm">
             <div className="relative sm:col-span-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -523,40 +523,40 @@ export function AdminVendorsPage() {
           </div>
 
           {/* Vendors Table */}
-          <Card className="overflow-hidden border-border bg-card">
+          <Card className="overflow-hidden border border-border/70 bg-card rounded-xl shadow-sm">
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-[240px]">Vendor / Company</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Region</TableHead>
-                  <TableHead>Contact & Phone</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                <TableRow className="hover:bg-transparent bg-muted/10 border-border/70">
+                  <TableHead className="w-[240px] text-xs font-semibold">Vendor / Company</TableHead>
+                  <TableHead className="text-xs font-semibold">Category</TableHead>
+                  <TableHead className="text-xs font-semibold">Region</TableHead>
+                  <TableHead className="text-xs font-semibold">Contact & Phone</TableHead>
+                  <TableHead className="text-xs font-semibold">Status</TableHead>
+                  <TableHead className="text-right text-xs font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
-                      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-gold" />
-                      Loading vendors…
+                      <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2 text-[var(--accent)]" />
+                      Loading vendor directory…
                     </TableCell>
                   </TableRow>
                 ) : filteredVendors.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-12 text-muted-foreground text-xs">
                       No vendors match the selected filters.
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredVendors.map((v) => (
-                    <TableRow key={v.id} className="hover:bg-muted/30">
+                    <TableRow key={v.id} className="hover:bg-muted/20 border-border/50 transition-colors">
                       <TableCell>
-                        <div className="font-semibold text-white flex items-center gap-1.5">
+                        <div className="font-semibold text-xs text-foreground flex items-center gap-1.5">
                           {v.name}
                           {v.is_preferred && (
-                            <Badge className="bg-gold/15 text-gold border-gold/30 text-[9px] py-0 px-1">
+                            <Badge className="bg-[var(--accent)]/15 text-[var(--accent)] border-[var(--accent)]/30 text-[9px] py-0 px-1 font-semibold">
                               Preferred
                             </Badge>
                           )}
@@ -568,7 +568,7 @@ export function AdminVendorsPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="text-[11px]">
+                        <Badge variant="outline" className="text-[10px] border-border/70 bg-surface-2 font-normal">
                           {v.category?.name || "Uncategorized"}
                         </Badge>
                       </TableCell>
@@ -589,12 +589,12 @@ export function AdminVendorsPage() {
                         <Badge
                           variant="outline"
                           className={cn(
-                            "text-[10px] capitalize",
+                            "text-[10px] capitalize font-medium",
                             v.status === "active"
-                              ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
                               : v.status === "flagged"
-                              ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                              : "bg-zinc-800 text-zinc-400 border-zinc-700",
+                              ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                              : "bg-muted text-muted-foreground border-border",
                           )}
                         >
                           {v.status}
@@ -606,7 +606,8 @@ export function AdminVendorsPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => openVendorEditor(v)}
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground rounded-lg"
+                            title="Edit vendor"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
@@ -618,7 +619,8 @@ export function AdminVendorsPage() {
                                 deleteVendorMutation.mutate(v.id);
                               }
                             }}
-                            className="h-8 w-8 text-rose-400 hover:text-rose-300 hover:bg-rose-950/20"
+                            className="h-7 w-7 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg"
+                            title="Delete vendor"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
@@ -635,9 +637,9 @@ export function AdminVendorsPage() {
         {/* Tab 2: Review Queue */}
         <TabsContent value="requests" className="space-y-4 mt-6">
           {pendingRequests.length === 0 ? (
-            <Card className="p-12 text-center text-sm text-muted-foreground border-dashed">
-              <CheckCircle2 className="h-10 w-10 text-emerald-400 mx-auto mb-2 opacity-80" />
-              <p className="font-semibold text-base text-foreground">Review Queue is Clear</p>
+            <Card className="p-12 text-center text-xs text-muted-foreground border-dashed border-border/70 rounded-xl">
+              <CheckCircle2 className="h-9 w-9 text-emerald-400 mx-auto mb-2 opacity-80" />
+              <p className="font-semibold text-sm text-foreground">Review Queue is Clear</p>
               <p className="text-xs mt-1 text-muted-foreground">
                 All agent vendor recommendations and removal requests have been reviewed.
               </p>
@@ -648,17 +650,17 @@ export function AdminVendorsPage() {
                 const targetCategory = categories.find((c) => c.id === req.category_id);
 
                 return (
-                  <Card key={req.id} className="p-5 border-border bg-card space-y-4">
+                  <Card key={req.id} className="p-5 border border-border/70 bg-card rounded-xl space-y-4 shadow-sm">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
                       <div className="flex items-center gap-2.5">
                         <Badge
                           className={cn(
-                            "text-xs font-bold uppercase",
+                            "text-[10px] font-semibold uppercase",
                             req.request_type === "add"
-                              ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                              ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
                               : req.request_type === "remove"
-                              ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
-                              : "bg-amber-500/20 text-amber-300 border-amber-500/40",
+                              ? "bg-rose-500/15 text-rose-300 border-rose-500/30"
+                              : "bg-amber-500/15 text-amber-300 border-amber-500/30",
                           )}
                         >
                           {req.request_type === "add"
@@ -667,17 +669,17 @@ export function AdminVendorsPage() {
                             ? "Removal Request"
                             : "Issue Report"}
                         </Badge>
-                        <span className="font-bold text-base text-white">{req.vendor_name}</span>
+                        <span className="font-semibold text-sm text-foreground">{req.vendor_name}</span>
                       </div>
 
                       <div className="text-xs text-muted-foreground">
-                        Submitted by: <strong className="text-white">{req.agent_name}</strong> ({req.agent_email})
+                        Submitted by: <strong className="text-foreground">{req.agent_name}</strong> ({req.agent_email})
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                      <div className="space-y-2 bg-muted/30 p-3 rounded-lg border border-border">
-                        <div className="font-semibold text-gold">Vendor Details Submitted:</div>
+                      <div className="space-y-2 bg-muted/20 p-3 rounded-lg border border-border/60">
+                        <div className="font-semibold text-[var(--accent)]">Vendor Details Submitted:</div>
                         <div className="space-y-1 text-muted-foreground">
                           <div>Region: <strong>{getRegionShortLabel(req.region || "")}</strong></div>
                           <div>Category: <strong>{targetCategory?.name || "Not specified"}</strong></div>
@@ -689,7 +691,7 @@ export function AdminVendorsPage() {
                         </div>
                       </div>
 
-                      <div className="space-y-2 bg-card p-3 rounded-lg border border-border flex flex-col justify-between">
+                      <div className="space-y-2 bg-card p-3 rounded-lg border border-border/60 flex flex-col justify-between">
                         <div className="space-y-2.5">
                           {(() => {
                             const coreValuesMarker = "[Core Values Represented]:";
@@ -706,12 +708,12 @@ export function AdminVendorsPage() {
                             return (
                               <>
                                 {coreValuesText && (
-                                  <div className="bg-gold/10 border border-gold/30 rounded-md p-2.5 space-y-1">
-                                    <div className="text-[11px] font-bold text-gold uppercase tracking-wider flex items-center gap-1.5">
-                                      <Star className="h-3 w-3 fill-gold" />
+                                  <div className="bg-[var(--accent)]/10 border border-[var(--accent)]/30 rounded-md p-2.5 space-y-1">
+                                    <div className="text-[11px] font-bold text-[var(--accent)] uppercase tracking-wider flex items-center gap-1.5">
+                                      <Star className="h-3 w-3 fill-[var(--accent)]" />
                                       Core Values Represented
                                     </div>
-                                    <p className="text-xs font-medium text-white">
+                                    <p className="text-xs font-medium text-foreground">
                                       {coreValuesText}
                                     </p>
                                   </div>
@@ -751,7 +753,7 @@ export function AdminVendorsPage() {
                               });
                             }}
                             disabled={reviewMutation.isPending}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-8"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs h-8 shadow-sm"
                           >
                             <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
                             {req.request_type === "add"
@@ -779,21 +781,21 @@ export function AdminVendorsPage() {
             <Button
               onClick={() => openCategoryEditor()}
               size="sm"
-              className="bg-gold text-navy hover:bg-gold/90 text-xs font-semibold h-8"
+              className="bg-[var(--accent)] hover:opacity-90 text-white font-medium text-xs h-8 shadow-sm"
             >
               <Plus className="h-3.5 w-3.5 mr-1" /> Add Category
             </Button>
           </div>
 
-          <Card className="overflow-hidden border-border bg-card">
+          <Card className="overflow-hidden border border-border/70 bg-card rounded-xl shadow-sm">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[80px]">Order</TableHead>
-                  <TableHead>Category Name</TableHead>
-                  <TableHead>Slug</TableHead>
-                  <TableHead>Assigned Vendors</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                <TableRow className="hover:bg-transparent bg-muted/10 border-border/70">
+                  <TableHead className="w-[80px] text-xs font-semibold">Order</TableHead>
+                  <TableHead className="text-xs font-semibold">Category Name</TableHead>
+                  <TableHead className="text-xs font-semibold">Slug</TableHead>
+                  <TableHead className="text-xs font-semibold">Assigned Vendors</TableHead>
+                  <TableHead className="text-right text-xs font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -801,14 +803,14 @@ export function AdminVendorsPage() {
                   const assignedCount = vendors.filter((v) => v.category_id === cat.id).length;
 
                   return (
-                    <TableRow key={cat.id}>
-                      <TableCell className="font-mono text-xs">{cat.sort_order}</TableCell>
-                      <TableCell className="font-semibold text-white">{cat.name}</TableCell>
+                    <TableRow key={cat.id} className="hover:bg-muted/20 border-border/50 transition-colors">
+                      <TableCell className="font-mono text-xs text-muted-foreground">{cat.sort_order}</TableCell>
+                      <TableCell className="font-semibold text-xs text-foreground">{cat.name}</TableCell>
                       <TableCell className="text-xs text-muted-foreground font-mono">
                         {cat.slug}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-[10px] border-border/70 bg-surface-2 font-normal">
                           {assignedCount} vendor{assignedCount === 1 ? "" : "s"}
                         </Badge>
                       </TableCell>
@@ -818,7 +820,7 @@ export function AdminVendorsPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => openCategoryEditor(cat)}
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground rounded-lg"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
@@ -831,7 +833,7 @@ export function AdminVendorsPage() {
                                 deleteCategoryMutation.mutate(cat.id);
                               }
                             }}
-                            className="h-8 w-8 text-rose-400 hover:text-rose-300 disabled:opacity-30"
+                            className="h-7 w-7 text-rose-400 hover:text-rose-300 disabled:opacity-30 rounded-lg"
                             title={assignedCount > 0 ? "Cannot delete category with assigned vendors" : "Delete category"}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -848,37 +850,37 @@ export function AdminVendorsPage() {
 
         {/* Tab 4: Bulk CSV Import */}
         <TabsContent value="import" className="space-y-6 mt-6">
-          <Card className="p-6 border-border bg-card space-y-4">
+          <Card className="p-6 border border-border/70 bg-card rounded-xl space-y-4 shadow-sm">
             <div>
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Upload className="h-5 w-5 text-gold" />
+              <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+                <Upload className="h-4 w-4 text-[var(--accent)]" />
                 Bulk Import Vendors from CSV
               </h2>
               <p className="text-xs text-muted-foreground mt-1">
-                Upload a structured CSV export from your Google Doc to seed or update the entire vendor directory.
+                Upload a structured CSV export to seed or update the entire vendor directory in bulk.
               </p>
             </div>
 
-            <div className="flex items-center gap-3 pt-2">
+            <div className="flex flex-wrap items-center gap-3 pt-1">
               <input
                 ref={fileInputRef}
                 type="file"
                 accept=".csv"
                 onChange={handleCsvFileChange}
-                className="text-xs file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-gold file:text-navy hover:file:bg-gold/90 cursor-pointer"
+                className="text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-[var(--accent)] file:text-white hover:file:opacity-90 cursor-pointer"
               />
               <Button
                 variant="outline"
                 size="sm"
                 onClick={downloadSampleCsv}
-                className="text-xs h-9 border-border"
+                className="text-xs h-8 border-border"
               >
                 <FileDown className="h-3.5 w-3.5 mr-1" /> Download CSV Template
               </Button>
             </div>
 
             {parsedImportRows.length > 0 && (
-              <div className="space-y-4 pt-4 border-t border-border animate-in fade-in">
+              <div className="space-y-4 pt-4 border-t border-border/70 animate-in fade-in">
                 <div className="flex items-center justify-between">
                   <div className="text-xs font-semibold text-emerald-400">
                     Ready to import {parsedImportRows.length} vendor records
@@ -886,28 +888,28 @@ export function AdminVendorsPage() {
                   <Button
                     onClick={() => bulkImportMutation.mutate(parsedImportRows)}
                     disabled={bulkImportMutation.isPending}
-                    className="bg-gold text-navy hover:bg-gold/90 text-xs font-semibold h-9"
+                    className="bg-[var(--accent)] hover:opacity-90 text-white font-medium text-xs h-8 shadow-sm"
                   >
                     {bulkImportMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <CheckCircle2 className="h-3.5 w-3.5 mr-1" />}
                     Confirm & Import {parsedImportRows.length} Vendors
                   </Button>
                 </div>
 
-                <div className="max-h-60 overflow-y-auto border border-border rounded-lg">
+                <div className="max-h-60 overflow-y-auto border border-border/70 rounded-lg">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Region</TableHead>
-                        <TableHead>Phone</TableHead>
-                        <TableHead>Contact</TableHead>
+                      <TableRow className="bg-muted/10">
+                        <TableHead className="text-xs font-semibold">Name</TableHead>
+                        <TableHead className="text-xs font-semibold">Category</TableHead>
+                        <TableHead className="text-xs font-semibold">Region</TableHead>
+                        <TableHead className="text-xs font-semibold">Phone</TableHead>
+                        <TableHead className="text-xs font-semibold">Contact</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {parsedImportRows.slice(0, 15).map((r, i) => (
                         <TableRow key={i} className="text-xs">
-                          <TableCell className="font-semibold text-white">{r.name}</TableCell>
+                          <TableCell className="font-semibold text-foreground">{r.name}</TableCell>
                           <TableCell>{r.category_name}</TableCell>
                           <TableCell>{r.region}</TableCell>
                           <TableCell className="font-mono">{r.phone}</TableCell>
@@ -930,9 +932,9 @@ export function AdminVendorsPage() {
 
       {/* Vendor Edit/Create Dialog */}
       <Dialog open={vendorEditorOpen} onOpenChange={setVendorEditorOpen}>
-        <DialogContent className="max-w-lg bg-card border-gold/30">
+        <DialogContent className="max-w-lg bg-card border border-border/80 shadow-xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-white">
+            <DialogTitle className="text-base font-semibold text-foreground">
               {editingVendor ? `Edit: ${editingVendor.name}` : "Add New Vendor"}
             </DialogTitle>
           </DialogHeader>
@@ -940,7 +942,7 @@ export function AdminVendorsPage() {
           <div className="space-y-3 pt-2 max-h-[70vh] overflow-y-auto pr-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Region *</label>
+                <label className="text-xs font-semibold text-foreground">Region *</label>
                 <Select value={vRegion} onValueChange={setVRegion}>
                   <SelectTrigger className="h-9 text-xs">
                     <SelectValue />
@@ -956,7 +958,7 @@ export function AdminVendorsPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Category *</label>
+                <label className="text-xs font-semibold text-foreground">Category *</label>
                 <Select value={vCategory} onValueChange={setVCategory}>
                   <SelectTrigger className="h-9 text-xs">
                     <SelectValue placeholder="Select category" />
@@ -973,7 +975,7 @@ export function AdminVendorsPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Company / Vendor Name *</label>
+              <label className="text-xs font-semibold text-foreground">Company / Vendor Name *</label>
               <Input
                 value={vName}
                 onChange={(e) => setVName(e.target.value)}
@@ -984,7 +986,7 @@ export function AdminVendorsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Primary Contact Person</label>
+                <label className="text-xs font-semibold text-foreground">Primary Contact Person</label>
                 <Input
                   value={vContact}
                   onChange={(e) => setVContact(e.target.value)}
@@ -993,7 +995,7 @@ export function AdminVendorsPage() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Phone Number *</label>
+                <label className="text-xs font-semibold text-foreground">Phone Number *</label>
                 <Input
                   value={vPhone}
                   onChange={(e) => setVPhone(e.target.value)}
@@ -1005,7 +1007,7 @@ export function AdminVendorsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Email</label>
+                <label className="text-xs font-semibold text-foreground">Email</label>
                 <Input
                   type="email"
                   value={vEmail}
@@ -1015,7 +1017,7 @@ export function AdminVendorsPage() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Website</label>
+                <label className="text-xs font-semibold text-foreground">Website</label>
                 <Input
                   value={vWebsite}
                   onChange={(e) => setVWebsite(e.target.value)}
@@ -1026,7 +1028,7 @@ export function AdminVendorsPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Specialty / Notes</label>
+              <label className="text-xs font-semibold text-foreground">Specialty / Notes</label>
               <Textarea
                 value={vNotes}
                 onChange={(e) => setVNotes(e.target.value)}
@@ -1037,7 +1039,7 @@ export function AdminVendorsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Directory Status</label>
+                <label className="text-xs font-semibold text-foreground">Directory Status</label>
                 <Select value={vStatus} onValueChange={(val: any) => setVStatus(val)}>
                   <SelectTrigger className="h-9 text-xs">
                     <SelectValue />
@@ -1050,17 +1052,17 @@ export function AdminVendorsPage() {
                 </Select>
               </div>
 
-              <div className="flex items-center justify-between p-2.5 rounded-lg border border-border mt-3">
+              <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/70 mt-3 bg-muted/10">
                 <div className="space-y-0.5">
-                  <div className="text-xs font-semibold text-white">Preferred Vendor</div>
-                  <div className="text-[10px] text-muted-foreground">Display badge</div>
+                  <div className="text-xs font-semibold text-foreground">Preferred Vendor</div>
+                  <div className="text-[10px] text-muted-foreground">Highlight in directory</div>
                 </div>
                 <Switch checked={vIsPreferred} onCheckedChange={setVIsPreferred} />
               </div>
             </div>
           </div>
 
-          <DialogFooter className="pt-2">
+          <DialogFooter className="pt-2 gap-2 sm:gap-0">
             <Button
               variant="outline"
               size="sm"
@@ -1091,7 +1093,7 @@ export function AdminVendorsPage() {
                 });
               }}
               disabled={vendorMutation.isPending}
-              className="bg-gold text-navy hover:bg-gold/90 text-xs font-semibold"
+              className="bg-[var(--accent)] hover:opacity-90 text-white font-medium text-xs shadow-sm"
             >
               {vendorMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
               {editingVendor ? "Save Changes" : "Create Vendor"}
@@ -1102,16 +1104,16 @@ export function AdminVendorsPage() {
 
       {/* Category Edit/Create Dialog */}
       <Dialog open={catEditorOpen} onOpenChange={setCatEditorOpen}>
-        <DialogContent className="max-w-md bg-card border-gold/30">
+        <DialogContent className="max-w-md bg-card border border-border/80 shadow-xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-white">
+            <DialogTitle className="text-base font-semibold text-foreground">
               {editingCategory ? `Edit: ${editingCategory.name}` : "Add Category"}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-3 pt-2">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Category Name *</label>
+              <label className="text-xs font-semibold text-foreground">Category Name *</label>
               <Input
                 value={cName}
                 onChange={(e) => {
@@ -1126,7 +1128,7 @@ export function AdminVendorsPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Slug (URL Key) *</label>
+              <label className="text-xs font-semibold text-foreground">Slug (URL Key) *</label>
               <Input
                 value={cSlug}
                 onChange={(e) => setCSlug(e.target.value)}
@@ -1136,7 +1138,7 @@ export function AdminVendorsPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Sort Order (Lower = First)</label>
+              <label className="text-xs font-semibold text-foreground">Sort Order (Lower = First)</label>
               <Input
                 type="number"
                 value={cSort}
@@ -1146,7 +1148,7 @@ export function AdminVendorsPage() {
             </div>
           </div>
 
-          <DialogFooter className="pt-2">
+          <DialogFooter className="pt-2 gap-2 sm:gap-0">
             <Button
               variant="outline"
               size="sm"
@@ -1167,7 +1169,7 @@ export function AdminVendorsPage() {
                 });
               }}
               disabled={categoryMutation.isPending}
-              className="bg-gold text-navy hover:bg-gold/90 text-xs font-semibold"
+              className="bg-[var(--accent)] hover:opacity-90 text-white font-medium text-xs shadow-sm"
             >
               {categoryMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
               {editingCategory ? "Update Category" : "Add Category"}

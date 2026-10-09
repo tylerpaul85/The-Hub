@@ -108,52 +108,70 @@ function Gate({ onUnlock }: { onUnlock: (token: string) => void }) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-8 relative pt-[max(1rem,env(safe-area-inset-top))]">
+    <div className="relative min-h-screen bg-background text-foreground flex flex-col items-center justify-center px-4 py-8 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))] overflow-hidden selection:bg-gold/30 selection:text-white">
+      {/* Ambient Top Spotlight */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] sm:w-[800px] h-[350px] bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(196,90,44,0.15),transparent)] pointer-events-none -z-10" />
+
+      {/* Brand Emblem Watermark in Background */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] sm:w-[500px] h-[380px] sm:h-[500px] pointer-events-none opacity-[0.035] -z-10 select-none">
+        <img
+          src={logo}
+          alt=""
+          className="w-full h-full object-contain filter grayscale contrast-200"
+        />
+      </div>
+
       <div className="absolute top-4 right-4 pt-[max(0.5rem,env(safe-area-inset-top))] z-10">
         <Link
           to="/auth"
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-border/70 bg-card/60 hover:bg-card hover:border-gold/50 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-all shadow-sm group"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/80 bg-surface-2/70 hover:bg-surface-2 hover:border-gold/50 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-all shadow-2xs group backdrop-blur-md"
         >
           <LogIn className="h-3 w-3 text-muted-foreground group-hover:text-gold transition-colors" />
           <span>Internal Login</span>
         </Link>
       </div>
 
-      <Card className="w-full max-w-sm p-6 space-y-5 border-gold/20">
+      <div className="w-full max-w-sm p-7 space-y-6 rounded-3xl border border-border/80 bg-card/85 backdrop-blur-md shadow-xl ring-1 ring-inset ring-white/[0.06] text-center relative z-10">
         <div className="flex flex-col items-center text-center gap-3">
-          <img src={logo} alt="Matt Smith Real Estate Group" className="h-24 w-auto" />
+          <img src={logo} alt="Matt Smith Real Estate Group" className="h-20 sm:h-22 w-auto drop-shadow-sm" />
           <div>
-            <h1 className="text-lg font-semibold">Agent Hub</h1>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-gold/80 mt-1">
-              Matt Smith Real Estate Group
+            <h1 className="text-xl font-bold tracking-tight text-foreground">MSREG Agent Hub</h1>
+            <p className="text-xs text-muted-foreground mt-1">
+              Private agent marketing &amp; operations portal
             </p>
           </div>
         </div>
-        <form onSubmit={submit} className="space-y-3">
-          <label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-            <Lock className="h-3 w-3" /> Access code
-          </label>
-          <Input
-            autoFocus
-            type="password"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="Enter access code"
-            className="text-center text-base h-11"
-            autoComplete="off"
-          />
+
+        <form onSubmit={submit} className="space-y-4 text-left">
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <Lock className="h-3 w-3 text-gold" /> Enter Team Access Code
+            </label>
+            <Input
+              autoFocus
+              type="password"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="••••••••"
+              className="text-center font-mono tracking-widest text-lg h-12 rounded-xl bg-surface-2/90 border-border focus-visible:ring-gold"
+              autoComplete="off"
+            />
+          </div>
+
           <Button
             type="submit"
             disabled={busy}
-            className="w-full h-11 bg-gold text-navy hover:bg-gold/90 font-semibold"
+            className="w-full h-12 bg-gold text-navy hover:bg-gold/90 font-bold text-sm rounded-xl shadow-md shadow-gold/20 active:scale-[0.985] transition-all"
           >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enter Agent Hub"}
+            {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            {busy ? "Verifying..." : "Enter Agent Hub"}
           </Button>
         </form>
-        <p className="text-[11px] text-muted-foreground text-center">
-          You'll only enter this code once on this device.
+
+        <p className="text-[11px] text-muted-foreground leading-relaxed pt-1 border-t border-border/60">
+          You'll only need to enter this code once on this device.
         </p>
-      </Card>
+      </div>
     </div>
   );
 }

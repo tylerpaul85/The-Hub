@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { ArrowLeft, Lock } from "lucide-react";
 import logo from "@/assets/msreg-logo.png";
 import { logAuthEvent, checkRateLimit } from "@/lib/audit.functions";
 
@@ -139,43 +140,67 @@ function AuthPage() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-background px-4 overflow-hidden before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top_right,oklch(0.20_0.08_85_/_0.08),transparent_45%)] after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_bottom_left,oklch(0.18_0.05_260_/_0.2),transparent_60%)]">
-      <div className="relative z-10 w-full max-w-md">
-        <div className="flex flex-col items-center mb-8">
-          <img src={logo} alt="Matt Smith Real Estate Group" className="h-20 w-auto mb-4" />
-          <h1 className="text-xl font-semibold tracking-tight text-center">The Hub</h1>
-          <p className="text-sm text-muted-foreground mt-1">Marketing & operations dashboard</p>
+    <div className="relative min-h-screen flex items-center justify-center bg-background text-foreground px-4 py-8 overflow-hidden selection:bg-gold/30 selection:text-white">
+      {/* Ambient Top Spotlight Halo */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[700px] sm:w-[900px] h-[350px] bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(196,90,44,0.16),transparent)] pointer-events-none -z-10" />
+
+      {/* Subtle Brand Emblem Watermark in Background */}
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] sm:w-[600px] h-[420px] sm:h-[600px] pointer-events-none opacity-[0.035] -z-10 select-none">
+        <img
+          src={logo}
+          alt=""
+          className="w-full h-full object-contain filter grayscale contrast-200"
+        />
+      </div>
+
+      <div className="relative z-10 w-full max-w-md space-y-6">
+        <div className="flex items-center justify-between">
+          <Link
+            to="/agents"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/80 bg-surface-2/70 hover:bg-surface-2 hover:border-gold/50 text-xs text-muted-foreground hover:text-foreground transition-all shadow-2xs backdrop-blur-md"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to Agent Hub
+          </Link>
         </div>
 
-        <div className="bg-card border border-border rounded-xl p-6 shadow-lg">
+        <div className="flex flex-col items-center text-center space-y-2">
+          <img src={logo} alt="Matt Smith Real Estate Group" className="h-20 w-auto drop-shadow-sm" />
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Staff &amp; Internal Login</h1>
+            <p className="text-xs text-muted-foreground mt-1">Marketing Hub Operations &amp; Management</p>
+          </div>
+        </div>
+
+        <div className="bg-surface-1/90 border border-border/80 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md ring-1 ring-inset ring-white/[0.04]">
           {mode === "forgot" ? (
             <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="forgot-email">Email</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="forgot-email" className="text-xs font-medium text-foreground">Email Address</Label>
                 <Input
                   id="forgot-email"
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="mt-1.5"
+                  className="h-11 rounded-xl bg-surface-2/80 border-border/80 text-foreground focus-visible:ring-gold"
                   autoComplete="email"
+                  placeholder="name@mattsmithrealestategroup.com"
                 />
               </div>
               <Button
                 type="submit"
                 disabled={busy}
-                className="w-full bg-gold text-gold-foreground hover:bg-gold/90"
+                className="w-full h-11 rounded-xl bg-gold text-navy hover:bg-gold/90 font-bold shadow-md shadow-gold/20"
               >
-                {busy ? "Please wait..." : "Send recovery link"}
+                {busy ? "Sending Link…" : "Send Password Recovery Link"}
               </Button>
-              <div className="mt-4 text-center text-sm">
+              <div className="mt-4 text-center text-xs">
                 <button
                   type="button"
                   onClick={() => setMode("signin")}
-                  className="text-gold hover:underline cursor-pointer"
+                  className="text-gold hover:underline cursor-pointer font-medium"
                 >
-                  Back to sign in
+                  ← Back to sign in
                 </button>
               </div>
             </form>
@@ -186,7 +211,7 @@ function AuthPage() {
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={googleBusy || busy}
-                className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-lg border border-border bg-card hover:bg-accent/40 transition-colors text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-border/80 bg-surface-2/70 hover:bg-surface-2 hover:border-gold/50 transition-all text-xs sm:text-sm font-semibold text-foreground disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-2xs select-none active:scale-[0.985]"
               >
                 {googleBusy ? (
                   <svg
@@ -210,7 +235,7 @@ function AuthPage() {
                     />
                   </svg>
                 ) : (
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                       fill="#4285F4"
@@ -229,58 +254,60 @@ function AuthPage() {
                     />
                   </svg>
                 )}
-                {googleBusy ? "Redirecting…" : "Continue with Google"}
+                {googleBusy ? "Redirecting to Google…" : "Continue with Google Workspace"}
               </button>
 
-              <div className="relative my-4">
+              <div className="relative my-5">
                 <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
+                  <span className="w-full border-t border-border/60" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-card px-2 text-muted-foreground">or</span>
+                  <span className="bg-surface-1 px-3 text-muted-foreground uppercase tracking-widest text-[10px]">or email login</span>
                 </div>
               </div>
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 {mode === "signup" && (
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label htmlFor="first-name">First name</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="first-name" className="text-xs font-medium text-foreground">First name</Label>
                       <Input
                         id="first-name"
                         required
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
-                        className="mt-1.5"
+                        className="h-11 rounded-xl bg-surface-2/80 border-border/80 text-foreground focus-visible:ring-gold"
                         autoComplete="given-name"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="last-name">Last name</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="last-name" className="text-xs font-medium text-foreground">Last name</Label>
                       <Input
                         id="last-name"
                         required
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
-                        className="mt-1.5"
+                        className="h-11 rounded-xl bg-surface-2/80 border-border/80 text-foreground focus-visible:ring-gold"
                         autoComplete="family-name"
                       />
                     </div>
                   </div>
                 )}
-                <div>
-                  <Label htmlFor="email">Email</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-xs font-medium text-foreground">Email</Label>
                   <Input
                     id="email"
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="mt-1.5"
+                    className="h-11 rounded-xl bg-surface-2/80 border-border/80 text-foreground focus-visible:ring-gold"
                     autoComplete="email"
+                    placeholder="name@mattsmithrealestate.com"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="password">Password</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="password" className="text-xs font-medium text-foreground">Password</Label>
                   <Input
                     id="password"
                     type="password"
@@ -288,20 +315,21 @@ function AuthPage() {
                     minLength={6}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="mt-1.5"
+                    className="h-11 rounded-xl bg-surface-2/80 border-border/80 text-foreground focus-visible:ring-gold"
                     autoComplete={mode === "signin" ? "current-password" : "new-password"}
                   />
                 </div>
                 <Button
                   type="submit"
                   disabled={busy}
-                  className="w-full bg-gold text-gold-foreground hover:bg-gold/90"
+                  className="w-full h-11 rounded-xl bg-gold text-navy hover:bg-gold/90 font-bold shadow-md shadow-gold/20"
                 >
-                  {busy ? "Please wait..." : mode === "signin" ? "Sign in" : "Create account"}
+                  {busy ? "Please wait…" : mode === "signin" ? "Sign In to Marketing Hub" : "Create Account"}
                 </Button>
               </form>
+
               {mode === "signin" && (
-                <div className="mt-3 text-center text-sm">
+                <div className="mt-3.5 text-center text-xs">
                   <button
                     type="button"
                     onClick={() => setMode("forgot")}
@@ -311,18 +339,18 @@ function AuthPage() {
                   </button>
                 </div>
               )}
-              <div className="mt-4 text-center text-sm text-muted-foreground">
+              <div className="mt-4 text-center text-xs text-muted-foreground pt-3 border-t border-border/60">
                 {mode === "signin" ? (
                   <>
-                    Need an account?{" "}
-                    <button onClick={() => setMode("signup")} className="text-gold hover:underline">
+                    Need an internal account?{" "}
+                    <button onClick={() => setMode("signup")} className="text-gold font-medium hover:underline cursor-pointer">
                       Sign up
                     </button>
                   </>
                 ) : (
                   <>
-                    Already have one?{" "}
-                    <button onClick={() => setMode("signin")} className="text-gold hover:underline">
+                    Already have an account?{" "}
+                    <button onClick={() => setMode("signin")} className="text-gold font-medium hover:underline cursor-pointer">
                       Sign in
                     </button>
                   </>
@@ -331,17 +359,18 @@ function AuthPage() {
             </>
           )}
         </div>
-        <div className="mt-6 flex items-center justify-center gap-4 text-xs text-muted-foreground">
+
+        <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
           <Link
             to="/privacy-policy"
-            className="hover:text-foreground hover:underline transition-colors"
+            className="hover:text-gold transition-colors"
           >
             Privacy Policy
           </Link>
           <span>•</span>
           <Link
             to="/data-deletion"
-            className="hover:text-foreground hover:underline transition-colors"
+            className="hover:text-gold transition-colors"
           >
             Data Deletion
           </Link>

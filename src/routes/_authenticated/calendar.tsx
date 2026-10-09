@@ -43,6 +43,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/page-header";
 import { ContentItemForm } from "@/components/content-item-form";
 import { CalendarListView } from "@/components/calendar-list-view";
 import { useContentDetail } from "@/components/content-detail-provider";
@@ -307,66 +308,64 @@ function CalendarPage() {
 
   return (
     <div className="p-3 sm:p-4 lg:p-6 max-w-[1600px] mx-auto h-[calc(100vh-64px)] flex flex-col gap-4">
-      <header className="flex flex-col gap-4 shrink-0">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="text-3xl font-serif font-medium tracking-tight truncate">
-              Content Calendar
-            </h1>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => handleExport(view, filteredItems)}>
-              <Download className="h-4 w-4 sm:mr-1" />{" "}
-              <span className="hidden sm:inline">Export</span>
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => setAnalyzeOpen(true)}>
-              <Sparkles className="h-4 w-4 sm:mr-1 text-gold" />{" "}
-              <span className="hidden sm:inline">Analyze</span>
-            </Button>
-            <Button asChild size="sm" variant="outline">
-              <Link to="/archive">
-                <Archive className="h-4 w-4 sm:mr-1" />{" "}
-                <span className="hidden sm:inline">Archive</span>
-              </Link>
-            </Button>
-            {canEditContent && (
-              <Button
-                size="sm"
-                className="bg-gold text-gold-foreground hover:bg-gold/90"
-                onClick={() => openSlot(new Date())}
-              >
-                <Plus className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">New Post</span>
+      <header className="flex flex-col gap-3 shrink-0">
+        <PageHeader
+          title="Content Calendar"
+          description="Omnichannel schedule across Facebook, Instagram, YouTube, and Email. Drag to reschedule or duplicate posts."
+          actions={
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => handleExport(view, filteredItems)} className="h-9 border-border/80">
+                <Download className="h-4 w-4 sm:mr-1.5" />
+                <span className="hidden sm:inline">Export</span>
               </Button>
-            )}
-          </div>
-        </div>
+              <Button size="sm" variant="outline" onClick={() => setAnalyzeOpen(true)} className="h-9 border-border/80">
+                <Sparkles className="h-4 w-4 sm:mr-1.5 text-gold" />
+                <span className="hidden sm:inline">Analyze</span>
+              </Button>
+              <Button asChild size="sm" variant="outline" className="h-9 border-border/80">
+                <Link to="/archive">
+                  <Archive className="h-4 w-4 sm:mr-1.5" />
+                  <span className="hidden sm:inline">Archive</span>
+                </Link>
+              </Button>
+              {canEditContent && (
+                <Button
+                  size="sm"
+                  className="bg-gold text-navy font-semibold hover:bg-gold/90 h-9 shadow-xs"
+                  onClick={() => openSlot(new Date())}
+                >
+                  <Plus className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">New Post</span>
+                </Button>
+              )}
+            </div>
+          }
+        />
 
         {/* Visual Timeline Bar / Filter Row */}
-        <div className="bg-card border border-border p-3 rounded-lg shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
+        <div className="bg-card border border-border/80 p-2.5 sm:p-3 rounded-xl shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             {view !== "list" && (
-              <div className="flex items-center gap-1.5 bg-background border border-border rounded-full px-1.5 py-1">
-                <Button size="icon" variant="ghost" onClick={goPrev} className="h-7 w-7 rounded-full hover:bg-accent">
+              <div className="flex items-center gap-1 bg-surface-2 border border-border/70 rounded-full px-1.5 py-0.5 shadow-2xs">
+                <Button size="icon" variant="ghost" onClick={goPrev} className="h-7 w-7 rounded-full hover:bg-card">
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button size="sm" variant="ghost" onClick={goToday} className="h-7 font-serif font-medium text-base tracking-tight hover:bg-accent rounded-full px-3">
+                <Button size="sm" variant="ghost" onClick={goToday} className="h-7 font-serif font-medium text-sm tracking-tight hover:bg-card rounded-full px-3">
                   {title}
                 </Button>
-                <Button size="icon" variant="ghost" onClick={goNext} className="h-7 w-7 rounded-full hover:bg-accent">
+                <Button size="icon" variant="ghost" onClick={goNext} className="h-7 w-7 rounded-full hover:bg-card">
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             )}
-            <div className="flex bg-muted rounded-full p-1 border border-border/50">
+            <div className="flex bg-surface-2 rounded-full p-0.5 border border-border/60">
               {(["list", "daily", "weekly", "monthly"] as const).map((v) => (
                 <button
                   key={v}
                   onClick={() => setView(v)}
                   className={cn(
-                    "px-3 py-1 text-xs font-semibold rounded-full capitalize transition-colors",
+                    "px-3 py-1 text-xs font-semibold rounded-full capitalize transition-all",
                     view === v
-                      ? "bg-background text-foreground shadow-sm"
+                      ? "bg-card text-foreground shadow-2xs"
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >
@@ -383,7 +382,7 @@ function CalendarPage() {
                 checked={hideReposts}
                 onCheckedChange={(checked) => setHideReposts(!!checked)}
               />
-              <label htmlFor="hide-reposts-check" className="text-xs font-medium cursor-pointer">
+              <label htmlFor="hide-reposts-check" className="text-xs font-medium cursor-pointer text-muted-foreground hover:text-foreground">
                 Hide Reposts
               </label>
             </div>
@@ -394,21 +393,21 @@ function CalendarPage() {
                 checked={showOnlyVideos}
                 onCheckedChange={(checked) => setShowOnlyVideos(!!checked)}
               />
-              <label htmlFor="show-only-videos-check" className="text-xs font-medium cursor-pointer">
-                Only Videos
+              <label htmlFor="show-only-videos-check" className="text-xs font-medium cursor-pointer text-muted-foreground hover:text-foreground">
+                Videos Only
               </label>
             </div>
 
-            <div className="flex gap-1 bg-background border border-border rounded-full p-0.5 ml-2">
+            <div className="flex gap-1 bg-surface-2 border border-border/70 rounded-full p-0.5 ml-1">
               {(["all", "LOZ", "PP", "AON", "MSREG ALL"] as const).map((b) => (
                 <button
                   key={b}
                   onClick={() => setBrandFilter(b)}
                   className={cn(
-                    "px-2.5 py-1 text-[10px] font-bold rounded-full transition-colors whitespace-nowrap uppercase tracking-wider",
+                    "px-2.5 py-0.5 text-[10px] font-bold rounded-full transition-all whitespace-nowrap uppercase tracking-wider",
                     brandFilter === b
-                      ? "bg-gold text-gold-foreground"
-                      : "text-muted-foreground hover:bg-accent",
+                      ? "bg-gold text-navy shadow-2xs font-extrabold"
+                      : "text-muted-foreground hover:text-foreground hover:bg-card/50",
                   )}
                 >
                   {b === "all" ? "ALL" : b}

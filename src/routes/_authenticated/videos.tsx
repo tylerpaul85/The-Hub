@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/page-header";
 import {
   PRIORITIES,
   PRIORITY_BORDER,
@@ -44,7 +45,25 @@ import {
   BRAND_STYLES,
 } from "@/lib/content";
 import { ChatThread } from "@/components/chat-thread";
-import { Plus, AlertTriangle, Calendar, Send, Link2, Archive } from "lucide-react";
+import {
+  Plus,
+  AlertTriangle,
+  Calendar,
+  Send,
+  Link2,
+  Archive,
+  Film,
+  Video as VideoIcon,
+  Smartphone,
+  Clock,
+  Camera,
+  Scissors,
+  ExternalLink,
+  Search,
+  Filter,
+  CheckCircle2,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -55,7 +74,6 @@ export const Route = createFileRoute("/_authenticated/videos")({
 });
 
 type VideoType = "horizontal" | "reel";
-
 
 interface Video {
   id: string;
@@ -80,7 +98,7 @@ function BrandBadge({ brand }: { brand: Brand }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded border",
+        "inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full border shadow-2xs",
         BRAND_STYLES[brand],
       )}
     >
@@ -89,6 +107,48 @@ function BrandBadge({ brand }: { brand: Brand }) {
   );
 }
 
+const STAGE_THEME: Record<
+  VideoStage,
+  { dot: string; headerBg: string; borderAccent: string; pill: string }
+> = {
+  backlog: {
+    dot: "bg-slate-400",
+    headerBg: "bg-slate-500/10",
+    borderAccent: "border-t-slate-400",
+    pill: "text-slate-400 border-slate-500/30",
+  },
+  idea: {
+    dot: "bg-amber-400",
+    headerBg: "bg-amber-500/10",
+    borderAccent: "border-t-amber-400",
+    pill: "text-amber-400 border-amber-500/30",
+  },
+  scheduled: {
+    dot: "bg-sky-400",
+    headerBg: "bg-sky-500/10",
+    borderAccent: "border-t-sky-400",
+    pill: "text-sky-400 border-sky-500/30",
+  },
+  ready_to_edit: {
+    dot: "bg-indigo-400",
+    headerBg: "bg-indigo-500/10",
+    borderAccent: "border-t-indigo-400",
+    pill: "text-indigo-400 border-indigo-500/30",
+  },
+  ready_to_post: {
+    dot: "bg-emerald-400",
+    headerBg: "bg-emerald-500/10",
+    borderAccent: "border-t-emerald-400",
+    pill: "text-emerald-400 border-emerald-500/30",
+  },
+  scheduled_post: {
+    dot: "bg-purple-400",
+    headerBg: "bg-purple-500/10",
+    borderAccent: "border-t-purple-400",
+    pill: "text-purple-400 border-purple-500/30",
+  },
+};
+
 function VideosPage() {
   const qc = useQueryClient();
   const { user } = useAuth();
@@ -96,6 +156,8 @@ function VideosPage() {
   const [creatingListing, setCreatingListing] = useState<boolean | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [pipelineView, setPipelineView] = useState<"all" | "listing" | "brand">("all");
   const [brandFilter, setBrandFilter] = useState<"all" | Brand>("all");
   const [typeFilter, setTypeFilter] = useState<"all" | "horizontal" | "reel">("all");
   const [dateSort, setDateSort] = useState<"none" | "soonest" | "latest">("soonest");
@@ -126,7 +188,7 @@ function VideosPage() {
     const id = e.active.id as string;
     const overId = e.over?.id as string | undefined;
     if (!overId) return;
-    
+
     const parts = overId.split("|");
     if (parts.length !== 2) return;
     const [pipelineType, stageRaw] = parts;
@@ -134,10 +196,10 @@ function VideosPage() {
 
     const stage = stageRaw as VideoStage;
     if (!VIDEO_STAGES.includes(stage)) return;
-    
+
     const v = videos.find((x) => x.id === id);
     const targetIsListing = pipelineType === "listing";
-    
+
     if (!v || (v.stage === stage && v.is_listing === targetIsListing)) return;
     moveStage.mutate({ id, stage, is_listing: targetIsListing });
   };
@@ -149,8 +211,17 @@ function VideosPage() {
     let list = videos.filter((v) => {
       if (v.is_archived) return false;
       if (brandFilter !== "all" && v.brand !== brandFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesTitle = v.title.toLowerCase().includes(q);
+        const matchesTag = v.campaign_tag?.toLowerCase().includes(q);
+        const matchesFilmer = v.filmed_by?.toLowerCase().includes(q);
+        const matchesEditor = v.edited_by?.toLowerCase().includes(q);
+        if (!matchesTitle && !matchesTag && !matchesFilmer && !matchesEditor) return false;
+      }
       return true;
     });
+
     if (dueWithin !== "all") {
       list = list.filter((v) => {
         const d = liveOf(v);
@@ -161,6 +232,7 @@ function VideosPage() {
         return diff >= 0 && diff <= days * dayMs;
       });
     }
+
     if (dateSort !== "none") {
       list = [...list].sort((a, b) => {
         const da = liveOf(a);
@@ -173,150 +245,298 @@ function VideosPage() {
         return dateSort === "soonest" ? ta - tb : tb - ta;
       });
     }
+
     if (typeFilter !== "all") {
       list = list.filter((v) => v.video_type === typeFilter);
     }
+
     return list;
-  }, [videos, brandFilter, dueWithin, dateSort, typeFilter]);
+  }, [videos, brandFilter, dueWithin, dateSort, typeFilter, searchQuery]);
+
+  // Production Metrics
+  const activeVideos = videos.filter((v) => !v.is_archived);
+  const preProdCount = activeVideos.filter(
+    (v) => v.stage === "backlog" || v.stage === "idea" || v.stage === "scheduled",
+  ).length;
+  const inEditCount = activeVideos.filter((v) => v.stage === "ready_to_edit").length;
+  const readyPublishCount = activeVideos.filter(
+    (v) => v.stage === "ready_to_post" || v.stage === "scheduled_post",
+  ).length;
 
   return (
-    <div className="p-4 lg:p-6 max-w-[1600px] mx-auto">
-      <header className="flex items-center justify-between mb-4 flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Video Pipeline</h1>
-          <p className="text-sm text-muted-foreground">
-            Drag cards across stages. Push ready videos to the calendar.
-          </p>
-        </div>
-      </header>
+    <div className="p-4 lg:p-8 max-w-[1700px] mx-auto space-y-6">
+      <PageHeader
+        title="Video Production Pipeline"
+        description="Drag cuts across production stages. Track editor assignments, drive links, and push approved videos directly to the Content Calendar."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Link to="/videos-archive">
+              <Button variant="outline" size="sm" className="h-9 border-border/80">
+                <Archive className="w-4 h-4 mr-1.5 text-muted-foreground" />
+                Archive
+              </Button>
+            </Link>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setCreatingListing(false)}
+              className="h-9 border-border/80 hover:border-gold/60"
+            >
+              <Plus className="h-4 w-4 mr-1.5 text-gold" />
+              Brand Video
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setCreatingListing(true)}
+              className="h-9 bg-gold text-navy font-semibold hover:bg-gold/90 shadow-xs"
+            >
+              <Plus className="h-4 w-4 mr-1.5" />
+              Listing Video
+            </Button>
+          </div>
+        }
+      />
 
-      {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-3 mb-5 p-3 bg-card border border-border rounded-lg">
-        <div className="flex items-center gap-2">
-          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Brand</Label>
+      {/* Production Health Metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-card border border-border/80 rounded-xl p-4 flex items-center justify-between shadow-2xs">
+          <div>
+            <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
+              Total In Pipeline
+            </div>
+            <div className="text-2xl font-bold font-mono tracking-tight mt-1 text-foreground">
+              {activeVideos.length}
+            </div>
+          </div>
+          <div className="p-2.5 rounded-lg bg-surface-2 text-gold border border-border/60">
+            <Film className="h-5 w-5" />
+          </div>
+        </div>
+
+        <div className="bg-card border border-border/80 rounded-xl p-4 flex items-center justify-between shadow-2xs">
+          <div>
+            <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
+              Pre-Production
+            </div>
+            <div className="text-2xl font-bold font-mono tracking-tight mt-1 text-sky-400">
+              {preProdCount}
+            </div>
+          </div>
+          <div className="p-2.5 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">
+            <Camera className="h-5 w-5" />
+          </div>
+        </div>
+
+        <div className="bg-card border border-border/80 rounded-xl p-4 flex items-center justify-between shadow-2xs">
+          <div>
+            <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
+              In Post / Edit
+            </div>
+            <div className="text-2xl font-bold font-mono tracking-tight mt-1 text-indigo-400">
+              {inEditCount}
+            </div>
+          </div>
+          <div className="p-2.5 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <Scissors className="h-5 w-5" />
+          </div>
+        </div>
+
+        <div className="bg-card border border-border/80 rounded-xl p-4 flex items-center justify-between shadow-2xs">
+          <div>
+            <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
+              Ready / Scheduled
+            </div>
+            <div className="text-2xl font-bold font-mono tracking-tight mt-1 text-emerald-400">
+              {readyPublishCount}
+            </div>
+          </div>
+          <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <CheckCircle2 className="h-5 w-5" />
+          </div>
+        </div>
+      </div>
+
+      {/* Filter & Search Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-card border border-border/80 rounded-xl shadow-2xs">
+        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
+          {/* Search */}
+          <div className="relative min-w-[200px] flex-1 max-w-xs">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search title, tag, crew…"
+              className="h-9 pl-8 text-xs bg-surface-2 border-border/80"
+            />
+          </div>
+
+          {/* Pipeline switcher */}
+          <div className="flex items-center rounded-lg bg-surface-2 p-0.5 border border-border/70 text-xs">
+            <button
+              onClick={() => setPipelineView("all")}
+              className={cn(
+                "px-2.5 py-1 rounded-md font-medium transition-all",
+                pipelineView === "all"
+                  ? "bg-card text-foreground shadow-2xs"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              All Tracks
+            </button>
+            <button
+              onClick={() => setPipelineView("listing")}
+              className={cn(
+                "px-2.5 py-1 rounded-md font-medium transition-all",
+                pipelineView === "listing"
+                  ? "bg-card text-foreground shadow-2xs"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Listings ({videos.filter((v) => !v.is_archived && v.is_listing).length})
+            </button>
+            <button
+              onClick={() => setPipelineView("brand")}
+              className={cn(
+                "px-2.5 py-1 rounded-md font-medium transition-all",
+                pipelineView === "brand"
+                  ? "bg-card text-foreground shadow-2xs"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Brand ({videos.filter((v) => !v.is_archived && !v.is_listing).length})
+            </button>
+          </div>
+
+          <div className="h-5 w-px bg-border hidden sm:block" />
+
+          {/* Brand Filter */}
           <Select value={brandFilter} onValueChange={(v) => setBrandFilter(v as any)}>
-            <SelectTrigger className="h-8 w-36">
+            <SelectTrigger className="h-9 w-32 text-xs bg-surface-2 border-border/80">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All brands</SelectItem>
+              <SelectItem value="all">All Brands</SelectItem>
               {BRANDS.map((b) => (
-                <SelectItem key={b} value={b}>{b}</SelectItem>
+                <SelectItem key={b} value={b}>
+                  {b}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        </div>
-        <div className="h-6 w-px bg-border" />
-        <div className="flex items-center gap-2">
-          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Type</Label>
+
+          {/* Video Type Filter */}
           <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
-            <SelectTrigger className="h-8 w-36">
+            <SelectTrigger className="h-9 w-32 text-xs bg-surface-2 border-border/80">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
-              <SelectItem value="horizontal">Horizontal</SelectItem>
-              <SelectItem value="reel">Reels</SelectItem>
+              <SelectItem value="all">All Formats</SelectItem>
+              <SelectItem value="horizontal">Horizontal (16:9)</SelectItem>
+              <SelectItem value="reel">Reels (9:16)</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-        <div className="h-6 w-px bg-border" />
-        <div className="flex items-center gap-2">
-          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Live date
-          </Label>
+
+          {/* Urgency Filter */}
           <Select value={dueWithin} onValueChange={(v) => setDueWithin(v as any)}>
-            <SelectTrigger className="h-8 w-40">
+            <SelectTrigger className="h-9 w-36 text-xs bg-surface-2 border-border/80">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Any date</SelectItem>
-              <SelectItem value="overdue">Overdue</SelectItem>
-              <SelectItem value="2">Due in 2 days</SelectItem>
-              <SelectItem value="7">Due in 7 days</SelectItem>
-              <SelectItem value="30">Due in 30 days</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={dateSort} onValueChange={(v) => setDateSort(v as any)}>
-            <SelectTrigger className="h-8 w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="soonest">Soonest first</SelectItem>
-              <SelectItem value="latest">Latest first</SelectItem>
-              <SelectItem value="none">No sort</SelectItem>
+              <SelectItem value="all">Any Live Date</SelectItem>
+              <SelectItem value="overdue">Overdue Only</SelectItem>
+              <SelectItem value="2">Due in ≤ 2 Days</SelectItem>
+              <SelectItem value="7">Due in ≤ 7 Days</SelectItem>
+              <SelectItem value="30">Due in ≤ 30 Days</SelectItem>
             </SelectContent>
           </Select>
         </div>
-        <div className="h-6 w-px bg-border" />
-        <Link to="/videos-archive">
-          <Button variant="outline" size="sm" className="h-9">
-            <Archive className="w-4 h-4 mr-2 text-muted-foreground" />
-            View Archive
-          </Button>
-        </Link>
+
+        <div className="flex items-center gap-2">
+          <Select value={dateSort} onValueChange={(v) => setDateSort(v as any)}>
+            <SelectTrigger className="h-9 w-36 text-xs bg-surface-2 border-border/80">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="soonest">Due Soonest First</SelectItem>
+              <SelectItem value="latest">Latest First</SelectItem>
+              <SelectItem value="none">Default Order</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
         {/* Listings Pipeline */}
-        <section className="mb-8">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold">Listing Videos</h2>
-              <span className="text-xs text-muted-foreground">
-                ({filtered.filter((v) => v.is_listing).length} videos)
-              </span>
+        {(pipelineView === "all" || pipelineView === "listing") && (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2.5">
+                <h2 className="text-base font-semibold tracking-tight text-foreground flex items-center gap-2">
+                  <Film className="h-4 w-4 text-gold" />
+                  Listing Video Pipeline
+                </h2>
+                <Badge variant="outline" className="text-xs font-mono font-normal">
+                  {filtered.filter((v) => v.is_listing).length} active
+                </Badge>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setCreatingListing(true)}
+                className="text-xs text-gold hover:text-gold hover:bg-gold/10 h-8"
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add Listing Video
+              </Button>
             </div>
-            <Button
-              size="sm"
-              onClick={() => setCreatingListing(true)}
-              className="bg-gold text-gold-foreground hover:bg-gold/90"
-            >
-              <Plus className="h-4 w-4 mr-1" /> New Listing Video
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
-            {VIDEO_STAGES.map((s) => (
-              <StageColumn
-                key={s}
-                stage={s}
-                pipelineType="listing"
-                videos={filtered.filter((v) => v.stage === s && v.is_listing)}
-                onOpen={setEditing}
-              />
-            ))}
-          </div>
-        </section>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
+              {VIDEO_STAGES.map((s) => (
+                <StageColumn
+                  key={s}
+                  stage={s}
+                  pipelineType="listing"
+                  videos={filtered.filter((v) => v.stage === s && v.is_listing)}
+                  onOpen={setEditing}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
-        {/* Non-Listings Pipeline */}
-        <section className="mb-8">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold">Brand / Non-Listing Videos</h2>
-              <span className="text-xs text-muted-foreground">
-                ({filtered.filter((v) => !v.is_listing).length} videos)
-              </span>
+        {/* Brand / Non-Listings Pipeline */}
+        {(pipelineView === "all" || pipelineView === "brand") && (
+          <section className="space-y-3 pt-2">
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2.5">
+                <h2 className="text-base font-semibold tracking-tight text-foreground flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-gold" />
+                  Brand / Social Content Pipeline
+                </h2>
+                <Badge variant="outline" className="text-xs font-mono font-normal">
+                  {filtered.filter((v) => !v.is_listing).length} active
+                </Badge>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setCreatingListing(false)}
+                className="text-xs text-gold hover:text-gold hover:bg-gold/10 h-8"
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add Brand Video
+              </Button>
             </div>
-            <Button
-              size="sm"
-              onClick={() => setCreatingListing(false)}
-              className="bg-gold text-gold-foreground hover:bg-gold/90"
-            >
-              <Plus className="h-4 w-4 mr-1" /> New Brand Video
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
-            {VIDEO_STAGES.map((s) => (
-              <StageColumn
-                key={s}
-                stage={s}
-                pipelineType="brand"
-                videos={filtered.filter((v) => v.stage === s && !v.is_listing)}
-                onOpen={setEditing}
-              />
-            ))}
-          </div>
-        </section>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
+              {VIDEO_STAGES.map((s) => (
+                <StageColumn
+                  key={s}
+                  stage={s}
+                  pipelineType="brand"
+                  videos={filtered.filter((v) => v.stage === s && !v.is_listing)}
+                  onOpen={setEditing}
+                />
+              ))}
+            </div>
+          </section>
+        )}
       </DndContext>
 
       {(editing || creatingListing !== null) && (
@@ -350,27 +570,41 @@ function StageColumn({
   onOpen: (v: Video) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `${pipelineType}|${stage}` });
+  const theme = STAGE_THEME[stage];
+
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "bg-card border border-border rounded-xl p-3 min-h-[240px] flex flex-col",
-        isOver && "ring-1 ring-gold/60 bg-gold/5",
+        "bg-card/75 border border-border/80 border-t-2 rounded-xl p-3 min-h-[300px] flex flex-col transition-colors shadow-2xs",
+        theme.borderAccent,
+        isOver && "ring-2 ring-gold/60 bg-gold/5 border-gold/60",
       )}
     >
       <div className="flex items-center justify-between mb-3 px-1">
-        <h3 className="font-semibold text-sm">{VIDEO_STAGE_LABEL[stage]}</h3>
-        <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+        <div className="flex items-center gap-1.5">
+          <span className={cn("h-2 w-2 rounded-full", theme.dot)} />
+          <h3 className="font-semibold text-xs tracking-tight text-foreground">
+            {VIDEO_STAGE_LABEL[stage]}
+          </h3>
+        </div>
+        <span
+          className={cn(
+            "text-[10px] font-mono font-medium px-1.5 py-0.5 rounded border bg-surface-2",
+            theme.pill,
+          )}
+        >
           {videos.length}
         </span>
       </div>
-      <div className="space-y-2 flex-1">
+
+      <div className="space-y-2.5 flex-1">
         {videos.map((v) => (
           <VideoCard key={v.id} video={v} onOpen={() => onOpen(v)} />
         ))}
         {videos.length === 0 && (
-          <div className="text-xs text-muted-foreground text-center py-6">
-            Drop videos here
+          <div className="h-28 flex flex-col items-center justify-center border border-dashed border-border/70 rounded-lg text-[11px] text-muted-foreground/70">
+            <span>Drop cards here</span>
           </div>
         )}
       </div>
@@ -386,28 +620,28 @@ function urgencyFor(video: Video) {
   if (diff < 0)
     return {
       level: "overdue" as const,
-      card: "border-destructive/70 bg-destructive/10",
+      card: "border-destructive/70 bg-destructive/5",
       badge: "bg-destructive/20 text-destructive border-destructive/40",
       label: "Overdue",
     };
   if (diff <= 2 * day)
     return {
       level: "urgent" as const,
-      card: "border-destructive/60 bg-destructive/5",
-      badge: "bg-destructive/15 text-destructive border-destructive/40",
+      card: "border-destructive/50 bg-destructive/5",
+      badge: "bg-destructive/15 text-destructive border-destructive/30",
       label: "Due ≤2d",
     };
   if (diff <= 7 * day)
     return {
       level: "soon" as const,
-      card: "border-amber-500/60 bg-amber-500/5",
-      badge: "bg-amber-500/15 text-amber-500 border-amber-500/40",
+      card: "border-amber-500/50 bg-amber-500/5",
+      badge: "bg-amber-500/15 text-amber-500 border-amber-500/30",
       label: "Due ≤7d",
     };
   return {
     level: "ok" as const,
-    card: "border-emerald-500/40",
-    badge: "bg-emerald-500/10 text-emerald-500 border-emerald-500/30",
+    card: "border-emerald-500/30",
+    badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
     label: "On track",
   };
 }
@@ -427,6 +661,7 @@ function VideoCard({
     : undefined;
   const urgency = urgencyFor(video);
   const liveDate = video.publish_at ?? video.estimated_publish_date;
+
   return (
     <div
       ref={setNodeRef}
@@ -435,33 +670,93 @@ function VideoCard({
       {...attributes}
       onClick={onOpen}
       className={cn(
-        "bg-background border rounded-md p-2.5 text-sm cursor-pointer hover:border-gold/40 border-border",
+        "group relative bg-card border rounded-lg p-3 text-xs cursor-grab active:cursor-grabbing hover:border-gold/50 transition-all shadow-2xs hover:shadow-xs border-border/80",
         PRIORITY_BORDER[video.priority],
         urgency.card,
-        isDragging && "opacity-50",
+        isDragging && "opacity-40 scale-95 shadow-xl",
       )}
     >
-      <div className="flex flex-wrap gap-1 mb-1.5">
-        <BrandBadge brand={video.brand} />
-        <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-muted text-muted-foreground border-border">
-          {video.video_type === "reel" ? "Reel" : "Horizontal"}
-        </span>
+      <div className="flex items-center justify-between gap-1 mb-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <BrandBadge brand={video.brand} />
+          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded border bg-surface-2 text-muted-foreground border-border/60">
+            {video.video_type === "reel" ? (
+              <>
+                <Smartphone className="h-3 w-3 text-amber-400" /> Reel
+              </>
+            ) : (
+              <>
+                <VideoIcon className="h-3 w-3 text-sky-400" /> 16:9
+              </>
+            )}
+          </span>
+        </div>
+
+        {video.duration && (
+          <span className="text-[10px] font-mono text-muted-foreground flex items-center gap-0.5">
+            <Clock className="h-2.5 w-2.5" />
+            {video.duration}
+          </span>
+        )}
       </div>
-      <div className="font-medium line-clamp-2">{video.title}</div>
-      <div className="text-[11px] text-muted-foreground mt-2 space-y-0.5">
-        {video.video_type === "reel" && video.drive_link && (
-          <div className="flex items-center gap-1 truncate">
-            <Link2 className="h-3 w-3" /> <span className="truncate">{video.drive_link}</span>
+
+      <div className="font-semibold text-foreground line-clamp-2 leading-snug">
+        {video.title}
+      </div>
+
+      <div className="text-[11px] text-muted-foreground mt-2.5 space-y-1.5 pt-2 border-t border-border/50">
+        {/* Drive link preview */}
+        {video.drive_link && (
+          <div className="flex items-center justify-between gap-1">
+            <span className="flex items-center gap-1 text-gold truncate">
+              <Link2 className="h-3 w-3 shrink-0" />
+              <span className="truncate text-[10px]">Drive / Footage</span>
+            </span>
+            <a
+              href={video.drive_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-muted-foreground hover:text-gold p-0.5"
+              title="Open link in new tab"
+            >
+              <ExternalLink className="h-3 w-3" />
+            </a>
           </div>
         )}
+
+        {/* Crew pills */}
+        {(video.filmed_by || video.edited_by) && (
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground truncate">
+            {video.filmed_by && (
+              <span className="truncate flex items-center gap-0.5">
+                <Camera className="h-2.5 w-2.5 shrink-0 text-sky-400" />
+                {video.filmed_by}
+              </span>
+            )}
+            {video.edited_by && (
+              <span className="truncate flex items-center gap-0.5">
+                <Scissors className="h-2.5 w-2.5 shrink-0 text-indigo-400" />
+                {video.edited_by}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Date & Urgency */}
         {liveDate && (
-          <div className="flex items-center gap-1 flex-wrap">
-            {urgency.level === "overdue" && <AlertTriangle className="h-3 w-3 text-destructive" />}
-            <Calendar className="h-3 w-3" /> {format(new Date(liveDate), "MMM d, yyyy")}
+          <div className="flex items-center justify-between gap-1 flex-wrap pt-0.5">
+            <span className="flex items-center gap-1 text-[10px]">
+              {urgency.level === "overdue" && (
+                <AlertTriangle className="h-3 w-3 text-destructive shrink-0" />
+              )}
+              <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
+              {format(new Date(liveDate), "MMM d, yyyy")}
+            </span>
             {urgency.level !== "none" && urgency.level !== "ok" && (
               <span
                 className={cn(
-                  "inline-flex items-center text-[9px] font-semibold px-1.5 py-0.5 rounded border",
+                  "inline-flex items-center text-[9px] font-semibold px-1.5 py-0.2 rounded border",
                   urgency.badge,
                 )}
               >
@@ -470,8 +765,16 @@ function VideoCard({
             )}
           </div>
         )}
-        {video.campaign_tag && <div>🏷 {video.campaign_tag}</div>}
-        <div className="capitalize text-[10px]">{PRIORITY_LABEL[video.priority]}</div>
+
+        {/* Campaign & Priority bottom row */}
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5">
+          {video.campaign_tag ? (
+            <span className="truncate text-muted-foreground/90">🏷 {video.campaign_tag}</span>
+          ) : (
+            <span />
+          )}
+          <span className="capitalize font-mono text-[9px]">{PRIORITY_LABEL[video.priority]}</span>
+        </div>
       </div>
     </div>
   );
@@ -485,7 +788,13 @@ interface FormProps {
   currentUserId: string | null;
 }
 
-function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentUserId }: FormProps) {
+function VideoFormDialog({
+  video,
+  defaultIsListing,
+  open,
+  onOpenChange,
+  currentUserId,
+}: FormProps) {
   const qc = useQueryClient();
   const [pushOpen, setPushOpen] = useState(false);
   const initialType: VideoType = video?.video_type ?? "horizontal";
@@ -515,8 +824,6 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
   const isReel = form.video_type === "reel";
   const stageOptions = VIDEO_STAGES as unknown as VideoStage[];
   const isReadyToPost = form.stage === "ready_to_post" || form.stage === "scheduled_post";
-
-
 
   const save = useMutation({
     mutationFn: async () => {
@@ -576,7 +883,6 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
               scheduled_at: contentPayload.scheduled_at,
             })
             .eq("id", linkedId);
-          // If row was deleted, fall back to insert
           if (upErr) {
             const { data: ins, error: insErr } = await (supabase as any)
               .from("content_items")
@@ -647,7 +953,7 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Type</Label>
+                <Label>Format</Label>
                 <Select
                   value={form.video_type}
                   onValueChange={(v) => setForm({ ...form, video_type: v as VideoType })}
@@ -656,24 +962,27 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="horizontal">Horizontal Video</SelectItem>
-                    <SelectItem value="reel">Short-Form Reel</SelectItem>
+                    <SelectItem value="horizontal">Horizontal (16:9)</SelectItem>
+                    <SelectItem value="reel">Short-Form Reel (9:16)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="flex-1">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Listing?</Label>
-                <div className="mt-1 flex items-center h-10 border border-input rounded-md px-3">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Track
+                </Label>
+                <div className="mt-1 flex items-center h-10 border border-input rounded-md px-3 bg-surface-2">
                   <label className="flex items-center gap-2 cursor-pointer w-full">
                     <Checkbox
                       checked={form.is_listing}
                       onCheckedChange={(c) => setForm({ ...form, is_listing: !!c })}
                     />
-                    <span className="text-sm">Is for a Listing</span>
+                    <span className="text-sm font-medium">Listing Video Track</span>
                   </label>
                 </div>
               </div>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-xs uppercase tracking-wider text-muted-foreground">
@@ -688,7 +997,9 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
                   </SelectTrigger>
                   <SelectContent>
                     {BRANDS.map((b) => (
-                      <SelectItem key={b} value={b}>{b}</SelectItem>
+                      <SelectItem key={b} value={b}>
+                        {b}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -699,36 +1010,44 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
                 </Label>
                 <div className="mt-1">
                   {video?.linked_content_item_id ? (
-                    <Button variant="outline" className="w-full text-left justify-start px-3" disabled>
-                      <Link2 className="h-4 w-4 mr-2" /> Linked
+                    <Button
+                      variant="outline"
+                      className="w-full text-left justify-start px-3 text-emerald-400 border-emerald-500/30"
+                      disabled
+                    >
+                      <Link2 className="h-4 w-4 mr-2" /> Linked to Calendar
                     </Button>
                   ) : (
-                    <div className="text-sm text-muted-foreground h-10 flex items-center px-3 border border-border/50 rounded-md bg-muted/50">
-                      Not linked
+                    <div className="text-xs text-muted-foreground h-10 flex items-center px-3 border border-border/60 rounded-md bg-surface-2">
+                      Not linked to calendar
                     </div>
                   )}
                 </div>
               </div>
             </div>
+
             <div>
-              <Label>Title *</Label>
+              <Label>Video Title *</Label>
               <Input
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
+                placeholder="e.g. 1428 Elm St — Cinematic Property Walkthrough"
                 className="mt-1.5"
               />
             </div>
+
             <div>
-              <Label>{isReel ? "Source / Drive Link" : "Google Drive Link"}</Label>
+              <Label>{isReel ? "Source / Footage / Drive Link" : "Google Drive Footage Link"}</Label>
               <Input
                 value={form.drive_link}
                 onChange={(e) => setForm({ ...form, drive_link: e.target.value })}
                 placeholder={
-                  isReel ? "Zoom recording, raw footage, etc." : "https://drive.google.com/..."
+                  isReel ? "Raw footage, Zoom recording, or Drive link" : "https://drive.google.com/..."
                 }
                 className="mt-1.5"
               />
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               {!isReel && (
                 <>
@@ -746,7 +1065,7 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
                     <Input
                       value={form.duration}
                       onChange={(e) => setForm({ ...form, duration: e.target.value })}
-                      placeholder="e.g. 1:30"
+                      placeholder="e.g. 1:45"
                       className="mt-1.5"
                     />
                   </div>
@@ -755,6 +1074,7 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
                     <Input
                       value={form.filmed_by}
                       onChange={(e) => setForm({ ...form, filmed_by: e.target.value })}
+                      placeholder="Videographer name"
                       className="mt-1.5"
                     />
                   </div>
@@ -763,16 +1083,18 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
                     <Input
                       value={form.edited_by}
                       onChange={(e) => setForm({ ...form, edited_by: e.target.value })}
+                      placeholder="Editor name"
                       className="mt-1.5"
                     />
                   </div>
                 </>
               )}
               <div>
-                <Label>{isReel ? "Brand Tag / Campaign" : "Listing / Campaign Tag"}</Label>
+                <Label>{isReel ? "Campaign / Series Tag" : "Listing / Campaign Tag"}</Label>
                 <Input
                   value={form.campaign_tag}
                   onChange={(e) => setForm({ ...form, campaign_tag: e.target.value })}
+                  placeholder="e.g. Community Spotlight, Price Drop"
                   className="mt-1.5"
                 />
               </div>
@@ -795,7 +1117,7 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
                 </Select>
               </div>
               <div className="col-span-2">
-                <Label>Stage</Label>
+                <Label>Pipeline Stage</Label>
                 <Select
                   value={form.stage}
                   onValueChange={(v) => setForm({ ...form, stage: v as VideoStage })}
@@ -813,35 +1135,35 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
                 </Select>
               </div>
               {isReadyToPost && (
-                <div className="col-span-2 rounded-md border border-gold/30 bg-gold/5 p-3">
-                  <Label className="text-xs flex items-center gap-1.5 text-gold">
-                    <Calendar className="h-3.5 w-3.5" /> Publish date &amp; time
+                <div className="col-span-2 rounded-xl border border-gold/40 bg-gold/5 p-3.5 space-y-1.5">
+                  <Label className="text-xs flex items-center gap-1.5 text-gold font-semibold">
+                    <Calendar className="h-3.5 w-3.5" /> Publish Date &amp; Time
                   </Label>
                   <Input
                     type="datetime-local"
                     value={form.publish_at}
                     step={900}
                     onChange={(e) => setForm({ ...form, publish_at: e.target.value })}
-                    className="mt-1.5"
+                    className="mt-1.5 bg-background"
                   />
-                  <p className="text-[11px] text-muted-foreground mt-1.5">
+                  <p className="text-[11px] text-muted-foreground">
                     {video?.linked_content_item_id
                       ? "Saving will update the linked calendar item."
                       : form.publish_at
-                        ? "Saving will automatically create a matching content calendar item."
-                        : "Add a date & time to auto-create a calendar item."}
+                        ? "Saving will automatically create a matching Content Calendar item."
+                        : "Select a date & time to auto-create a calendar item."}
                   </p>
                 </div>
               )}
             </div>
 
-            <DialogFooter className="flex items-center justify-between sm:justify-between gap-2">
+            <DialogFooter className="flex items-center justify-between sm:justify-between gap-2 pt-2">
               <div className="flex gap-2">
                 {video && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-destructive"
+                    className="text-destructive hover:bg-destructive/10"
                     onClick={() => {
                       if (confirm("Delete this video?")) del.mutate();
                     }}
@@ -859,12 +1181,12 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
                         .from("videos")
                         .update({ is_archived: archiving } as any)
                         .eq("id", video.id);
-                        
+
                       if (error) {
                         toast.error(error.message);
                         return;
                       }
-                      
+
                       toast.success(archiving ? "Video archived" : "Video unarchived");
                       qc.invalidateQueries({ queryKey: ["videos"] });
                       onOpenChange(false);
@@ -876,7 +1198,11 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
               </div>
               <div className="flex gap-2">
                 {video && form.stage === "ready_to_post" && (
-                  <Button onClick={() => setPushOpen(true)} variant="outline">
+                  <Button
+                    onClick={() => setPushOpen(true)}
+                    variant="outline"
+                    className="border-gold/40 text-gold hover:bg-gold/10"
+                  >
                     <Send className="h-4 w-4 mr-1.5" /> Push to Calendar
                   </Button>
                 )}
@@ -886,7 +1212,7 @@ function VideoFormDialog({ video, defaultIsListing, open, onOpenChange, currentU
                 <Button
                   onClick={() => save.mutate()}
                   disabled={save.isPending || !form.title.trim()}
-                  className="bg-gold text-gold-foreground hover:bg-gold/90"
+                  className="bg-gold text-navy font-semibold hover:bg-gold/90"
                 >
                   {save.isPending ? "Saving…" : "Save"}
                 </Button>
@@ -966,29 +1292,33 @@ function PushToCalendarDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Push to Calendar</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Send className="h-5 w-5 text-gold" /> Push to Content Calendar
+          </DialogTitle>
         </DialogHeader>
-        <div>
-          <Label>Schedule date &amp; time</Label>
-          <Input
-            type="datetime-local"
-            value={when}
-            onChange={(e) => setWhen(e.target.value)}
-            step={900}
-            className="mt-1.5"
-          />
-          <p className="text-[11px] text-muted-foreground mt-1.5">
-            Will snap to 15-minute increment.
-          </p>
+        <div className="space-y-3">
+          <div>
+            <Label>Schedule date &amp; time</Label>
+            <Input
+              type="datetime-local"
+              value={when}
+              onChange={(e) => setWhen(e.target.value)}
+              step={900}
+              className="mt-1.5"
+            />
+            <p className="text-[11px] text-muted-foreground mt-1.5">
+              Will automatically snap to 15-minute slot.
+            </p>
+          </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button
             onClick={() => push.mutate()}
             disabled={push.isPending}
-            className="bg-gold text-gold-foreground hover:bg-gold/90"
+            className="bg-gold text-navy font-semibold hover:bg-gold/90"
           >
             {push.isPending ? "Pushing…" : "Push to Calendar"}
           </Button>

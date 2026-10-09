@@ -27,7 +27,15 @@ import {
   Phone,
   MapPin,
   Info,
+  Search,
+  Copy,
+  Check,
+  ShieldCheck,
+  ExternalLink,
+  Sparkles,
 } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
+import { ToolCanvas } from "@/components/tool-canvas";
 import {
   getSignatureRoster,
   getTeamConfig,
@@ -406,6 +414,7 @@ function buildSignatureHtml(agent: AgentSig, team: TeamConfig): string {
 // ----------------------------------------------------------------
 function SignaturePreview({ html }: { html: string }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const iframe = iframeRef.current;
@@ -416,20 +425,49 @@ function SignaturePreview({ html }: { html: string }) {
     doc.write(`<!DOCTYPE html><html><head>
       <meta charset="utf-8" />
       <style>
-        body { margin: 0; padding: 16px; background: #fff; font-size: 0; }
+        body { margin: 0; padding: 20px; background: #ffffff; font-size: 0; }
       </style>
     </head><body>${html}</body></html>`);
     doc.close();
   }, [html]);
 
+  const copyHtml = async () => {
+    try {
+      await navigator.clipboard.writeText(html);
+      setCopied(true);
+      toast.success("Signature HTML copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy signature HTML");
+    }
+  };
+
   return (
-    <iframe
-      ref={iframeRef}
-      title="Signature Preview"
-      className="w-full rounded-lg border border-border"
-      style={{ height: 280 }}
-      sandbox="allow-same-origin"
-    />
+    <ToolCanvas
+      title="Live Gmail Paper Canvas"
+      badge="Client-Facing Signature"
+      actions={
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={copyHtml}
+          className="h-7 text-xs gap-1.5 border-border bg-surface-1"
+        >
+          {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? "Copied HTML" : "Copy HTML"}
+        </Button>
+      }
+    >
+      <div className="w-full overflow-x-auto py-2 flex justify-center">
+        <iframe
+          ref={iframeRef}
+          title="Signature Preview"
+          className="w-full max-w-[740px] border-0 rounded-md bg-white"
+          style={{ height: 260 }}
+          sandbox="allow-same-origin"
+        />
+      </div>
+    </ToolCanvas>
   );
 }
 
@@ -440,18 +478,18 @@ function CompletenessBadge({ agent }: { agent: AgentSig }) {
   const { complete, missing } = sigCompleteness(agent);
   if (complete) {
     return (
-      <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 border text-xs gap-1 font-medium">
-        <CheckCircle className="h-3 w-3" /> Complete
+      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-xs gap-1 font-medium">
+        <CheckCircle className="h-3 w-3" /> Ready to Deploy
       </Badge>
     );
   }
   return (
     <div className="flex items-center gap-1.5">
-      <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30 border text-xs gap-1 font-medium">
+      <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-xs gap-1 font-medium">
         <AlertTriangle className="h-3 w-3" /> Incomplete
       </Badge>
-      <span className="text-[10px] text-muted-foreground hidden sm:inline">
-        Missing: {missing.slice(0, 2).join(", ")}
+      <span className="text-[11px] text-muted-foreground hidden sm:inline">
+        Need: {missing.slice(0, 2).join(", ")}
         {missing.length > 2 ? ` +${missing.length - 2}` : ""}
       </span>
     </div>
@@ -641,49 +679,52 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
     >
       <SheetContent
         side="right"
-        className="w-full sm:max-w-2xl overflow-y-auto flex flex-col gap-0 p-0"
+        className="w-full sm:max-w-2xl lg:max-w-3xl overflow-y-auto flex flex-col gap-0 p-0 border-l border-border bg-card"
       >
         {/* Header */}
-        <SheetHeader className="px-6 py-5 border-b border-border shrink-0 bg-sidebar/40">
+        <SheetHeader className="px-6 py-5 border-b border-border/70 shrink-0 bg-muted/20">
           <SheetTitle className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-gold/15 text-gold flex items-center justify-center text-sm font-semibold shrink-0">
+            <div className="h-10 w-10 rounded-full bg-[var(--accent)]/15 text-[var(--accent)] flex items-center justify-center text-sm font-bold shrink-0 border border-[var(--accent)]/25">
               {(agent.name?.[0] ?? agent.email?.[0] ?? "?").toUpperCase()}
             </div>
-            <div>
-              <div className="font-semibold">{fullName}</div>
+            <div className="text-left">
+              <div className="font-semibold text-base text-foreground tracking-tight">{fullName}</div>
               <div className="text-xs font-normal text-muted-foreground mt-0.5">{agent.email}</div>
+            </div>
+            <div className="ml-auto">
+              <CompletenessBadge agent={agent} />
             </div>
           </SheetTitle>
         </SheetHeader>
 
         {/* Tab bar */}
-        <div className="flex border-b border-border shrink-0">
+        <div className="flex border-b border-border/70 shrink-0 bg-muted/10">
           {(["edit", "preview"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={cn(
-                "flex-1 py-3 text-sm font-medium capitalize transition-colors",
+                "flex-1 py-3 text-xs font-semibold capitalize transition-all border-b-2",
                 activeTab === tab
-                  ? "text-gold border-b-2 border-gold bg-gold/5"
-                  : "text-muted-foreground hover:text-foreground",
+                  ? "text-[var(--accent)] border-[var(--accent)] bg-[var(--accent)]/5"
+                  : "text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/30",
               )}
             >
-              {tab === "edit" ? "Edit Details" : "Preview"}
+              {tab === "edit" ? "Profile & Location Details" : "Live Signature Canvas"}
             </button>
           ))}
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+        <div className="flex-1 overflow-y-auto px-6 py-6">
           {activeTab === "edit" ? (
-            <div className="space-y-5">
+            <div className="space-y-6">
               {/* Personal */}
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
-                  Personal Info
+              <div className="rounded-xl border border-border/70 bg-muted/10 p-4 space-y-3">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--accent)]">
+                  Personal Information
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   {field("title", "Title / Role", "title", "REALTOR®, Team Lead, etc.")}
                   {field(
                     "gmail_email",
@@ -698,19 +739,19 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
               </div>
 
               {/* Headshot */}
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
-                  Headshot Photo
+              <div className="rounded-xl border border-border/70 bg-muted/10 p-4 space-y-3">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--accent)]">
+                  Agent Headshot Photo
                 </p>
                 <div className="flex items-start gap-4">
                   {form.headshot_url ? (
                     <img
                       src={form.headshot_url}
                       alt="Headshot preview"
-                      className="h-20 w-16 rounded-md object-cover object-top border border-border shrink-0"
+                      className="h-20 w-18 rounded-lg object-cover object-top border border-border shadow-sm shrink-0"
                     />
                   ) : (
-                    <div className="h-20 w-16 rounded-md bg-muted border border-border shrink-0 flex items-center justify-center">
+                    <div className="h-20 w-18 rounded-lg bg-surface-2 border border-dashed border-border shrink-0 flex items-center justify-center">
                       <ImageIcon className="h-5 w-5 text-muted-foreground" />
                     </div>
                   )}
@@ -718,10 +759,10 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
                     <Input
                       value={form.headshot_url}
                       onChange={(e) => setForm((f) => ({ ...f, headshot_url: e.target.value }))}
-                      placeholder="https://... (paste a permanent URL)"
-                      className="h-9 text-sm"
+                      placeholder="https://... (paste a permanent public URL)"
+                      className="h-9 text-xs"
                     />
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <input
                         ref={fileRef}
                         type="file"
@@ -733,7 +774,7 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="text-xs"
+                        className="text-xs h-8 border-border"
                         disabled={uploading}
                         onClick={() => fileRef.current?.click()}
                       >
@@ -743,12 +784,12 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
                           </>
                         ) : (
                           <>
-                            <Upload className="h-3 w-3 mr-1.5" /> Upload from file
+                            <Upload className="h-3 w-3 mr-1.5 text-[var(--accent)]" /> Upload Image File
                           </>
                         )}
                       </Button>
-                      <span className="text-[10px] text-muted-foreground">
-                        JPG, PNG, WebP · max 8 MB
+                      <span className="text-[11px] text-muted-foreground">
+                        JPG, PNG, WebP · Max 8 MB
                       </span>
                     </div>
                   </div>
@@ -756,91 +797,85 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
               </div>
 
               {/* Offices */}
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
+              <div className="rounded-xl border border-border/70 bg-muted/10 p-4 space-y-3">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--accent)]">
                   Office Locations to Display
                 </p>
-                <div className="space-y-3">
-                  {/* Team Location Checkboxes */}
-                  <div className="space-y-3 bg-sidebar/30 p-4 rounded-xl border border-border">
-                    <p className="text-xs font-semibold text-foreground">
-                      Select Team Offices for Signature
-                    </p>
-                    <label className="flex items-start gap-3 text-xs cursor-pointer">
-                      <Checkbox
-                        checked={form.show_office_rolla}
-                        onCheckedChange={(c) =>
-                          setForm((prev) => ({ ...prev, show_office_rolla: !!c }))
-                        }
-                        className="mt-0.5"
-                      />
-                      <div>
-                        <span className="font-semibold text-foreground">Rolla Office</span>
-                        <p className="text-[11px] text-muted-foreground">
-                          {form.office_rolla_addr ||
-                            team?.office_rolla_addr ||
-                            "1043 Kingshighway, Rolla, MO 65401"}
-                        </p>
-                      </div>
-                    </label>
+                <div className="space-y-2.5">
+                  <label className="flex items-start gap-3 p-3 rounded-lg border border-border/60 bg-card hover:bg-muted/30 transition-colors cursor-pointer">
+                    <Checkbox
+                      checked={form.show_office_rolla}
+                      onCheckedChange={(c) =>
+                        setForm((prev) => ({ ...prev, show_office_rolla: !!c }))
+                      }
+                      className="mt-0.5"
+                    />
+                    <div>
+                      <span className="text-xs font-semibold text-foreground">Rolla Headquarters</span>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {form.office_rolla_addr ||
+                          team?.office_rolla_addr ||
+                          "1043 Kingshighway, Rolla, MO 65401"}
+                      </p>
+                    </div>
+                  </label>
 
-                    <label className="flex items-start gap-3 text-xs cursor-pointer">
-                      <Checkbox
-                        checked={form.show_office_strobert}
-                        onCheckedChange={(c) =>
-                          setForm((prev) => ({ ...prev, show_office_strobert: !!c }))
-                        }
-                        className="mt-0.5"
-                      />
-                      <div>
-                        <span className="font-semibold text-foreground">St. Robert Office</span>
-                        <p className="text-[11px] text-muted-foreground">
-                          {form.office_strobert_addr ||
-                            team?.office_strobert_addr ||
-                            "157 Saint Robert Blvd, St. Robert, MO 65584"}
-                        </p>
-                      </div>
-                    </label>
+                  <label className="flex items-start gap-3 p-3 rounded-lg border border-border/60 bg-card hover:bg-muted/30 transition-colors cursor-pointer">
+                    <Checkbox
+                      checked={form.show_office_strobert}
+                      onCheckedChange={(c) =>
+                        setForm((prev) => ({ ...prev, show_office_strobert: !!c }))
+                      }
+                      className="mt-0.5"
+                    />
+                    <div>
+                      <span className="text-xs font-semibold text-foreground">St. Robert Office</span>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {form.office_strobert_addr ||
+                          team?.office_strobert_addr ||
+                          "157 Saint Robert Blvd, St. Robert, MO 65584"}
+                      </p>
+                    </div>
+                  </label>
 
-                    <label className="flex items-start gap-3 text-xs cursor-pointer">
-                      <Checkbox
-                        checked={form.show_office_osage}
-                        onCheckedChange={(c) =>
-                          setForm((prev) => ({ ...prev, show_office_osage: !!c }))
-                        }
-                        className="mt-0.5"
-                      />
-                      <div>
-                        <span className="font-semibold text-foreground">Osage Beach Office</span>
-                        <p className="text-[11px] text-muted-foreground">
-                          {form.office_osage_addr ||
-                            team?.office_osage_addr ||
-                            "456 Shore Dr, Osage Beach, MO 65065"}
-                        </p>
-                      </div>
-                    </label>
-                  </div>
+                  <label className="flex items-start gap-3 p-3 rounded-lg border border-border/60 bg-card hover:bg-muted/30 transition-colors cursor-pointer">
+                    <Checkbox
+                      checked={form.show_office_osage}
+                      onCheckedChange={(c) =>
+                        setForm((prev) => ({ ...prev, show_office_osage: !!c }))
+                      }
+                      className="mt-0.5"
+                    />
+                    <div>
+                      <span className="text-xs font-semibold text-foreground">Osage Beach / Lake Office</span>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {form.office_osage_addr ||
+                          team?.office_osage_addr ||
+                          "456 Shore Dr, Osage Beach, MO 65065"}
+                      </p>
+                    </div>
+                  </label>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400">
-                <Info className="h-3.5 w-3.5 shrink-0" />
-                <span>Preview updates live as you edit. Scroll to see the full signature.</span>
-              </div>
-              <div className="overflow-x-auto">
-                <SignaturePreview html={previewHtml} />
-              </div>
+            <div className="space-y-5">
+              <SignaturePreview html={previewHtml} />
+
               {/* Raw HTML copy */}
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">
-                  Raw HTML (copy into any email client that accepts HTML signatures)
-                </p>
+              <div className="rounded-xl border border-border/70 p-4 bg-muted/10 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Raw HTML Source
+                  </p>
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    Click to auto-select
+                  </span>
+                </div>
                 <textarea
                   readOnly
                   value={previewHtml}
-                  className="w-full h-32 rounded-md border border-border bg-muted/50 px-3 py-2 text-[10px] font-mono text-muted-foreground resize-none focus:outline-none"
+                  className="w-full h-28 rounded-lg border border-border/70 bg-surface-2 px-3 py-2 text-[10px] font-mono text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                   onClick={(e) => (e.target as HTMLTextAreaElement).select()}
                 />
               </div>
@@ -849,23 +884,22 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
         </div>
 
         {/* Footer actions */}
-        <div className="px-6 py-4 border-t border-border shrink-0 flex items-center gap-3 bg-sidebar/30">
+        <div className="px-6 py-4 border-t border-border/70 shrink-0 flex items-center gap-3 bg-muted/20">
           <Button
-            className="bg-gold text-navy font-semibold hover:bg-gold/90 gap-2"
+            className="bg-[var(--accent)] hover:opacity-90 text-white font-medium text-xs gap-1.5 shadow-sm"
             onClick={handleSave}
             disabled={saving}
           >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            Save Signature Details
           </Button>
-          <Button variant="ghost" onClick={onClose} className="text-muted-foreground">
-            Close
+          <Button variant="ghost" size="sm" onClick={onClose} className="text-xs text-muted-foreground">
+            Cancel
           </Button>
           <div className="flex-1" />
           <Button
-            variant="outline"
             size="sm"
-            className="gap-1.5 text-xs bg-gold text-navy font-semibold hover:bg-gold/90 border-0"
+            className="gap-1.5 text-xs bg-[var(--accent)] hover:opacity-90 text-white font-medium shadow-sm"
             disabled={pushing || saving}
             onClick={handlePush}
           >
@@ -874,7 +908,7 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
             ) : (
               <Mail className="h-3.5 w-3.5" />
             )}
-            Push to Gmail
+            Push to Gmail API
           </Button>
         </div>
       </SheetContent>
@@ -907,7 +941,7 @@ function TeamConfigSection({ onChanged }: { onChanged: () => void }) {
     setSaving(true);
     try {
       await saveFn({ data: form as any });
-      toast.success("Team settings saved");
+      toast.success("Team signature settings saved");
       onChanged();
     } catch (err: any) {
       toast.error(err.message ?? "Save failed");
@@ -918,7 +952,7 @@ function TeamConfigSection({ onChanged }: { onChanged: () => void }) {
 
   const f = (id: string, label: string, key: keyof TeamConfig, placeholder?: string) => (
     <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs text-muted-foreground uppercase tracking-wide">
+      <Label htmlFor={id} className="text-xs font-semibold text-foreground">
         {label}
       </Label>
       <Input
@@ -926,45 +960,45 @@ function TeamConfigSection({ onChanged }: { onChanged: () => void }) {
         value={(form[key] as string) ?? ""}
         onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))}
         placeholder={placeholder}
-        className="h-9 text-sm"
+        className="h-9 text-xs"
       />
     </div>
   );
 
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden mb-6">
+    <div className="bg-card border border-border/70 rounded-xl overflow-hidden mb-6 shadow-sm">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between p-5 hover:bg-sidebar/40 transition-colors"
+        className="w-full flex items-center justify-between p-4 sm:p-5 hover:bg-muted/20 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-gold/15 text-gold flex items-center justify-center">
+          <div className="h-8 w-8 rounded-lg bg-[var(--accent)]/10 text-[var(--accent)] flex items-center justify-center">
             <Settings className="h-4 w-4" />
           </div>
           <div className="text-left">
-            <div className="font-semibold text-sm">Team-Wide Settings</div>
+            <div className="font-semibold text-sm text-foreground">Team-Wide Signature Settings</div>
             <div className="text-xs text-muted-foreground mt-0.5">
-              Accolade banner · links · logo · social icons
+              Accolade banner · links · brand logos · social icons
             </div>
           </div>
         </div>
         <ChevronRight
-          className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-90")}
+          className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", open && "rotate-90")}
         />
       </button>
 
       {open && (
-        <div className="border-t border-border p-5 space-y-5">
+        <div className="border-t border-border/70 p-5 space-y-6 bg-muted/5">
           {isLoading ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+            <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading team settings…
             </div>
           ) : (
             <>
               {/* Default Office Location Addresses */}
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
-                  Team Office Location Addresses
+              <div className="rounded-xl border border-border/70 bg-card p-4 space-y-3">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--accent)]">
+                  Default Team Office Addresses
                 </p>
                 <div className="space-y-3">
                   {f(
@@ -987,105 +1021,75 @@ function TeamConfigSection({ onChanged }: { onChanged: () => void }) {
                   )}
                 </div>
               </div>
+
               {/* Accolade */}
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
-                  Accolade Banner
+              <div className="rounded-xl border border-border/70 bg-card p-4 space-y-3">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--accent)]">
+                  Header Accolade Banner
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {f("acc1", "Line 1 (bold)", "accolade_line1", "#1 Real Estate Team in Missouri")}
-                  {f("acc2", "Line 2 (secondary)", "accolade_line2", "#18 in the Country by Sides")}
+                  {f("acc1", "Line 1 (Bold Highlight)", "accolade_line1", "#1 Real Estate Team in Missouri")}
+                  {f("acc2", "Line 2 (Secondary Subtext)", "accolade_line2", "#18 in the Country by Sides")}
                 </div>
               </div>
+
               {/* Links */}
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
-                  Links
+              <div className="rounded-xl border border-border/70 bg-card p-4 space-y-3">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--accent)]">
+                  Destination Links
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {f("web", "Website URL", "website_url")}
-                  {f("val", "Home Valuation URL", "valuation_url")}
+                  {f("val", "Home Valuation CTA URL", "valuation_url")}
                   {f("fb", "Facebook URL", "facebook_url")}
                   {f("ig", "Instagram URL", "instagram_url")}
                 </div>
               </div>
+
               {/* Assets */}
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
-                  Image URLs (must be permanent public https:// URLs)
+              <div className="rounded-xl border border-border/70 bg-card p-4 space-y-3">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--accent)]">
+                  Brand Asset URLs (Permanent Public HTTPS)
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {f("logo", "Team Logo", "logo_url", "https://...")}
-                  {f("ico-web", "Web Icon", "icon_web_url", "https://...")}
-                  {f("ico-fb", "Facebook Icon", "icon_fb_url", "https://...")}
-                  {f("ico-ig", "Instagram Icon", "icon_ig_url", "https://...")}
+                  {f("logo", "Team Logo URL", "logo_url", "https://...")}
+                  {f("ico-web", "Website Icon URL", "icon_web_url", "https://...")}
+                  {f("ico-fb", "Facebook Icon URL", "icon_fb_url", "https://...")}
+                  {f("ico-ig", "Instagram Icon URL", "icon_ig_url", "https://...")}
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1.5">
-                  <Info className="h-3 w-3 shrink-0" />
-                  Upload images to Supabase Storage → set to public → paste the permanent URL here.
-                </p>
               </div>
+
               {/* HTML Template Editor */}
-              <div className="space-y-1.5">
+              <div className="rounded-xl border border-border/70 bg-card p-4 space-y-3">
                 <Label
                   htmlFor="html_template"
-                  className="text-xs text-muted-foreground uppercase tracking-wide"
+                  className="text-xs font-semibold text-foreground uppercase tracking-wide"
                 >
-                  HTML Email Template (Base Template)
+                  HTML Email Base Template
                 </Label>
                 <Textarea
                   id="html_template"
                   value={form.html_template ?? ""}
                   onChange={(e) => setForm((prev) => ({ ...prev, html_template: e.target.value }))}
                   placeholder="Enter base HTML email template..."
-                  className="font-mono text-xs h-[300px] bg-muted/30 border-border"
+                  className="font-mono text-[11px] h-[260px] bg-surface-2 border-border/70 leading-relaxed"
                 />
-                <div className="text-[10px] text-muted-foreground mt-2 space-y-1.5 p-3 rounded-lg border border-border bg-sidebar/25">
-                  <p className="font-semibold text-foreground">Available Placeholders:</p>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-[9px] text-gold">
-                    <div>{"{{name}}"} - Agent Name</div>
-                    <div>{"{{title}}"} - Title / Role</div>
-                    <div>{"{{mobile_phone}}"} - Mobile Phone</div>
-                    <div>{"{{office_phone}}"} - Office Phone</div>
-                    <div>{"{{headshot_url}}"} - Public Headshot URL</div>
-                    <div>{"{{logo_url}}"} - Public Logo URL</div>
-                    <div>{"{{office1_label}}"} - Office 1 Label</div>
-                    <div>{"{{office1_addr}}"} - Office 1 Address</div>
-                    <div>{"{{office2_label}}"} - Office 2 Label</div>
-                    <div>{"{{office2_addr}}"} - Office 2 Address</div>
-                    <div>{"{{website_url}}"} - Website Link</div>
-                    <div>{"{{valuation_url}}"} - Valuation Link</div>
-                    <div>{"{{facebook_url}}"} - FB Profile Link</div>
-                    <div>{"{{instagram_url}}"} - IG Profile Link</div>
-                    <div>{"{{accolade_line1}}"} - Banner Title</div>
-                    <div>{"{{accolade_line2}}"} - Banner Subtitle</div>
-                  </div>
-                  <p className="text-[9px] text-muted-foreground mt-2 leading-relaxed">
-                    Supports basic Handlebars-style conditionals:
-                    <br />
-                    <code className="bg-muted px-1 py-0.5 rounded text-foreground">
-                      {"{{#if mobile_phone}} ... {{/if}}"}
-                    </code>{" "}
-                    or
-                    <br />
-                    <code className="bg-muted px-1 py-0.5 rounded text-foreground">
-                      {"{{#if headshot_url}} ... {{else}} ... {{/if}}"}
-                    </code>
-                  </p>
-                </div>
               </div>
-              <Button
-                className="bg-gold text-navy font-semibold hover:bg-gold/90 gap-2"
-                onClick={handleSave}
-                disabled={saving}
-              >
-                {saving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-                Save Team Settings
-              </Button>
+
+              <div className="flex justify-end pt-2">
+                <Button
+                  className="bg-[var(--accent)] hover:opacity-90 text-white font-medium text-xs gap-1.5 shadow-sm"
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Save className="h-3.5 w-3.5" />
+                  )}
+                  Save Team Settings
+                </Button>
+              </div>
             </>
           )}
         </div>
@@ -1108,6 +1112,8 @@ function SignaturesPage() {
   const pushFn = useServerFn(pushSignatureToGmail);
 
   const [pushingAll, setPushingAll] = useState(false);
+  const [search, setSearch] = useState("");
+  const [filterTab, setFilterTab] = useState<"all" | "complete" | "attention">("all");
 
   const {
     data: roster = [],
@@ -1189,8 +1195,8 @@ function SignaturesPage() {
 
   if (loading) {
     return (
-      <div className="p-8 text-muted-foreground flex items-center gap-2">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+      <div className="p-8 text-muted-foreground flex items-center justify-center gap-2 text-sm min-h-[40vh]">
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading signatures workspace…
       </div>
     );
   }
@@ -1198,141 +1204,219 @@ function SignaturesPage() {
 
   const complete = (roster as AgentSig[]).filter((a) => sigCompleteness(a).complete).length;
   const total = (roster as AgentSig[]).length;
+  const needAttention = total - complete;
+
+  // Filter roster
+  const filteredRoster = (roster as AgentSig[]).filter((agent) => {
+    const isComplete = sigCompleteness(agent).complete;
+    if (filterTab === "complete" && !isComplete) return false;
+    if (filterTab === "attention" && isComplete) return false;
+
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    const nameMatch = agent.name?.toLowerCase().includes(q);
+    const emailMatch = agent.email?.toLowerCase().includes(q);
+    const titleMatch = agent.sig?.title?.toLowerCase().includes(q);
+    return nameMatch || emailMatch || titleMatch;
+  });
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl mx-auto">
-      {/* Page header */}
-      <header className="mb-8">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2.5">
-              <Mail className="h-6 w-6 text-gold" />
-              Email Signatures
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Manage branded Gmail signatures for every agent on the team.
-            </p>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+      {/* Page Header */}
+      <PageHeader
+        category="Brand & Identity"
+        title="Email Signatures"
+        description="Manage branded Gmail signatures, verified accolades, and automated Google Workspace API deployment."
+        badge={
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 inline-flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Google Workspace Active
+          </span>
+        }
+        actions={
+          <Button
+            size="sm"
+            disabled={pushingAll || rosterLoading || roster.length === 0}
+            onClick={handlePushAll}
+            className="bg-[var(--accent)] hover:opacity-90 text-white font-medium text-xs gap-1.5 shadow-sm"
+          >
+            {pushingAll ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Mail className="h-3.5 w-3.5" />
+            )}
+            Push All to Gmail API
+          </Button>
+        }
+      />
+
+      {/* Metric Cards */}
+      {!rosterLoading && total > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+          <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Total Agents</p>
+              <p className="text-2xl font-bold text-foreground mt-0.5">{total}</p>
+            </div>
+            <div className="h-10 w-10 rounded-xl bg-muted text-muted-foreground flex items-center justify-center">
+              <Users className="h-5 w-5" />
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={pushingAll || rosterLoading || roster.length === 0}
-              onClick={handlePushAll}
-              className="gap-1.5 text-xs bg-gold text-navy font-semibold hover:bg-gold/90 border-0"
-            >
-              {pushingAll ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Mail className="h-3.5 w-3.5" />
-              )}
-              Push All to Gmail
-            </Button>
+
+          <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-4 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-[11px] uppercase tracking-wider text-emerald-400 font-semibold">Ready to Deploy</p>
+              <p className="text-2xl font-bold text-emerald-400 mt-0.5">{complete}</p>
+            </div>
+            <div className="h-10 w-10 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+              <CheckCircle className="h-5 w-5" />
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-4 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-[11px] uppercase tracking-wider text-amber-400 font-semibold">Needs Attention</p>
+              <p className="text-2xl font-bold text-amber-400 mt-0.5">{needAttention}</p>
+            </div>
+            <div className="h-10 w-10 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
           </div>
         </div>
+      )}
 
-        {/* Stats bar */}
-        {!rosterLoading && total > 0 && (
-          <div className="mt-5 grid grid-cols-3 gap-3 max-w-md">
-            <div className="rounded-lg border border-border bg-card p-3 text-center">
-              <div className="text-2xl font-bold text-gold">{total}</div>
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">
-                Agents
-              </div>
-            </div>
-            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-center">
-              <div className="text-2xl font-bold text-emerald-400">{complete}</div>
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">
-                Complete
-              </div>
-            </div>
-            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-center">
-              <div className="text-2xl font-bold text-amber-400">{total - complete}</div>
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">
-                Need Attention
-              </div>
-            </div>
+      {/* Gmail Integration Callout */}
+      <div className="p-4 rounded-xl border border-[var(--accent)]/30 bg-[var(--accent)]/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-start gap-3">
+          <ShieldCheck className="h-4 w-4 text-[var(--accent)] mt-0.5 shrink-0" />
+          <div className="text-foreground leading-relaxed">
+            <span className="font-semibold text-[var(--accent)]">Google Workspace Service Account:</span> Signatures are deployed using the Netlify environment variable{" "}
+            <code className="bg-surface-2 border border-border/70 px-1.5 py-0.5 rounded font-mono text-[11px] text-[var(--accent)]">
+              GOOGLE_SA_KEY_JSON
+            </code>.
           </div>
-        )}
-      </header>
-
-      {/* Gmail integration notice */}
-      <div className="mb-6 p-4 rounded-xl border border-gold/30 bg-gold/5 flex items-start gap-3">
-        <Info className="h-4 w-4 text-gold mt-0.5 shrink-0" />
-        <div className="text-sm text-gold/90">
-          <span className="font-semibold">Gmail Push Setup:</span> Make sure your Google Workspace
-          Service Account JSON key is added as the{" "}
-          <code className="bg-navy px-1.5 py-0.5 rounded font-mono text-xs text-gold">
-            GOOGLE_SA_KEY_JSON
-          </code>{" "}
-          environment variable in Netlify.
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs h-7 self-start sm:self-auto shrink-0 border-border"
+          onClick={() => {
+            navigator.clipboard.writeText("GOOGLE_SA_KEY_JSON");
+            toast.success("Copied GOOGLE_SA_KEY_JSON to clipboard");
+          }}
+        >
+          <Copy className="h-3 w-3 mr-1" /> Copy Key Name
+        </Button>
       </div>
 
-      {/* Team-wide settings */}
+      {/* Team Settings Accordion */}
       <TeamConfigSection
         onChanged={() => qc.invalidateQueries({ queryKey: ["signature-team-config"] })}
       />
 
-      {/* Agent roster */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="p-5 border-b border-border flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-gold/15 text-gold flex items-center justify-center">
-            <Users className="h-4 w-4" />
+      {/* Agent Roster Card */}
+      <div className="bg-card border border-border/70 rounded-xl overflow-hidden shadow-sm">
+        <div className="p-4 sm:p-5 border-b border-border/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/10">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-lg bg-[var(--accent)]/10 text-[var(--accent)] flex items-center justify-center">
+              <Users className="h-4 w-4" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-sm text-foreground">Agent Signature Roster</h2>
+              <p className="text-[11px] text-muted-foreground">
+                {rosterLoading ? "Loading roster…" : `${filteredRoster.length} of ${total} agents displayed`}
+              </p>
+            </div>
           </div>
-          <div>
-            <div className="font-semibold text-sm">Agent Roster</div>
-            <div className="text-xs text-muted-foreground">
-              {rosterLoading ? "Loading…" : `${total} agents`}
+
+          {/* Search & Filter Toolbar */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative min-w-[200px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search agent name or email…"
+                className="pl-8 text-xs h-8 bg-surface-2 border-border/70"
+              />
+            </div>
+            <div className="flex rounded-lg border border-border/70 p-0.5 bg-surface-2 text-xs">
+              <button
+                onClick={() => setFilterTab("all")}
+                className={cn(
+                  "px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors",
+                  filterTab === "all" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                All ({total})
+              </button>
+              <button
+                onClick={() => setFilterTab("complete")}
+                className={cn(
+                  "px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors",
+                  filterTab === "complete" ? "bg-card text-emerald-400 shadow-xs" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Complete ({complete})
+              </button>
+              <button
+                onClick={() => setFilterTab("attention")}
+                className={cn(
+                  "px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors",
+                  filterTab === "attention" ? "bg-card text-amber-400 shadow-xs" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Attention ({needAttention})
+              </button>
             </div>
           </div>
         </div>
 
         {rosterLoading ? (
-          <div className="p-8 text-center text-muted-foreground text-sm flex items-center justify-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading agents…
+          <div className="p-12 text-center text-muted-foreground text-xs flex items-center justify-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-[var(--accent)]" /> Loading agent roster…
           </div>
         ) : rosterError ? (
-          <div className="p-8 text-center text-sm">
-            <div className="text-rose-400 font-medium mb-1">Failed to load roster</div>
-            <div className="text-muted-foreground text-xs font-mono">
+          <div className="p-8 text-center text-xs">
+            <div className="text-rose-400 font-semibold mb-1">Failed to load agent roster</div>
+            <div className="text-muted-foreground text-[11px] font-mono">
               {(rosterError as any)?.message ?? String(rosterError)}
             </div>
           </div>
-        ) : total === 0 ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">No agents found.</div>
+        ) : filteredRoster.length === 0 ? (
+          <div className="p-12 text-center text-muted-foreground text-xs">
+            No agents found matching your current search or filter.
+          </div>
         ) : (
-          <div className="divide-y divide-border">
-            {(roster as AgentSig[]).map((agent) => {
+          <div className="divide-y divide-border/60">
+            {filteredRoster.map((agent) => {
               const fullName = agent.name || agent.email || "Unknown Agent";
-              const { complete: isComplete, missing } = sigCompleteness(agent);
               const lastPushed = agent.sig?.last_pushed_at;
               const pushStatus = agent.sig?.last_push_status;
 
               return (
                 <div
                   key={agent.id}
-                  className="p-4 flex flex-wrap items-center gap-3 hover:bg-sidebar/30 transition-colors"
+                  className="p-4 flex flex-wrap items-center gap-3.5 hover:bg-muted/20 transition-colors"
                 >
                   {/* Avatar */}
-                  <div className="h-9 w-9 rounded-full bg-gold/10 border border-gold/20 text-gold flex items-center justify-center text-sm font-semibold shrink-0">
+                  <div className="h-9 w-9 rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/20 text-[var(--accent)] flex items-center justify-center text-xs font-bold shrink-0">
                     {(agent.name?.[0] ?? agent.email?.[0] ?? "?").toUpperCase()}
                   </div>
 
                   {/* Name + email */}
-                  <div className="flex-1 min-w-[160px]">
-                    <div className="font-medium text-sm">{fullName}</div>
-                    <div className="text-xs text-muted-foreground">{agent.email}</div>
+                  <div className="flex-1 min-w-[170px]">
+                    <div className="font-semibold text-xs text-foreground">{fullName}</div>
+                    <div className="text-[11px] text-muted-foreground">{agent.email}</div>
                   </div>
 
                   {/* Gmail target */}
-                  <div className="min-w-[180px] hidden md:block">
-                    <div className="text-xs text-muted-foreground uppercase tracking-wide">
+                  <div className="min-w-[170px] hidden md:block">
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
                       Gmail Target
                     </div>
-                    <div className="text-xs mt-0.5 font-mono text-foreground/80 truncate max-w-[180px]">
+                    <div className="text-xs mt-0.5 font-mono text-foreground/80 truncate max-w-[170px]">
                       {agent.sig?.gmail_email ?? (
-                        <span className="text-muted-foreground italic">not set</span>
+                        <span className="text-muted-foreground/60 italic text-[11px]">not configured</span>
                       )}
                     </div>
                   </div>
@@ -1342,15 +1426,15 @@ function SignaturesPage() {
                     <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
                     <span className="text-xs text-foreground/80">
                       {agent.sig?.mobile_phone ?? (
-                        <span className="text-muted-foreground italic">—</span>
+                        <span className="text-muted-foreground/60 italic text-[11px]">—</span>
                       )}
                     </span>
                   </div>
 
                   {/* Last push */}
-                  <div className="min-w-[130px] hidden lg:block">
-                    <div className="text-xs text-muted-foreground uppercase tracking-wide">
-                      Last Push
+                  <div className="min-w-[120px] hidden lg:block">
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                      Last Deployed
                     </div>
                     <div className="flex items-center gap-1 mt-0.5">
                       {pushStatus === "success" && (
@@ -1359,7 +1443,7 @@ function SignaturesPage() {
                       {pushStatus === "error" && (
                         <AlertTriangle className="h-3 w-3 text-rose-400 shrink-0" />
                       )}
-                      <span className="text-xs text-foreground/70">
+                      <span className="text-[11px] text-foreground/70">
                         {lastPushed
                           ? new Date(lastPushed).toLocaleDateString("en-US", {
                               month: "short",
@@ -1381,11 +1465,11 @@ function SignaturesPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-8 text-xs gap-1.5"
+                      className="h-8 text-xs gap-1.5 border-border"
                       onClick={() => handleEditAgent(agent)}
                     >
-                      <Eye className="h-3 w-3" />
-                      Edit / Preview
+                      <Eye className="h-3 w-3 text-[var(--accent)]" />
+                      Configure & Preview
                     </Button>
                   </div>
                 </div>

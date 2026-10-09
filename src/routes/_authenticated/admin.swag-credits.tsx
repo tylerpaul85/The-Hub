@@ -57,6 +57,7 @@ import {
   ExternalLink,
   RotateCcw,
 } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -413,6 +414,14 @@ function AdminSwagCreditsPage() {
     });
   }, [credits, searchTerm, statusFilter]);
 
+  const stats = useMemo(() => {
+    const totalAmount = credits.reduce((acc, c) => acc + (c.amount || 0), 0);
+    const totalBalance = credits.reduce((acc, c) => acc + (c.balance || 0), 0);
+    const activeCount = credits.filter((c) => c.status === "active").length;
+    const revokedCount = credits.filter((c) => c.status === "revoked").length;
+    return { totalAmount, totalBalance, activeCount, revokedCount, count: credits.length };
+  }, [credits]);
+
   const toggleRevealCode = (id: string) => {
     setRevealedCodes((prev) => ({ ...prev, [id]: !prev[id] }));
   };
@@ -425,7 +434,7 @@ function AdminSwagCreditsPage() {
   };
 
   if (authLoading || isConfigLoading) {
-    return <div className="p-8 text-center text-muted-foreground">Loading authentication...</div>;
+    return <div className="p-8 text-center text-[var(--text-secondary)]">Loading swag credits system...</div>;
   }
 
   if (!canAccess) {
@@ -433,113 +442,132 @@ function AdminSwagCreditsPage() {
   }
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
-      {/* Header */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gold/10 rounded-lg text-gold">
-            <Ticket className="h-7 w-7" />
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
+      {/* Page Header */}
+      <PageHeader
+        title="Shopify Swag Credits"
+        subtitle="Issue store credits to agents from the Agent Toolbox and dispatch gift codes via Resend."
+        badge={
+          <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-full bg-[var(--surface-2)] text-[var(--text-secondary)] border border-[var(--border)]">
+            msregswag.com
+          </span>
+        }
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => syncMutation.mutate()}
+              disabled={syncMutation.isPending || isRefetching || !config?.configured}
+              className="border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--surface-2)] h-9 text-xs"
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 mr-1.5 ${syncMutation.isPending || isRefetching ? "animate-spin" : ""}`}
+              />
+              Sync Balances
+            </Button>
+            <Button
+              onClick={handleOpenIssue}
+              disabled={!config?.configured}
+              size="sm"
+              className="bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] font-semibold h-9 text-xs shadow-sm"
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" /> Issue Swag Credit
+            </Button>
           </div>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">Shopify Swag Credits</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Issue store credits to agents from the Agent Toolbox and dispatch gift codes via Resend.
+        }
+      />
+
+      {/* Metric Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+        <Card className="p-4 bg-[var(--surface-1)] border-[var(--border)] rounded-xl space-y-1">
+          <div className="text-[11px] font-medium text-[var(--text-secondary)] uppercase tracking-wider">Total Issued</div>
+          <div className="text-xl font-bold font-mono text-[var(--text-primary)]">
+            ${stats.totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          </div>
+          <div className="text-[11px] text-[var(--text-muted)]">{stats.count} total cards</div>
+        </Card>
+
+        <Card className="p-4 bg-[var(--surface-1)] border-[var(--border)] rounded-xl space-y-1">
+          <div className="text-[11px] font-medium text-[var(--text-secondary)] uppercase tracking-wider">Active Credits</div>
+          <div className="text-xl font-bold font-mono text-emerald-400">
+            {stats.activeCount}
+          </div>
+          <div className="text-[11px] text-[var(--text-muted)]">ready for checkout</div>
+        </Card>
+
+        <Card className="p-4 bg-[var(--surface-1)] border-[var(--border)] rounded-xl space-y-1">
+          <div className="text-[11px] font-medium text-[var(--text-secondary)] uppercase tracking-wider">Unspent Balance</div>
+          <div className="text-xl font-bold font-mono text-[var(--accent)]">
+            ${stats.totalBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          </div>
+          <div className="text-[11px] text-[var(--text-muted)]">remaining on cards</div>
+        </Card>
+
+        <Card className="p-4 bg-[var(--surface-1)] border-[var(--border)] rounded-xl space-y-1">
+          <div className="text-[11px] font-medium text-[var(--text-secondary)] uppercase tracking-wider">Revoked</div>
+          <div className="text-xl font-bold font-mono text-[var(--text-muted)]">
+            {stats.revokedCount}
+          </div>
+          <div className="text-[11px] text-[var(--text-muted)]">cancelled or expired</div>
+        </Card>
+      </div>
+
+      {/* Configuration Status Notice (informative, not alarming) */}
+      {!isConfigLoading && !config?.configured && (
+        <Card className="p-4 border-[var(--border)] bg-[var(--surface-2)]/60 rounded-xl flex items-start gap-3">
+          <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400 shrink-0 mt-0.5">
+            <Ticket className="h-4 w-4" />
+          </div>
+          <div className="space-y-1 text-xs">
+            <div className="font-semibold text-[var(--text-primary)]">
+              Shopify API Integration Notice
+            </div>
+            <p className="text-[var(--text-secondary)] leading-relaxed">
+              Shopify store API keys are currently configured in production (Netlify). When running on localhost, issuing new cards is disabled until <code className="text-xs bg-[var(--surface-1)] px-1 py-0.5 rounded border border-[var(--border)] text-[var(--accent)]">SHOPIFY_STORE_URL</code> and credentials are set in your local <code className="text-xs bg-[var(--surface-1)] px-1 py-0.5 rounded border border-[var(--border)]">.env</code>. All existing credit history and balance records below remain fully readable.
             </p>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => syncMutation.mutate()}
-            disabled={syncMutation.isPending || isRefetching || !config?.configured}
-            className="border-sidebar-border hover:bg-sidebar-accent hover:text-white"
-          >
-            <RefreshCw
-              className={`h-4 w-4 mr-2 ${syncMutation.isPending || isRefetching ? "animate-spin" : ""}`}
-            />
-            Sync Balances
-          </Button>
-          <Button
-            onClick={handleOpenIssue}
-            disabled={!config?.configured}
-            className="bg-gold text-navy hover:bg-gold/90 font-medium"
-          >
-            <Plus className="h-4 w-4 mr-1" /> Issue Swag Credit
-          </Button>
-        </div>
-      </header>
-
-      {/* Configuration Alert Banner */}
-      {!isConfigLoading && !config?.configured && (
-        <Alert variant="destructive" className="border-red-500/30 bg-red-500/10 text-red-400">
-          <AlertTriangle className="h-5 w-5" />
-          <AlertTitle className="font-semibold text-white">Shopify Connection Missing</AlertTitle>
-          <AlertDescription className="text-sm mt-1">
-            Shopify API integration is not configured. Please define the server environment
-            variables{" "}
-            <code className="bg-red-950/50 px-1 py-0.5 rounded text-white border border-red-500/20 font-mono text-xs">
-              SHOPIFY_STORE_URL
-            </code>{" "}
-            and either{" "}
-            <code className="bg-red-950/50 px-1 py-0.5 rounded text-white border border-red-500/20 font-mono text-xs">
-              SHOPIFY_CLIENT_ID
-            </code>{" "}
-            +{" "}
-            <code className="bg-red-950/50 px-1 py-0.5 rounded text-white border border-red-500/20 font-mono text-xs">
-              SHOPIFY_CLIENT_SECRET
-            </code>{" "}
-            or legacy{" "}
-            <code className="bg-red-950/50 px-1 py-0.5 rounded text-white border border-red-500/20 font-mono text-xs">
-              SHOPIFY_ADMIN_ACCESS_TOKEN
-            </code>
-            .
-          </AlertDescription>
-        </Alert>
+        </Card>
       )}
 
-      {/* Resend Configuration Warning Banner */}
+      {/* Resend Configuration Notice */}
       {!isConfigLoading && !config?.hasResend && (
-        <Alert className="border-amber-500/30 bg-amber-500/10 text-amber-400">
-          <Mail className="h-5 w-5 text-amber-400" />
-          <AlertTitle className="font-semibold text-white">Resend API Key Missing</AlertTitle>
-          <AlertDescription className="text-sm mt-1">
-            Automated email dispatch is currently paused because{" "}
-            <code className="bg-amber-950/50 px-1 py-0.5 rounded text-white border border-amber-500/20 font-mono text-xs">
-              RESEND_API_KEY
-            </code>{" "}
-            is not set in your server environment variables. Gift cards can still be generated and codes copied manually.
-          </AlertDescription>
-        </Alert>
+        <Card className="p-3.5 border-[var(--border)] bg-[var(--surface-2)]/40 rounded-xl flex items-center gap-3">
+          <Mail className="h-4 w-4 text-amber-400 shrink-0" />
+          <div className="text-xs text-[var(--text-secondary)]">
+            <span className="font-medium text-[var(--text-primary)]">Resend email delivery offline:</span> Automated gift card emails are paused until <code className="font-mono text-[11px] text-[var(--accent)]">RESEND_API_KEY</code> is set. Gift card codes can still be copied and shared manually.
+          </div>
+        </Card>
       )}
 
       {/* Main Content Dashboard */}
-      <Card className="border-sidebar-border bg-sidebar/40 backdrop-blur-sm">
-        <CardHeader className="pb-3 border-b border-sidebar-border/40">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <Card className="border-[var(--border)] bg-[var(--surface-1)] rounded-2xl shadow-sm overflow-hidden">
+        <CardHeader className="p-5 border-b border-[var(--border)]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <CardTitle className="text-white text-lg">Issued Store Credits</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-base font-bold text-[var(--text-primary)]">Issued Store Credits</CardTitle>
+              <CardDescription className="text-xs text-[var(--text-secondary)] mt-0.5">
                 Track details, recipients, and remaining balances of issued Shopify gift cards.
               </CardDescription>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2.5">
               {/* Search Bar */}
               <div className="relative">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-muted)]" />
                 <Input
                   placeholder="Search agent, email, or reason..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 w-64 bg-background border-sidebar-border focus-visible:ring-gold"
+                  className="pl-8 w-60 h-9 text-xs bg-[var(--surface-2)] border-[var(--border)] focus-visible:ring-1 focus-visible:ring-[var(--accent)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
                 />
               </div>
 
               {/* Status Filter */}
               <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
-                <SelectTrigger className="w-40 bg-background border-sidebar-border focus:ring-gold">
+                <SelectTrigger className="w-36 h-9 text-xs bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)] focus:ring-1 focus:ring-[var(--accent)]">
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
-                <SelectContent className="bg-sidebar border-sidebar-border">
+                <SelectContent className="bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-primary)]">
                   <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="revoked">Revoked</SelectItem>
@@ -551,31 +579,23 @@ function AdminSwagCreditsPage() {
         </CardHeader>
         <CardContent className="p-0">
           <Table>
-            <TableHeader className="bg-sidebar/60 border-b border-sidebar-border/40">
+            <TableHeader className="bg-[var(--surface-2)]/50 border-b border-[var(--border)]">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="text-muted-foreground font-medium">Agent / Recipient</TableHead>
-                <TableHead className="text-muted-foreground font-medium">
-                  Milestone / Reason
-                </TableHead>
-                <TableHead className="text-muted-foreground font-medium text-right">
-                  Original
-                </TableHead>
-                <TableHead className="text-muted-foreground font-medium text-right">
-                  Balance
-                </TableHead>
-                <TableHead className="text-muted-foreground font-medium">Gift Card Code</TableHead>
-                <TableHead className="text-muted-foreground font-medium">Status</TableHead>
-                <TableHead className="text-muted-foreground font-medium">Issued Date</TableHead>
-                <TableHead className="text-muted-foreground font-medium text-right w-24">
-                  Actions
-                </TableHead>
+                <TableHead className="text-[var(--text-secondary)] font-medium text-xs">Agent / Recipient</TableHead>
+                <TableHead className="text-[var(--text-secondary)] font-medium text-xs">Milestone / Reason</TableHead>
+                <TableHead className="text-[var(--text-secondary)] font-medium text-xs text-right">Original</TableHead>
+                <TableHead className="text-[var(--text-secondary)] font-medium text-xs text-right">Balance</TableHead>
+                <TableHead className="text-[var(--text-secondary)] font-medium text-xs">Gift Card Code</TableHead>
+                <TableHead className="text-[var(--text-secondary)] font-medium text-xs">Status</TableHead>
+                <TableHead className="text-[var(--text-secondary)] font-medium text-xs">Issued Date</TableHead>
+                <TableHead className="text-[var(--text-secondary)] font-medium text-xs text-right w-24">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isCreditsLoading && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-12">
-                    <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-gold" />
+                  <TableCell colSpan={8} className="text-center text-[var(--text-secondary)] py-12">
+                    <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-2 text-[var(--accent)]" />
                     Loading swag credits records...
                   </TableCell>
                 </TableRow>
@@ -583,7 +603,7 @@ function AdminSwagCreditsPage() {
 
               {!isCreditsLoading && filteredCredits.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-12">
+                  <TableCell colSpan={8} className="text-center text-[var(--text-muted)] py-12 text-xs">
                     No matching swag store credits found.
                   </TableCell>
                 </TableRow>
@@ -600,37 +620,37 @@ function AdminSwagCreditsPage() {
                   return (
                     <TableRow
                       key={credit.id}
-                      className="border-b border-sidebar-border/20 hover:bg-sidebar-accent/10"
+                      className="border-b border-[var(--border)] hover:bg-[var(--surface-2)]/40 transition-colors"
                     >
                       <TableCell>
-                        <div className="font-medium text-white">{credit.agent_name}</div>
+                        <div className="font-semibold text-[var(--text-primary)] text-xs sm:text-sm">{credit.agent_name}</div>
                         {credit.recipient_email && (
-                          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                            <Mail className="h-3 w-3 text-muted-foreground/70" />
+                          <div className="text-[11px] text-[var(--text-secondary)] flex items-center gap-1 mt-0.5">
+                            <Mail className="h-3 w-3 text-[var(--text-muted)]" />
                             {credit.recipient_email}
                           </div>
                         )}
                       </TableCell>
                       <TableCell
-                        className="max-w-xs truncate text-muted-foreground"
+                        className="max-w-xs truncate text-[var(--text-secondary)] text-xs"
                         title={credit.reason}
                       >
                         {credit.reason}
                       </TableCell>
-                      <TableCell className="text-right text-muted-foreground font-mono">
+                      <TableCell className="text-right text-[var(--text-muted)] font-mono text-xs">
                         ${credit.amount.toFixed(2)}
                       </TableCell>
-                      <TableCell className="text-right font-semibold text-white font-mono">
+                      <TableCell className="text-right font-bold text-[var(--text-primary)] font-mono text-xs">
                         ${credit.balance.toFixed(2)}
                       </TableCell>
                       <TableCell>
-                        <div className="inline-flex items-center gap-1.5 bg-background/50 border border-sidebar-border/40 px-2 py-1 rounded">
-                          <code className="font-mono text-xs text-gold tracking-wider select-all">
+                        <div className="inline-flex items-center gap-1.5 bg-[var(--surface-2)] border border-[var(--border)] px-2.5 py-1 rounded-lg">
+                          <code className="font-mono text-xs text-[var(--accent)] font-semibold tracking-wider select-all">
                             {displayCode}
                           </code>
                           <button
                             onClick={() => toggleRevealCode(credit.id)}
-                            className="p-1 hover:text-white text-muted-foreground transition-colors"
+                            className="p-1 hover:text-[var(--text-primary)] text-[var(--text-muted)] transition-colors"
                             title={isRevealed ? "Hide code" : "Reveal code"}
                           >
                             {isRevealed ? (
@@ -641,11 +661,11 @@ function AdminSwagCreditsPage() {
                           </button>
                           <button
                             onClick={() => copyToClipboard(credit.gift_card_code, credit.id)}
-                            className="p-1 hover:text-white text-muted-foreground transition-colors"
+                            className="p-1 hover:text-[var(--text-primary)] text-[var(--text-muted)] transition-colors"
                             title="Copy code"
                           >
                             {isCopied ? (
-                              <Check className="h-3.5 w-3.5 text-green-400" />
+                              <Check className="h-3.5 w-3.5 text-emerald-400" />
                             ) : (
                               <Copy className="h-3.5 w-3.5" />
                             )}
@@ -657,22 +677,22 @@ function AdminSwagCreditsPage() {
                           variant="outline"
                           className={
                             credit.status === "active"
-                              ? "bg-green-500/10 text-green-400 border-green-500/30"
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] font-semibold"
                               : credit.status === "revoked"
-                                ? "bg-red-500/10 text-red-400 border-red-500/30"
-                                : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                                ? "bg-rose-500/10 text-rose-400 border-rose-500/20 text-[10px] font-semibold"
+                                : "bg-amber-500/10 text-amber-400 border-amber-500/20 text-[10px] font-semibold"
                           }
                         >
                           {credit.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
+                      <TableCell className="text-xs text-[var(--text-muted)]">
                         <div className="flex items-center gap-1">
-                          <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                          <Calendar className="h-3 w-3 text-[var(--text-muted)]" />
                           {format(new Date(credit.created_at), "MMM d, yyyy")}
                         </div>
                         {credit.creator?.email && (
-                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                          <div className="text-[10px] text-[var(--text-muted)] mt-0.5">
                             by {credit.creator.email.split("@")[0]}
                           </div>
                         )}
@@ -693,14 +713,14 @@ function AdminSwagCreditsPage() {
                                 revokeMutation.mutate(credit.id);
                               }
                             }}
-                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 px-2"
+                            className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 h-7 px-2 text-xs"
                             disabled={revokeMutation.isPending}
                           >
-                            <Ban className="h-3.5 w-3.5 mr-1" />
+                            <Ban className="h-3 w-3 mr-1" />
                             Revoke
                           </Button>
                         ) : (
-                          <span className="text-xs text-muted-foreground/60 italic pr-2">
+                          <span className="text-xs text-[var(--text-muted)] italic pr-2">
                             Revoked
                           </span>
                         )}
@@ -715,26 +735,26 @@ function AdminSwagCreditsPage() {
 
       {/* ISSUE CREDIT DIALOG */}
       <Dialog open={isIssueOpen} onOpenChange={setIsIssueOpen}>
-        <DialogContent className="bg-sidebar border-sidebar-border text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-primary)] max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-white text-xl flex items-center gap-2">
-              <Ticket className="h-5 w-5 text-gold" />
+            <DialogTitle className="text-[var(--text-primary)] text-xl font-bold flex items-center gap-2">
+              <Ticket className="h-5 w-5 text-[var(--accent)]" />
               Issue Swag Store Credit
             </DialogTitle>
-            <DialogDescription className="text-muted-foreground">
+            <DialogDescription className="text-xs text-[var(--text-secondary)]">
               Generate a Shopify gift card code and dispatch the formatted notification email via Resend.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleIssueSubmit} className="space-y-5 py-2">
             {/* Step 1: Agent Recipient Selection */}
-            <div className="space-y-3 p-4 rounded-xl bg-background/50 border border-sidebar-border/50">
+            <div className="space-y-3 p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
               <div className="flex items-center justify-between">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-gold flex items-center gap-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider text-[var(--accent)] flex items-center gap-1.5">
                   <Users className="h-3.5 w-3.5" /> 1. Select Agent
                 </Label>
                 <div className="flex items-center gap-2">
-                  <Label htmlFor="manual-agent-toggle" className="text-xs text-muted-foreground cursor-pointer">
+                  <Label htmlFor="manual-agent-toggle" className="text-xs text-[var(--text-secondary)] cursor-pointer">
                     Manual entry
                   </Label>
                   <Switch
@@ -753,13 +773,13 @@ function AdminSwagCreditsPage() {
               {!useCustomRecipient ? (
                 <div className="space-y-2.5">
                   <div>
-                    <Label htmlFor="agent-dropdown" className="text-xs text-muted-foreground mb-1 block">
+                    <Label htmlFor="agent-dropdown" className="text-xs text-[var(--text-secondary)] mb-1 block">
                       Agent from Toolbox Roster ({toolboxAgents.length} agents)
                     </Label>
                     <Select value={selectedAgentId} onValueChange={handleAgentSelect}>
                       <SelectTrigger
                         id="agent-dropdown"
-                        className="bg-background border-sidebar-border focus:ring-gold text-white"
+                        className="bg-[var(--surface-1)] border-[var(--border)] focus:ring-[var(--accent)] text-[var(--text-primary)]"
                       >
                         <SelectValue
                           placeholder={
@@ -767,18 +787,18 @@ function AdminSwagCreditsPage() {
                           }
                         />
                       </SelectTrigger>
-                      <SelectContent className="bg-sidebar border-sidebar-border max-h-60 overflow-y-auto">
+                      <SelectContent className="bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-primary)] max-h-60 overflow-y-auto">
                         {toolboxAgents.map((agent) => (
                           <SelectItem
                             key={agent.id}
                             value={agent.id}
-                            className="text-white focus:bg-sidebar-accent cursor-pointer"
+                            className="text-[var(--text-primary)] focus:bg-[var(--surface-2)] cursor-pointer"
                           >
                             <span className="font-medium">{agent.name}</span>
                             {agent.email ? (
-                              <span className="text-muted-foreground text-xs ml-2">({agent.email})</span>
+                              <span className="text-[var(--text-muted)] text-xs ml-2">({agent.email})</span>
                             ) : (
-                              <span className="text-amber-400/80 text-xs ml-2">(No email in toolbox)</span>
+                              <span className="text-amber-400 text-xs ml-2">(No email in toolbox)</span>
                             )}
                           </SelectItem>
                         ))}
@@ -790,19 +810,19 @@ function AdminSwagCreditsPage() {
                   {selectedAgentId && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                       <div className="space-y-1">
-                        <Label htmlFor="agent-name-confirm" className="text-xs text-muted-foreground">
+                        <Label htmlFor="agent-name-confirm" className="text-xs text-[var(--text-secondary)]">
                           Agent Name
                         </Label>
                         <Input
                           id="agent-name-confirm"
                           value={recipientName}
                           onChange={(e) => setRecipientName(e.target.value)}
-                          className="bg-background border-sidebar-border focus-visible:ring-gold text-sm"
+                          className="bg-[var(--surface-1)] border-[var(--border)] focus-visible:ring-1 focus-visible:ring-[var(--accent)] text-sm text-[var(--text-primary)]"
                           placeholder="Agent Name"
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label htmlFor="agent-email-confirm" className="text-xs text-muted-foreground flex items-center justify-between">
+                        <Label htmlFor="agent-email-confirm" className="text-xs text-[var(--text-secondary)] flex items-center justify-between">
                           <span>Recipient Email</span>
                           {!recipientEmail && (
                             <span className="text-[11px] text-amber-400 font-medium">Required</span>
@@ -814,8 +834,8 @@ function AdminSwagCreditsPage() {
                           value={recipientEmail}
                           onChange={(e) => setRecipientEmail(e.target.value)}
                           placeholder="agent@example.com"
-                          className={`bg-background border-sidebar-border focus-visible:ring-gold text-sm ${
-                            !recipientEmail ? "border-amber-500/50 focus-visible:ring-amber-500" : ""
+                          className={`bg-[var(--surface-1)] border-[var(--border)] focus-visible:ring-1 focus-visible:ring-[var(--accent)] text-sm text-[var(--text-primary)] ${
+                            !recipientEmail ? "border-amber-500/50" : ""
                           }`}
                         />
                       </div>
@@ -826,7 +846,7 @@ function AdminSwagCreditsPage() {
                 /* Manual Entry Mode */
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="custom-name" className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Label htmlFor="custom-name" className="text-xs text-[var(--text-secondary)] flex items-center gap-1">
                       <User className="h-3 w-3" /> Agent / Recipient Name
                     </Label>
                     <Input
@@ -834,11 +854,11 @@ function AdminSwagCreditsPage() {
                       placeholder="e.g. John Doe"
                       value={recipientName}
                       onChange={(e) => setRecipientName(e.target.value)}
-                      className="bg-background border-sidebar-border focus-visible:ring-gold text-sm"
+                      className="bg-[var(--surface-1)] border-[var(--border)] focus-visible:ring-1 focus-visible:ring-[var(--accent)] text-sm text-[var(--text-primary)]"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="custom-email" className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Label htmlFor="custom-email" className="text-xs text-[var(--text-secondary)] flex items-center gap-1">
                       <Mail className="h-3 w-3" /> Recipient Email
                     </Label>
                     <Input
@@ -847,7 +867,7 @@ function AdminSwagCreditsPage() {
                       placeholder="e.g. john@mattsmithrealestategroup.com"
                       value={recipientEmail}
                       onChange={(e) => setRecipientEmail(e.target.value)}
-                      className="bg-background border-sidebar-border focus-visible:ring-gold text-sm"
+                      className="bg-[var(--surface-1)] border-[var(--border)] focus-visible:ring-1 focus-visible:ring-[var(--accent)] text-sm text-[var(--text-primary)]"
                     />
                   </div>
                 </div>
@@ -855,8 +875,8 @@ function AdminSwagCreditsPage() {
             </div>
 
             {/* Step 2: What is this credit for? */}
-            <div className="space-y-3 p-4 rounded-xl bg-background/50 border border-sidebar-border/50">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-gold flex items-center gap-1.5">
+            <div className="space-y-3 p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+              <Label className="text-xs font-bold uppercase tracking-wider text-[var(--accent)] flex items-center gap-1.5">
                 <Award className="h-3.5 w-3.5" /> 2. What is it for?
               </Label>
 
@@ -865,17 +885,17 @@ function AdminSwagCreditsPage() {
                 <button
                   type="button"
                   onClick={() => handleCreditTypeChange("welcome")}
-                  className={`p-3 rounded-lg border text-left transition-all ${
+                  className={`p-3 rounded-lg border text-left transition-all cursor-pointer ${
                     creditType === "welcome"
-                      ? "bg-gold/15 border-gold text-white shadow-sm ring-1 ring-gold/40"
-                      : "bg-sidebar-accent/20 border-sidebar-border hover:bg-sidebar-accent/40 text-muted-foreground hover:text-white"
+                      ? "bg-[var(--accent)]/15 border-[var(--accent)] text-[var(--text-primary)] shadow-sm ring-1 ring-[var(--accent)]/40"
+                      : "bg-[var(--surface-1)] border-[var(--border)] hover:border-[var(--accent)]/40 text-[var(--text-secondary)]"
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <Sparkles className={`h-4 w-4 ${creditType === "welcome" ? "text-gold" : "text-muted-foreground"}`} />
-                    <span className="font-semibold text-sm text-white">1. Welcome to team</span>
+                    <Sparkles className={`h-4 w-4 ${creditType === "welcome" ? "text-[var(--accent)]" : "text-[var(--text-muted)]"}`} />
+                    <span className="font-semibold text-sm text-[var(--text-primary)]">1. Welcome to team</span>
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-xs text-[var(--text-muted)] leading-relaxed">
                     $50 default credit for newly onboarded team agents.
                   </div>
                 </button>
@@ -884,17 +904,17 @@ function AdminSwagCreditsPage() {
                 <button
                   type="button"
                   onClick={() => handleCreditTypeChange("agent_level")}
-                  className={`p-3 rounded-lg border text-left transition-all ${
+                  className={`p-3 rounded-lg border text-left transition-all cursor-pointer ${
                     creditType === "agent_level"
-                      ? "bg-gold/15 border-gold text-white shadow-sm ring-1 ring-gold/40"
-                      : "bg-sidebar-accent/20 border-sidebar-border hover:bg-sidebar-accent/40 text-muted-foreground hover:text-white"
+                      ? "bg-[var(--accent)]/15 border-[var(--accent)] text-[var(--text-primary)] shadow-sm ring-1 ring-[var(--accent)]/40"
+                      : "bg-[var(--surface-1)] border-[var(--border)] hover:border-[var(--accent)]/40 text-[var(--text-secondary)]"
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <Award className={`h-4 w-4 ${creditType === "agent_level" ? "text-gold" : "text-muted-foreground"}`} />
-                    <span className="font-semibold text-sm text-white">2. Agent level</span>
+                    <Award className={`h-4 w-4 ${creditType === "agent_level" ? "text-[var(--accent)]" : "text-[var(--text-muted)]"}`} />
+                    <span className="font-semibold text-sm text-[var(--text-primary)]">2. Agent level</span>
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-xs text-[var(--text-muted)] leading-relaxed">
                     $100 default credit for Level 2+ milestone qualifications.
                   </div>
                 </button>
@@ -903,17 +923,17 @@ function AdminSwagCreditsPage() {
                 <button
                   type="button"
                   onClick={() => handleCreditTypeChange("other")}
-                  className={`p-3 rounded-lg border text-left transition-all ${
+                  className={`p-3 rounded-lg border text-left transition-all cursor-pointer ${
                     creditType === "other"
-                      ? "bg-gold/15 border-gold text-white shadow-sm ring-1 ring-gold/40"
-                      : "bg-sidebar-accent/20 border-sidebar-border hover:bg-sidebar-accent/40 text-muted-foreground hover:text-white"
+                      ? "bg-[var(--accent)]/15 border-[var(--accent)] text-[var(--text-primary)] shadow-sm ring-1 ring-[var(--accent)]/40"
+                      : "bg-[var(--surface-1)] border-[var(--border)] hover:border-[var(--accent)]/40 text-[var(--text-secondary)]"
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <Ticket className={`h-4 w-4 ${creditType === "other" ? "text-gold" : "text-muted-foreground"}`} />
-                    <span className="font-semibold text-sm text-white">3. Other</span>
+                    <Ticket className={`h-4 w-4 ${creditType === "other" ? "text-[var(--accent)]" : "text-[var(--text-muted)]"}`} />
+                    <span className="font-semibold text-sm text-[var(--text-primary)]">3. Other</span>
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-xs text-[var(--text-muted)] leading-relaxed">
                     Custom amount, reason, and custom email message.
                   </div>
                 </button>
@@ -922,11 +942,11 @@ function AdminSwagCreditsPage() {
               {/* Amount & Reason / Milestone inputs */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="credit-amount" className="text-xs text-muted-foreground">
+                  <Label htmlFor="credit-amount" className="text-xs text-[var(--text-secondary)] font-medium">
                     Credit Amount ($)
                   </Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2 text-muted-foreground">$</span>
+                    <span className="absolute left-3 top-2.5 text-[var(--text-muted)] text-sm">$</span>
                     <Input
                       id="credit-amount"
                       type="number"
@@ -936,14 +956,14 @@ function AdminSwagCreditsPage() {
                       max="1000"
                       value={creditAmount}
                       onChange={(e) => handleAmountChange(e.target.value)}
-                      className="pl-7 bg-background border-sidebar-border focus-visible:ring-gold text-sm"
+                      className="pl-7 bg-[var(--surface-1)] border-[var(--border)] focus-visible:ring-1 focus-visible:ring-[var(--accent)] text-sm text-[var(--text-primary)] font-mono"
                     />
                   </div>
                 </div>
 
                 {creditType === "agent_level" ? (
                   <div className="space-y-1.5">
-                    <Label htmlFor="valid-through-input" className="text-xs text-muted-foreground">
+                    <Label htmlFor="valid-through-input" className="text-xs text-[var(--text-secondary)] font-medium">
                       Credit Valid Through (Date)
                     </Label>
                     <Input
@@ -951,12 +971,12 @@ function AdminSwagCreditsPage() {
                       placeholder="e.g. Dec 31, 2026 or Q3 2026"
                       value={validThroughDate}
                       onChange={(e) => handleValidThroughChange(e.target.value)}
-                      className="bg-background border-sidebar-border focus-visible:ring-gold text-sm"
+                      className="bg-[var(--surface-1)] border-[var(--border)] focus-visible:ring-1 focus-visible:ring-[var(--accent)] text-sm text-[var(--text-primary)]"
                     />
                   </div>
                 ) : (
                   <div className="space-y-1.5">
-                    <Label htmlFor="credit-reason" className="text-xs text-muted-foreground">
+                    <Label htmlFor="credit-reason" className="text-xs text-[var(--text-secondary)] font-medium">
                       Sales Milestone / Reason Note
                     </Label>
                     <Input
@@ -964,7 +984,7 @@ function AdminSwagCreditsPage() {
                       placeholder="e.g. Welcome to team, Top Producer award…"
                       value={creditReason}
                       onChange={(e) => setCreditReason(e.target.value)}
-                      className="bg-background border-sidebar-border focus-visible:ring-gold text-sm"
+                      className="bg-[var(--surface-1)] border-[var(--border)] focus-visible:ring-1 focus-visible:ring-[var(--accent)] text-sm text-[var(--text-primary)]"
                     />
                   </div>
                 )}
@@ -972,7 +992,7 @@ function AdminSwagCreditsPage() {
 
               {creditType === "agent_level" && (
                 <div className="space-y-1.5 pt-1">
-                  <Label htmlFor="agent-level-reason" className="text-xs text-muted-foreground">
+                  <Label htmlFor="agent-level-reason" className="text-xs text-[var(--text-secondary)] font-medium">
                     Milestone Record Note
                   </Label>
                   <Input
@@ -980,16 +1000,16 @@ function AdminSwagCreditsPage() {
                     value={creditReason}
                     onChange={(e) => setCreditReason(e.target.value)}
                     placeholder="e.g. Agent level 2 qualification"
-                    className="bg-background border-sidebar-border focus-visible:ring-gold text-sm"
+                    className="bg-[var(--surface-1)] border-[var(--border)] focus-visible:ring-1 focus-visible:ring-[var(--accent)] text-sm text-[var(--text-primary)]"
                   />
                 </div>
               )}
             </div>
 
             {/* Step 3: Email Body & Subject Line */}
-            <div className="space-y-3 p-4 rounded-xl bg-background/50 border border-sidebar-border/50">
+            <div className="space-y-3 p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
               <div className="flex items-center justify-between">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-gold flex items-center gap-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider text-[var(--accent)] flex items-center gap-1.5">
                   <Mail className="h-3.5 w-3.5" /> 3. Email Notification (Resend)
                 </Label>
                 <div className="flex items-center gap-2">
@@ -999,13 +1019,13 @@ function AdminSwagCreditsPage() {
                       variant="ghost"
                       size="sm"
                       onClick={handleResetTemplate}
-                      className="h-7 text-xs text-muted-foreground hover:text-white px-2"
+                      className="h-7 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] px-2"
                     >
-                      <RotateCcw className="h-3 w-3 mr-1" /> Reset to preset
+                      <RotateCcw className="h-3 w-3 mr-1" /> Reset preset
                     </Button>
                   )}
                   <Tabs value={emailTab} onValueChange={(v) => setEmailTab(v as any)} className="w-auto">
-                    <TabsList className="bg-background/80 h-7 p-0.5 border border-sidebar-border">
+                    <TabsList className="bg-[var(--surface-1)] h-7 p-0.5 border border-[var(--border)]">
                       <TabsTrigger value="edit" className="text-xs h-6 px-2.5">
                         Edit
                       </TabsTrigger>
@@ -1018,7 +1038,7 @@ function AdminSwagCreditsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email-subject" className="text-xs text-muted-foreground">
+                <Label htmlFor="email-subject" className="text-xs text-[var(--text-secondary)] font-medium">
                   Subject Line
                 </Label>
                 <Input
@@ -1028,7 +1048,7 @@ function AdminSwagCreditsPage() {
                     setEmailSubject(e.target.value);
                     setIsSubjectManuallyEdited(true);
                   }}
-                  className="bg-background border-sidebar-border focus-visible:ring-gold text-sm"
+                  className="bg-[var(--surface-1)] border-[var(--border)] focus-visible:ring-1 focus-visible:ring-[var(--accent)] text-sm text-[var(--text-primary)]"
                   placeholder="Email subject line…"
                 />
               </div>
@@ -1036,11 +1056,11 @@ function AdminSwagCreditsPage() {
               {emailTab === "edit" ? (
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="email-body" className="text-xs text-muted-foreground">
+                    <Label htmlFor="email-body" className="text-xs text-[var(--text-secondary)] font-medium">
                       Email Body
                     </Label>
-                    <span className="text-[11px] text-muted-foreground">
-                      Use <code className="text-gold font-mono bg-gold/10 px-1 py-0.5 rounded">{"{{code}}"}</code> as code placeholder
+                    <span className="text-[11px] text-[var(--text-muted)]">
+                      Use <code className="text-[var(--accent)] font-mono bg-[var(--surface-1)] px-1 py-0.5 rounded border border-[var(--border)]">{"{{code}}"}</code> as code placeholder
                     </span>
                   </div>
                   <Textarea
@@ -1051,38 +1071,38 @@ function AdminSwagCreditsPage() {
                       setEmailBody(e.target.value);
                       setIsBodyManuallyEdited(true);
                     }}
-                    className="bg-background border-sidebar-border focus-visible:ring-gold text-sm font-sans leading-relaxed min-h-[140px]"
+                    className="bg-[var(--surface-1)] border-[var(--border)] focus-visible:ring-1 focus-visible:ring-[var(--accent)] text-sm font-sans leading-relaxed min-h-[140px] text-[var(--text-primary)]"
                     placeholder="Write the email body text…"
                   />
                 </div>
               ) : (
                 /* Live Preview Container */
-                <div className="rounded-lg border border-sidebar-border/70 bg-[#0f172a] p-4 text-slate-100 text-sm space-y-3 font-sans shadow-inner">
-                  <div className="border-b border-slate-700/60 pb-2 flex items-center justify-between text-xs text-slate-400">
+                <div className="rounded-xl border border-[var(--border)] bg-[#0C0F17] p-5 text-slate-100 text-sm space-y-3 font-sans shadow-inner">
+                  <div className="border-b border-slate-800 pb-2.5 flex items-center justify-between text-xs text-slate-400">
                     <div>
-                      <span className="text-slate-500">To:</span> {recipientEmail || "agent@example.com"}
+                      <span className="text-slate-500 font-medium">To:</span> {recipientEmail || "agent@example.com"}
                     </div>
                     <div>
-                      <span className="text-slate-500">From:</span> MSREG Swag
+                      <span className="text-slate-500 font-medium">From:</span> MSREG Swag Store
                     </div>
                   </div>
-                  <div className="font-semibold text-white text-base">{emailSubject}</div>
-                  <div className="whitespace-pre-wrap text-slate-300 leading-relaxed text-sm py-1">
+                  <div className="font-bold text-white text-base">{emailSubject}</div>
+                  <div className="whitespace-pre-wrap text-slate-300 leading-relaxed text-xs sm:text-sm py-1">
                     {emailBody.replace(
                       /\{\{\s*code\s*\}\}|\[\s*code\s*\]/gi,
                       "[GIFT-CARD-CODE]",
                     )}
                   </div>
-                  <div className="bg-[#1e293b] border border-amber-500/40 rounded-lg p-3 text-center my-2">
+                  <div className="bg-[#131826] border border-amber-500/40 rounded-xl p-4 text-center my-2 shadow-sm">
                     <div className="text-[10px] uppercase font-bold tracking-wider text-amber-400">
-                      Gift Card Voucher
+                      MSREG Gift Card Voucher
                     </div>
-                    <div className="font-mono text-lg font-bold text-white tracking-widest my-0.5">
+                    <div className="font-mono text-xl font-extrabold text-white tracking-widest my-1">
                       •••• •••• •••• {creditAmount ? `$${creditAmount}` : "$50.00"}
                     </div>
                     <div className="text-xs text-slate-400">
                       Store:{" "}
-                      <a href="http://www.msregswag.com" target="_blank" rel="noreferrer" className="text-amber-400 underline inline-flex items-center gap-0.5">
+                      <a href="http://www.msregswag.com" target="_blank" rel="noreferrer" className="text-amber-400 underline inline-flex items-center gap-0.5 font-medium">
                         www.msregswag.com <ExternalLink className="h-2.5 w-2.5" />
                       </a>
                     </div>
@@ -1091,18 +1111,20 @@ function AdminSwagCreditsPage() {
               )}
             </div>
 
-            <DialogFooter className="pt-2 border-t border-sidebar-border/40">
+            <DialogFooter className="pt-2 border-t border-[var(--border)]">
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 onClick={() => setIsIssueOpen(false)}
-                className="border-sidebar-border hover:bg-sidebar-accent hover:text-white"
+                className="border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface-2)] text-xs"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="bg-gold text-navy hover:bg-gold/90 font-medium"
+                size="sm"
+                className="bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] font-semibold text-xs shadow-sm"
                 disabled={issueMutation.isPending}
               >
                 {issueMutation.isPending ? "Generating & Sending…" : "Issue & Send via Resend"}
@@ -1114,27 +1136,27 @@ function AdminSwagCreditsPage() {
 
       {/* SUCCESS DIALOG displaying the newly generated code & Resend delivery feedback */}
       <Dialog open={isSuccessOpen} onOpenChange={setIsSuccessOpen}>
-        <DialogContent className="bg-sidebar border-sidebar-border text-white max-w-lg">
+        <DialogContent className="bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-primary)] max-w-lg shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-white text-xl flex items-center gap-2">
-              <Ticket className="h-6 w-6 text-green-400" />
+            <DialogTitle className="text-[var(--text-primary)] text-xl font-bold flex items-center gap-2">
+              <Ticket className="h-6 w-6 text-emerald-400" />
               Gift Card Code Generated!
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-3 text-center">
             {/* Resend Status Banner */}
             {issueResult?.emailSent ? (
-              <div className="flex items-center gap-2.5 p-3 rounded-lg bg-green-500/10 border border-green-500/30 text-green-400 text-sm text-left">
-                <Check className="h-5 w-5 shrink-0 text-green-400" />
+              <div className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm text-left">
+                <Check className="h-5 w-5 shrink-0 text-emerald-400" />
                 <div>
                   <div className="font-semibold text-white">Email Dispatched via Resend</div>
-                  <div className="text-xs text-green-300/80">
+                  <div className="text-xs text-emerald-300/80">
                     The gift card code was emailed to <span className="font-medium text-white">{issueResult.recipientEmail}</span>.
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm text-left">
+              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm text-left">
                 <AlertTriangle className="h-5 w-5 shrink-0 text-amber-400 mt-0.5" />
                 <div>
                   <div className="font-semibold text-white">Gift Card Created (Email Not Sent)</div>
@@ -1145,54 +1167,56 @@ function AdminSwagCreditsPage() {
               </div>
             )}
 
-            <p className="text-muted-foreground text-sm">
-              Issued for <strong className="text-white">{createdCredit?.agent_name}</strong>
+            <p className="text-[var(--text-secondary)] text-sm">
+              Issued for <strong className="text-[var(--text-primary)]">{createdCredit?.agent_name}</strong>
             </p>
 
-            <div className="bg-background border border-sidebar-border p-4 rounded-xl flex flex-col items-center gap-3">
-              <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+            <div className="bg-[var(--surface-2)] border border-[var(--border)] p-5 rounded-2xl flex flex-col items-center gap-3">
+              <span className="text-[11px] uppercase tracking-wider text-[var(--text-muted)] font-bold">
                 Shopify Gift Card Code
               </span>
-              <code className="text-gold font-mono text-2xl tracking-widest font-bold select-all bg-gold/5 px-4 py-2 rounded border border-gold/15">
+              <code className="text-[var(--accent)] font-mono text-2xl tracking-widest font-black select-all bg-[var(--surface-1)] px-5 py-2.5 rounded-xl border border-[var(--accent)]/30">
                 {createdCredit?.gift_card_code}
               </code>
               <Button
+                size="sm"
                 onClick={() =>
                   copyToClipboard(
                     createdCredit?.gift_card_code || "",
                     createdCredit?.id || "success-dialog",
                   )
                 }
-                className="bg-gold text-navy hover:bg-gold/90 text-sm font-semibold"
+                className="bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] text-xs font-semibold shadow-sm"
               >
                 {copiedCodeId === createdCredit?.id || copiedCodeId === "success-dialog" ? (
                   <>
-                    <Check className="h-4 w-4 mr-1.5 text-green-600" />
-                    Copied!
+                    <Check className="h-4 w-4 mr-1.5 text-emerald-300" />
+                    Copied to Clipboard!
                   </>
                 ) : (
                   <>
                     <Copy className="h-4 w-4 mr-1.5" />
-                    Copy Code to Clipboard
+                    Copy Code
                   </>
                 )}
               </Button>
             </div>
 
-            <div className="text-left space-y-1.5 text-xs text-muted-foreground bg-sidebar-accent/30 p-3.5 rounded-lg border border-sidebar-border/40">
-              <div className="font-medium text-white mb-1">Details:</div>
+            <div className="text-left space-y-1.5 text-xs text-[var(--text-secondary)] bg-[var(--surface-2)]/60 p-3.5 rounded-xl border border-[var(--border)]">
+              <div className="font-semibold text-[var(--text-primary)] mb-1">Details:</div>
               <div>• <strong>Recipient</strong>: {createdCredit?.agent_name} {issueResult?.recipientEmail && `(${issueResult.recipientEmail})`}</div>
               <div>• <strong>Amount</strong>: ${createdCredit?.amount.toFixed(2)}</div>
               <div>• <strong>Reason</strong>: {createdCredit?.reason}</div>
-              <div className="text-amber-400 mt-2 text-[11px]">
-                ⚠️ Shopify masks gift card codes to their last 4 characters on subsequent loads. It will remain viewable in this Hub.
+              <div className="text-amber-400/90 mt-2 text-[11px]">
+                ⚠️ Shopify masks gift card codes to their last 4 characters on subsequent loads. It will remain securely recorded in this Hub.
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button
+              size="sm"
               onClick={() => setIsSuccessOpen(false)}
-              className="bg-sidebar-accent hover:bg-sidebar-accent/80 text-white w-full border border-sidebar-border"
+              className="bg-[var(--surface-2)] hover:bg-[var(--surface-3)] text-[var(--text-primary)] w-full border border-[var(--border)] text-xs"
             >
               Done
             </Button>

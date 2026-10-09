@@ -114,7 +114,7 @@ const STATUS_CLASS: Record<string, string> = {
 };
 
 const BRAND_CATS = ["Logos", "Headshots", "Email Signatures", "Business Card Files", "Templates"];
-const EDU_CATS = ["Marketing Update", "Seller Education", "Buyer Education", "Seasonal", "Other"];
+const EDU_CATS = ["Seller Education", "Buyer Education", "Market Education", "Marketing Update", "Seasonal", "Other"];
 const PREMADE_GRAPHIC_TYPES = ["Just Listed", "Open House", "Price Drop", "Just Sold"];
 const BRANDED_TYPES = [
   "Testimonial",
@@ -1324,6 +1324,17 @@ function EduTab({ userId }: { userId: string | null }) {
     qc.invalidateQueries({ queryKey: ["toolbox-storage"] });
   };
 
+  const updateCategory = async (id: string, category: string) => {
+    try {
+      const { error } = await sb.from("toolbox_educational").update({ category }).eq("id", id);
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["toolbox-edu"] });
+      toast.success(`Category updated to ${category}`);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update category");
+    }
+  };
+
   const copy = async (t: string) => {
     await navigator.clipboard.writeText(t);
     toast.success("Caption copied");
@@ -1433,7 +1444,24 @@ function EduTab({ userId }: { userId: string | null }) {
                 </Badge>
               </div>
               <div className="p-3 space-y-2">
-                <div className="font-medium text-sm">{i.title}</div>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="font-medium text-sm leading-snug">{i.title}</div>
+                </div>
+                <div className="flex items-center gap-1.5 pt-0.5">
+                  <span className="text-[11px] text-muted-foreground shrink-0 font-medium">Category:</span>
+                  <Select value={i.category} onValueChange={(val) => updateCategory(i.id, val)}>
+                    <SelectTrigger className="h-6 text-[11px] py-0 px-2 w-auto min-w-[130px] bg-muted/40 border-border/60">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EDU_CATS.map((c) => (
+                        <SelectItem key={c} value={c} className="text-xs">
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 {i.caption && (
                   <div className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">
                     {i.caption}

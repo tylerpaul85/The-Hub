@@ -36,6 +36,9 @@ import {
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { cn, getGoogleDrivePreviewUrl } from "@/lib/utils";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/empty-state";
+import { LoadingState } from "@/components/loading-state";
 import {
   Home,
   Plus,
@@ -288,65 +291,62 @@ export function OpenHousesPage() {
   return (
     <div className="space-y-6 pb-12 w-full min-w-0">
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border pb-5 w-full min-w-0">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 flex-wrap min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-foreground tracking-tight break-words">
-              Open Houses Hub
-            </h1>
-            <Badge className="bg-gold/15 text-gold border-gold/30 text-xs shrink-0">
-              Team Workspace
-            </Badge>
+      <PageHeader
+        title="Open Houses Hub"
+        description="Schedule, manage, and execute open houses end-to-end with live visitor sign-in, Follow Up Boss exports, and 5-phase process checklists."
+        badge="Team Workspace"
+        actions={
+          <div className="flex flex-wrap items-center gap-2.5">
+            {isAdmin && (
+              <div className="inline-flex rounded-lg border border-border p-1 bg-surface-2/60 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("hub")}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium rounded-md transition-all shrink-0",
+                    activeTab === "hub"
+                      ? "bg-accent text-white shadow-xs font-semibold"
+                      : "text-text-secondary hover:text-text-primary"
+                  )}
+                >
+                  Open Houses
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("analytics")}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium rounded-md transition-all shrink-0",
+                    activeTab === "analytics"
+                      ? "bg-accent text-white shadow-xs font-semibold"
+                      : "text-text-secondary hover:text-text-primary"
+                  )}
+                >
+                  Lead Analytics
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("templates")}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium rounded-md transition-all shrink-0",
+                    activeTab === "templates"
+                      ? "bg-accent text-white shadow-xs font-semibold"
+                      : "text-text-secondary hover:text-text-primary"
+                  )}
+                >
+                  Checklist Template
+                </button>
+              </div>
+            )}
+
+            <Button
+              onClick={() => setCreateModalOpen(true)}
+              className="bg-accent text-white hover:bg-accent-hover font-semibold shadow-xs shrink-0 w-full sm:w-auto"
+            >
+              <Plus className="h-4 w-4 mr-1.5" /> Schedule Open House
+            </Button>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Schedule, manage, and execute open houses end-to-end with live visitor sign-in, Follow Up Boss exports, and 5-phase process checklists.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto min-w-0">
-          {isAdmin && (
-            <div className="inline-flex rounded-md border border-border overflow-x-auto max-w-full shrink-0">
-              <button
-                type="button"
-                onClick={() => setActiveTab("hub")}
-                className={cn(
-                  "px-3 py-1.5 text-xs font-medium transition-colors shrink-0",
-                  activeTab === "hub" ? "bg-gold text-navy" : "hover:bg-accent/40 text-foreground"
-                )}
-              >
-                Open Houses
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("analytics")}
-                className={cn(
-                  "px-3 py-1.5 text-xs font-medium border-l border-border transition-colors shrink-0",
-                  activeTab === "analytics" ? "bg-gold text-navy" : "hover:bg-accent/40 text-foreground"
-                )}
-              >
-                Lead Analytics
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("templates")}
-                className={cn(
-                  "px-3 py-1.5 text-xs font-medium border-l border-border transition-colors shrink-0",
-                  activeTab === "templates" ? "bg-gold text-navy" : "hover:bg-accent/40 text-foreground"
-                )}
-              >
-                Checklist Template
-              </button>
-            </div>
-          )}
-
-          <Button
-            onClick={() => setCreateModalOpen(true)}
-            className="bg-gold text-navy hover:bg-gold/90 font-semibold shadow-md shrink-0 w-full sm:w-auto"
-          >
-            <Plus className="h-4 w-4 mr-1.5" /> Schedule Open House
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {activeTab === "analytics" ? (
         <OpenHousesAnalyticsView />
@@ -356,15 +356,15 @@ export function OpenHousesPage() {
         /* Main Hub View */
         <div className="space-y-6">
           {/* Filter Bar */}
-          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border/80 shadow-sm min-w-0 w-full">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-surface-1 p-3 rounded-xl border border-border shadow-xs min-w-0 w-full">
             {/* Time Filter Pills */}
-            <div className="inline-flex rounded-lg border border-border p-1 bg-muted/40 overflow-x-auto max-w-full shrink-0">
+            <div className="inline-flex rounded-lg border border-border p-1 bg-surface-2/50 overflow-x-auto max-w-full shrink-0">
               <button
                 type="button"
                 onClick={() => setTimeFilter("weekend")}
                 className={cn(
                   "px-3 py-1.5 text-xs rounded-md font-medium transition-colors whitespace-nowrap",
-                  timeFilter === "weekend" ? "bg-gold text-navy shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground"
+                  timeFilter === "weekend" ? "bg-accent text-white shadow-xs font-semibold" : "text-text-muted hover:text-text-primary"
                 )}
               >
                 This Weekend ({weekendCount})
@@ -374,7 +374,7 @@ export function OpenHousesPage() {
                 onClick={() => setTimeFilter("upcoming")}
                 className={cn(
                   "px-3 py-1.5 text-xs rounded-md font-medium transition-colors whitespace-nowrap",
-                  timeFilter === "upcoming" ? "bg-gold text-navy shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground"
+                  timeFilter === "upcoming" ? "bg-accent text-white shadow-xs font-semibold" : "text-text-muted hover:text-text-primary"
                 )}
               >
                 Upcoming ({upcomingCount})
@@ -384,7 +384,7 @@ export function OpenHousesPage() {
                 onClick={() => setTimeFilter("all")}
                 className={cn(
                   "px-3 py-1.5 text-xs rounded-md font-medium transition-colors whitespace-nowrap",
-                  timeFilter === "all" ? "bg-gold text-navy shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground"
+                  timeFilter === "all" ? "bg-accent text-white shadow-xs font-semibold" : "text-text-muted hover:text-text-primary"
                 )}
               >
                 All Active ({allOpenHouses.filter((o) => !o.archived).length})
@@ -394,7 +394,7 @@ export function OpenHousesPage() {
                 onClick={() => setTimeFilter("archived")}
                 className={cn(
                   "px-3 py-1.5 text-xs rounded-md font-medium transition-colors whitespace-nowrap",
-                  timeFilter === "archived" ? "bg-gold text-navy shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground"
+                  timeFilter === "archived" ? "bg-accent text-white shadow-xs font-semibold" : "text-text-muted hover:text-text-primary"
                 )}
               >
                 Archived ({archivedCount})
@@ -405,10 +405,10 @@ export function OpenHousesPage() {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 min-w-0 max-w-2xl">
               {agentNames.length > 0 && (
                 <Select value={agentFilter} onValueChange={setAgentFilter}>
-                  <SelectTrigger className="w-full sm:w-44 text-xs h-9 shrink-0">
+                  <SelectTrigger className="w-full sm:w-44 text-xs h-9 shrink-0 bg-surface-2 border-border">
                     <SelectValue placeholder="Filter by Agent" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-surface-1 border-border">
                     <SelectItem value="all">All Hosting Agents</SelectItem>
                     {agentNames.map((name) => (
                       <SelectItem key={name} value={name}>
@@ -420,18 +420,18 @@ export function OpenHousesPage() {
               )}
 
               <div className="relative flex-1 min-w-0">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-muted" />
                 <Input
                   type="search"
                   placeholder="Search address or agent..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 text-xs h-9"
+                  className="pl-8 text-xs h-9 bg-surface-2 border-border"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -442,27 +442,21 @@ export function OpenHousesPage() {
 
           {/* Cards Grid */}
           {isLoading ? (
-            <div className="text-center py-16 text-muted-foreground text-sm">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-gold border-t-transparent mx-auto mb-3" />
-              Loading open houses...
-            </div>
+            <LoadingState message="Loading open houses..." />
           ) : filteredOpenHouses.length === 0 ? (
-            <Card className="p-12 text-center text-muted-foreground border-dashed">
-              <Home className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
-              <div className="font-medium text-foreground">No open houses match your filters</div>
-              <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-                {timeFilter === "weekend"
+            <EmptyState
+              icon={Home}
+              title="No open houses match your filters"
+              description={
+                timeFilter === "weekend"
                   ? "There are no open houses scheduled for this upcoming weekend. Schedule one to start prepping!"
-                  : "Schedule a new open house or adjust your search filter above."}
-              </p>
-              <Button
-                onClick={() => setCreateModalOpen(true)}
-                variant="outline"
-                className="mt-4 text-xs border-gold/50 text-gold hover:bg-gold/10"
-              >
-                <Plus className="h-3.5 w-3.5 mr-1" /> Schedule New Open House
-              </Button>
-            </Card>
+                  : "Schedule a new open house or adjust your search filter above."
+              }
+              action={{
+                label: "Schedule New Open House",
+                onClick: () => setCreateModalOpen(true),
+              }}
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full min-w-0">
               {filteredOpenHouses.map((oh) => {
@@ -476,12 +470,12 @@ export function OpenHousesPage() {
                   <Card
                     key={oh.id}
                     className={cn(
-                      "overflow-hidden flex flex-col border border-border/80 hover:border-gold/50 transition-all duration-300 group shadow-sm bg-card min-w-0 w-full",
-                      isArchived && "opacity-80"
+                      "overflow-hidden flex flex-col border border-border hover:border-accent/40 transition-all duration-300 group shadow-xs hover:shadow-md bg-surface-1 min-w-0 w-full rounded-xl",
+                      isArchived && "opacity-75"
                     )}
                   >
                     {/* Thumbnail banner */}
-                    <div className="aspect-[16/10] bg-muted relative overflow-hidden">
+                    <div className="aspect-[16/10] bg-surface-2 relative overflow-hidden">
                       {c.thumb ? (
                         <img
                           src={c.thumb}
@@ -492,18 +486,18 @@ export function OpenHousesPage() {
                           )}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-muted-foreground/40 bg-gradient-to-br from-muted/80 to-muted">
-                          <Home className="h-10 w-10" />
+                        <div className="w-full h-full flex items-center justify-center text-text-muted bg-gradient-to-br from-surface-2 to-surface-3">
+                          <Home className="h-10 w-10 opacity-40" />
                         </div>
                       )}
 
                       {/* Overlays & Badges */}
                       <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                        <Badge className="bg-background/90 text-foreground border border-border/60 text-xs backdrop-blur-sm shadow-sm font-medium">
+                        <Badge className="bg-surface-1/90 text-text-primary border border-border text-xs backdrop-blur-xs shadow-xs font-medium">
                           {oh.status === "upcoming" ? "Upcoming" : "Past"}
                         </Badge>
                         {isThisWeekend(oh.open_house_at) && !isArchived && (
-                          <Badge className="bg-gold text-navy font-bold text-xs shadow-sm">
+                          <Badge className="bg-accent text-white font-semibold text-xs shadow-xs">
                             This Weekend
                           </Badge>
                         )}
@@ -511,12 +505,12 @@ export function OpenHousesPage() {
 
                       <div className="absolute top-2.5 right-2.5 flex items-center gap-1">
                         {signinsCount > 0 && (
-                          <Badge className="bg-emerald-600 text-white font-semibold text-xs shadow-sm flex items-center gap-1">
+                          <Badge className="bg-emerald-600 text-white font-semibold text-xs shadow-xs flex items-center gap-1">
                             <Users className="h-3 w-3" /> {signinsCount} Lead{signinsCount === 1 ? "" : "s"}
                           </Badge>
                         )}
                         {isArchived && (
-                          <Badge className="bg-navy/90 text-gold border border-gold/40 text-xs">
+                          <Badge className="bg-surface-2 text-text-muted border border-border text-xs">
                             Archived
                           </Badge>
                         )}
@@ -524,8 +518,8 @@ export function OpenHousesPage() {
 
                       {/* Bottom banner with date */}
                       {oh.open_house_at && (
-                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2.5 pt-6 text-white text-xs flex items-center gap-1.5">
-                          <Calendar className="h-3.5 w-3.5 text-gold shrink-0" />
+                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-3 pt-6 text-white text-xs flex items-center gap-1.5">
+                          <Calendar className="h-3.5 w-3.5 text-accent shrink-0" />
                           <span className="font-medium truncate">{fmtDateTime(oh.open_house_at)}</span>
                         </div>
                       )}
@@ -534,22 +528,22 @@ export function OpenHousesPage() {
                     {/* Card Body */}
                     <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                       <div className="space-y-1.5">
-                        <h3 className="font-serif font-semibold text-lg text-foreground line-clamp-1 group-hover:text-gold transition-colors">
+                        <h3 className="font-serif font-semibold text-lg text-text-primary line-clamp-1 group-hover:text-accent transition-colors">
                           {oh.address}
                         </h3>
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <User className="h-3.5 w-3.5 text-gold/80 shrink-0" />
+                        <div className="flex items-center gap-1.5 text-xs text-text-secondary">
+                          <User className="h-3.5 w-3.5 text-accent shrink-0" />
                           <span className="truncate">{oh.agent_name || "Unassigned"}</span>
                         </div>
                       </div>
 
                       {/* Checklist progress */}
-                      <div className="space-y-1 bg-muted/30 p-2.5 rounded-lg border border-border/50">
+                      <div className="space-y-1.5 bg-surface-2/60 p-2.5 rounded-lg border border-border-subtle">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground font-medium flex items-center gap-1">
-                            <ClipboardCheck className="h-3.5 w-3.5 text-gold" /> Process Checklist
+                          <span className="text-text-secondary font-medium flex items-center gap-1.5">
+                            <ClipboardCheck className="h-3.5 w-3.5 text-accent" /> Process Checklist
                           </span>
-                          <span className="font-semibold text-foreground">
+                          <span className="font-semibold text-text-primary">
                             {stats.completed}/{stats.total > 0 ? stats.total : 21} ({pct}%)
                           </span>
                         </div>
@@ -557,17 +551,17 @@ export function OpenHousesPage() {
                       </div>
 
                       {/* Card Footer Actions */}
-                      <div className="pt-2 flex items-center gap-2 border-t border-border/60">
+                      <div className="pt-2 flex items-center gap-2 border-t border-border">
                         <Button
                           onClick={() => setSelectedOpenHouseId(oh.id)}
-                          className="flex-1 bg-gold text-navy hover:bg-gold/90 font-semibold text-xs h-8"
+                          className="flex-1 bg-accent text-white hover:bg-accent-hover font-semibold text-xs h-8"
                         >
                           Manage Open House
                         </Button>
                         <Button
                           size="icon"
                           variant="outline"
-                          className="h-8 w-8 text-foreground hover:text-gold shrink-0"
+                          className="h-8 w-8 text-text-secondary hover:text-text-primary border-border shrink-0"
                           onClick={() => setSelectedOpenHouseId(oh.id)}
                           title="View QR Code & Placard"
                         >
@@ -749,15 +743,15 @@ function ScheduleOpenHouseModal({
 
         <div className="space-y-4 py-2">
           {/* Listing Selector */}
-          <div className="space-y-1.5 bg-muted/40 p-3 rounded-lg border border-border">
-            <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-gold" /> Select from Existing Listing (Auto-Attaches Materials)
+          <div className="space-y-1.5 bg-surface-2/50 p-3 rounded-lg border border-border">
+            <Label className="text-xs font-semibold text-text-primary flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-accent" /> Select from Existing Listing (Auto-Attaches Materials)
             </Label>
             <Select value={selectedListingId} onValueChange={handleListingSelect}>
-              <SelectTrigger className="text-xs bg-card">
+              <SelectTrigger className="text-xs bg-surface-1 border-border">
                 <SelectValue placeholder="Choose a listing..." />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-surface-1 border-border">
                 <SelectItem value="none">-- Enter Manually (No Listing Link) --</SelectItem>
                 {listings.map((l) => (
                   <SelectItem key={l.id} value={l.id}>
@@ -770,59 +764,59 @@ function ScheduleOpenHouseModal({
 
           {/* Address */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Property Address *</Label>
+            <Label className="text-xs font-medium text-text-primary">Property Address *</Label>
             <Input
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               placeholder="e.g. 123 Maple Street, Rolla, MO"
-              className="text-xs"
+              className="text-xs bg-surface-2 border-border"
             />
           </div>
 
           {/* Hosting Agent */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Hosting Agent Name</Label>
+              <Label className="text-xs font-medium text-text-primary">Hosting Agent Name</Label>
               <Input
                 value={form.agent_name}
                 onChange={(e) => setForm({ ...form, agent_name: e.target.value })}
                 placeholder="Agent Name"
-                className="text-xs"
+                className="text-xs bg-surface-2 border-border"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Date &amp; Time *</Label>
+              <Label className="text-xs font-medium text-text-primary">Date &amp; Time *</Label>
               <Input
                 type="datetime-local"
                 value={form.open_house_at}
                 onChange={(e) => setForm({ ...form, open_house_at: e.target.value })}
-                className="text-xs"
+                className="text-xs bg-surface-2 border-border"
               />
             </div>
           </div>
 
           {/* Description */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Special Notes / Description (Optional)</Label>
+            <Label className="text-xs font-medium text-text-primary">Special Notes / Description (Optional)</Label>
             <Textarea
               rows={2}
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder="e.g. Refreshments provided, neighborhood preview at 12:30pm"
-              className="text-xs"
+              className="text-xs bg-surface-2 border-border"
             />
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)} className="text-xs">
+          <Button variant="ghost" onClick={() => onOpenChange(false)} className="text-xs text-text-muted hover:text-text-primary">
             Cancel
           </Button>
           <Button
             onClick={() => createMutation.mutate()}
             disabled={createMutation.isPending}
-            className="bg-gold text-navy hover:bg-gold/90 font-semibold text-xs"
+            className="bg-accent text-white hover:bg-accent-hover font-semibold text-xs"
           >
             {createMutation.isPending ? "Scheduling..." : "Schedule & Open Management"}
           </Button>
@@ -1009,27 +1003,27 @@ function OpenHouseManagementSheet({
     <Sheet open={true} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-full sm:max-w-4xl overflow-y-auto p-0 flex flex-col bg-background">
         {/* Workspace Top Header */}
-        <SheetHeader className="p-5 border-b border-border bg-card/60 backdrop-blur sticky top-0 z-20">
+        <SheetHeader className="p-5 border-b border-border bg-surface-1/90 backdrop-blur-md sticky top-0 z-20">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <SheetTitle className="font-serif text-xl font-bold truncate text-foreground">
+                <SheetTitle className="font-serif text-xl font-bold truncate text-text-primary">
                   {oh?.address || "Open House Management"}
                 </SheetTitle>
                 {oh?.archived && (
-                  <Badge className="bg-navy/90 text-gold border border-gold/40 text-xs">
+                  <Badge className="bg-surface-2 text-text-muted border border-border text-xs">
                     Archived
                   </Badge>
                 )}
               </div>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+              <div className="flex items-center gap-3 text-xs text-text-secondary flex-wrap">
                 {oh?.agent_name && (
-                  <span className="flex items-center gap-1 text-foreground font-medium">
-                    <User className="h-3.5 w-3.5 text-gold" /> {oh.agent_name}
+                  <span className="flex items-center gap-1 text-text-primary font-medium">
+                    <User className="h-3.5 w-3.5 text-accent" /> {oh.agent_name}
                   </span>
                 )}
                 {oh?.open_house_at && (
-                  <span className="flex items-center gap-1 text-gold">
+                  <span className="flex items-center gap-1 text-accent font-medium">
                     <Calendar className="h-3.5 w-3.5" /> {fmtDateTime(oh.open_house_at)}
                   </span>
                 )}
@@ -1040,7 +1034,7 @@ function OpenHouseManagementSheet({
               <Button
                 size="sm"
                 onClick={() => setFullscreenKioskOpen(true)}
-                className="bg-gold text-navy hover:bg-gold/90 font-semibold text-xs h-8"
+                className="bg-accent text-white hover:bg-accent-hover font-semibold text-xs h-8 shadow-xs"
               >
                 <Smartphone className="h-3.5 w-3.5 mr-1" /> On-Screen Kiosk
               </Button>
@@ -1048,14 +1042,14 @@ function OpenHouseManagementSheet({
           </div>
 
           {/* Navigation Sub-Tabs */}
-          <div className="flex items-center gap-1 border-b border-border/80 pt-4 overflow-x-auto">
+          <div className="flex items-center gap-1 border-b border-border pt-4 overflow-x-auto no-scrollbar">
             <button
               onClick={() => setActiveSubTab("leads")}
               className={cn(
                 "px-3 py-2 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5",
                 activeSubTab === "leads"
-                  ? "border-gold text-gold"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
+                  ? "border-accent text-accent"
+                  : "border-transparent text-text-muted hover:text-text-primary"
               )}
             >
               <Users className="h-3.5 w-3.5" /> Live Sign-Ins ({signins.length})
@@ -1065,8 +1059,8 @@ function OpenHouseManagementSheet({
               className={cn(
                 "px-3 py-2 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5",
                 activeSubTab === "qrcode"
-                  ? "border-gold text-gold"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
+                  ? "border-accent text-accent"
+                  : "border-transparent text-text-muted hover:text-text-primary"
               )}
             >
               <QrIcon className="h-3.5 w-3.5" /> QR Code &amp; Placard
@@ -1076,8 +1070,8 @@ function OpenHouseManagementSheet({
               className={cn(
                 "px-3 py-2 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5",
                 activeSubTab === "checklist"
-                  ? "border-gold text-gold"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
+                  ? "border-accent text-accent"
+                  : "border-transparent text-text-muted hover:text-text-primary"
               )}
             >
               <ClipboardCheck className="h-3.5 w-3.5" /> Process Checklist ({completedChecklist}/{totalChecklist})
@@ -1087,8 +1081,8 @@ function OpenHouseManagementSheet({
               className={cn(
                 "px-3 py-2 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5",
                 activeSubTab === "marketing"
-                  ? "border-gold text-gold"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
+                  ? "border-accent text-accent"
+                  : "border-transparent text-text-muted hover:text-text-primary"
               )}
             >
               <ImageIcon className="h-3.5 w-3.5" /> Marketing Materials ({assets.length})
@@ -1098,8 +1092,8 @@ function OpenHouseManagementSheet({
               className={cn(
                 "px-3 py-2 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5",
                 activeSubTab === "settings"
-                  ? "border-gold text-gold"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
+                  ? "border-accent text-accent"
+                  : "border-transparent text-text-muted hover:text-text-primary"
               )}
             >
               Settings &amp; Archive
@@ -1112,16 +1106,16 @@ function OpenHouseManagementSheet({
           {/* TAB 1: LIVE SIGN-INS & FOLLOW UP BOSS EXPORT */}
           {activeSubTab === "leads" && (
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/30 p-4 rounded-xl border border-border">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface-2/40 p-4 rounded-xl border border-border">
                 <div>
-                  <div className="font-semibold text-sm text-foreground flex items-center gap-2">
+                  <div className="font-semibold text-sm text-text-primary flex items-center gap-2">
                     <span className="relative flex h-2.5 w-2.5">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                     </span>
                     Live Sign-In Feed ({signins.length} Total Attendees)
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-text-secondary mt-0.5">
                     Visitors who scan the QR code appear here in real-time. Export directly to Follow Up Boss.
                   </p>
                 </div>
@@ -1131,7 +1125,7 @@ function OpenHouseManagementSheet({
                     size="sm"
                     variant="outline"
                     onClick={() => refetchSignins()}
-                    className="text-xs h-8"
+                    className="text-xs h-8 border-border bg-surface-1"
                   >
                     Refresh
                   </Button>
@@ -1139,7 +1133,7 @@ function OpenHouseManagementSheet({
                     size="sm"
                     onClick={exportFollowUpBossCsv}
                     disabled={signins.length === 0}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-8"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-8 shadow-xs"
                   >
                     <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5" /> Export to Follow Up Boss CSV
                   </Button>
@@ -1147,28 +1141,28 @@ function OpenHouseManagementSheet({
               </div>
 
               {signinsLoading ? (
-                <div className="text-center py-8 text-xs text-muted-foreground">Loading visitor sign-ins...</div>
+                <div className="text-center py-8 text-xs text-text-muted">Loading visitor sign-ins...</div>
               ) : signins.length === 0 ? (
-                <Card className="p-8 text-center text-muted-foreground border-dashed">
-                  <Users className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
-                  <div className="font-medium text-sm text-foreground">No visitors have signed in yet</div>
-                  <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+                <Card className="p-8 text-center text-text-muted border-dashed bg-surface-1 border-border">
+                  <Users className="h-8 w-8 mx-auto text-text-muted/40 mb-2" />
+                  <div className="font-medium text-sm text-text-primary">No visitors have signed in yet</div>
+                  <p className="text-xs text-text-secondary mt-1 max-w-sm mx-auto">
                     Display the QR Code placard or open the On-Screen Kiosk mode on your phone/tablet for visitors to register.
                   </p>
                   <Button
                     size="sm"
                     onClick={() => setActiveSubTab("qrcode")}
                     variant="outline"
-                    className="mt-3 text-xs border-gold/50 text-gold hover:bg-gold/10"
+                    className="mt-3 text-xs border-accent/50 text-accent hover:bg-accent/10"
                   >
                     View QR Code &amp; Printable Placard
                   </Button>
                 </Card>
               ) : (
-                <div className="rounded-xl border border-border overflow-hidden shadow-sm">
+                <div className="rounded-xl border border-border overflow-hidden shadow-xs bg-surface-1">
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs text-left">
-                      <thead className="bg-muted/80 text-muted-foreground uppercase text-[10px] tracking-wider border-b border-border">
+                      <thead className="bg-surface-2/70 text-text-muted uppercase text-[10px] tracking-wider border-b border-border">
                         <tr>
                           <th className="p-3">Visitor Name</th>
                           <th className="p-3">Contact</th>
@@ -1180,13 +1174,13 @@ function OpenHouseManagementSheet({
                       </thead>
                       <tbody className="divide-y divide-border">
                         {signins.map((s: any) => (
-                          <tr key={s.id} className="hover:bg-muted/30 transition-colors">
-                            <td className="p-3 font-semibold text-foreground">
+                          <tr key={s.id} className="hover:bg-surface-2/40 transition-colors">
+                            <td className="p-3 font-semibold text-text-primary">
                               {s.first_name} {s.last_name}
                             </td>
                             <td className="p-3 space-y-0.5">
-                              <div className="font-medium">{s.phone}</div>
-                              {s.email && <div className="text-muted-foreground text-[11px]">{s.email}</div>}
+                              <div className="font-medium text-text-primary">{s.phone}</div>
+                              {s.email && <div className="text-text-muted text-[11px]">{s.email}</div>}
                             </td>
                             <td className="p-3">
                               {s.working_with_agent ? (
@@ -1200,13 +1194,13 @@ function OpenHouseManagementSheet({
                               )}
                             </td>
                             <td className="p-3 space-y-0.5">
-                              <div className="capitalize font-medium">{s.buying_or_selling?.replace(/_/g, " ") || "Browsing"}</div>
-                              <div className="text-muted-foreground text-[11px] capitalize">{s.timeframe?.replace(/_/g, " ")}</div>
+                              <div className="capitalize font-medium text-text-primary">{s.buying_or_selling?.replace(/_/g, " ") || "Browsing"}</div>
+                              <div className="text-text-muted text-[11px] capitalize">{s.timeframe?.replace(/_/g, " ")}</div>
                             </td>
-                            <td className="p-3 text-muted-foreground max-w-xs truncate">
+                            <td className="p-3 text-text-secondary max-w-xs truncate">
                               {s.notes || "—"}
                             </td>
-                            <td className="p-3 text-muted-foreground whitespace-nowrap">
+                            <td className="p-3 text-text-muted whitespace-nowrap">
                               {new Date(s.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                             </td>
                           </tr>
@@ -1226,13 +1220,13 @@ function OpenHouseManagementSheet({
                 {/* Printable Placard Preview Card */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-serif font-bold text-base text-foreground">
+                    <h3 className="font-serif font-bold text-base text-text-primary">
                       Printable Sign-In Table Placard
                     </h3>
                     <Button
                       size="sm"
                       onClick={() => window.print()}
-                      className="bg-gold text-navy hover:bg-gold/90 font-semibold text-xs h-8"
+                      className="bg-accent text-white hover:bg-accent-hover font-semibold text-xs h-8 shadow-xs"
                     >
                       <Printer className="h-3.5 w-3.5 mr-1.5" /> Print Placard (8.5×11)
                     </Button>
@@ -1270,36 +1264,36 @@ function OpenHouseManagementSheet({
 
                 {/* Direct Link & On-Screen Display */}
                 <div className="space-y-4">
-                  <h3 className="font-serif font-bold text-base text-foreground">
+                  <h3 className="font-serif font-bold text-base text-text-primary">
                     Digital Access Modes
                   </h3>
 
-                  <Card className="p-4 space-y-3 bg-muted/20 border-border">
-                    <div className="font-semibold text-xs text-foreground flex items-center gap-1.5">
-                      <Smartphone className="h-4 w-4 text-gold" /> On-Screen Kiosk Mode (No Printing Required)
+                  <Card className="p-4 space-y-3 bg-surface-2/40 border-border">
+                    <div className="font-semibold text-xs text-text-primary flex items-center gap-1.5">
+                      <Smartphone className="h-4 w-4 text-accent" /> On-Screen Kiosk Mode (No Printing Required)
                     </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
+                    <p className="text-xs text-text-secondary leading-relaxed">
                       Hand your phone or iPad to visitors as they arrive. Shows full-screen QR code and direct sign-in button.
                     </p>
                     <Button
                       size="sm"
                       onClick={() => setFullscreenKioskOpen(true)}
-                      className="w-full bg-gold text-navy hover:bg-gold/90 font-semibold text-xs h-9"
+                      className="w-full bg-accent text-white hover:bg-accent-hover font-semibold text-xs h-9 shadow-xs"
                     >
                       Launch Full-Screen Kiosk
                     </Button>
                   </Card>
 
-                  <Card className="p-4 space-y-3 bg-muted/20 border-border">
-                    <div className="font-semibold text-xs text-foreground flex items-center gap-1.5">
-                      <ExternalLink className="h-4 w-4 text-gold" /> Public Sign-In Web Link
+                  <Card className="p-4 space-y-3 bg-surface-2/40 border-border">
+                    <div className="font-semibold text-xs text-text-primary flex items-center gap-1.5">
+                      <ExternalLink className="h-4 w-4 text-accent" /> Public Sign-In Web Link
                     </div>
                     <div className="flex items-center gap-2">
-                      <Input readOnly value={signinUrl} className="text-xs h-8 bg-card font-mono text-muted-foreground" />
+                      <Input readOnly value={signinUrl} className="text-xs h-8 bg-surface-1 border-border font-mono text-text-muted" />
                       <Button
                         size="icon"
                         variant="outline"
-                        className="h-8 w-8 shrink-0"
+                        className="h-8 w-8 shrink-0 border-border"
                         onClick={() => {
                           navigator.clipboard.writeText(signinUrl);
                           toast.success("Link copied to clipboard!");
@@ -1310,7 +1304,7 @@ function OpenHouseManagementSheet({
                       <Button
                         size="icon"
                         variant="outline"
-                        className="h-8 w-8 shrink-0"
+                        className="h-8 w-8 shrink-0 border-border"
                         onClick={() => window.open(signinUrl, "_blank")}
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
@@ -1326,12 +1320,12 @@ function OpenHouseManagementSheet({
           {activeSubTab === "checklist" && (
             <div className="space-y-5">
               {/* Progress Banner */}
-              <div className="bg-card p-4 rounded-xl border border-border space-y-2 shadow-sm">
+              <div className="bg-surface-1 p-4 rounded-xl border border-border space-y-2 shadow-xs">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-foreground flex items-center gap-1.5">
-                    <ClipboardCheck className="h-4 w-4 text-gold" /> Open House Execution Progress
+                  <span className="font-semibold text-text-primary flex items-center gap-1.5">
+                    <ClipboardCheck className="h-4 w-4 text-accent" /> Open House Execution Progress
                   </span>
-                  <span className="font-bold text-gold">
+                  <span className="font-bold text-accent">
                     {completedChecklist} of {totalChecklist} Tasks Complete ({checklistPct}%)
                   </span>
                 </div>
@@ -1339,9 +1333,9 @@ function OpenHouseManagementSheet({
               </div>
 
               {checklistLoading ? (
-                <div className="text-center py-8 text-xs text-muted-foreground">Loading checklist...</div>
+                <div className="text-center py-8 text-xs text-text-muted">Loading checklist...</div>
               ) : phases.length === 0 ? (
-                <div className="text-center py-6 text-xs text-muted-foreground">No checklist items configured.</div>
+                <div className="text-center py-6 text-xs text-text-muted">No checklist items configured.</div>
               ) : (
                 <div className="space-y-4">
                   {phases.map((phase) => {
@@ -1349,38 +1343,38 @@ function OpenHouseManagementSheet({
                     const phaseCompleted = phase.items.filter((i: any) => i.completed).length;
 
                     return (
-                      <Card key={phase.phaseName} className="overflow-hidden border border-border">
-                        <CardHeader className="bg-muted/40 py-3 px-4 flex flex-row items-center justify-between border-b border-border">
-                          <div className="font-semibold text-xs text-foreground uppercase tracking-wide">
+                      <Card key={phase.phaseName} className="overflow-hidden border border-border bg-surface-1">
+                        <CardHeader className="bg-surface-2/60 py-3 px-4 flex flex-row items-center justify-between border-b border-border">
+                          <div className="font-semibold text-xs text-text-primary uppercase tracking-wide">
                             {phase.phaseName}
                           </div>
-                          <Badge variant="outline" className="text-[10px] font-medium">
+                          <Badge variant="outline" className="text-[10px] font-medium border-border">
                             {phaseCompleted}/{phaseTotal} done
                           </Badge>
                         </CardHeader>
-                        <CardContent className="p-3 divide-y divide-border/60">
+                        <CardContent className="p-3 divide-y divide-border">
                           {phase.items.map((item: any) => (
                             <div
                               key={item.id}
                               onClick={() => toggleMutation.mutate({ itemId: item.id, completed: !item.completed })}
-                              className="py-2.5 px-2 flex items-start gap-3 hover:bg-muted/30 rounded-lg cursor-pointer transition-colors"
+                              className="py-2.5 px-2 flex items-start gap-3 hover:bg-surface-2/40 rounded-lg cursor-pointer transition-colors"
                             >
                               <Checkbox
                                 checked={item.completed}
                                 onCheckedChange={(c) => toggleMutation.mutate({ itemId: item.id, completed: !!c })}
-                                className="mt-0.5 border-gold data-[state=checked]:bg-gold data-[state=checked]:text-navy"
+                                className="mt-0.5 border-accent data-[state=checked]:bg-accent data-[state=checked]:text-white"
                               />
                               <div className="flex-1 min-w-0">
                                 <span
                                   className={cn(
                                     "text-xs leading-relaxed select-none transition-colors",
-                                    item.completed ? "line-through text-muted-foreground" : "text-foreground font-medium"
+                                    item.completed ? "line-through text-text-muted" : "text-text-primary font-medium"
                                   )}
                                 >
                                   {item.task_text}
                                 </span>
                                 {item.completed && item.completed_at && (
-                                  <div className="text-[10px] text-muted-foreground mt-0.5">
+                                  <div className="text-[10px] text-text-muted mt-0.5">
                                     Done {new Date(item.completed_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                                   </div>
                                 )}
@@ -1401,20 +1395,20 @@ function OpenHouseManagementSheet({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-serif font-bold text-base text-foreground">
+                  <h3 className="font-serif font-bold text-base text-text-primary">
                     Attached Marketing Materials
                   </h3>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-text-secondary">
                     Flyers, branded graphics, and photos auto-attached from the listing.
                   </p>
                 </div>
               </div>
 
               {assets.length === 0 ? (
-                <Card className="p-8 text-center text-muted-foreground border-dashed">
-                  <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
-                  <div className="font-medium text-sm text-foreground">No marketing assets attached</div>
-                  <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+                <Card className="p-8 text-center text-text-muted border-dashed bg-surface-1 border-border">
+                  <ImageIcon className="h-8 w-8 mx-auto text-text-muted/40 mb-2" />
+                  <div className="font-medium text-sm text-text-primary">No marketing assets attached</div>
+                  <p className="text-xs text-text-secondary mt-1 max-w-sm mx-auto">
                     Upload flyers, photos, and social graphics in the Agent Toolbox under this Open House record.
                   </p>
                 </Card>
@@ -1423,28 +1417,28 @@ function OpenHouseManagementSheet({
                   {assets.map((a: any) => {
                     const u = a.file_url || a.thumbnail_url || a.drive_url;
                     return (
-                      <Card key={a.id} className="overflow-hidden border border-border group bg-card">
-                        <div className="aspect-square bg-muted relative">
+                      <Card key={a.id} className="overflow-hidden border border-border group bg-surface-1 hover:border-accent/40 transition-colors">
+                        <div className="aspect-square bg-surface-2 relative">
                           {u ? (
                             <img src={u} alt={a.name || "Asset"} className="w-full h-full object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                              <FileText className="h-8 w-8" />
+                            <div className="w-full h-full flex items-center justify-center text-text-muted">
+                              <FileText className="h-8 w-8 opacity-40" />
                             </div>
                           )}
-                          <Badge className="absolute top-2 left-2 text-[10px] bg-background/80 backdrop-blur-sm border">
+                          <Badge className="absolute top-2 left-2 text-[10px] bg-surface-1/80 backdrop-blur-xs border border-border">
                             {a.category || a.asset_type}
                           </Badge>
                         </div>
                         <div className="p-2.5 flex items-center justify-between">
-                          <span className="text-xs font-medium truncate flex-1">{a.name || "Marketing Asset"}</span>
+                          <span className="text-xs font-medium truncate flex-1 text-text-primary">{a.name || "Marketing Asset"}</span>
                           {u && (
                             <a
                               href={u}
                               target="_blank"
                               rel="noreferrer"
                               download
-                              className="p-1 text-muted-foreground hover:text-gold"
+                              className="p-1 text-text-muted hover:text-accent transition-colors"
                             >
                               <Download className="h-3.5 w-3.5" />
                             </a>
@@ -1461,11 +1455,11 @@ function OpenHouseManagementSheet({
           {/* TAB 5: SETTINGS & ARCHIVE */}
           {activeSubTab === "settings" && (
             <div className="space-y-4">
-              <Card className="p-5 border-border space-y-4">
-                <h3 className="font-serif font-bold text-base text-foreground">
+              <Card className="p-5 border-border bg-surface-1 space-y-4">
+                <h3 className="font-serif font-bold text-base text-text-primary">
                   Open House Status &amp; Archive Management
                 </h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">
+                <p className="text-xs text-text-secondary leading-relaxed">
                   When the open house has concluded, archive it to remove it from the active upcoming calendar while preserving all visitor sign-in leads and checklist logs.
                 </p>
 
@@ -1475,7 +1469,7 @@ function OpenHouseManagementSheet({
                       variant="outline"
                       onClick={() => archiveMutation.mutate(false)}
                       disabled={archiveMutation.isPending}
-                      className="border-gold/50 text-gold hover:bg-gold/10 text-xs"
+                      className="border-accent/50 text-accent hover:bg-accent/10 text-xs"
                     >
                       <ArchiveRestore className="h-3.5 w-3.5 mr-1.5" /> Restore to Active
                     </Button>
@@ -1484,7 +1478,7 @@ function OpenHouseManagementSheet({
                       variant="default"
                       onClick={() => archiveMutation.mutate(true)}
                       disabled={archiveMutation.isPending}
-                      className="bg-gold text-navy hover:bg-gold/90 font-semibold text-xs"
+                      className="bg-accent text-white hover:bg-accent-hover font-semibold text-xs shadow-xs"
                     >
                       <Archive className="h-3.5 w-3.5 mr-1.5" /> Archive Open House
                     </Button>
@@ -1502,7 +1496,7 @@ function OpenHouseManagementSheet({
           <DialogContent className="max-w-md w-full bg-slate-950 text-white border-slate-800 p-8 text-center space-y-6">
             <img src={logo} alt="MSREG Logo" className="h-10 w-auto mx-auto" />
             <div className="space-y-1">
-              <Badge className="bg-gold/15 text-gold border-gold/30 text-xs">Welcome to our Open House</Badge>
+              <Badge className="bg-accent/15 text-accent border-accent/30 text-xs font-semibold">Welcome to our Open House</Badge>
               <h2 className="text-xl font-serif font-bold text-white">{oh?.address}</h2>
             </div>
 
@@ -1517,7 +1511,7 @@ function OpenHouseManagementSheet({
 
             <Button
               onClick={() => window.open(signinUrl, "_blank")}
-              className="w-full bg-gold hover:bg-gold/90 text-navy font-bold text-xs py-5 rounded-xl"
+              className="w-full bg-accent hover:bg-accent-hover text-white font-bold text-xs py-5 rounded-xl shadow-lg"
             >
               Or Tap to Sign In on this Device
             </Button>
@@ -1582,23 +1576,23 @@ function ChecklistTemplateManager() {
     setItems(next);
   };
 
-  if (isLoading) return <div className="text-center py-10 text-xs text-muted-foreground">Loading template...</div>;
+  if (isLoading) return <div className="text-center py-10 text-xs text-text-muted">Loading template...</div>;
 
   return (
-    <Card className="p-6 space-y-6 border-border">
+    <Card className="p-6 space-y-6 border-border bg-surface-1">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
         <div>
-          <h2 className="font-serif font-bold text-lg text-foreground">
+          <h2 className="font-serif font-bold text-lg text-text-primary">
             Default Open House Process Checklist Template
           </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-text-secondary mt-0.5">
             Ops-managed standard process. Edits here update the template for all newly created open houses.
           </p>
         </div>
         <Button
           onClick={() => saveMutation.mutate()}
           disabled={saveMutation.isPending}
-          className="bg-gold text-navy hover:bg-gold/90 font-semibold text-xs"
+          className="bg-accent text-white hover:bg-accent-hover font-semibold text-xs shadow-xs"
         >
           {saveMutation.isPending ? "Saving..." : "Save Template Changes"}
         </Button>
@@ -1617,16 +1611,16 @@ function ChecklistTemplateManager() {
             .filter((item) => item.phase_order === phase.order || item.phase === phase.name);
 
           return (
-            <div key={phase.name} className="space-y-2.5 p-4 rounded-xl bg-muted/20 border border-border">
+            <div key={phase.name} className="space-y-2.5 p-4 rounded-xl bg-surface-2/40 border border-border">
               <div className="flex items-center justify-between">
-                <div className="font-semibold text-xs uppercase tracking-wider text-foreground">
+                <div className="font-semibold text-xs uppercase tracking-wider text-text-primary">
                   Phase {phase.order}: {phase.name}
                 </div>
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => handleAddTask(phase.name, phase.order)}
-                  className="text-xs text-gold hover:text-gold/80 h-7"
+                  className="text-xs text-accent hover:text-accent-hover h-7"
                 >
                   <Plus className="h-3 w-3 mr-1" /> Add Task
                 </Button>
@@ -1638,13 +1632,13 @@ function ChecklistTemplateManager() {
                     <Input
                       value={t.task_text}
                       onChange={(e) => handleTaskTextChange(t.originalIndex, e.target.value)}
-                      className="text-xs h-8 bg-card"
+                      className="text-xs h-8 bg-surface-1 border-border"
                     />
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={() => handleDeleteTask(t.originalIndex)}
-                      className="h-8 w-8 text-muted-foreground hover:text-rose-400 shrink-0"
+                      className="h-8 w-8 text-text-muted hover:text-rose-400 shrink-0"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -1671,45 +1665,45 @@ function OpenHousesAnalyticsView() {
   });
 
   if (isLoading || !data) {
-    return <div className="text-center py-10 text-xs text-muted-foreground">Loading analytics...</div>;
+    return <div className="text-center py-10 text-xs text-text-muted">Loading analytics...</div>;
   }
 
   return (
     <div className="space-y-6">
       {/* Top Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card className="p-4 bg-card border-border">
-          <div className="text-xs font-semibold text-muted-foreground">Total Open Houses</div>
-          <div className="text-2xl font-serif font-bold text-foreground mt-1">{data.totalOpenHouses}</div>
+        <Card className="p-4 bg-surface-1 border-border">
+          <div className="text-xs font-semibold text-text-muted">Total Open Houses</div>
+          <div className="text-2xl font-serif font-bold text-text-primary mt-1">{data.totalOpenHouses}</div>
         </Card>
-        <Card className="p-4 bg-card border-border">
-          <div className="text-xs font-semibold text-muted-foreground">Total Leads Captured</div>
-          <div className="text-2xl font-serif font-bold text-gold mt-1">{data.totalSignins}</div>
+        <Card className="p-4 bg-surface-1 border-border">
+          <div className="text-xs font-semibold text-text-muted">Total Leads Captured</div>
+          <div className="text-2xl font-serif font-bold text-accent mt-1">{data.totalSignins}</div>
         </Card>
-        <Card className="p-4 bg-card border-border">
-          <div className="text-xs font-semibold text-muted-foreground">Unrepresented Leads</div>
+        <Card className="p-4 bg-surface-1 border-border">
+          <div className="text-xs font-semibold text-text-muted">Unrepresented Leads</div>
           <div className="text-2xl font-serif font-bold text-emerald-500 mt-1">{data.unrepresentedLeads}</div>
         </Card>
-        <Card className="p-4 bg-card border-border">
-          <div className="text-xs font-semibold text-muted-foreground">Buyer / Seller Leads</div>
-          <div className="text-2xl font-serif font-bold text-foreground mt-1">
+        <Card className="p-4 bg-surface-1 border-border">
+          <div className="text-xs font-semibold text-text-muted">Buyer / Seller Leads</div>
+          <div className="text-2xl font-serif font-bold text-text-primary mt-1">
             {data.totalBuyers}B / {data.totalSellers}S
           </div>
         </Card>
       </div>
 
       {/* Leads by Agent Leaderboard */}
-      <Card className="p-5 border-border space-y-4">
-        <h3 className="font-serif font-bold text-base text-foreground">
+      <Card className="p-5 border-border bg-surface-1 space-y-4">
+        <h3 className="font-serif font-bold text-base text-text-primary">
           Lead Capture Leaderboard by Hosting Agent
         </h3>
         <div className="divide-y divide-border">
           {data.leadsByAgent.map((agent: any) => (
             <div key={agent.name} className="py-2.5 flex items-center justify-between text-xs">
-              <div className="font-semibold text-foreground">{agent.name}</div>
-              <div className="flex items-center gap-4 text-muted-foreground">
+              <div className="font-semibold text-text-primary">{agent.name}</div>
+              <div className="flex items-center gap-4 text-text-secondary">
                 <span>{agent.openHouses} Open Houses</span>
-                <Badge className="bg-gold/15 text-gold border-gold/30 text-xs font-bold">
+                <Badge className="bg-accent/15 text-accent border-accent/30 text-xs font-bold">
                   {agent.count} Leads
                 </Badge>
               </div>

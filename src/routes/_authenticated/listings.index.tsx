@@ -44,9 +44,15 @@ import {
   ExternalLink,
   Link as LinkIcon,
   RefreshCw,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/empty-state";
+import { LoadingState } from "@/components/loading-state";
+import { Card } from "@/components/ui/card";
 import {
   type Listing,
   type ListingStatus,
@@ -75,6 +81,7 @@ function ListingsPage() {
   const canManage = isAdmin || canEditContent || roles.includes("marketing_coordinator" as any);
   const qc = useQueryClient();
 
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [statusFilter, setStatusFilter] = useState<"all" | ListingStatus>("all");
   const [sortKey, setSortKey] = useState<SortKey>("list_date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -218,52 +225,51 @@ function ListingsPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-6 w-full min-w-0">
       {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full min-w-0 border-b border-border pb-5 sm:border-0 sm:pb-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="h-10 w-10 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center shrink-0">
-            <Home className="h-5 w-5 text-gold" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight truncate">Listings</h1>
-            <p className="text-muted-foreground text-sm mt-0.5">
-              Manage listing lifecycle, marketing, and scheduled posts.
-            </p>
-          </div>
-        </div>
-        {canManage && (
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => backfillMut.mutate()}
-              disabled={backfillMut.isPending}
-              title="Schedule missing 30-day reposts for all active listings ≤30 days on market"
-              className="shrink-0"
-            >
-              {backfillMut.isPending ? (
-                <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4 mr-1.5" />
-              )}
-              Backfill 30-Day Reposts
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="shrink-0">
-              <Upload className="h-4 w-4 mr-1.5" /> Bulk Import
-            </Button>
-            <Button
-              size="sm"
-              className="bg-gold hover:bg-gold/90 text-navy font-semibold shrink-0"
-              onClick={() => setNewOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-1.5" /> New Listing
-            </Button>
-          </div>
-        )}
-      </header>
+      <PageHeader
+        title="Listings"
+        description="Manage listing lifecycle, marketing kits, social reposts, and active MLS inventory."
+        badge="MLS Inventory"
+        actions={
+          canManage && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => backfillMut.mutate()}
+                disabled={backfillMut.isPending}
+                title="Schedule missing 30-day reposts for all active listings ≤30 days on market"
+                className="shrink-0 text-xs border-border bg-surface-1"
+              >
+                {backfillMut.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                Backfill 30-Day Reposts
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setImportOpen(true)}
+                className="shrink-0 text-xs border-border bg-surface-1"
+              >
+                <Upload className="h-3.5 w-3.5 mr-1.5" /> Bulk Import
+              </Button>
+              <Button
+                size="sm"
+                className="bg-accent hover:bg-accent-hover text-white font-semibold text-xs shadow-xs shrink-0"
+                onClick={() => setNewOpen(true)}
+              >
+                <Plus className="h-3.5 w-3.5 mr-1.5" /> New Listing
+              </Button>
+            </div>
+          )
+        }
+      />
 
       {/* Filter + search bar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between w-full min-w-0">
-        <div className="flex gap-1 bg-card border border-border rounded-lg p-1 overflow-x-auto max-w-full no-scrollbar whitespace-nowrap shrink-0">
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between w-full min-w-0 bg-surface-1 p-3 rounded-xl border border-border shadow-xs">
+        <div className="flex gap-1 bg-surface-2/50 border border-border rounded-lg p-1 overflow-x-auto max-w-full no-scrollbar whitespace-nowrap shrink-0">
           {(["all", "active", "under_contract", "sold"] as const).map((s) => (
             <button
               key={s}
@@ -271,52 +277,135 @@ function ListingsPage() {
               className={cn(
                 "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
                 statusFilter === s
-                  ? "bg-gold/20 text-gold"
-                  : "text-muted-foreground hover:text-foreground",
+                  ? "bg-accent text-white shadow-xs font-semibold"
+                  : "text-text-muted hover:text-text-primary",
               )}
             >
               {s === "all" ? "All" : LISTING_STATUS_LABEL[s as ListingStatus]}
-              <span className="ml-1.5 text-[10px] opacity-70">{counts[s]}</span>
+              <span className="ml-1.5 text-[10px] opacity-75">{counts[s]}</span>
             </button>
           ))}
         </div>
-        <div className="w-full sm:w-72 sm:max-w-xs min-w-0">
+        <div className="flex items-center gap-2 flex-1 sm:max-w-md justify-end">
           <Input
             placeholder="Search address, agent, MLS…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-9 text-sm"
+            className="h-9 text-xs bg-surface-2 border-border"
           />
+          <div className="inline-flex rounded-lg border border-border p-0.5 bg-surface-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setViewMode("table")}
+              className={cn(
+                "p-1.5 rounded-md transition-colors",
+                viewMode === "table" ? "bg-surface-1 text-accent shadow-xs" : "text-text-muted hover:text-text-primary"
+              )}
+              title="Table View"
+            >
+              <List className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              className={cn(
+                "p-1.5 rounded-md transition-colors",
+                viewMode === "grid" ? "bg-surface-1 text-accent shadow-xs" : "text-text-muted hover:text-text-primary"
+              )}
+              title="Grid View"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden min-w-0 w-full">
-        {isLoading ? (
-          <div className="flex items-center justify-center p-16">
-            <Loader2 className="h-6 w-6 animate-spin text-gold" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="p-16 text-center">
-            <Home className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-muted-foreground text-sm">
-              {listings.length === 0
-                ? "No listings yet. Add your first listing to get started."
-                : "No listings match your current filters."}
-            </p>
-          </div>
-        ) : (
+      {/* Main Content Area */}
+      {isLoading ? (
+        <LoadingState message="Loading listings..." />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={Home}
+          title={listings.length === 0 ? "No listings yet" : "No listings match your current filters"}
+          description={
+            listings.length === 0
+              ? "Add your first listing to auto-schedule marketing reposts and push to the Agent Toolbox."
+              : "Try adjusting your search query or status filter."
+          }
+          action={
+            canManage
+              ? {
+                  label: "New Listing",
+                  onClick: () => setNewOpen(true),
+                }
+              : undefined
+          }
+        />
+      ) : viewMode === "grid" ? (
+        /* Visual Property Card Grid */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((listing) => (
+            <Card
+              key={listing.id}
+              className="overflow-hidden border border-border bg-surface-1 hover:border-accent/40 transition-all duration-300 group shadow-xs hover:shadow-md flex flex-col justify-between rounded-xl"
+            >
+              <div className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <StatusBadge className={LISTING_STATUS_CLASS[listing.status]}>
+                    {LISTING_STATUS_LABEL[listing.status]}
+                  </StatusBadge>
+                  <span className="text-xs text-text-muted font-mono">{listing.mls_id ? `#${listing.mls_id}` : ""}</span>
+                </div>
+                <div>
+                  <Link
+                    to="/listings/$id"
+                    params={{ id: listing.id }}
+                    className="font-serif font-semibold text-base text-text-primary group-hover:text-accent transition-colors line-clamp-1"
+                  >
+                    {listing.address}
+                  </Link>
+                  <div className="text-sm font-bold text-text-primary mt-1">
+                    {formatPrice(listing.list_price)}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-border-subtle text-text-secondary">
+                  <div>
+                    <span className="text-text-muted block text-[11px]">Agent</span>
+                    <span className="font-medium truncate block">{listing.agent_name ?? "—"}</span>
+                  </div>
+                  <div>
+                    <span className="text-text-muted block text-[11px]">Days Listed</span>
+                    <span className="font-medium block">{calcDaysListed(listing.list_date)} days</span>
+                  </div>
+                </div>
+              </div>
+              <div className="p-3 bg-surface-2/40 border-t border-border flex items-center justify-between">
+                <span className="text-[11px] text-text-muted">
+                  Listed {format(new Date(listing.list_date + "T00:00:00"), "MMM d, yyyy")}
+                </span>
+                <Link to="/listings/$id" params={{ id: listing.id }}>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-accent hover:text-accent-hover hover:bg-accent/10 px-2">
+                    View Details <ChevronRight className="h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        /* High-Density Table View */
+        <div className="bg-surface-1 border border-border rounded-xl overflow-hidden min-w-0 w-full shadow-xs">
           <Table>
             <TableHeader>
-              <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="font-semibold">Address</TableHead>
-                <TableHead className="font-semibold">Agent</TableHead>
-                <TableHead className="font-semibold">MLS #</TableHead>
-                <TableHead className="font-semibold">Price</TableHead>
-                <TableHead className="font-semibold">Status</TableHead>
+              <TableRow className="border-border hover:bg-transparent bg-surface-2/50">
+                <TableHead className="font-semibold text-text-primary">Address</TableHead>
+                <TableHead className="font-semibold text-text-primary">Agent</TableHead>
+                <TableHead className="font-semibold text-text-primary">MLS #</TableHead>
+                <TableHead className="font-semibold text-text-primary">Price</TableHead>
+                <TableHead className="font-semibold text-text-primary">Status</TableHead>
                 <TableHead>
                   <button
-                    className="flex items-center gap-1.5 font-semibold hover:text-foreground"
+                    className="flex items-center gap-1.5 font-semibold text-text-primary hover:text-accent transition-colors"
                     onClick={() => toggleSort("list_date")}
                   >
                     Date Listed <SortIcon k="list_date" />
@@ -324,51 +413,51 @@ function ListingsPage() {
                 </TableHead>
                 <TableHead>
                   <button
-                    className="flex items-center gap-1.5 font-semibold hover:text-foreground"
+                    className="flex items-center gap-1.5 font-semibold text-text-primary hover:text-accent transition-colors"
                     onClick={() => toggleSort("days_listed")}
                   >
                     Days Listed <SortIcon k="days_listed" />
                   </button>
                 </TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-right font-semibold text-text-primary">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map((listing) => (
                 <TableRow
                   key={listing.id}
-                  className="border-border hover:bg-accent/30 transition-colors"
+                  className="border-border hover:bg-surface-2/40 transition-colors"
                 >
                   <TableCell className="font-medium max-w-[220px]">
                     <Link
                       to="/listings/$id"
                       params={{ id: listing.id }}
-                      className="hover:text-gold transition-colors line-clamp-2 leading-snug"
+                      className="hover:text-accent transition-colors line-clamp-2 leading-snug text-text-primary"
                     >
                       {listing.address}
                     </Link>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="text-text-secondary">
                     {listing.agent_name ?? "—"}
                   </TableCell>
-                  <TableCell className="text-muted-foreground font-mono text-xs">
+                  <TableCell className="text-text-muted font-mono text-xs">
                     {listing.mls_id ?? "—"}
                   </TableCell>
-                  <TableCell className="font-medium">{formatPrice(listing.list_price)}</TableCell>
+                  <TableCell className="font-semibold text-text-primary">{formatPrice(listing.list_price)}</TableCell>
                   <TableCell>
                     <StatusBadge className={LISTING_STATUS_CLASS[listing.status]}>
                       {LISTING_STATUS_LABEL[listing.status]}
                     </StatusBadge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
+                  <TableCell className="text-text-secondary text-sm">
                     {format(new Date(listing.list_date + "T00:00:00"), "MMM d, yyyy")}
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
+                  <TableCell className="text-text-secondary text-sm">
                     {calcDaysListed(listing.list_date)} days
                   </TableCell>
                   <TableCell className="text-right">
                     <Link to="/listings/$id" params={{ id: listing.id }}>
-                      <Button variant="ghost" size="sm" className="gap-1.5">
+                      <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-text-secondary hover:text-accent hover:bg-accent/10">
                         View <ChevronRight className="h-3.5 w-3.5" />
                       </Button>
                     </Link>
@@ -377,8 +466,8 @@ function ListingsPage() {
               ))}
             </TableBody>
           </Table>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Modals */}
       {canManage && (
@@ -478,10 +567,10 @@ function NewListingModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto bg-surface-1 border-border">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Home className="h-5 w-5 text-gold" /> New Listing
+          <DialogTitle className="flex items-center gap-2 text-text-primary">
+            <Home className="h-5 w-5 text-accent" /> New Listing
           </DialogTitle>
         </DialogHeader>
 
@@ -496,6 +585,7 @@ function NewListingModal({
               placeholder="123 Main St, Rolla, MO 65401"
               value={form.address}
               onChange={(e) => set("address", e.target.value)}
+              className="bg-surface-2 border-border"
             />
           </div>
 
@@ -507,6 +597,7 @@ function NewListingModal({
               placeholder="Agent full name"
               value={form.agent_name}
               onChange={(e) => set("agent_name", e.target.value)}
+              className="bg-surface-2 border-border"
             />
           </div>
 
@@ -521,6 +612,7 @@ function NewListingModal({
                 placeholder="12345"
                 value={form.mls_id}
                 onChange={(e) => set("mls_id", e.target.value)}
+                className="bg-surface-2 border-border"
               />
             </div>
             <div className="grid gap-1.5">
@@ -531,6 +623,7 @@ function NewListingModal({
                 placeholder="250000"
                 value={form.list_price}
                 onChange={(e) => set("list_price", e.target.value)}
+                className="bg-surface-2 border-border"
               />
             </div>
           </div>
@@ -546,15 +639,16 @@ function NewListingModal({
                 type="date"
                 value={form.list_date}
                 onChange={(e) => set("list_date", e.target.value)}
+                className="bg-surface-2 border-border"
               />
             </div>
             <div className="grid gap-1.5">
               <Label>Status</Label>
               <Select value={form.status} onValueChange={(v) => set("status", v)}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-surface-2 border-border">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-surface-1 border-border">
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="under_contract">Under Contract</SelectItem>
                 </SelectContent>
@@ -566,10 +660,10 @@ function NewListingModal({
           <div className="grid gap-1.5">
             <Label>Marketing Brand / Destination</Label>
             <Select value={form.brand} onValueChange={(v) => set("brand", v)}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-surface-2 border-border">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-surface-1 border-border">
                 <SelectItem value="PP">PP — Pinnacle Point</SelectItem>
                 <SelectItem value="LOZ">LOZ — Lake of the Ozarks</SelectItem>
                 <SelectItem value="MSREG ALL">MSREG ALL — All Brands</SelectItem>
@@ -581,9 +675,9 @@ function NewListingModal({
           </div>
 
           {/* Post Date + Time — the key scheduling fields */}
-          <div className="rounded-lg border border-gold/25 bg-gold/5 p-3 space-y-3">
+          <div className="rounded-lg border border-accent/30 bg-surface-2/60 p-3 space-y-3">
             <div>
-              <p className="text-xs font-semibold text-gold mb-0.5">📅 Listing Post Schedule</p>
+              <p className="text-xs font-semibold text-accent mb-0.5">📅 Listing Post Schedule</p>
               <p className="text-xs text-muted-foreground">
                 When is this listing going live on social? The Just Listed, 30, 60, and 90-day
                 reposts are all scheduled from this date and time.
@@ -599,6 +693,7 @@ function NewListingModal({
                   type="date"
                   value={form.post_date}
                   onChange={(e) => set("post_date", e.target.value)}
+                  className="bg-surface-1 border-border"
                 />
               </div>
               <div className="grid gap-1.5">
@@ -608,6 +703,7 @@ function NewListingModal({
                   type="time"
                   value={form.post_time}
                   onChange={(e) => set("post_time", e.target.value)}
+                  className="bg-surface-1 border-border"
                 />
               </div>
             </div>
@@ -618,7 +714,7 @@ function NewListingModal({
                   dt.setDate(dt.getDate() + d);
                   return (
                     <div key={d}>
-                      <span className="text-gold/80 font-medium">{d}-day repost:</span>{" "}
+                      <span className="text-accent font-medium">{d}-day repost:</span>{" "}
                       {dt.toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
@@ -641,7 +737,7 @@ function NewListingModal({
               <ExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 id="nl-canva"
-                className="pl-9"
+                className="pl-9 bg-surface-2 border-border"
                 placeholder="https://www.canva.com/design/…"
                 value={form.canva_link}
                 onChange={(e) => set("canva_link", e.target.value)}
@@ -661,7 +757,7 @@ function NewListingModal({
               <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 id="nl-website"
-                className="pl-9"
+                className="pl-9 bg-surface-2 border-border"
                 placeholder="https://www.realtysignatures.com/properties/…"
                 value={form.website_link}
                 onChange={(e) => set("website_link", e.target.value)}
@@ -675,13 +771,13 @@ function NewListingModal({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={mut.isPending}>
+          <Button variant="outline" onClick={onClose} disabled={mut.isPending} className="border-border">
             Cancel
           </Button>
           <Button
             onClick={() => mut.mutate()}
             disabled={mut.isPending}
-            className="bg-gold hover:bg-gold/90 text-navy font-semibold"
+            className="bg-accent hover:bg-accent-hover text-white font-semibold"
           >
             {mut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Create Listing
@@ -708,7 +804,7 @@ function BulkImportModal({
   userId: string;
   onClose: () => void;
   onSuccess: () => void;
-}) {
+  }) {
   const [csv, setCsv] = useState("");
   const [parseErrors, setParseErrors] = useState<{ row: number; message: string }[]>([]);
   const [preview, setPreview] = useState<any[]>([]);
@@ -746,10 +842,10 @@ function BulkImportModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="sm:max-w-[680px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[680px] max-h-[90vh] overflow-y-auto bg-surface-1 border-border">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5 text-gold" /> Bulk Import Listings
+          <DialogTitle className="flex items-center gap-2 text-text-primary">
+            <Upload className="h-5 w-5 text-accent" /> Bulk Import Listings
           </DialogTitle>
         </DialogHeader>
 
@@ -767,11 +863,11 @@ function BulkImportModal({
                   placeholder={CSV_EXAMPLE}
                   value={csv}
                   onChange={(e) => setCsv(e.target.value)}
-                  className="font-mono text-xs"
+                  className="font-mono text-xs bg-surface-2 border-border"
                 />
               </div>
-              <div className="rounded-lg border border-gold/20 bg-gold/5 p-3">
-                <p className="text-xs font-semibold text-gold mb-1.5">Example format:</p>
+              <div className="rounded-lg border border-accent/25 bg-surface-2/60 p-3">
+                <p className="text-xs font-semibold text-accent mb-1.5">Example format:</p>
                 <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap">
                   {CSV_EXAMPLE}
                 </pre>
@@ -793,13 +889,13 @@ function BulkImportModal({
               )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={handleClose}>
+              <Button variant="outline" onClick={handleClose} className="border-border">
                 Cancel
               </Button>
               <Button
                 onClick={parseAndPreview}
                 disabled={!csv.trim()}
-                className="bg-gold hover:bg-gold/90 text-navy font-semibold"
+                className="bg-accent hover:bg-accent-hover text-white font-semibold"
               >
                 Parse &amp; Preview
               </Button>
@@ -809,11 +905,11 @@ function BulkImportModal({
           <>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">
+                <p className="text-sm font-medium text-text-primary">
                   Preview — {preview.length} listing{preview.length !== 1 ? "s" : ""} ready to
                   import
                 </p>
-                <Button variant="ghost" size="sm" onClick={() => setStage("input")}>
+                <Button variant="ghost" size="sm" onClick={() => setStage("input")} className="text-xs">
                   ← Edit CSV
                 </Button>
               </div>
@@ -830,26 +926,26 @@ function BulkImportModal({
                   ))}
                 </div>
               )}
-              <div className="border border-border rounded-lg overflow-hidden max-h-64 overflow-y-auto">
+              <div className="border border-border rounded-lg overflow-hidden max-h-64 overflow-y-auto bg-surface-2/40">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs">Address</TableHead>
-                      <TableHead className="text-xs">Agent</TableHead>
-                      <TableHead className="text-xs">MLS #</TableHead>
-                      <TableHead className="text-xs">Price</TableHead>
-                      <TableHead className="text-xs">List Date</TableHead>
-                      <TableHead className="text-xs">Status</TableHead>
+                    <TableRow className="border-border bg-surface-2">
+                      <TableHead className="text-xs text-text-primary font-semibold">Address</TableHead>
+                      <TableHead className="text-xs text-text-primary font-semibold">Agent</TableHead>
+                      <TableHead className="text-xs text-text-primary font-semibold">MLS #</TableHead>
+                      <TableHead className="text-xs text-text-primary font-semibold">Price</TableHead>
+                      <TableHead className="text-xs text-text-primary font-semibold">List Date</TableHead>
+                      <TableHead className="text-xs text-text-primary font-semibold">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {preview.map((row, i) => (
-                      <TableRow key={i} className="text-xs">
-                        <TableCell className="py-2 max-w-[160px] truncate">{row.address}</TableCell>
-                        <TableCell className="py-2">{row.agent_name ?? "—"}</TableCell>
-                        <TableCell className="py-2 font-mono">{row.mls_id ?? "—"}</TableCell>
-                        <TableCell className="py-2">{formatPrice(row.list_price)}</TableCell>
-                        <TableCell className="py-2">{row.list_date}</TableCell>
+                      <TableRow key={i} className="text-xs border-border hover:bg-surface-2/50">
+                        <TableCell className="py-2 max-w-[160px] truncate font-medium text-text-primary">{row.address}</TableCell>
+                        <TableCell className="py-2 text-text-secondary">{row.agent_name ?? "—"}</TableCell>
+                        <TableCell className="py-2 font-mono text-text-muted">{row.mls_id ?? "—"}</TableCell>
+                        <TableCell className="py-2 font-semibold text-text-primary">{formatPrice(row.list_price)}</TableCell>
+                        <TableCell className="py-2 text-text-secondary">{row.list_date}</TableCell>
                         <TableCell className="py-2">
                           <StatusBadge className={LISTING_STATUS_CLASS[row.status as ListingStatus]}>
                             {LISTING_STATUS_LABEL[row.status as ListingStatus]}
@@ -866,13 +962,13 @@ function BulkImportModal({
               </p>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={handleClose} disabled={mut.isPending}>
+              <Button variant="outline" onClick={handleClose} disabled={mut.isPending} className="border-border">
                 Cancel
               </Button>
               <Button
                 onClick={() => mut.mutate()}
                 disabled={mut.isPending || preview.length === 0}
-                className="bg-gold hover:bg-gold/90 text-navy font-semibold"
+                className="bg-accent hover:bg-accent-hover text-white font-semibold"
               >
                 {mut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 Import {preview.length} Listing{preview.length !== 1 ? "s" : ""}

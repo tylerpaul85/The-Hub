@@ -200,22 +200,22 @@ function ListingDetailPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6 w-full min-w-0">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0 flex-wrap">
-        <Link to="/listings" className="hover:text-gold transition-colors flex items-center gap-1 shrink-0">
+      <div className="flex items-center gap-2 text-sm text-text-muted min-w-0 flex-wrap">
+        <Link to="/listings" className="hover:text-accent transition-colors flex items-center gap-1 shrink-0 font-medium">
           <ArrowLeft className="h-3.5 w-3.5" /> Listings
         </Link>
-        <span className="shrink-0">/</span>
-        <span className="text-foreground truncate min-w-0 max-w-[240px] sm:max-w-md">{listing.address}</span>
+        <span className="shrink-0 opacity-50">/</span>
+        <span className="text-text-primary font-semibold truncate min-w-0 max-w-[240px] sm:max-w-md">{listing.address}</span>
       </div>
 
       {/* Header card */}
-      <div className="bg-card border border-border rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full min-w-0">
+      <div className="bg-surface-1 border border-border rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full min-w-0 shadow-xs">
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div className="h-12 w-12 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center shrink-0">
-            <Home className="h-6 w-6 text-gold" />
+          <div className="h-12 w-12 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0">
+            <Home className="h-6 w-6 text-accent" />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold truncate">{listing.address}</h1>
+            <h1 className="text-xl font-serif font-bold text-text-primary truncate">{listing.address}</h1>
             <div className="flex items-center gap-3 mt-1 flex-wrap">
               <span
                 className={cn(
@@ -226,9 +226,9 @@ function ListingDetailPage() {
                 {LISTING_STATUS_LABEL[listing.status]}
               </span>
               {listing.agent_name && (
-                <span className="text-muted-foreground text-sm truncate">{listing.agent_name}</span>
+                <span className="text-text-secondary text-sm truncate">{listing.agent_name}</span>
               )}
-              <span className="text-muted-foreground text-sm shrink-0">
+              <span className="text-text-muted text-sm shrink-0">
                 {calcDaysListed(listing.list_date)} days on market
               </span>
             </div>
@@ -426,15 +426,15 @@ function ListingInfoSection({
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   return (
-    <section className="bg-card border border-border rounded-xl overflow-hidden">
-      <div className="flex items-center gap-2 p-4 border-b border-border">
-        <Home className="h-4 w-4 text-gold" />
-        <h2 className="font-semibold">Listing Info</h2>
+    <section className="bg-surface-1 border border-border rounded-xl overflow-hidden shadow-xs">
+      <div className="flex items-center gap-2 p-4 border-b border-border bg-surface-2/40">
+        <Home className="h-4 w-4 text-accent" />
+        <h2 className="font-semibold text-text-primary text-base">Listing Info</h2>
         {canManage && !editing && (
           <Button
             variant="ghost"
             size="sm"
-            className="ml-auto gap-1.5"
+            className="ml-auto gap-1.5 text-xs text-text-secondary hover:text-accent hover:bg-accent/10"
             onClick={() => setEditing(true)}
           >
             <Pencil className="h-3.5 w-3.5" /> Edit
@@ -447,6 +447,7 @@ function ListingInfoSection({
               size="sm"
               onClick={() => setEditing(false)}
               disabled={mut.isPending}
+              className="text-text-muted hover:text-text-primary"
             >
               <X className="h-3.5 w-3.5" />
             </Button>
@@ -454,12 +455,12 @@ function ListingInfoSection({
               size="sm"
               onClick={() => mut.mutate()}
               disabled={mut.isPending}
-              className="bg-gold hover:bg-gold/90 text-navy font-semibold"
+              className="bg-accent hover:bg-accent-hover text-white font-semibold text-xs"
             >
               {mut.isPending ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
               ) : (
-                <Check className="h-3.5 w-3.5" />
+                <Check className="h-3.5 w-3.5 mr-1" />
               )}
               Save
             </Button>
@@ -471,20 +472,21 @@ function ListingInfoSection({
         <div className="p-4 grid sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2 grid gap-1.5">
             <Label>Address</Label>
-            <Input value={form.address} onChange={(e) => set("address", e.target.value)} />
+            <Input className="bg-surface-2 border-border" value={form.address} onChange={(e) => set("address", e.target.value)} />
           </div>
           <div className="grid gap-1.5">
             <Label>Agent Name</Label>
-            <Input value={form.agent_name} onChange={(e) => set("agent_name", e.target.value)} />
+            <Input className="bg-surface-2 border-border" value={form.agent_name} onChange={(e) => set("agent_name", e.target.value)} />
           </div>
           <div className="grid gap-1.5">
             <Label>MLS #</Label>
-            <Input value={form.mls_id} onChange={(e) => set("mls_id", e.target.value)} />
+            <Input className="bg-surface-2 border-border" value={form.mls_id} onChange={(e) => set("mls_id", e.target.value)} />
           </div>
           <div className="grid gap-1.5">
             <Label>List Price</Label>
             <Input
               type="number"
+              className="bg-surface-2 border-border"
               value={form.list_price}
               onChange={(e) => set("list_price", e.target.value)}
             />
@@ -493,6 +495,7 @@ function ListingInfoSection({
             <Label>List Date</Label>
             <Input
               type="date"
+              className="bg-surface-2 border-border"
               value={form.list_date}
               onChange={(e) => set("list_date", e.target.value)}
             />
@@ -501,6 +504,7 @@ function ListingInfoSection({
             <Label>Post Date</Label>
             <Input
               type="date"
+              className="bg-surface-2 border-border"
               value={form.post_date}
               onChange={(e) => set("post_date", e.target.value)}
             />
@@ -509,6 +513,7 @@ function ListingInfoSection({
             <Label>Post Time</Label>
             <Input
               type="time"
+              className="bg-surface-2 border-border"
               value={form.post_time}
               onChange={(e) => set("post_time", e.target.value)}
             />
@@ -516,10 +521,10 @@ function ListingInfoSection({
           <div className="grid gap-1.5">
             <Label>Status</Label>
             <Select value={form.status} onValueChange={(v) => set("status", v)}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-surface-2 border-border">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-surface-1 border-border">
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="under_contract">Under Contract</SelectItem>
               </SelectContent>
@@ -528,10 +533,10 @@ function ListingInfoSection({
           <div className="grid gap-1.5">
             <Label>Marketing Brand / Destination</Label>
             <Select value={form.brand} onValueChange={(v) => set("brand", v)}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-surface-2 border-border">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-surface-1 border-border">
                 <SelectItem value="PP">PP</SelectItem>
                 <SelectItem value="LOZ">LOZ</SelectItem>
                 <SelectItem value="MSREG ALL">MSREG ALL</SelectItem>
@@ -543,7 +548,7 @@ function ListingInfoSection({
             <div className="relative">
               <ExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                className="pl-9 text-sm"
+                className="pl-9 text-sm bg-surface-2 border-border"
                 placeholder="https://www.canva.com/design/…"
                 value={form.canva_link}
                 onChange={(e) => set("canva_link", e.target.value)}
@@ -555,7 +560,7 @@ function ListingInfoSection({
             <div className="relative">
               <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                className="pl-9 text-sm"
+                className="pl-9 text-sm bg-surface-2 border-border"
                 placeholder="https://www.realtysignatures.com/properties/…"
                 value={form.website_link}
                 onChange={(e) => set("website_link", e.target.value)}
@@ -588,7 +593,7 @@ function ListingInfoSection({
                 href={listing.canva_link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-gold hover:underline flex items-center gap-1.5 truncate"
+                className="text-sm text-accent hover:underline flex items-center gap-1.5 truncate"
               >
                 <ExternalLink className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">{listing.canva_link}</span>
@@ -604,7 +609,7 @@ function ListingInfoSection({
                 href={listing.website_link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-gold hover:underline flex items-center gap-1.5 truncate"
+                className="text-sm text-accent hover:underline flex items-center gap-1.5 truncate"
               >
                 <LinkIcon className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">{listing.website_link}</span>
@@ -729,18 +734,18 @@ function GraphicsCopySection({
   };
 
   return (
-    <section className="bg-card border border-border rounded-xl overflow-hidden">
-      <div className="flex items-center gap-2 p-4 border-b border-border">
-        <ImageIcon className="h-4 w-4 text-gold" />
-        <h2 className="font-semibold">Graphics &amp; Copy</h2>
+    <section className="bg-surface-1 border border-border rounded-xl overflow-hidden shadow-xs">
+      <div className="flex items-center gap-2 p-4 border-b border-border bg-surface-2/40">
+        <ImageIcon className="h-4 w-4 text-accent" />
+        <h2 className="font-semibold text-text-primary text-base">Graphics &amp; Copy</h2>
       </div>
 
       <div className="p-4 space-y-5">
         {/* ── Canva Link — always visible, easy to update ── */}
-        <div className="rounded-lg border border-gold/30 bg-gold/5 p-3">
+        <div className="rounded-lg border border-accent/30 bg-surface-2/60 p-3">
           <div className="flex items-center gap-2 mb-2">
-            <ExternalLink className="h-3.5 w-3.5 text-gold" />
-            <Label className="text-gold text-xs font-semibold uppercase tracking-wide">
+            <ExternalLink className="h-3.5 w-3.5 text-accent" />
+            <Label className="text-accent text-xs font-semibold uppercase tracking-wide">
               Canva Design Link
             </Label>
             {canvaLink && (
@@ -748,7 +753,7 @@ function GraphicsCopySection({
                 href={canvaLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ml-auto text-xs text-gold hover:underline flex items-center gap-1"
+                className="ml-auto text-xs text-accent hover:underline flex items-center gap-1 font-medium"
               >
                 Open <ExternalLink className="h-3 w-3" />
               </a>
@@ -756,7 +761,7 @@ function GraphicsCopySection({
           </div>
           <div className="flex gap-2">
             <Input
-              className="flex-1 h-8 text-sm bg-background/50"
+              className="flex-1 h-8 text-sm bg-surface-1 border-border"
               placeholder="https://www.canva.com/design/…"
               value={canvaValue}
               onChange={(e) => setCanvaValue(e.target.value)}
@@ -765,7 +770,7 @@ function GraphicsCopySection({
             {canManage && (
               <Button
                 size="sm"
-                className="h-8 bg-gold hover:bg-gold/90 text-navy font-semibold shrink-0"
+                className="h-8 bg-accent hover:bg-accent-hover text-white font-semibold shrink-0"
                 onClick={handleSaveCanva}
                 disabled={canvaSaving}
               >
@@ -785,13 +790,14 @@ function GraphicsCopySection({
         {/* Graphics */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <Label>Listing Graphics</Label>
+            <Label className="text-text-primary font-medium">Listing Graphics</Label>
             {canManage && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => fileRef.current?.click()}
                 disabled={uploading}
+                className="text-xs border-border bg-surface-1"
               >
                 {uploading ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
@@ -816,14 +822,14 @@ function GraphicsCopySection({
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="w-full border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-gold/50 hover:bg-gold/5 transition-colors group"
+                className="w-full border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-accent/50 hover:bg-surface-2/40 transition-colors group cursor-pointer"
               >
-                <Upload className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2 group-hover:text-gold/60 transition-colors" />
-                <p className="text-sm text-muted-foreground">Drop images here or click to upload</p>
-                <p className="text-xs text-muted-foreground/60 mt-1">PNG, JPG, WEBP supported</p>
+                <Upload className="h-8 w-8 text-text-muted/40 mx-auto mb-2 group-hover:text-accent transition-colors" />
+                <p className="text-sm text-text-secondary">Drop images here or click to upload</p>
+                <p className="text-xs text-text-muted mt-1">PNG, JPG, WEBP supported</p>
               </button>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-6">
+              <p className="text-sm text-text-muted text-center py-6">
                 No graphics uploaded yet.
               </p>
             )
@@ -832,7 +838,7 @@ function GraphicsCopySection({
               {graphics.map((g) => (
                 <div
                   key={g.id}
-                  className="group relative aspect-square rounded-lg overflow-hidden border border-border bg-muted"
+                  className="group relative aspect-square rounded-lg overflow-hidden border border-border bg-surface-2"
                 >
                   <img
                     src={g.image_url}
@@ -843,7 +849,7 @@ function GraphicsCopySection({
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <button
                         onClick={() => deleteGraphic(g)}
-                        className="p-1.5 bg-rose-500/80 rounded-md text-white hover:bg-rose-500"
+                        className="p-1.5 bg-rose-500/80 rounded-md text-white hover:bg-rose-500 transition-colors cursor-pointer"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -863,9 +869,9 @@ function GraphicsCopySection({
         {/* Social copy */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <Label>Social Media Copy</Label>
+            <Label className="text-text-primary font-medium">Social Media Copy</Label>
             {canManage && (
-              <Button variant="outline" size="sm" onClick={handleSaveCopy} disabled={copySaving}>
+              <Button variant="outline" size="sm" onClick={handleSaveCopy} disabled={copySaving} className="text-xs border-border bg-surface-1">
                 {copySaving ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
                 ) : (
@@ -881,7 +887,7 @@ function GraphicsCopySection({
             value={copyText}
             onChange={(e) => setCopyText(e.target.value)}
             readOnly={!canManage}
-            className={cn("text-sm", !canManage && "opacity-70 cursor-default")}
+            className={cn("text-sm bg-surface-2 border-border", !canManage && "opacity-70 cursor-default")}
           />
         </div>
       </div>
@@ -943,11 +949,11 @@ function VideosSection({
   };
 
   return (
-    <section className="bg-card border border-border rounded-xl overflow-hidden">
-      <div className="flex items-center gap-2 p-4 border-b border-border">
-        <Video className="h-4 w-4 text-gold" />
-        <h2 className="font-semibold">Listing Videos</h2>
-        <span className="ml-auto text-xs text-muted-foreground">
+    <section className="bg-surface-1 border border-border rounded-xl overflow-hidden shadow-xs">
+      <div className="flex items-center gap-2 p-4 border-b border-border bg-surface-2/40">
+        <Video className="h-4 w-4 text-accent" />
+        <h2 className="font-semibold text-text-primary text-base">Listing Videos</h2>
+        <span className="ml-auto text-xs text-text-muted">
           Google Drive, YouTube, or any video URL
         </span>
       </div>
@@ -959,16 +965,16 @@ function VideosSection({
             {videos.map((v) => (
               <div
                 key={v.id}
-                className="flex items-center gap-3 rounded-lg border border-border bg-card/50 px-3 py-2.5"
+                className="flex items-center gap-3 rounded-lg border border-border bg-surface-2/40 px-3 py-2.5"
               >
-                <Video className="h-4 w-4 text-muted-foreground shrink-0" />
+                <Video className="h-4 w-4 text-accent shrink-0" />
                 <div className="flex-1 min-w-0">
-                  {v.label && <p className="text-xs font-medium truncate">{v.label}</p>}
+                  {v.label && <p className="text-xs font-medium truncate text-text-primary">{v.label}</p>}
                   <a
                     href={v.drive_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-gold hover:underline flex items-center gap-1.5 truncate"
+                    className="text-sm text-accent hover:underline flex items-center gap-1.5 truncate"
                   >
                     <LinkIcon className="h-3 w-3 shrink-0" />
                     <span className="truncate">{v.drive_url}</span>
@@ -978,7 +984,7 @@ function VideosSection({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 shrink-0"
+                    className="h-7 w-7 shrink-0 text-text-muted hover:text-rose-400"
                     onClick={() => removeVideo(v.id)}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -994,9 +1000,9 @@ function VideosSection({
           <div className="space-y-2">
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-muted" />
                 <Input
-                  className="pl-9 text-sm"
+                  className="pl-9 text-sm bg-surface-2 border-border"
                   placeholder="Paste Google Drive or YouTube URL…"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
@@ -1004,7 +1010,7 @@ function VideosSection({
                 />
               </div>
               <Input
-                className="text-sm w-36 shrink-0"
+                className="text-sm w-36 shrink-0 bg-surface-2 border-border"
                 placeholder="Label (optional)"
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
@@ -1012,7 +1018,7 @@ function VideosSection({
               <Button
                 onClick={addVideo}
                 disabled={!url.trim() || adding}
-                className="bg-gold hover:bg-gold/90 text-navy font-semibold shrink-0"
+                className="bg-[var(--accent)] hover:opacity-90 text-white font-semibold shrink-0"
               >
                 {adding ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -1025,7 +1031,7 @@ function VideosSection({
         )}
 
         {videos.length === 0 && !canManage && (
-          <p className="text-sm text-muted-foreground text-center py-4">No videos linked yet.</p>
+          <p className="text-xs text-muted-foreground text-center py-4">No videos linked yet.</p>
         )}
       </div>
     </section>
@@ -1066,16 +1072,32 @@ function PostsSection({
   );
 
   return (
-    <section className="bg-card border border-border rounded-xl overflow-hidden">
-      <div className="flex items-center gap-2 p-4 border-b border-border">
-        <CalendarClock className="h-4 w-4 text-gold" />
-        <h2 className="font-semibold">Scheduled Posts</h2>
+    <section className="bg-card border border-border/70 rounded-xl overflow-hidden shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-border/60 bg-muted/20">
+        <div className="flex items-center gap-2">
+          <div className="h-7 w-7 rounded-lg bg-[var(--accent)]/10 text-[var(--accent)] flex items-center justify-center">
+            <CalendarClock className="h-4 w-4" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold tracking-tight text-foreground">Scheduled Posts</h2>
+            <p className="text-[11px] text-muted-foreground">Automated and manual publishing timeline</p>
+          </div>
+        </div>
         {canManage && (
-          <div className="ml-auto flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setAutoOpen(true)}>
-              <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> 30/60/90-Day Reposts
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAutoOpen(true)}
+              className="text-xs h-8 border-border hover:bg-muted"
+            >
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5 text-[var(--accent)]" /> 30/60/90-Day Reposts
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setManualOpen(true)}>
+            <Button
+              size="sm"
+              onClick={() => setManualOpen(true)}
+              className="text-xs h-8 bg-[var(--accent)] hover:opacity-90 text-white font-medium"
+            >
               <Plus className="h-3.5 w-3.5 mr-1.5" /> Schedule Post
             </Button>
           </div>
@@ -1083,31 +1105,34 @@ function PostsSection({
       </div>
 
       {posts.length === 0 ? (
-        <div className="p-10 text-center">
-          <CalendarClock className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">No posts scheduled yet.</p>
+        <div className="py-12 px-4 text-center">
+          <div className="h-10 w-10 rounded-full bg-muted/60 flex items-center justify-center mx-auto mb-2 text-muted-foreground">
+            <CalendarClock className="h-5 w-5" />
+          </div>
+          <p className="text-sm font-medium text-foreground">No posts scheduled yet</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Use 30/60/90-Day Reposts or schedule a manual announcement.</p>
         </div>
       ) : (
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-border">
-                <TableHead>Post Date</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+              <TableRow className="border-border/60 bg-muted/10 hover:bg-transparent">
+                <TableHead className="text-xs font-semibold">Post Date</TableHead>
+                <TableHead className="text-xs font-semibold">Type</TableHead>
+                <TableHead className="text-xs font-semibold">Status</TableHead>
+                <TableHead className="text-right text-xs font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {posts.map((post) => (
-                <TableRow key={post.id} className="border-border">
-                  <TableCell className="text-sm">
+                <TableRow key={post.id} className="border-border/40 hover:bg-muted/30 transition-colors">
+                  <TableCell className="text-xs font-medium text-foreground">
                     {format(new Date(post.scheduled_date + "T00:00:00"), "MMM d, yyyy")}
                   </TableCell>
                   <TableCell>
                     <span
                       className={cn(
-                        "px-2 py-0.5 rounded text-[10px] font-medium border",
+                        "px-2 py-0.5 rounded-full text-[10px] font-medium border inline-flex items-center gap-1",
                         POST_TYPE_CLASS[post.post_type],
                       )}
                     >
@@ -1117,7 +1142,7 @@ function PostsSection({
                   <TableCell>
                     <span
                       className={cn(
-                        "px-2 py-0.5 rounded text-[10px] font-medium border",
+                        "px-2 py-0.5 rounded-full text-[10px] font-medium border inline-flex items-center gap-1",
                         POST_STATUS_CLASS[post.status],
                       )}
                     >
@@ -1129,9 +1154,10 @@ function PostsSection({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
+                        className="h-7 w-7 p-0 text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg"
                         onClick={() => cancelPost.mutate(post)}
                         disabled={cancelPost.isPending}
+                        title="Cancel scheduled post"
                       >
                         <X className="h-3.5 w-3.5" />
                       </Button>
@@ -1220,24 +1246,24 @@ function ManualPostModal({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-gold" /> Schedule Manual Post
+          <DialogTitle className="flex items-center gap-2 text-base font-semibold">
+            <Calendar className="h-4 w-4 text-[var(--accent)]" /> Schedule Manual Post
           </DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-2">
           <div className="grid gap-1.5">
-            <Label>
+            <Label className="text-xs font-semibold">
               Post Date <span className="text-destructive">*</span>
             </Label>
-            <Input type="date" value={form.date} onChange={(e) => set("date", e.target.value)} />
+            <Input type="date" value={form.date} onChange={(e) => set("date", e.target.value)} className="h-9 text-xs" />
           </div>
           {graphics.length > 0 && (
             <div className="grid gap-1.5">
-              <Label>
-                Select Graphic <span className="text-muted-foreground text-xs">(optional)</span>
+              <Label className="text-xs font-semibold">
+                Select Graphic <span className="text-muted-foreground text-[11px] font-normal">(optional)</span>
               </Label>
               <Select value={form.graphicUrl} onValueChange={(v) => set("graphicUrl", v)}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9 text-xs">
                   <SelectValue placeholder="Choose uploaded graphic…" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1253,33 +1279,35 @@ function ManualPostModal({
                 <img
                   src={form.graphicUrl}
                   alt="preview"
-                  className="w-32 h-32 object-cover rounded-md border border-border"
+                  className="w-32 h-32 object-cover rounded-lg border border-border mt-1 shadow-sm"
                 />
               )}
             </div>
           )}
           <div className="grid gap-1.5">
-            <Label>
-              Copy <span className="text-muted-foreground text-xs">(optional)</span>
+            <Label className="text-xs font-semibold">
+              Copy <span className="text-muted-foreground text-[11px] font-normal">(optional)</span>
             </Label>
             <Textarea
               rows={3}
               placeholder="Social media caption…"
               value={form.copy}
               onChange={(e) => set("copy", e.target.value)}
+              className="text-xs leading-relaxed"
             />
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={mut.isPending}>
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button variant="outline" size="sm" onClick={onClose} disabled={mut.isPending} className="text-xs">
             Cancel
           </Button>
           <Button
+            size="sm"
             onClick={() => mut.mutate()}
             disabled={mut.isPending || !form.date}
-            className="bg-gold hover:bg-gold/90 text-navy font-semibold"
+            className="bg-[var(--accent)] hover:opacity-90 text-white font-medium text-xs shadow-sm"
           >
-            {mut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            {mut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
             Schedule Post
           </Button>
         </DialogFooter>
@@ -1347,36 +1375,36 @@ function AutoScheduleModal({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-[440px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <RefreshCw className="h-4 w-4 text-gold" /> Auto-Schedule Reposts
+          <DialogTitle className="flex items-center gap-2 text-base font-semibold">
+            <RefreshCw className="h-4 w-4 text-[var(--accent)]" /> Auto-Schedule Reposts
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs text-muted-foreground leading-relaxed">
             Creates 30, 60, and 90-day repost entries in the Content Calendar calculated from the
-            listing's post date ({baseDate}). Existing entries are skipped.
+            listing's post date ({baseDate}). Existing entries are preserved.
           </p>
           <div className="space-y-2">
             {entries.map((e) => (
               <div
                 key={e.type}
                 className={cn(
-                  "flex items-center justify-between rounded-lg border p-3",
-                  e.exists ? "border-border bg-muted/40 opacity-60" : "border-gold/30 bg-gold/5",
+                  "flex items-center justify-between rounded-lg border p-3 transition-colors",
+                  e.exists ? "border-border/60 bg-muted/30 opacity-60" : "border-[var(--accent)]/30 bg-[var(--accent)]/5",
                 )}
               >
                 <div>
-                  <p className="text-sm font-medium">{POST_TYPE_LABEL[e.type]}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs font-semibold text-foreground">{POST_TYPE_LABEL[e.type]}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
                     {e.date} @ {listing.post_time?.slice(0, 5) ?? "09:00"}
                   </p>
                 </div>
                 <span
                   className={cn(
-                    "text-[10px] px-2 py-0.5 rounded border font-medium",
+                    "text-[10px] px-2 py-0.5 rounded-full border font-medium",
                     e.exists
                       ? "bg-muted text-muted-foreground border-border"
-                      : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+                      : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
                   )}
                 >
                   {e.exists ? "Already scheduled" : "Will create"}
@@ -1385,16 +1413,17 @@ function AutoScheduleModal({
             ))}
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={mut.isPending}>
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button variant="outline" size="sm" onClick={onClose} disabled={mut.isPending} className="text-xs">
             Cancel
           </Button>
           <Button
+            size="sm"
             onClick={() => mut.mutate()}
             disabled={mut.isPending || newCount === 0}
-            className="bg-gold hover:bg-gold/90 text-navy font-semibold"
+            className="bg-[var(--accent)] hover:opacity-90 text-white font-medium text-xs shadow-sm"
           >
-            {mut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            {mut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
             {newCount === 0
               ? "All scheduled"
               : `Schedule ${newCount} Post${newCount !== 1 ? "s" : ""}`}
@@ -1493,41 +1522,52 @@ function ActionsSection({
   const hasAssetsToPush = graphics.length > 0 || videos.length > 0 || !!copyText;
 
   return (
-    <section className="bg-card border border-border rounded-xl overflow-hidden">
-      <div className="flex items-center gap-2 p-4 border-b border-border">
-        <h2 className="font-semibold">Actions</h2>
+    <section className="bg-card border border-border/70 rounded-xl overflow-hidden shadow-sm">
+      <div className="p-4 border-b border-border/60 bg-muted/20">
+        <h2 className="text-sm font-semibold tracking-tight text-foreground">Listing Distribution & Actions</h2>
+        <p className="text-[11px] text-muted-foreground">Publish to agent portal or package media assets</p>
       </div>
       <div className="p-4 space-y-4">
         {/* Push to Toolbox — prominent */}
-        <div className="rounded-lg border border-gold/30 bg-gold/5 p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="rounded-xl border border-[var(--accent)]/30 bg-[var(--accent)]/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm text-gold">Push to Agent Toolbox</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
+              <p className="font-semibold text-sm text-[var(--accent)]">Push to Agent Toolbox</p>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
               Sends all {graphics.length} graphic{graphics.length !== 1 ? "s" : ""}, {videos.length}{" "}
               video{videos.length !== 1 ? "s" : ""}, and social copy to the Agent Marketing Toolbox
-              so agents can access and download them.
+              so agents can self-serve and download them immediately.
             </p>
           </div>
           <Button
-            className="bg-gold hover:bg-gold/90 text-navy font-semibold shrink-0"
+            className="bg-[var(--accent)] hover:opacity-90 text-white font-medium text-xs shrink-0 shadow-sm"
             onClick={() => setPushConfirm(true)}
             disabled={!hasAssetsToPush}
           >
-            <Send className="h-4 w-4 mr-2" /> Push to Toolbox
+            <Send className="h-3.5 w-3.5 mr-1.5" /> Push to Toolbox
           </Button>
         </div>
 
         {/* Secondary actions */}
-        <div className="flex flex-wrap gap-3">
-          <Button variant="outline" onClick={downloadAll} disabled={graphics.length === 0}>
-            <Download className="h-4 w-4 mr-2" /> Download Graphics ({graphics.length})
+        <div className="flex flex-wrap items-center gap-2.5 pt-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={downloadAll}
+            disabled={graphics.length === 0}
+            className="text-xs h-8 border-border"
+          >
+            <Download className="h-3.5 w-3.5 mr-1.5" /> Download Graphics ({graphics.length})
           </Button>
           <Button
             variant="outline"
-            className="border-rose-500/40 text-rose-400 hover:bg-rose-500/10"
+            size="sm"
+            className="text-xs h-8 border-rose-500/30 text-rose-500 hover:bg-rose-500/10 hover:border-rose-500/50"
             onClick={() => setArchiveConfirm(true)}
           >
-            <Archive className="h-4 w-4 mr-2" /> Archive Listing
+            <Archive className="h-3.5 w-3.5 mr-1.5" /> Archive Listing
           </Button>
         </div>
       </div>
@@ -1536,59 +1576,60 @@ function ActionsSection({
       <Dialog open={pushConfirm} onOpenChange={setPushConfirm}>
         <DialogContent className="sm:max-w-[440px]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Send className="h-4 w-4 text-gold" /> Push to Agent Toolbox?
+            <DialogTitle className="flex items-center gap-2 text-base font-semibold">
+              <Send className="h-4 w-4 text-[var(--accent)]" /> Push to Agent Toolbox?
             </DialogTitle>
           </DialogHeader>
-          <div className="text-sm text-muted-foreground space-y-2">
-            <p>This will create a new listing in the Agent Toolbox with:</p>
-            <ul className="space-y-1 pl-3">
-              <li className="flex items-center gap-2">
-                <Check className="h-3.5 w-3.5 text-gold shrink-0" />
-                <strong>{listing.address}</strong> — {listing.agent_name ?? "No agent"}
+          <div className="text-xs text-muted-foreground space-y-2.5">
+            <p>This will create a new listing entry in the Agent Toolbox with:</p>
+            <ul className="space-y-1.5 pl-1">
+              <li className="flex items-center gap-2 text-foreground font-medium">
+                <Check className="h-3.5 w-3.5 text-[var(--accent)] shrink-0" />
+                <span>{listing.address} — {listing.agent_name ?? "No agent assigned"}</span>
               </li>
               {graphics.length > 0 && (
-                <li className="flex items-center gap-2">
-                  <Check className="h-3.5 w-3.5 text-gold shrink-0" />
-                  {graphics.length} graphic{graphics.length !== 1 ? "s" : ""} as pre-made assets
+                <li className="flex items-center gap-2 text-foreground">
+                  <Check className="h-3.5 w-3.5 text-[var(--accent)] shrink-0" />
+                  <span>{graphics.length} graphic{graphics.length !== 1 ? "s" : ""} as pre-made assets</span>
                 </li>
               )}
               {videos.length > 0 && (
-                <li className="flex items-center gap-2">
-                  <Check className="h-3.5 w-3.5 text-gold shrink-0" />
-                  {videos.length} video{videos.length !== 1 ? "s" : ""} linked in Google Drive
-                  section
+                <li className="flex items-center gap-2 text-foreground">
+                  <Check className="h-3.5 w-3.5 text-[var(--accent)] shrink-0" />
+                  <span>{videos.length} video{videos.length !== 1 ? "s" : ""} linked in Google Drive</span>
                 </li>
               )}
               {copyText && (
-                <li className="flex items-center gap-2">
-                  <Check className="h-3.5 w-3.5 text-gold shrink-0" />
-                  Social media copy as a ready-to-use caption
+                <li className="flex items-center gap-2 text-foreground">
+                  <Check className="h-3.5 w-3.5 text-[var(--accent)] shrink-0" />
+                  <span>Social media copy as a ready-to-use caption</span>
                 </li>
               )}
             </ul>
-            <p className="text-xs mt-2">
-              Agents will be able to access, copy, and download these directly from the Agent
-              Toolbox.
+            <p className="text-[11px] text-muted-foreground pt-1">
+              Agents will be able to access, copy, and download these directly from their toolbox.
             </p>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => setPushConfirm(false)}
               disabled={pushMut.isPending}
+              className="text-xs"
             >
               Cancel
             </Button>
             <Button
-              className="bg-gold hover:bg-gold/90 text-navy font-semibold"
+              size="sm"
+              className="bg-[var(--accent)] hover:opacity-90 text-white font-medium text-xs shadow-sm"
               onClick={() => pushMut.mutate()}
               disabled={pushMut.isPending}
             >
               {pushMut.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
               ) : (
-                <Send className="h-4 w-4 mr-2" />
+                <Send className="h-3.5 w-3.5 mr-1.5" />
               )}
               Push to Toolbox
             </Button>
@@ -1600,26 +1641,29 @@ function ActionsSection({
       <Dialog open={archiveConfirm} onOpenChange={setArchiveConfirm}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Archive this listing?</DialogTitle>
+            <DialogTitle className="text-base font-semibold">Archive this listing?</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            The listing will be hidden from the main list. This does not delete any data.
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            The listing will be hidden from the active workspace. This does not delete any uploaded assets or history.
           </p>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => setArchiveConfirm(false)}
               disabled={archiveMut.isPending}
+              className="text-xs"
             >
               Cancel
             </Button>
             <Button
-              className="bg-rose-500 hover:bg-rose-600 text-white"
+              size="sm"
+              className="bg-rose-500 hover:bg-rose-600 text-white font-medium text-xs"
               onClick={() => archiveMut.mutate()}
               disabled={archiveMut.isPending}
             >
-              {archiveMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Archive
+              {archiveMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
+              Archive Listing
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1655,25 +1699,30 @@ function HistorySection({ listingId }: { listingId: string }) {
   });
 
   return (
-    <section className="bg-card rounded-lg border border-border p-5 mb-8 shadow-sm">
-      <div className="flex items-center gap-2 mb-4">
-        <CalendarClock className="h-5 w-5 text-muted-foreground" />
-        <h2 className="text-lg font-semibold">Version History</h2>
+    <section className="bg-card rounded-xl border border-border/70 p-5 mb-8 shadow-sm">
+      <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border/60">
+        <div className="h-7 w-7 rounded-lg bg-muted text-muted-foreground flex items-center justify-center">
+          <CalendarClock className="h-4 w-4" />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold tracking-tight text-foreground">Audit Log & Version History</h2>
+          <p className="text-[11px] text-muted-foreground">Historical trail of changes and sync operations</p>
+        </div>
       </div>
       
       {isLoading ? (
-         <div className="flex justify-center p-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
       ) : history.length === 0 ? (
-        <p className="text-sm text-muted-foreground p-2 border border-dashed rounded text-center">No history recorded yet.</p>
+        <p className="text-xs text-muted-foreground p-4 border border-dashed border-border rounded-lg text-center">No history recorded yet.</p>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 pt-1">
           {history.map((event: any) => (
-            <div key={event.id} className="flex gap-3 text-sm">
+            <div key={event.id} className="flex gap-3 text-xs">
               <div className="mt-1 flex flex-col items-center">
-                <div className="h-2 w-2 rounded-full bg-gold shadow-[0_0_0_2px_hsl(var(--background)),0_0_0_3px_#e5a93d]"></div>
-                <div className="w-px h-full bg-border mt-2" />
+                <div className="h-2 w-2 rounded-full bg-[var(--accent)] ring-4 ring-[var(--accent)]/15"></div>
+                <div className="w-px h-full bg-border/60 mt-2" />
               </div>
-              <div className="pb-2 flex-1 overflow-hidden">
+              <div className="pb-3 flex-1 overflow-hidden">
                 <p className="font-medium text-foreground">
                   {event.agent_accounts?.first_name 
                     ? `${event.agent_accounts.first_name} ${event.agent_accounts.last_name || ""}` 
@@ -1683,12 +1732,12 @@ function HistorySection({ listingId }: { listingId: string }) {
                     {formatActionType(event.action_type)}
                   </span>
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-[10px] text-muted-foreground mt-0.5">
                   {format(new Date(event.created_at), "MMM d, yyyy 'at' h:mm a")}
                 </p>
                 {event.changes && Object.keys(event.changes).length > 0 && (
-                  <div className="mt-2 text-xs bg-muted/50 p-2.5 rounded-md overflow-x-auto max-w-full border border-border/50 text-muted-foreground">
-                    <pre className="font-mono leading-relaxed">{JSON.stringify(event.changes, null, 2)}</pre>
+                  <div className="mt-2 text-[11px] bg-muted/40 p-2.5 rounded-lg overflow-x-auto max-w-full border border-border/50 text-muted-foreground font-mono">
+                    <pre className="leading-relaxed">{JSON.stringify(event.changes, null, 2)}</pre>
                   </div>
                 )}
               </div>

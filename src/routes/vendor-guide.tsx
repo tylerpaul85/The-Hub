@@ -137,21 +137,28 @@ function Gate({ onUnlock }: { onUnlock: (token: string) => void }) {
   };
 
   return (
-    <div className="relative min-h-screen bg-background flex items-center justify-center px-4 pt-[max(1rem,env(safe-area-inset-top))]">
-      <Card className="w-full max-w-sm p-6 space-y-6 border border-gold/20 bg-card shadow-2xl">
+    <div className="relative min-h-screen bg-[var(--bg)] flex items-center justify-center px-4 pt-[max(1rem,env(safe-area-inset-top))]">
+      {/* Background ambient glow */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] bg-[var(--accent)]/10 rounded-full blur-3xl" />
+      </div>
+
+      <Card className="relative w-full max-w-sm p-7 space-y-6 border border-[var(--border)] bg-[var(--surface-1)] shadow-2xl rounded-2xl">
         <div className="flex flex-col items-center text-center gap-3">
-          <img src={logo} alt="MSREG" className="h-20 w-auto" />
+          <div className="h-16 w-16 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center p-2 shadow-inner">
+            <img src={logo} alt="MSREG" className="h-full w-auto object-contain" />
+          </div>
           <div>
-            <h1 className="text-lg font-semibold tracking-tight">Local Vendor Guide</h1>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-gold/80 mt-1">
+            <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">Local Vendor Guide</h1>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--accent)] font-semibold mt-1">
               Matt Smith Real Estate Group
             </p>
           </div>
         </div>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-              <Lock className="h-3 w-3" /> Team access code
+            <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] flex items-center gap-1.5">
+              <Lock className="h-3.5 w-3.5 text-[var(--accent)]" /> Team Access Code
             </label>
             <Input
               autoFocus
@@ -159,13 +166,13 @@ function Gate({ onUnlock }: { onUnlock: (token: string) => void }) {
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder="Enter access code"
-              className="text-center text-base h-11 focus-visible:ring-gold"
+              className="text-center font-mono tracking-widest text-base h-11 bg-[var(--surface-2)] border-[var(--border)] focus-visible:ring-2 focus-visible:ring-[var(--accent)] text-[var(--text-primary)]"
             />
           </div>
           <Button
             type="submit"
             disabled={busy}
-            className="w-full bg-gold text-navy hover:bg-gold/90 font-semibold h-11 transition-all"
+            className="w-full bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] font-semibold h-11 transition-all shadow-md active:scale-[0.99]"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Unlock Vendor Guide"}
           </Button>
@@ -347,24 +354,36 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative min-h-screen bg-[var(--bg)] text-[var(--text-primary)] overflow-x-hidden selection:bg-[var(--accent)]/30 selection:text-white">
+      {/* Ambient Top Spotlight Halo */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[700px] sm:w-[950px] h-[350px] bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(196,90,44,0.14),transparent)] pointer-events-none -z-10" />
+
+      {/* Subtle Brand Emblem Watermark in Background */}
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] sm:w-[650px] h-[420px] sm:h-[650px] pointer-events-none opacity-[0.03] -z-10 select-none">
+        <img
+          src={logo}
+          alt=""
+          className="w-full h-full object-contain filter grayscale contrast-200"
+        />
+      </div>
+
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-sidebar/95 backdrop-blur border-b border-border pt-[max(0.5rem,env(safe-area-inset-top))]">
+      <header className="sticky top-0 z-30 bg-[var(--surface-1)]/90 backdrop-blur-md border-b border-[var(--border)] pt-[max(0.5rem,env(safe-area-inset-top))]">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <Link
               to="/agents"
-              className="h-9 w-9 rounded-lg border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-gold/50 transition-colors"
+              className="h-9 w-9 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)]/50 transition-colors"
               title="Back to Agent Hub"
             >
               <ArrowLeft className="h-4 w-4" />
             </Link>
             <div className="min-w-0">
-              <h1 className="font-semibold text-sm sm:text-base truncate flex items-center gap-1.5">
-                <Store className="h-4 w-4 text-gold shrink-0" />
+              <h1 className="font-bold text-sm sm:text-base truncate flex items-center gap-1.5 text-[var(--text-primary)]">
+                <Store className="h-4 w-4 text-[var(--accent)] shrink-0" />
                 Trusted Vendor Guide
               </h1>
-              <div className="text-[10px] uppercase tracking-[0.15em] text-gold/80 truncate">
+              <div className="text-[10px] uppercase tracking-[0.15em] text-[var(--accent)] font-semibold truncate">
                 MSREG Local Home Services Directory
               </div>
             </div>
@@ -375,18 +394,18 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
               onClick={openPdfDialog}
               variant="outline"
               size="sm"
-              className="text-xs h-9 border-gold/40 text-gold hover:bg-gold/10 hidden sm:flex items-center gap-1.5"
+              className="text-xs h-9 border-[var(--accent)]/40 text-[var(--accent)] hover:bg-[var(--accent)]/10 hidden sm:flex items-center gap-1.5 font-medium"
             >
               <FileDown className="h-4 w-4" /> Print / Export PDF
             </Button>
             <Button
               onClick={openRecommendDialog}
               size="sm"
-              className="text-xs h-9 bg-gold text-navy hover:bg-gold/90 font-semibold flex items-center gap-1.5"
+              className="text-xs h-9 bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] font-semibold flex items-center gap-1.5 shadow-sm active:scale-[0.98]"
             >
               <Plus className="h-4 w-4" /> Recommend Vendor
             </Button>
-            <Button variant="ghost" size="sm" onClick={onLock} className="text-xs h-9">
+            <Button variant="ghost" size="sm" onClick={onLock} className="text-xs h-9 text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
               Lock
             </Button>
           </div>
@@ -400,14 +419,14 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
             onClick={openPdfDialog}
             variant="outline"
             size="sm"
-            className="w-full text-xs h-9 border-gold/40 text-gold hover:bg-gold/10 flex items-center justify-center gap-1.5"
+            className="w-full text-xs h-9 border-[var(--accent)]/40 text-[var(--accent)] hover:bg-[var(--accent)]/10 flex items-center justify-center gap-1.5 font-medium"
           >
             <FileDown className="h-4 w-4" /> Print / Export PDF for Appointment
           </Button>
         </div>
 
         {/* Region Selector Tabs */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-card p-2 rounded-xl border border-border">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[var(--surface-1)] p-1.5 rounded-xl border border-[var(--border)]">
           <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
             {VENDOR_REGIONS.map((r) => (
               <Button
@@ -416,10 +435,10 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
                 size="sm"
                 onClick={() => setSelectedRegion(r.key)}
                 className={cn(
-                  "text-xs font-semibold rounded-lg h-9 px-4 whitespace-nowrap",
+                  "text-xs font-semibold rounded-lg h-8 px-3.5 whitespace-nowrap transition-all",
                   selectedRegion === r.key
-                    ? "bg-gold text-navy hover:bg-gold/90 shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
+                    ? "bg-[var(--accent)] text-white shadow-sm"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)]",
                 )}
               >
                 {r.shortLabel}
@@ -430,17 +449,17 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
               size="sm"
               onClick={() => setSelectedRegion("all")}
               className={cn(
-                "text-xs font-semibold rounded-lg h-9 px-4 whitespace-nowrap",
+                "text-xs font-semibold rounded-lg h-8 px-3.5 whitespace-nowrap transition-all",
                 selectedRegion === "all"
-                  ? "bg-gold text-navy hover:bg-gold/90 shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
+                  ? "bg-[var(--accent)] text-white shadow-sm"
+                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)]",
               )}
             >
               All Regions
             </Button>
           </div>
 
-          <div className="text-xs text-muted-foreground px-2">
+          <div className="text-xs text-[var(--text-muted)] px-2">
             Showing <strong>{filtered.length}</strong> verified vendor{filtered.length === 1 ? "" : "s"}
           </div>
         </div>
@@ -448,21 +467,21 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
         {/* Search & Category Filter */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="relative sm:col-span-2">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by vendor name, service, contact, phone, or notes..."
-              className="pl-9 h-11 text-sm bg-card"
+              className="pl-9 h-11 text-sm bg-[var(--surface-1)] border-[var(--border)] focus-visible:ring-1 focus-visible:ring-[var(--accent)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
             />
           </div>
 
           <div>
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="h-11 text-xs bg-card">
+              <SelectTrigger className="h-11 text-xs bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-primary)] focus:ring-1 focus:ring-[var(--accent)]">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
-              <SelectContent className="max-h-72">
+              <SelectContent className="max-h-72 bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-primary)]">
                 <SelectItem value="all">All Categories ({vendors.length})</SelectItem>
                 {categories.map((c) => {
                   const count = vendors.filter(
@@ -483,29 +502,29 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
 
         {/* Vendors Content */}
         {isLoading ? (
-          <div className="py-20 text-center text-muted-foreground flex flex-col items-center gap-3">
-            <Loader2 className="h-7 w-7 animate-spin text-gold" />
-            <p className="text-sm">Loading trusted vendors…</p>
+          <div className="py-20 text-center text-[var(--text-secondary)] flex flex-col items-center gap-3">
+            <Loader2 className="h-7 w-7 animate-spin text-[var(--accent)]" />
+            <p className="text-sm font-medium">Loading trusted vendors…</p>
           </div>
         ) : isError ? (
-          <Card className="p-8 text-center border-dashed">
+          <Card className="p-8 text-center border-dashed border-[var(--border)] bg-[var(--surface-1)]">
             <AlertCircle className="h-8 w-8 text-rose-400 mx-auto mb-2" />
-            <p className="text-sm font-medium">Could not load vendor directory.</p>
-            <Button onClick={() => refetch()} variant="outline" size="sm" className="mt-3">
+            <p className="text-sm font-semibold text-[var(--text-primary)]">Could not load vendor directory.</p>
+            <Button onClick={() => refetch()} variant="outline" size="sm" className="mt-3 border-[var(--border)] text-[var(--text-primary)]">
               Try Again
             </Button>
           </Card>
         ) : groupedByCategory.length === 0 ? (
-          <Card className="p-12 text-center text-sm text-muted-foreground border-dashed">
-            <Store className="h-10 w-10 text-muted-foreground mx-auto mb-2 opacity-60" />
-            <p className="font-semibold text-base text-foreground">No vendors found</p>
-            <p className="text-xs mt-1 text-muted-foreground">
+          <Card className="p-12 text-center text-sm border-dashed border-[var(--border)] bg-[var(--surface-1)]">
+            <Store className="h-10 w-10 text-[var(--text-muted)] mx-auto mb-2 opacity-60" />
+            <p className="font-semibold text-base text-[var(--text-primary)]">No vendors found</p>
+            <p className="text-xs mt-1 text-[var(--text-secondary)]">
               Try adjusting your search terms, changing the region, or selecting "All Categories".
             </p>
             <Button
               onClick={openRecommendDialog}
               size="sm"
-              className="mt-4 bg-gold text-navy hover:bg-gold/90 font-semibold text-xs"
+              className="mt-4 bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] font-semibold text-xs shadow-sm"
             >
               <Plus className="h-3.5 w-3.5 mr-1" /> Recommend a Vendor
             </Button>
@@ -514,15 +533,15 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
           <div className="space-y-8">
             {groupedByCategory.map(({ category, vendors: catVendors }) => (
               <section key={category.id} className="space-y-3">
-                <div className="flex items-center justify-between border-b border-border/80 pb-2">
+                <div className="flex items-center justify-between border-b border-[var(--border)] pb-2.5">
                   <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-lg bg-gold/15 text-gold flex items-center justify-center font-bold text-xs">
+                    <div className="h-7 w-7 rounded-lg bg-[var(--accent)]/15 text-[var(--accent)] flex items-center justify-center font-bold text-xs">
                       <Wrench className="h-3.5 w-3.5" />
                     </div>
-                    <h2 className="text-base font-bold text-white tracking-tight">
+                    <h2 className="text-base font-bold text-[var(--text-primary)] tracking-tight">
                       {category.name}
                     </h2>
-                    <Badge variant="outline" className="text-[10px] text-muted-foreground ml-1">
+                    <Badge variant="outline" className="text-[10px] text-[var(--text-muted)] border-[var(--border)] ml-1">
                       {catVendors.length}
                     </Badge>
                   </div>
@@ -545,13 +564,13 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
 
       {/* Recommend / Add Vendor Modal */}
       <Dialog open={isRecommendOpen} onOpenChange={setIsRecommendOpen}>
-        <DialogContent className="max-w-lg bg-card border-gold/30">
+        <DialogContent className="max-w-lg bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-primary)] shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-white flex items-center gap-2">
-              <Plus className="h-5 w-5 text-gold" />
+            <DialogTitle className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
+              <Plus className="h-5 w-5 text-[var(--accent)]" />
               Recommend a Trusted Vendor
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            <DialogDescription className="text-xs text-[var(--text-secondary)]">
               Know an awesome contractor or service provider? Submit their details and our Ops team will review and add them to the team directory.
             </DialogDescription>
           </DialogHeader>
@@ -559,12 +578,12 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
           <div className="space-y-3 pt-2 max-h-[70vh] overflow-y-auto pr-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Region *</label>
+                <label className="text-xs font-medium text-[var(--text-secondary)]">Region *</label>
                 <Select value={recRegion} onValueChange={setRecRegion}>
-                  <SelectTrigger className="h-9 text-xs">
+                  <SelectTrigger className="h-9 text-xs bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)]">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-primary)]">
                     {VENDOR_REGIONS.map((r) => (
                       <SelectItem key={r.key} value={r.key} className="text-xs">
                         {r.label}
@@ -575,12 +594,12 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Category *</label>
+                <label className="text-xs font-medium text-[var(--text-secondary)]">Category *</label>
                 <Select value={recCategoryId} onValueChange={setRecCategoryId}>
-                  <SelectTrigger className="h-9 text-xs">
+                  <SelectTrigger className="h-9 text-xs bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)]">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
-                  <SelectContent className="max-h-60">
+                  <SelectContent className="max-h-60 bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-primary)]">
                     {categories.map((c) => (
                       <SelectItem key={c.id} value={c.id} className="text-xs">
                         {c.name}
@@ -592,71 +611,71 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Vendor / Company Name *</label>
+              <label className="text-xs font-medium text-[var(--text-secondary)]">Vendor / Company Name *</label>
               <Input
                 value={recName}
                 onChange={(e) => setRecName(e.target.value)}
                 placeholder="e.g. Apex Roofing & Gutters"
-                className="h-9 text-xs"
+                className="h-9 text-xs bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)] focus-visible:ring-1 focus-visible:ring-[var(--accent)]"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Primary Contact Person</label>
+                <label className="text-xs font-medium text-[var(--text-secondary)]">Primary Contact Person</label>
                 <Input
                   value={recContact}
                   onChange={(e) => setRecContact(e.target.value)}
                   placeholder="e.g. John Smith"
-                  className="h-9 text-xs"
+                  className="h-9 text-xs bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)]"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Phone Number *</label>
+                <label className="text-xs font-medium text-[var(--text-secondary)]">Phone Number *</label>
                 <Input
                   value={recPhone}
                   onChange={(e) => setRecPhone(e.target.value)}
                   placeholder="e.g. 573-555-1234"
-                  className="h-9 text-xs"
+                  className="h-9 text-xs bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)]"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Email</label>
+                <label className="text-xs font-medium text-[var(--text-secondary)]">Email</label>
                 <Input
                   type="email"
                   value={recEmail}
                   onChange={(e) => setRecEmail(e.target.value)}
                   placeholder="contact@apexroofing.com"
-                  className="h-9 text-xs"
+                  className="h-9 text-xs bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)]"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Website</label>
+                <label className="text-xs font-medium text-[var(--text-secondary)]">Website</label>
                 <Input
                   value={recWebsite}
                   onChange={(e) => setRecWebsite(e.target.value)}
                   placeholder="https://apexroofing.com"
-                  className="h-9 text-xs"
+                  className="h-9 text-xs bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)]"
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Specialties / Pricing / Notes</label>
+              <label className="text-xs font-medium text-[var(--text-secondary)]">Specialties / Pricing / Notes</label>
               <Input
                 value={recNotes}
                 onChange={(e) => setRecNotes(e.target.value)}
                 placeholder="e.g. 24/7 emergency service, specialized in metal roofs"
-                className="h-9 text-xs"
+                className="h-9 text-xs bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)]"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                <Star className="h-3.5 w-3.5 text-gold fill-gold" />
+              <label className="text-xs font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
+                <Star className="h-3.5 w-3.5 text-[var(--accent)] fill-current" />
                 What core values do they represent? *
               </label>
               <div className="flex flex-wrap gap-1.5 pb-0.5">
@@ -679,8 +698,8 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
                       className={cn(
                         "text-[11px] px-2.5 py-1 rounded-md border transition-all cursor-pointer font-medium",
                         isSelected
-                          ? "bg-gold text-navy font-semibold border-gold shadow-sm"
-                          : "bg-muted/40 border-border text-muted-foreground hover:text-foreground hover:border-gold/50"
+                          ? "bg-[var(--accent)] text-white font-semibold border-[var(--accent)] shadow-sm"
+                          : "bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)]/50"
                       )}
                     >
                       {isSelected ? "✓ " : "+ "}{val}
@@ -692,40 +711,40 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
                 value={recCoreValues}
                 onChange={(e) => setRecCoreValues(e.target.value)}
                 placeholder="Click the core value chips above or add specific notes on how they embody these values..."
-                className="text-xs h-14"
+                className="text-xs h-14 bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)]"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">
+              <label className="text-xs font-medium text-[var(--text-secondary)]">
                 Why do you recommend them? *
               </label>
               <Textarea
                 value={recReason}
                 onChange={(e) => setRecReason(e.target.value)}
                 placeholder="e.g. Used them for 3 client transactions, always on time, very fair pricing."
-                className="text-xs h-14"
+                className="text-xs h-14 bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)]"
               />
             </div>
 
-            <div className="border-t border-border pt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="border-t border-[var(--border)] pt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Your Name *</label>
+                <label className="text-xs font-medium text-[var(--text-secondary)]">Your Name *</label>
                 <Input
                   value={recAgentName}
                   onChange={(e) => setRecAgentName(e.target.value)}
                   placeholder="Agent Name"
-                  className="h-9 text-xs"
+                  className="h-9 text-xs bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)]"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Your Email *</label>
+                <label className="text-xs font-medium text-[var(--text-secondary)]">Your Email *</label>
                 <Input
                   type="email"
                   value={recAgentEmail}
                   onChange={(e) => setRecAgentEmail(e.target.value)}
                   placeholder="agent@mattsmithrealestategroup.com"
-                  className="h-9 text-xs"
+                  className="h-9 text-xs bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)]"
                 />
               </div>
             </div>
@@ -736,7 +755,7 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
               variant="outline"
               size="sm"
               onClick={() => setIsRecommendOpen(false)}
-              className="text-xs"
+              className="text-xs border-[var(--border)] text-[var(--text-secondary)]"
             >
               Cancel
             </Button>
@@ -768,7 +787,7 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
                 });
               }}
               disabled={requestMutation.isPending}
-              className="bg-gold text-navy hover:bg-gold/90 text-xs font-semibold"
+              className="bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] text-xs font-semibold shadow-sm"
             >
               {requestMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <CheckCircle2 className="h-3.5 w-3.5 mr-1" />}
               Submit Recommendation
@@ -779,26 +798,26 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
 
       {/* Flag / Report Vendor Modal */}
       <Dialog open={!!flagVendor} onOpenChange={(open) => !open && setFlagVendor(null)}>
-        <DialogContent className="max-w-md bg-card border-rose-500/30">
+        <DialogContent className="max-w-md bg-[var(--surface-1)] border-rose-500/30 text-[var(--text-primary)] shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-white flex items-center gap-2">
+            <DialogTitle className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
               <Flag className="h-5 w-5 text-rose-400" />
               Report / Request Removal: {flagVendor?.name}
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            <DialogDescription className="text-xs text-[var(--text-secondary)]">
               Let the Ops team know if a vendor is no longer in business, unresponsive, or provided poor service.
             </DialogDescription>
           </DialogHeader>
 
           {flagVendor && (
             <div className="space-y-3 pt-2">
-              <div className="p-3 bg-muted/40 rounded-lg text-xs space-y-1 border border-border">
-                <div className="font-semibold text-white">{flagVendor.name}</div>
-                <div className="text-muted-foreground">{getRegionShortLabel(flagVendor.region)} • {flagVendor.phone}</div>
+              <div className="p-3 bg-[var(--surface-2)] rounded-lg text-xs space-y-1 border border-[var(--border)]">
+                <div className="font-semibold text-[var(--text-primary)]">{flagVendor.name}</div>
+                <div className="text-[var(--text-secondary)]">{getRegionShortLabel(flagVendor.region)} • {flagVendor.phone}</div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Action Type</label>
+                <label className="text-xs font-medium text-[var(--text-secondary)]">Action Type</label>
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     type="button"
@@ -822,35 +841,35 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">
+                <label className="text-xs font-medium text-[var(--text-secondary)]">
                   Reason / What happened? *
                 </label>
                 <Textarea
                   value={flagReason}
                   onChange={(e) => setFlagReason(e.target.value)}
                   placeholder="e.g. Phone number is disconnected, client had a negative experience with quality..."
-                  className="text-xs h-20"
+                  className="text-xs h-20 bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)]"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">Your Name *</label>
+                  <label className="text-xs font-medium text-[var(--text-secondary)]">Your Name *</label>
                   <Input
                     value={flagAgentName}
                     onChange={(e) => setFlagAgentName(e.target.value)}
                     placeholder="Agent Name"
-                    className="h-9 text-xs"
+                    className="h-9 text-xs bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)]"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">Your Email *</label>
+                  <label className="text-xs font-medium text-[var(--text-secondary)]">Your Email *</label>
                   <Input
                     type="email"
                     value={flagAgentEmail}
                     onChange={(e) => setFlagAgentEmail(e.target.value)}
                     placeholder="agent@mattsmithrealestategroup.com"
-                    className="h-9 text-xs"
+                    className="h-9 text-xs bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)]"
                   />
                 </div>
               </div>
@@ -862,7 +881,7 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
               variant="outline"
               size="sm"
               onClick={() => setFlagVendor(null)}
-              className="text-xs"
+              className="text-xs border-[var(--border)] text-[var(--text-secondary)]"
             >
               Cancel
             </Button>
@@ -886,7 +905,7 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
                 });
               }}
               disabled={requestMutation.isPending}
-              className={cn("text-xs font-semibold", flagType === "remove" ? "bg-rose-600 hover:bg-rose-700 text-white" : "bg-amber-600 hover:bg-amber-700 text-white")}
+              className={cn("text-xs font-semibold shadow-sm", flagType === "remove" ? "bg-rose-600 hover:bg-rose-700 text-white" : "bg-amber-600 hover:bg-amber-700 text-white")}
             >
               {requestMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Flag className="h-3.5 w-3.5 mr-1" />}
               Submit Report
@@ -897,25 +916,25 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
 
       {/* PDF Print Export Dialog */}
       <Dialog open={isExportPdfOpen} onOpenChange={setIsExportPdfOpen}>
-        <DialogContent className="max-w-md bg-card border-gold/30">
+        <DialogContent className="max-w-md bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-primary)] shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-white flex items-center gap-2">
-              <FileDown className="h-5 w-5 text-gold" />
+            <DialogTitle className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
+              <FileDown className="h-5 w-5 text-[var(--accent)]" />
               Print / Export Vendor Guide PDF
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            <DialogDescription className="text-xs text-[var(--text-secondary)]">
               Generate a high-quality, printable PDF handout with MSREG branding to bring to listing appointments or give to clients.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 pt-2">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Region</label>
+              <label className="text-xs font-medium text-[var(--text-secondary)]">Region</label>
               <Select value={pdfRegion} onValueChange={setPdfRegion}>
-                <SelectTrigger className="h-9 text-xs">
+                <SelectTrigger className="h-9 text-xs bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)]">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-primary)]">
                   <SelectItem value="all">All Service Areas</SelectItem>
                   {VENDOR_REGIONS.map((r) => (
                     <SelectItem key={r.key} value={r.key} className="text-xs">
@@ -927,12 +946,12 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Category Scope</label>
+              <label className="text-xs font-medium text-[var(--text-secondary)]">Category Scope</label>
               <Select value={pdfCategory} onValueChange={setPdfCategory}>
-                <SelectTrigger className="h-9 text-xs">
+                <SelectTrigger className="h-9 text-xs bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)]">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="max-h-60">
+                <SelectContent className="max-h-60 bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-primary)]">
                   <SelectItem value="all">Full Directory (All Categories)</SelectItem>
                   {categories.map((c) => (
                     <SelectItem key={c.id} value={c.id} className="text-xs">
@@ -943,25 +962,25 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
               </Select>
             </div>
 
-            <div className="border-t border-border pt-3 space-y-2">
-              <div className="text-xs font-semibold text-gold">Agent Branding (Optional Footer)</div>
+            <div className="border-t border-[var(--border)] pt-3 space-y-2">
+              <div className="text-xs font-bold text-[var(--accent)]">Agent Branding (Optional Footer)</div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[11px] text-muted-foreground">Your Name</label>
+                  <label className="text-[11px] text-[var(--text-secondary)] font-medium">Your Name</label>
                   <Input
                     value={pdfAgentName}
                     onChange={(e) => setPdfAgentName(e.target.value)}
                     placeholder="e.g. Jane Doe"
-                    className="h-8 text-xs mt-0.5"
+                    className="h-8 text-xs mt-0.5 bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)]"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-muted-foreground">Your Cell Phone</label>
+                  <label className="text-[11px] text-[var(--text-secondary)] font-medium">Your Cell Phone</label>
                   <Input
                     value={pdfAgentPhone}
                     onChange={(e) => setPdfAgentPhone(e.target.value)}
                     placeholder="e.g. 573-555-1234"
-                    className="h-8 text-xs mt-0.5"
+                    className="h-8 text-xs mt-0.5 bg-[var(--surface-2)] border-[var(--border)] text-[var(--text-primary)]"
                   />
                 </div>
               </div>
@@ -973,7 +992,7 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
               variant="outline"
               size="sm"
               onClick={() => setIsExportPdfOpen(false)}
-              className="text-xs"
+              className="text-xs border-[var(--border)] text-[var(--text-secondary)]"
             >
               Cancel
             </Button>
@@ -981,7 +1000,7 @@ function VendorsDirectory({ token, onLock }: { token: string; onLock: () => void
               size="sm"
               onClick={handleDownloadPdf}
               disabled={pdfBusy}
-              className="bg-gold text-navy hover:bg-gold/90 text-xs font-semibold"
+              className="bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] text-xs font-semibold shadow-sm"
             >
               {pdfBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <FileDown className="h-3.5 w-3.5 mr-1" />}
               Generate & Download PDF
@@ -998,92 +1017,98 @@ function VendorCard({ vendor, onFlag }: { vendor: Vendor; onFlag: () => void }) 
   const phoneFormatted = formatPhoneNumber(vendor.phone);
 
   return (
-    <Card className="p-4 bg-card border-border hover:border-gold/40 transition-all duration-200 flex flex-col justify-between shadow-sm relative group">
-      <div className="space-y-2.5">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <h3 className="font-bold text-sm sm:text-base text-white leading-snug truncate">
-                {vendor.name}
-              </h3>
-              {vendor.is_preferred && (
-                <Badge className="bg-gold/15 text-gold border-gold/30 text-[10px] py-0 px-1.5 font-semibold flex items-center gap-0.5">
-                  <Star className="h-2.5 w-2.5 fill-current" /> Preferred
-                </Badge>
+    <div className="group relative flex flex-col justify-between p-4.5 sm:p-5 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]/95 hover:bg-[var(--surface-1)] hover:border-[var(--accent)]/50 shadow-sm hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.65),0_0_24px_-4px_rgba(196,90,44,0.22)] hover:-translate-y-1 active:scale-[0.985] transition-all duration-300 ring-1 ring-inset ring-white/[0.06] overflow-hidden">
+      {/* Top subtle ambient glow highlight */}
+      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 group-hover:via-[var(--accent)]/50 to-transparent transition-all duration-300" />
+
+      <div className="space-y-3">
+        {/* Top Header: Squircle Dock + Badges */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl sm:rounded-2xl bg-[var(--surface-2)]/95 border border-white/[0.08] flex items-center justify-center text-[var(--accent)] group-hover:scale-105 group-hover:bg-[var(--accent)]/15 group-hover:border-[var(--accent)]/30 transition-all duration-300 shadow-inner shrink-0">
+              <Wrench className="h-4.5 w-4.5 sm:h-5 sm:w-5 stroke-[1.75]" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h3 className="font-bold text-sm sm:text-base text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors leading-snug truncate">
+                  {vendor.name}
+                </h3>
+              </div>
+              {vendor.primary_contact && (
+                <div className="text-xs text-[var(--accent)] font-medium flex items-center gap-1 mt-0.5 truncate">
+                  <User className="h-3 w-3 shrink-0" /> {vendor.primary_contact}
+                </div>
               )}
             </div>
-
-            {vendor.primary_contact && (
-              <div className="text-xs text-gold/90 font-medium flex items-center gap-1 mt-0.5">
-                <User className="h-3 w-3" /> {vendor.primary_contact}
-              </div>
-            )}
           </div>
 
-          <Badge variant="outline" className="text-[10px] text-muted-foreground shrink-0 border-border bg-muted/40">
-            {getRegionShortLabel(vendor.region)}
-          </Badge>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {vendor.is_preferred && (
+              <Badge className="bg-[var(--accent)]/15 text-[var(--accent)] border-[var(--accent)]/30 text-[10px] py-0.5 px-2 font-semibold flex items-center gap-1 shadow-2xs">
+                <Star className="h-3 w-3 fill-current" /> Preferred
+              </Badge>
+            )}
+            <Badge variant="outline" className="text-[10px] text-[var(--text-secondary)] border-[var(--border)] bg-[var(--surface-2)] px-2 py-0.5">
+              {getRegionShortLabel(vendor.region)}
+            </Badge>
+          </div>
         </div>
 
-        {/* Contact Links */}
-        <div className="space-y-1.5 text-xs text-muted-foreground pt-1">
-          <div className="flex items-center gap-2">
-            <Phone className="h-3.5 w-3.5 text-gold shrink-0" />
-            <a
-              href={`tel:${vendor.phone}`}
-              className="text-foreground hover:text-gold hover:underline font-mono text-xs"
-            >
-              {phoneFormatted}
-            </a>
-          </div>
+        {/* Contact Action Pills Grid */}
+        <div className="flex items-center gap-2 flex-wrap pt-1">
+          <a
+            href={`tel:${vendor.phone}`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--accent)]/15 hover:text-[var(--accent)] hover:border-[var(--accent)]/40 border border-[var(--border)] text-xs font-mono font-medium text-[var(--text-primary)] transition-all shadow-2xs"
+            title="Call vendor"
+          >
+            <Phone className="h-3 w-3 text-[var(--accent)] shrink-0" />
+            <span>{phoneFormatted}</span>
+          </a>
 
           {vendor.email && (
-            <div className="flex items-center gap-2">
-              <Mail className="h-3.5 w-3.5 text-gold shrink-0" />
-              <a
-                href={`mailto:${vendor.email}`}
-                className="text-muted-foreground hover:text-gold hover:underline truncate text-xs"
-              >
-                {vendor.email}
-              </a>
-            </div>
+            <a
+              href={`mailto:${vendor.email}`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--accent)]/15 hover:text-[var(--accent)] hover:border-[var(--accent)]/40 border border-[var(--border)] text-xs font-medium text-[var(--text-secondary)] transition-all shadow-2xs truncate max-w-[190px]"
+              title={`Email ${vendor.email}`}
+            >
+              <Mail className="h-3 w-3 text-[var(--accent)] shrink-0" />
+              <span className="truncate">{vendor.email}</span>
+            </a>
           )}
 
           {vendor.website && (
-            <div className="flex items-center gap-2">
-              <Globe className="h-3.5 w-3.5 text-gold shrink-0" />
-              <a
-                href={vendor.website.startsWith("http") ? vendor.website : `https://${vendor.website}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-gold hover:underline truncate text-xs flex items-center gap-1"
-              >
-                <span className="truncate">{vendor.website.replace(/^https?:\/\//, "")}</span>
-                <ExternalLink className="h-2.5 w-2.5 opacity-70 shrink-0" />
-              </a>
-            </div>
+            <a
+              href={vendor.website.startsWith("http") ? vendor.website : `https://${vendor.website}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--accent)]/15 hover:text-[var(--accent)] hover:border-[var(--accent)]/40 border border-[var(--border)] text-xs font-medium text-[var(--text-secondary)] transition-all shadow-2xs"
+              title="Visit website"
+            >
+              <Globe className="h-3 w-3 text-[var(--accent)] shrink-0" />
+              <ExternalLink className="h-2.5 w-2.5 opacity-70 shrink-0" />
+            </a>
           )}
         </div>
 
         {/* Specialty Notes */}
         {vendor.specialty_notes && (
-          <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg border border-border/60 text-[11px] leading-relaxed">
+          <div className="text-xs text-[var(--text-secondary)] bg-[var(--surface-2)]/60 p-2.5 rounded-xl border border-[var(--border)] text-[11px] leading-relaxed">
             {vendor.specialty_notes}
           </div>
         )}
       </div>
 
       {/* Card Footer */}
-      <div className="pt-3 mt-3 border-t border-border/40 flex items-center justify-between text-[11px] text-muted-foreground">
-        <span className="truncate text-muted-foreground/60">{vendor.category?.name}</span>
+      <div className="pt-3 mt-3 border-t border-[var(--border)]/70 flex items-center justify-between text-[11px] text-[var(--text-muted)]">
+        <span className="truncate text-[var(--text-secondary)] font-medium">{vendor.category?.name}</span>
         <button
           onClick={onFlag}
-          className="text-muted-foreground hover:text-rose-400 flex items-center gap-1 transition-colors text-[10px]"
+          className="text-[var(--text-muted)] hover:text-rose-400 flex items-center gap-1 transition-colors text-[10px] font-medium"
           title="Report an issue with this vendor"
         >
           <Flag className="h-3 w-3" /> Report
         </button>
       </div>
-    </Card>
+    </div>
   );
 }
