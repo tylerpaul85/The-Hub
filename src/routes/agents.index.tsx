@@ -1,28 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
-  Send,
-  Images,
-  Gift,
-  Signpost,
-  Calculator,
-  CalendarDays,
-  Store,
-  DoorOpen,
-  ShoppingBag,
   LogIn,
   Search,
   ArrowUpRight,
   ChevronRight,
   Share,
   Plus,
-  Sparkles,
 } from "lucide-react";
 import logo from "@/assets/msreg-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+import { DEFAULT_HUB_CARDS, type HubCardDefinition } from "@/lib/hub-cards.config";
+import { getPublicHubCardSettings } from "@/lib/hub-card-order.functions";
 
 export const Route = createFileRoute("/agents/")({
   component: AgentsHome,
@@ -41,116 +34,59 @@ export const Route = createFileRoute("/agents/")({
 
 const IOS_TIP_KEY = "msreg-agent-hub-ios-tip-dismissed";
 
-interface HubItem {
-  id: string;
-  title: string;
-  subtitle: string;
-  category: "listings" | "clients" | "requests";
-  badge: string;
-  actionLabel?: string;
-  icon: any;
-  to?: string;
-  href?: string;
-}
-
-const HUB_ITEMS: HubItem[] = [
-  {
-    id: "open-houses",
-    title: "Open House Management",
-    subtitle: "Kiosk sign-ins, printable placards & FUB sync",
-    category: "listings",
-    badge: "Check-in Kiosk",
-    actionLabel: "Launch Kiosk",
-    icon: DoorOpen,
-    to: "/open-house-management",
-  },
-  {
-    id: "vendor-guide",
-    title: "Trusted Vendor Guide",
-    subtitle: "Local home contractors directory & printable PDFs",
-    category: "clients",
-    badge: "Directory",
-    actionLabel: "View Directory",
-    icon: Store,
-    to: "/vendor-guide",
-  },
-  {
-    id: "special-events",
-    title: "Special Events",
-    subtitle: "RSVP for team events & community volunteering",
-    category: "requests",
-    badge: "RSVP Calendar",
-    actionLabel: "View Events",
-    icon: CalendarDays,
-    to: "/agent-toolbox?tab=events",
-  },
-  {
-    id: "marketing-request",
-    title: "Marketing Request",
-    subtitle: "Submit graphics, video edits & flyer jobs",
-    category: "requests",
-    badge: "Production Desk",
-    actionLabel: "Submit Request",
-    icon: Send,
-    to: "/request",
-  },
-  {
-    id: "marketing-materials",
-    title: "Marketing Materials",
-    subtitle: "Ready-to-post listing flyers & social kits",
-    category: "listings",
-    badge: "Download Hub",
-    actionLabel: "Browse Assets",
-    icon: Images,
-    to: "/agent-toolbox",
-  },
-  {
-    id: "closing-gift",
-    title: "Closing Gift Package",
-    subtitle: "Order client shirts & welcome delivery packages",
-    category: "clients",
-    badge: "Client Care",
-    actionLabel: "Order Package",
-    icon: Gift,
-    to: "/closing-gift",
-  },
-  {
-    id: "net-proceeds",
-    title: "Net Proceeds Calculator",
-    subtitle: "Generate instant 3-scenario seller net sheets",
-    category: "clients",
-    badge: "Financial Tool",
-    actionLabel: "Calculate Net",
-    icon: Calculator,
-    to: "/seller-net-proceeds",
-  },
-  {
-    id: "listing-signs",
-    title: "Listing Signs",
-    subtitle: "Check in or check out yard signs & riders",
-    category: "listings",
-    badge: "Inventory Portal",
-    actionLabel: "Sign Inventory",
-    icon: Signpost,
-    href: "https://listings.msreginternal.com/",
-  },
-  {
-    id: "order-swag",
-    title: "Team Swag Store",
-    subtitle: "Shop official MSREG apparel, hats & merchandise",
-    category: "requests",
-    badge: "Shopify Store",
-    actionLabel: "Shop Apparel",
-    icon: ShoppingBag,
-    href: "https://msregswag.com/",
-  },
-];
 
 function AgentsHome() {
   const { user } = useAuth();
   const [showIosTip, setShowIosTip] = useState(false);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<"all" | "listings" | "clients" | "requests">("all");
+
+  const { data: settings } = useQuery({
+    queryKey: ["agent-hub-card-settings"],
+    queryFn: () => getPublicHubCardSettings(),
+    staleTime: 30_000,
+  });
+
+  const orderedCards = useMemo(() => {
+    const rawOrder =
+      settings?.order && settings.order.length > 0
+        ? settings.order
+        : DEFAULT_HUB_CARDS.map((c) => c.id);
+    const hiddenSet = new Set(settings?.hiddenIds || []);
+    const badgeMap = settings?.badgeOverrides || {};
+
+    const cardMap = new Map<string, HubCardDefinition>();
+    for (const card of DEFAULT_HUB_CARDS) {
+      cardMap.set(card.id, card);
+    }
+
+    const result: Array<HubCardDefinition & { badge: string }> = [];
+
+    // Process items in specified custom order
+    for (const id of rawOrder) {
+      if (hiddenSet.has(id)) continue;
+      const card = cardMap.get(id);
+      if (card) {
+        result.push({
+          ...card,
+          badge: badgeMap[id]?.trim() || card.defaultBadge,
+        });
+        cardMap.delete(id);
+      }
+    }
+
+    // Include any new default cards not explicitly saved yet
+    for (const [id, card] of cardMap.entries()) {
+      if (!hiddenSet.has(id)) {
+        result.push({
+          ...card,
+          badge: badgeMap[id]?.trim() || card.defaultBadge,
+        });
+      }
+    }
+
+    return result;
+  }, [settings]);
 
   useEffect(() => {
     try {
@@ -172,7 +108,7 @@ function AgentsHome() {
   };
 
   const filteredItems = useMemo(() => {
-    return HUB_ITEMS.filter((item) => {
+    return orderedCards.filter((item) => {
       if (category !== "all" && item.category !== category) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
@@ -183,12 +119,13 @@ function AgentsHome() {
       }
       return true;
     });
-  }, [search, category]);
+  }, [orderedCards, search, category]);
 
   const firstName =
     (user?.user_metadata as any)?.first_name ||
     user?.email?.split("@")[0] ||
     "Agent";
+
 
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-x-hidden selection:bg-gold/30 selection:text-white px-4 py-6 sm:py-10 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
@@ -273,8 +210,9 @@ function AgentsHome() {
                   : "bg-surface-2/60 text-muted-foreground hover:text-foreground hover:bg-surface-2 border border-border/60",
               )}
             >
-              All Tools ({HUB_ITEMS.length})
+              All Tools ({orderedCards.length})
             </button>
+
             <button
               onClick={() => setCategory("clients")}
               className={cn(
@@ -386,9 +324,10 @@ function AgentsHome() {
   );
 }
 
-function TactileHubCard({ item }: { item: HubItem }) {
+function TactileHubCard({ item }: { item: HubCardDefinition & { badge?: string } }) {
   const IconComponent = item.icon;
   const isExternal = Boolean(item.href);
+  const badgeText = item.badge || item.defaultBadge;
 
   const cardContent = (
     <div className="group relative flex flex-col justify-between p-4 sm:p-5 rounded-2xl sm:rounded-[22px] border border-border/80 bg-surface-1/90 hover:bg-surface-1 hover:border-gold/50 shadow-sm hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.65),0_0_24px_-4px_rgba(196,90,44,0.22)] hover:-translate-y-1 active:translate-y-0 active:scale-[0.985] transition-all duration-300 backdrop-blur-md min-h-[175px] sm:min-h-[195px] ring-1 ring-inset ring-white/[0.06] cursor-pointer select-none overflow-hidden">
@@ -403,7 +342,7 @@ function TactileHubCard({ item }: { item: HubItem }) {
 
         <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
           <span className="text-[10px] sm:text-[11px] font-semibold tracking-wider uppercase text-muted-foreground/80 group-hover:text-gold transition-colors px-2.5 py-0.5 rounded-full bg-surface-2/80 border border-border/70 truncate max-w-[130px]">
-            {item.badge}
+            {badgeText}
           </span>
           {isExternal ? (
             <div className="h-6 w-6 rounded-full bg-surface-2/60 border border-border/60 flex items-center justify-center text-muted-foreground group-hover:text-gold group-hover:border-gold/40 transition-colors">

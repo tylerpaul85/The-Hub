@@ -48,13 +48,30 @@ import {
   Pencil,
   Archive,
   ArchiveRestore,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
+  ChevronsUp,
+  ChevronsDown,
+  Eye,
+  EyeOff,
+  RotateCcw,
+  Check,
+  Sparkles,
+  LayoutGrid,
 } from "lucide-react";
 import { QrCode } from "@/components/qr-code";
 import { publicUrl } from "@/lib/public-url";
 import { makeStorageKey } from "@/lib/sanitize-filename";
 import { DownloadPhotosButton } from "@/components/download-photos-button";
+import { DEFAULT_HUB_CARDS, type HubCardDefinition } from "@/lib/hub-cards.config";
+import {
+  getPublicHubCardSettings,
+  saveHubCardSettings,
+} from "@/lib/hub-card-order.functions";
 
 export const Route = createFileRoute("/_authenticated/toolbox")({
+
   component: ToolboxPage,
   head: () => ({ meta: [{ title: "Agent Toolbox Manager — MSREG Hub" }] }),
 });
@@ -209,6 +226,7 @@ function ToolboxPage() {
             { value: "brand", label: "Logos & Branding" },
             { value: "edu", label: "Educational Content" },
             { value: "branded", label: "Agent Branded" },
+            { value: "hub_cards", label: "Agent Hub Cards" },
           ].map((t) => (
             <TabsTrigger
               key={t.value}
@@ -234,6 +252,9 @@ function ToolboxPage() {
         </TabsContent>
         <TabsContent value="branded" className="mt-6">
           <BrandedTab userId={user?.id ?? null} />
+        </TabsContent>
+        <TabsContent value="hub_cards" className="mt-6">
+          <HubCardsOrderTab />
         </TabsContent>
       </Tabs>
 
@@ -3421,5 +3442,447 @@ function AgentBrandedContentPanel({
         </div>
       )}
     </Card>
+  );
+}
+
+/* ---------------- Agent Hub Cards Order & Visibility Tab ---------------- */
+
+function HubCardsOrderTab() {
+  const qc = useQueryClient();
+
+  const { data: serverSettings, isLoading } = useQuery({
+    queryKey: ["agent-hub-card-settings"],
+    queryFn: () => getPublicHubCardSettings(),
+  });
+
+  const [orderedIds, setOrderedIds] = useState<string[]>([]);
+  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
+  const [badgeOverrides, setBadgeOverrides] = useState<Record<string, string>>({});
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Initialize or synchronize local state from server
+  useEffect(() => {
+    if (!serverSettings) return;
+
+    const defaultIds = DEFAULT_HUB_CARDS.map((c) => c.id);
+    const existingOrder = Array.isArray(serverSettings.order) && serverSettings.order.length > 0
+      ? serverSettings.order
+      : defaultIds;
+
+    // Ensure all known cards exist in order
+    const mergedOrder = [...existingOrder];
+    for (const dId of defaultIds) {
+      if (!mergedOrder.includes(dId)) mergedOrder.push(dId);
+    }
+
+    setOrderedIds(mergedOrder);
+    setHiddenIds(Array.isArray(serverSettings.hiddenIds) ? serverSettings.hiddenIds : []);
+    setBadgeOverrides(serverSettings.badgeOverrides || {});
+    setHasChanges(false);
+  }, [serverSettings]);
+
+  const cardMap = useMemo(() => {
+    const map = new Map<string, HubCardDefinition>();
+    for (const c of DEFAULT_HUB_CARDS) {
+      map.set(c.id, c);
+    }
+    return map;
+  }, []);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      return await saveHubCardSettings({
+        data: {
+          order: orderedIds,
+          hiddenIds,
+          badgeOverrides,
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Agent Hub card order & layout saved!");
+      setHasChanges(false);
+      qc.invalidateQueries({ queryKey: ["agent-hub-card-settings"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Failed to save card layout");
+    },
+  });
+
+  const moveItem = (index: number, direction: "up" | "down" | "top" | "bottom") => {
+    setOrderedIds((prev) => {
+      const copy = [...prev];
+      if (direction === "top") {
+        const [item] = copy.splice(index, 1);
+        copy.unshift(item);
+      } else if (direction === "bottom") {
+        const [item] = copy.splice(index, 1);
+        copy.push(item);
+      } else if (direction === "up" && index > 0) {
+        const [item] = copy.splice(index, 1);
+        copy.splice(index - 1, 0, item);
+      } else if (direction === "down" && index < copy.length - 1) {
+        const [item] = copy.splice(index, 1);
+        copy.splice(index + 1, 0, item);
+      }
+      return copy;
+    });
+    setHasChanges(true);
+  };
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedId(id);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", id);
+  };
+
+  const handleDragOver = (e: React.DragEvent, id: string) => {
+    e.preventDefault();
+    if (dragOverId !== id) {
+      setDragOverId(id);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    if (!draggedId || draggedId === targetId) {
+      setDraggedId(null);
+      setDragOverId(null);
+      return;
+    }
+
+    setOrderedIds((prev) => {
+      const copy = [...prev];
+      const fromIndex = copy.indexOf(draggedId);
+      const toIndex = copy.indexOf(targetId);
+      if (fromIndex === -1 || toIndex === -1) return prev;
+
+      copy.splice(fromIndex, 1);
+      copy.splice(toIndex, 0, draggedId);
+      return copy;
+    });
+
+    setDraggedId(null);
+    setDragOverId(null);
+    setHasChanges(true);
+  };
+
+  const toggleVisibility = (id: string) => {
+    setHiddenIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      return next;
+    });
+    setHasChanges(true);
+  };
+
+  const handleBadgeChange = (id: string, text: string) => {
+    setBadgeOverrides((prev) => ({
+      ...prev,
+      [id]: text,
+    }));
+    setHasChanges(true);
+  };
+
+  const resetToDefault = () => {
+    if (confirm("Reset card sequence, visibility, and custom badges back to defaults?")) {
+      const defaultIds = DEFAULT_HUB_CARDS.map((c) => c.id);
+      setOrderedIds(defaultIds);
+      setHiddenIds([]);
+      setBadgeOverrides({});
+      setHasChanges(true);
+    }
+  };
+
+  const visibleCount = orderedIds.length - hiddenIds.length;
+
+  if (isLoading) {
+    return (
+      <div className="p-8 text-center text-muted-foreground flex items-center justify-center gap-2">
+        <Loader2 className="h-5 w-5 animate-spin text-gold" />
+        <span>Loading card order settings…</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Top Hero Card with Actions */}
+      <div className="rounded-2xl border border-gold/20 bg-gradient-to-br from-card via-card to-gold/5 p-5 sm:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <LayoutGrid className="h-5 w-5 text-gold" />
+              <h2 className="text-lg font-semibold tracking-tight text-foreground">
+                Agent Hub Card Layout &amp; Order
+              </h2>
+              {hasChanges ? (
+                <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/40 text-[11px] animate-pulse">
+                  Unsaved Changes
+                </Badge>
+              ) : (
+                <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 text-[11px]">
+                  Live Synced
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl">
+              Arrange cards in the sequence agents will see on{" "}
+              <a
+                href="/agents"
+                target="_blank"
+                rel="noreferrer"
+                className="text-gold underline underline-offset-2 font-medium"
+              >
+                /agents
+              </a>
+              . Drag items or use the directional arrows, toggle visibility, and customize badge labels.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={resetToDefault}
+              className="text-xs border-border hover:bg-surface-2"
+              title="Revert to factory sequence"
+            >
+              <RotateCcw className="h-3.5 w-3.5 mr-1.5 opacity-70" />
+              Reset Defaults
+            </Button>
+
+            <a
+              href="/agents"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
+            >
+              <ExternalLink className="h-3.5 w-3.5 text-gold" />
+              Preview Hub
+            </a>
+
+            <Button
+              size="sm"
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending || !hasChanges}
+              className={cn(
+                "bg-gold text-navy hover:bg-gold/90 font-semibold shadow-xs transition-all",
+                hasChanges && "ring-2 ring-gold/40 shadow-gold/20",
+              )}
+            >
+              {saveMutation.isPending ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                <>
+                  <Check className="h-3.5 w-3.5 mr-1.5" />
+                  Save Card Layout
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* Status Metrics Bar */}
+        <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between gap-4 text-xs text-muted-foreground flex-wrap">
+          <div className="flex items-center gap-4">
+            <span>
+              Total Cards: <strong className="text-foreground">{orderedIds.length}</strong>
+            </span>
+            <span>·</span>
+            <span>
+              Visible: <strong className="text-emerald-400">{visibleCount}</strong>
+            </span>
+            <span>·</span>
+            <span>
+              Hidden: <strong className="text-muted-foreground">{hiddenIds.length}</strong>
+            </span>
+          </div>
+          {serverSettings?.updatedAt && (
+            <div className="text-[11px] text-muted-foreground/70">
+              Last saved: {new Date(serverSettings.updatedAt).toLocaleString()}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Cards List Reorder Deck */}
+      <div className="space-y-3">
+        {orderedIds.map((id, index) => {
+          const card = cardMap.get(id);
+          if (!card) return null;
+
+          const isHidden = hiddenIds.includes(id);
+          const isFirst = index === 0;
+          const isLast = index === orderedIds.length - 1;
+          const IconComp = card.icon;
+          const currentBadge = badgeOverrides[id] ?? card.defaultBadge;
+          const isDragged = draggedId === id;
+          const isOver = dragOverId === id;
+
+          return (
+            <div
+              key={id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, id)}
+              onDragOver={(e) => handleDragOver(e, id)}
+              onDrop={(e) => handleDrop(e, id)}
+              onDragEnd={() => {
+                setDraggedId(null);
+                setDragOverId(null);
+              }}
+              className={cn(
+                "group relative flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4 rounded-xl border transition-all duration-200",
+                isHidden
+                  ? "bg-card/40 border-dashed border-border/60 opacity-65 hover:opacity-90"
+                  : "bg-card border-border/80 hover:border-gold/50 shadow-xs",
+                isDragged && "opacity-30 scale-[0.99] border-gold",
+                isOver && "border-gold ring-2 ring-gold/30 bg-gold/5",
+              )}
+            >
+              {/* Left Side: Grip Handle + Rank + Icon + Details */}
+              <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                {/* Drag Handle */}
+                <div
+                  className="cursor-grab active:cursor-grabbing p-1.5 rounded text-muted-foreground/50 group-hover:text-muted-foreground hover:bg-surface-2 transition-colors shrink-0"
+                  title="Drag to reorder"
+                >
+                  <GripVertical className="h-5 w-5" />
+                </div>
+
+                {/* Rank Number */}
+                <div className="h-7 w-7 rounded-lg bg-surface-2 border border-border/80 flex items-center justify-center text-xs font-bold text-foreground shrink-0 shadow-2xs">
+                  #{index + 1}
+                </div>
+
+                {/* Card Icon */}
+                <div className="h-10 w-10 rounded-xl bg-surface-2 border border-white/[0.08] flex items-center justify-center text-foreground group-hover:text-gold group-hover:bg-gold/10 transition-colors shrink-0 shadow-2xs">
+                  <IconComp className="h-5 w-5" />
+                </div>
+
+                {/* Title and Metadata */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-sm font-semibold text-foreground truncate group-hover:text-gold transition-colors">
+                      {card.title}
+                    </h3>
+                    <Badge variant="outline" className="text-[10px] px-2 py-0 uppercase tracking-wider font-semibold border-border/80 text-muted-foreground">
+                      {card.category}
+                    </Badge>
+                    {isHidden && (
+                      <Badge className="bg-rose-500/15 text-rose-300 border-rose-500/30 text-[10px] px-2 py-0">
+                        Hidden
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">
+                    {card.subtitle}
+                  </p>
+                  <div className="text-[11px] text-muted-foreground/70 truncate mt-0.5 flex items-center gap-1.5">
+                    <span className="font-mono">{card.to || card.href}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Middle & Right: Badge editor + Visibility + Reorder controls */}
+              <div className="flex items-center gap-3 flex-wrap w-full md:w-auto justify-between md:justify-end pt-2 md:pt-0 border-t md:border-t-0 border-border/40">
+                {/* Inline Badge Customizer */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                    Badge:
+                  </span>
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      value={currentBadge}
+                      onChange={(e) => handleBadgeChange(id, e.target.value)}
+                      placeholder={card.defaultBadge}
+                      className="h-7 w-32 sm:w-36 text-xs px-2 bg-surface-2/90 border-border/70 rounded-md focus-visible:ring-gold"
+                    />
+                  </div>
+                </div>
+
+                {/* Visibility Toggle Button */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => toggleVisibility(id)}
+                  className={cn(
+                    "h-8 px-2.5 text-xs font-medium gap-1.5 rounded-lg border",
+                    isHidden
+                      ? "border-rose-500/40 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
+                      : "border-border text-foreground hover:bg-surface-2",
+                  )}
+                  title={isHidden ? "Click to show card to agents" : "Click to hide card from agents"}
+                >
+                  {isHidden ? (
+                    <>
+                      <EyeOff className="h-3.5 w-3.5 text-rose-400" />
+                      <span>Hidden</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-3.5 w-3.5 text-emerald-400" />
+                      <span>Visible</span>
+                    </>
+                  )}
+                </Button>
+
+                {/* Direct Directional Reorder Buttons */}
+                <div className="flex items-center gap-0.5 bg-surface-2/80 rounded-lg p-0.5 border border-border/70">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    disabled={isFirst}
+                    onClick={() => moveItem(index, "top")}
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                    title="Move to Top"
+                  >
+                    <ChevronsUp className="h-3.5 w-3.5" />
+                  </Button>
+
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    disabled={isFirst}
+                    onClick={() => moveItem(index, "up")}
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                    title="Move Up"
+                  >
+                    <ArrowUp className="h-3.5 w-3.5" />
+                  </Button>
+
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    disabled={isLast}
+                    onClick={() => moveItem(index, "down")}
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                    title="Move Down"
+                  >
+                    <ArrowDown className="h-3.5 w-3.5" />
+                  </Button>
+
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    disabled={isLast}
+                    onClick={() => moveItem(index, "bottom")}
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                    title="Move to Bottom"
+                  >
+                    <ChevronsDown className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
