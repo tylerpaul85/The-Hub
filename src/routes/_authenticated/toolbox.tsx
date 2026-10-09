@@ -59,6 +59,9 @@ import {
   Check,
   Sparkles,
   LayoutGrid,
+  BarChart3,
+  TrendingUp,
+  FileSpreadsheet,
 } from "lucide-react";
 import { QrCode } from "@/components/qr-code";
 import { publicUrl } from "@/lib/public-url";
@@ -69,8 +72,16 @@ import {
   getPublicHubCardSettings,
   saveHubCardSettings,
 } from "@/lib/hub-card-order.functions";
+import {
+  getPublicMarketStatsReports,
+  saveMarketStatsReport,
+  deleteMarketStatsReport,
+  type MarketStatsReport,
+  type MarketSocialGraphic,
+} from "@/lib/market-stats.functions";
 
 export const Route = createFileRoute("/_authenticated/toolbox")({
+
 
   component: ToolboxPage,
   head: () => ({ meta: [{ title: "Agent Toolbox Manager — MSREG Hub" }] }),
@@ -223,6 +234,7 @@ function ToolboxPage() {
           {[
             { value: "listings", label: "Listings" },
             { value: "open_houses", label: "Open Houses" },
+            { value: "market_stats", label: "MLS Market Stats" },
             { value: "brand", label: "Logos & Branding" },
             { value: "edu", label: "Educational Content" },
             { value: "branded", label: "Agent Branded" },
@@ -243,6 +255,9 @@ function ToolboxPage() {
         </TabsContent>
         <TabsContent value="open_houses" className="mt-6">
           <OpenHousesTab onOpen={setOpenOpenHouseId} userId={user?.id ?? null} />
+        </TabsContent>
+        <TabsContent value="market_stats" className="mt-6">
+          <MarketStatsTab userId={user?.id ?? null} />
         </TabsContent>
         <TabsContent value="brand" className="mt-6">
           <BrandTab userId={user?.id ?? null} />
@@ -3886,3 +3901,845 @@ function HubCardsOrderTab() {
     </div>
   );
 }
+
+/* ---------------- MLS Market Stats Staff Tab ---------------- */
+
+function MarketStatsTab({ userId }: { userId: string | null }) {
+  const qc = useQueryClient();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingReport, setEditingReport] = useState<MarketStatsReport | null>(null);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [uploadingGraphic, setUploadingGraphic] = useState(false);
+
+  // Form State
+  const [form, setForm] = useState<{
+    id?: string;
+    month: string;
+    title: string;
+    area: string;
+    summaryNotes: string;
+    pdfUrl: string | null;
+    pdfName: string | null;
+    pdfSize: number | null;
+    metrics: {
+      medianSalePrice: string;
+      medianPriceChange: string;
+      avgDaysOnMarket: string;
+      domChange: string;
+      activeInventory: string;
+      inventoryChange: string;
+      closedSales: string;
+      closedSalesChange: string;
+      listToSaleRatio: string;
+      monthsSupply: string;
+    };
+    graphics: MarketSocialGraphic[];
+  }>({
+    month: "",
+    title: "",
+    area: "Central Missouri MLS",
+    summaryNotes: "",
+    pdfUrl: null,
+    pdfName: null,
+    pdfSize: null,
+    metrics: {
+      medianSalePrice: "",
+      medianPriceChange: "",
+      avgDaysOnMarket: "",
+      domChange: "",
+      activeInventory: "",
+      inventoryChange: "",
+      closedSales: "",
+      closedSalesChange: "",
+      listToSaleRatio: "",
+      monthsSupply: "",
+    },
+    graphics: [],
+  });
+
+  const { data: reports = [], isLoading } = useQuery<MarketStatsReport[]>({
+    queryKey: ["public-market-stats-reports"],
+    queryFn: () => getPublicMarketStatsReports(),
+  });
+
+  const openCreate = () => {
+    const nextMonth = new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    setEditingReport(null);
+    setForm({
+      month: nextMonth,
+      title: `${nextMonth} MLS Market Stats`,
+      area: "Central Missouri MLS & Regional Area",
+      summaryNotes: "",
+      pdfUrl: null,
+      pdfName: null,
+      pdfSize: null,
+      metrics: {
+        medianSalePrice: "$248,500",
+        medianPriceChange: "+4.2% MoM",
+        avgDaysOnMarket: "28 Days",
+        domChange: "-3 Days MoM",
+        activeInventory: "348",
+        inventoryChange: "+6.1% MoM",
+        closedSales: "142",
+        closedSalesChange: "+2.8% MoM",
+        listToSaleRatio: "98.6%",
+        monthsSupply: "2.4 Mos",
+      },
+      graphics: [],
+    });
+    setDialogOpen(true);
+  };
+
+  const openEdit = (report: MarketStatsReport) => {
+    setEditingReport(report);
+    setForm({
+      id: report.id,
+      month: report.month,
+      title: report.title,
+      area: report.area || "Central Missouri MLS",
+      summaryNotes: report.summaryNotes || "",
+      pdfUrl: report.pdfUrl || null,
+      pdfName: report.pdfName || null,
+      pdfSize: report.pdfSize || null,
+      metrics: {
+        medianSalePrice: report.metrics?.medianSalePrice || "",
+        medianPriceChange: report.metrics?.medianPriceChange || "",
+        avgDaysOnMarket: report.metrics?.avgDaysOnMarket || "",
+        domChange: report.metrics?.domChange || "",
+        activeInventory: report.metrics?.activeInventory || "",
+        inventoryChange: report.metrics?.inventoryChange || "",
+        closedSales: report.metrics?.closedSales || "",
+        closedSalesChange: report.metrics?.closedSalesChange || "",
+        listToSaleRatio: report.metrics?.listToSaleRatio || "",
+        monthsSupply: report.metrics?.monthsSupply || "",
+      },
+      graphics: report.graphics || [],
+    });
+    setDialogOpen(true);
+  };
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!form.month.trim()) throw new Error("Month is required (e.g. October 2026)");
+      if (!form.title.trim()) throw new Error("Title is required");
+
+      return await saveMarketStatsReport({
+        data: {
+          id: form.id,
+          month: form.month.trim(),
+          title: form.title.trim(),
+          area: form.area.trim() || "Central Missouri MLS",
+          summaryNotes: form.summaryNotes.trim(),
+          pdfUrl: form.pdfUrl,
+          pdfName: form.pdfName,
+          pdfSize: form.pdfSize,
+          metrics: form.metrics,
+          graphics: form.graphics,
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Market stats report saved!");
+      setDialogOpen(false);
+      qc.invalidateQueries({ queryKey: ["public-market-stats-reports"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Failed to save market stats");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await deleteMarketStatsReport({ data: { id } });
+    },
+    onSuccess: () => {
+      toast.success("Market stats report deleted");
+      qc.invalidateQueries({ queryKey: ["public-market-stats-reports"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Failed to delete report");
+    },
+  });
+
+  // Handle PDF file upload
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingPdf(true);
+      const cleanKey = makeStorageKey(file.name);
+      const storagePath = `market-stats/pdf/${Date.now()}_${cleanKey}`;
+      const res = await uploadFile(storagePath, file);
+
+      setForm((prev) => ({
+        ...prev,
+        pdfUrl: res.url,
+        pdfName: file.name,
+        pdfSize: file.size,
+      }));
+      toast.success(`PDF "${file.name}" uploaded successfully!`);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to upload PDF");
+    } finally {
+      setUploadingPdf(false);
+    }
+  };
+
+  // Handle Graphic image upload
+  const handleGraphicUpload = async (e: React.ChangeEvent<HTMLInputElement>, formatType = "Square 1:1") => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    try {
+      setUploadingGraphic(true);
+      const newGraphics: MarketSocialGraphic[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const cleanKey = makeStorageKey(file.name);
+        const storagePath = `market-stats/graphics/${Date.now()}_${cleanKey}`;
+        const res = await uploadFile(storagePath, file);
+
+        const defaultCaption = `🏡 ${form.month || "MONTHLY"} MARKET UPDATE 📈\n\nMedian Price: ${form.metrics.medianSalePrice || "$248,500"} (${form.metrics.medianPriceChange || "+4.2%"})\nAvg Days on Market: ${form.metrics.avgDaysOnMarket || "28 Days"}\nActive Listings: ${form.metrics.activeInventory || "348"}\n\nThinking about buying or selling? Contact us today!\n#MattSmithRealEstateGroup #MarketUpdate #CentralMORealEstate`;
+
+        newGraphics.push({
+          id: `g-${Date.now()}-${i}`,
+          title: file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
+          format: formatType,
+          imageUrl: res.url,
+          caption: defaultCaption,
+        });
+      }
+
+      setForm((prev) => ({
+        ...prev,
+        graphics: [...prev.graphics, ...newGraphics],
+      }));
+      toast.success(`Uploaded ${newGraphics.length} social graphic(s)!`);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to upload graphic image");
+    } finally {
+      setUploadingGraphic(false);
+    }
+  };
+
+  const removeGraphic = (id: string) => {
+    setForm((prev) => ({
+      ...prev,
+      graphics: prev.graphics.filter((g) => g.id !== id),
+    }));
+  };
+
+  const updateGraphic = (id: string, field: "title" | "format" | "caption", value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      graphics: prev.graphics.map((g) => (g.id === id ? { ...g, [field]: value } : g)),
+    }));
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Top Banner with Actions */}
+      <div className="rounded-2xl border border-gold/20 bg-gradient-to-br from-card via-card to-gold/5 p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-gold" />
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">
+              MLS Market Stats &amp; Social Kits
+            </h2>
+            <Badge className="bg-gold/15 text-gold border-gold/30 text-[11px]">
+              {reports.length} Monthly Report{reports.length === 1 ? "" : "s"}
+            </Badge>
+          </div>
+          <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl">
+            Upload monthly MLS executive summaries, configure key price/inventory numbers, and upload ready-to-post social media graphics for agents to download and share.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+          <a
+            href="/market-stats"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
+          >
+            <ExternalLink className="h-3.5 w-3.5 text-gold" />
+            View Agent Page
+          </a>
+
+          <Button
+            onClick={openCreate}
+            className="bg-gold text-navy hover:bg-gold/90 font-semibold text-xs shadow-xs"
+          >
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
+            New Monthly Stats Report
+          </Button>
+        </div>
+      </div>
+
+      {/* Reports List */}
+      {isLoading ? (
+        <div className="p-8 text-center text-muted-foreground flex items-center justify-center gap-2">
+          <Loader2 className="h-5 w-5 animate-spin text-gold" />
+          <span>Loading market stats reports…</span>
+        </div>
+      ) : reports.length === 0 ? (
+        <Card className="p-10 text-center text-muted-foreground border-dashed">
+          <BarChart3 className="h-8 w-8 mx-auto opacity-40 text-gold mb-2" />
+          <p className="text-sm font-medium text-foreground">No market stats reports published yet.</p>
+          <p className="text-xs mt-1">Click "New Monthly Stats Report" to create your first report.</p>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {reports.map((report) => (
+            <Card
+              key={report.id}
+              className="p-5 rounded-2xl border border-border/80 hover:border-gold/50 transition-all duration-200 flex flex-col justify-between space-y-4 shadow-xs"
+            >
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-gold uppercase tracking-wider">
+                        {report.month}
+                      </span>
+                      <span className="text-muted-foreground text-xs">·</span>
+                      <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+                        {report.area || "Central Missouri MLS"}
+                      </span>
+                    </div>
+                    <h3 className="text-base font-bold text-foreground mt-0.5">{report.title}</h3>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => openEdit(report)}
+                      className="h-8 w-8 text-muted-foreground hover:text-gold hover:bg-surface-2"
+                      title="Edit Report"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => {
+                        if (confirm(`Delete market report "${report.title}"?`)) {
+                          deleteMutation.mutate(report.id);
+                        }
+                      }}
+                      className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                      title="Delete Report"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Key Metrics Quick View */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 py-2 px-3 rounded-xl bg-surface-2/70 border border-border/60 text-xs">
+                  <div>
+                    <span className="text-[10px] text-muted-foreground block uppercase">Median Price</span>
+                    <strong className="text-foreground text-xs">{report.metrics?.medianSalePrice || "—"}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-muted-foreground block uppercase">Avg DOM</span>
+                    <strong className="text-foreground text-xs">{report.metrics?.avgDaysOnMarket || "—"}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-muted-foreground block uppercase">Inventory</span>
+                    <strong className="text-foreground text-xs">{report.metrics?.activeInventory || "—"}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-muted-foreground block uppercase">Closed Sales</span>
+                    <strong className="text-foreground text-xs">{report.metrics?.closedSales || "—"}</strong>
+                  </div>
+                </div>
+
+                {/* Attachments status */}
+                <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap pt-1">
+                  <div className="flex items-center gap-1.5">
+                    <FileText className="h-3.5 w-3.5 text-gold" />
+                    {report.pdfUrl ? (
+                      <a
+                        href={report.pdfUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-foreground hover:text-gold hover:underline font-medium"
+                      >
+                        PDF Attached
+                      </a>
+                    ) : (
+                      <span className="opacity-60">No PDF uploaded</span>
+                    )}
+                  </div>
+                  <span>·</span>
+                  <div className="flex items-center gap-1.5">
+                    <ImageIcon className="h-3.5 w-3.5 text-gold" />
+                    <span>{report.graphics?.length || 0} Social Graphic(s)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between gap-2 pt-3 border-t border-border/50 text-xs">
+                <a
+                  href="/market-stats"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-gold hover:underline font-medium flex items-center gap-1"
+                >
+                  <span>Preview Page</span>
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => openEdit(report)}
+                  className="text-xs h-7 border-border hover:bg-surface-2"
+                >
+                  Edit Report
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Modal: Create / Edit Market Stats Report */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingReport ? "Edit Market Stats Report" : "New Monthly MLS Market Report"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6 py-2">
+            {/* Section 1: Basic Period & Area Info */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-gold flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" />
+                <span>1. Report Period &amp; Area</span>
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Month / Period (e.g. October 2026)</Label>
+                  <Input
+                    value={form.month}
+                    onChange={(e) => setForm({ ...form, month: e.target.value })}
+                    placeholder="e.g. October 2026"
+                    className="h-9 text-xs"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Report Title</Label>
+                  <Input
+                    value={form.title}
+                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                    placeholder="e.g. October 2026 MLS Market Stats"
+                    className="h-9 text-xs"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label className="text-xs">MLS Region / Area</Label>
+                  <Input
+                    value={form.area}
+                    onChange={(e) => setForm({ ...form, area: e.target.value })}
+                    placeholder="e.g. Central Missouri MLS & Regional Area"
+                    className="h-9 text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 2: Executive Summary / Agent Talking Points */}
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-wider text-gold flex items-center gap-1.5">
+                <FileText className="h-3.5 w-3.5" />
+                <span>2. Executive Summary &amp; Agent Talking Points</span>
+              </Label>
+              <Textarea
+                rows={3}
+                value={form.summaryNotes}
+                onChange={(e) => setForm({ ...form, summaryNotes: e.target.value })}
+                placeholder="Write a brief 2-3 sentence overview explaining price trends, inventory shifts, and advice agents can quote to buyers/sellers..."
+                className="text-xs leading-relaxed"
+              />
+            </div>
+
+            {/* Section 3: Headline Visual Numbers */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-gold flex items-center gap-1.5">
+                <TrendingUp className="h-3.5 w-3.5" />
+                <span>3. Key Headline Stats (Instant Visualization)</span>
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-surface-2/40 p-4 rounded-xl border border-border/60">
+                <div>
+                  <Label className="text-[11px]">Median Sale Price</Label>
+                  <Input
+                    value={form.metrics.medianSalePrice}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        metrics: { ...form.metrics, medianSalePrice: e.target.value },
+                      })
+                    }
+                    placeholder="$248,500"
+                    className="h-8 text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[11px]">Price MoM Change</Label>
+                  <Input
+                    value={form.metrics.medianPriceChange}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        metrics: { ...form.metrics, medianPriceChange: e.target.value },
+                      })
+                    }
+                    placeholder="+4.2% MoM"
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[11px]">Avg Days on Market</Label>
+                  <Input
+                    value={form.metrics.avgDaysOnMarket}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        metrics: { ...form.metrics, avgDaysOnMarket: e.target.value },
+                      })
+                    }
+                    placeholder="28 Days"
+                    className="h-8 text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[11px]">DOM MoM Change</Label>
+                  <Input
+                    value={form.metrics.domChange}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        metrics: { ...form.metrics, domChange: e.target.value },
+                      })
+                    }
+                    placeholder="-3 Days MoM"
+                    className="h-8 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-[11px]">Active Inventory</Label>
+                  <Input
+                    value={form.metrics.activeInventory}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        metrics: { ...form.metrics, activeInventory: e.target.value },
+                      })
+                    }
+                    placeholder="348"
+                    className="h-8 text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[11px]">Inventory Change</Label>
+                  <Input
+                    value={form.metrics.inventoryChange}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        metrics: { ...form.metrics, inventoryChange: e.target.value },
+                      })
+                    }
+                    placeholder="+6.1%"
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[11px]">Closed Sales</Label>
+                  <Input
+                    value={form.metrics.closedSales}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        metrics: { ...form.metrics, closedSales: e.target.value },
+                      })
+                    }
+                    placeholder="142"
+                    className="h-8 text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[11px]">Closed Sales Change</Label>
+                  <Input
+                    value={form.metrics.closedSalesChange}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        metrics: { ...form.metrics, closedSalesChange: e.target.value },
+                      })
+                    }
+                    placeholder="+2.8%"
+                    className="h-8 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-[11px]">List-to-Sale Ratio</Label>
+                  <Input
+                    value={form.metrics.listToSaleRatio}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        metrics: { ...form.metrics, listToSaleRatio: e.target.value },
+                      })
+                    }
+                    placeholder="98.6%"
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[11px]">Months Supply</Label>
+                  <Input
+                    value={form.metrics.monthsSupply}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        metrics: { ...form.metrics, monthsSupply: e.target.value },
+                      })
+                    }
+                    placeholder="2.4 Mos"
+                    className="h-8 text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 4: Full MLS PDF Upload */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-gold flex items-center gap-1.5">
+                <FileText className="h-3.5 w-3.5" />
+                <span>4. Official MLS PDF Document</span>
+              </h3>
+              <div className="p-4 rounded-xl border border-dashed border-border bg-surface-2/30 space-y-3">
+                {form.pdfUrl ? (
+                  <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-surface-2 border border-border">
+                    <div className="flex items-center gap-2.5 truncate">
+                      <FileText className="h-5 w-5 text-gold shrink-0" />
+                      <div className="truncate">
+                        <p className="text-xs font-semibold text-foreground truncate">
+                          {form.pdfName || "MLS_Report.pdf"}
+                        </p>
+                        {form.pdfSize && (
+                          <p className="text-[10px] text-muted-foreground">
+                            {(form.pdfSize / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={form.pdfUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-gold hover:underline"
+                      >
+                        Preview
+                      </a>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            pdfUrl: null,
+                            pdfName: null,
+                            pdfSize: null,
+                          }))
+                        }
+                        className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 space-y-2">
+                    <Upload className="h-6 w-6 mx-auto text-muted-foreground/60" />
+                    <p className="text-xs text-muted-foreground">
+                      Upload the full monthly MLS report PDF (agents can download &amp; view)
+                    </p>
+                    <label className="inline-flex">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={uploadingPdf}
+                        asChild
+                        className="cursor-pointer text-xs border-gold/40 text-gold hover:bg-gold/10"
+                      >
+                        <span>
+                          {uploadingPdf ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                              Uploading…
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-3.5 w-3.5 mr-1.5" />
+                              Select PDF File
+                            </>
+                          )}
+                        </span>
+                      </Button>
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        className="hidden"
+                        onChange={handlePdfUpload}
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Section 5: Ready-to-Post Social Media Graphics */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gold flex items-center gap-1.5">
+                  <ImageIcon className="h-3.5 w-3.5" />
+                  <span>5. Ready-to-Post Social Media Graphics &amp; Captions</span>
+                </h3>
+
+                <label className="inline-flex">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={uploadingGraphic}
+                    asChild
+                    className="cursor-pointer text-xs h-7 border-border hover:bg-surface-2"
+                  >
+                    <span>
+                      {uploadingGraphic ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          Uploading…
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-3 w-3 mr-1" />
+                          Upload Graphic Images
+                        </>
+                      )}
+                    </span>
+                  </Button>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => handleGraphicUpload(e, "Square 1:1")}
+                  />
+                </label>
+              </div>
+
+              {form.graphics.length === 0 ? (
+                <div className="p-4 text-center text-xs text-muted-foreground bg-surface-2/20 border border-dashed border-border rounded-xl">
+                  No social graphics added yet. Upload 1:1 Square or 9:16 Story images for agents to download.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {form.graphics.map((g, idx) => (
+                    <div
+                      key={g.id || idx}
+                      className="p-3.5 rounded-xl border border-border bg-surface-2/60 flex flex-col sm:flex-row gap-3 items-start"
+                    >
+                      <div className="h-20 w-20 rounded-lg overflow-hidden bg-black/40 shrink-0 border border-border">
+                        <img src={g.imageUrl} alt={g.title} className="h-full w-full object-cover" />
+                      </div>
+
+                      <div className="flex-1 space-y-2 w-full">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-[10px]">Graphic Title</Label>
+                            <Input
+                              value={g.title}
+                              onChange={(e) => updateGraphic(g.id, "title", e.target.value)}
+                              placeholder="e.g. Instagram Feed 1:1"
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Format Tag</Label>
+                            <Input
+                              value={g.format || ""}
+                              onChange={(e) => updateGraphic(g.id, "format", e.target.value)}
+                              placeholder="e.g. Square 1:1 / Story 9:16"
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-[10px]">Pre-written Caption &amp; Hashtags for Agents</Label>
+                          <Textarea
+                            rows={2}
+                            value={g.caption || ""}
+                            onChange={(e) => updateGraphic(g.id, "caption", e.target.value)}
+                            placeholder="Paste suggested caption and hashtags..."
+                            className="text-xs leading-relaxed"
+                          />
+                        </div>
+                      </div>
+
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => removeGraphic(g.id)}
+                        className="h-7 w-7 text-destructive hover:bg-destructive/10 shrink-0 self-end sm:self-start"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="pt-3 border-t border-border">
+            <Button variant="ghost" onClick={() => setDialogOpen(false)} className="text-xs">
+              Cancel
+            </Button>
+            <Button
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending}
+              className="bg-gold text-navy hover:bg-gold/90 font-bold text-xs"
+            >
+              {saveMutation.isPending ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                <>
+                  <Check className="h-3.5 w-3.5 mr-1.5" />
+                  Save &amp; Publish Stats Report
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+

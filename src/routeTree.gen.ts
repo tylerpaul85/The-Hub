@@ -17,6 +17,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AvailabilityRouteImport } from './routes/availability'
 import { Route as ClosingGiftRouteImport } from './routes/closing-gift'
 import { Route as DataDeletionRouteImport } from './routes/data-deletion'
+import { Route as MarketStatsRouteImport } from './routes/market-stats'
 import { Route as OpenHouseManagementRouteImport } from './routes/open-house-management'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as RequestRouteImport } from './routes/request'
@@ -105,6 +106,11 @@ const ClosingGiftRoute = ClosingGiftRouteImport.update({
 const DataDeletionRoute = DataDeletionRouteImport.update({
   id: '/data-deletion',
   path: '/data-deletion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarketStatsRoute = MarketStatsRouteImport.update({
+  id: '/market-stats',
+  path: '/market-stats',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OpenHouseManagementRoute = OpenHouseManagementRouteImport.update({
@@ -384,6 +390,7 @@ export interface FileRoutesByFullPath {
   '/availability': typeof AvailabilityRoute
   '/closing-gift': typeof ClosingGiftRoute
   '/data-deletion': typeof DataDeletionRoute
+  '/market-stats': typeof MarketStatsRoute
   '/open-house-management': typeof OpenHouseManagementRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/request': typeof RequestRoute
@@ -442,6 +449,7 @@ export interface FileRoutesByTo {
   '/availability': typeof AvailabilityRoute
   '/closing-gift': typeof ClosingGiftRoute
   '/data-deletion': typeof DataDeletionRoute
+  '/market-stats': typeof MarketStatsRoute
   '/open-house-management': typeof OpenHouseManagementRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/request': typeof RequestRoute
@@ -500,6 +508,7 @@ export interface FileRoutesById {
   '/availability': typeof AvailabilityRoute
   '/closing-gift': typeof ClosingGiftRoute
   '/data-deletion': typeof DataDeletionRoute
+  '/market-stats': typeof MarketStatsRoute
   '/open-house-management': typeof OpenHouseManagementRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/request': typeof RequestRoute
@@ -561,6 +570,7 @@ export interface FileRouteTypes {
     | '/availability'
     | '/closing-gift'
     | '/data-deletion'
+    | '/market-stats'
     | '/open-house-management'
     | '/privacy-policy'
     | '/request'
@@ -619,6 +629,7 @@ export interface FileRouteTypes {
     | '/availability'
     | '/closing-gift'
     | '/data-deletion'
+    | '/market-stats'
     | '/open-house-management'
     | '/privacy-policy'
     | '/request'
@@ -676,6 +687,7 @@ export interface FileRouteTypes {
     | '/availability'
     | '/closing-gift'
     | '/data-deletion'
+    | '/market-stats'
     | '/open-house-management'
     | '/privacy-policy'
     | '/request'
@@ -737,6 +749,7 @@ export interface RootRouteChildren {
   AvailabilityRoute: typeof AvailabilityRoute
   ClosingGiftRoute: typeof ClosingGiftRoute
   DataDeletionRoute: typeof DataDeletionRoute
+  MarketStatsRoute: typeof MarketStatsRoute
   OpenHouseManagementRoute: typeof OpenHouseManagementRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   RequestRoute: typeof RequestRoute
@@ -805,6 +818,13 @@ declare module '@tanstack/react-router' {
       path: '/data-deletion'
       fullPath: '/data-deletion'
       preLoaderRoute: typeof DataDeletionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/market-stats': {
+      id: '/market-stats'
+      path: '/market-stats'
+      fullPath: '/market-stats'
+      preLoaderRoute: typeof MarketStatsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/open-house-management': {
@@ -1310,6 +1330,7 @@ const rootRouteChildren: RootRouteChildren = {
   AvailabilityRoute: AvailabilityRoute,
   ClosingGiftRoute: ClosingGiftRoute,
   DataDeletionRoute: DataDeletionRoute,
+  MarketStatsRoute: MarketStatsRoute,
   OpenHouseManagementRoute: OpenHouseManagementRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   RequestRoute: RequestRoute,

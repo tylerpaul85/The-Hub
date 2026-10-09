@@ -8,6 +8,7 @@ import {
   Calculator,
   Signpost,
   ShoppingBag,
+  BarChart3,
   type LucideIcon,
 } from "lucide-react";
 
@@ -24,6 +25,16 @@ export interface HubCardDefinition {
 }
 
 export const DEFAULT_HUB_CARDS: HubCardDefinition[] = [
+  {
+    id: "market-stats",
+    title: "Market Stats",
+    subtitle: "Monthly MLS stats, infographic reports & ready-to-post graphics",
+    category: "listings",
+    defaultBadge: "Monthly MLS",
+    actionLabel: "View Market Stats",
+    icon: BarChart3,
+    to: "/market-stats",
+  },
   {
     id: "open-houses",
     title: "Open House Management",
