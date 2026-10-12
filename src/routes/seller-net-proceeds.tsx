@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAgentAuth, isValidAgentEmail, type AgentAccount } from "@/hooks/use-agent-auth";
-import logo from "@/assets/msreg-logo.png";
+import logoBlack from "@/assets/msreg-logo-black.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1568,9 +1568,9 @@ function CalculatorView({
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <img
-                      src={logo}
+                      src={logoBlack}
                       alt="Matt Smith Real Estate Group"
-                      className="h-14 sm:h-16 w-auto"
+                      className="h-14 sm:h-16 w-auto object-contain"
                     />
                     <div className="border-l border-slate-300 pl-3">
                       <div className="text-[11px] uppercase tracking-wider text-amber-700 font-bold">

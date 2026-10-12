@@ -1,4 +1,4 @@
-import logo from "@/assets/msreg-logo.png";
+import { MSREG_LOGO_BLACK_BASE64 } from "@/assets/msreg-logo-black-base64";
 
 export interface SheetDataForPdf {
   agent_name: string;
@@ -61,24 +61,6 @@ function formatMoney(amount: number): string {
     maximumFractionDigits: 0,
   }).format(amount);
 }
-
-async function getBase64ImageFromUrl(url: string): Promise<string> {
-  try {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(url);
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return url;
-  }
-}
-
-const BLACK_LOGO_URL =
-  "https://jxymjhmbaqstmrttjdib.supabase.co/storage/v1/object/public/signature-headshots/Blue%20Minimalist%20Circle%20Framed%20Instagram%20Profile%20Picture%20(4).png";
 
 export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void> {
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
@@ -206,11 +188,8 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
     return "padding: 10px; text-align: right; border-left: 1px solid #a7f3d0; background-color: #d1fae5; color: #065f46; font-weight: 800;";
   };
 
-  // Convert black MSREG logo to Base64 (with fallback to default logo)
-  let logoBase64 = await getBase64ImageFromUrl(BLACK_LOGO_URL);
-  if (!logoBase64 || logoBase64 === BLACK_LOGO_URL) {
-    logoBase64 = await getBase64ImageFromUrl(logo);
-  }
+  // High-resolution black MSREG logo as Base64 data URI
+  const logoBase64 = MSREG_LOGO_BLACK_BASE64;
 
   // Build temporary DOM container for Letter portrait layout
   const container = document.createElement("div");
