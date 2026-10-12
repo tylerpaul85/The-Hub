@@ -64,6 +64,7 @@ interface NetSheetRecord {
   id: string;
   agent_id: string;
   property_address: string;
+  seller_last_name?: string | null;
   agent_name: string;
   agent_cell: string | null;
   agent_email: string | null;
@@ -82,6 +83,7 @@ interface SheetData {
   office_address: string;
   office_phone: string;
   property_address: string;
+  seller_last_name?: string;
   num_scenarios: 1 | 2 | 3;
   scenario1_price: number;
   scenario2_price: number;
@@ -118,6 +120,7 @@ const DEFAULT_SHEET_DATA: SheetData = {
   office_address: "1043 Kingshighway, Rolla, MO 65401",
   office_phone: "(573) 451-2020",
   property_address: "",
+  seller_last_name: "",
   num_scenarios: 1,
   scenario1_price: 300000,
   scenario2_price: 315000,
@@ -148,11 +151,18 @@ const DEFAULT_SHEET_DATA: SheetData = {
 
 function getFieldValue(data: SheetData, fieldKey: string, scenarioIndex: 1 | 2 | 3): number {
   const specificKey = `${fieldKey}_${scenarioIndex}`;
-  if (data[specificKey] !== undefined) {
+  if (data[specificKey] !== undefined && data[specificKey] !== 0) {
     return data[specificKey] as number;
   }
+  const col1Val = data[`${fieldKey}_1`];
+  if (col1Val !== undefined && col1Val !== 0) {
+    return col1Val as number;
+  }
   const legacyKey = fieldKey as keyof SheetData;
-  return (data[legacyKey] as number) || 0;
+  if (data[legacyKey] !== undefined) {
+    return (data[legacyKey] as number) || 0;
+  }
+  return (data[specificKey] as number) || 0;
 }
 
 function formatCurrency(amount: number): string {
@@ -359,9 +369,7 @@ function AgentAuthView() {
       <div className="relative z-10 w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <img src={logo} alt="MSREG" className="h-16 w-auto mx-auto drop-shadow-sm" />
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Seller Net Proceeds
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Seller Net Proceeds</h1>
           <p className="text-xs text-muted-foreground">
             Sign in with your MSREG agent account to create and manage net sheets.
           </p>
@@ -384,7 +392,11 @@ function AgentAuthView() {
                   required
                 />
               </div>
-              <Button type="submit" disabled={busy} className="w-full bg-accent text-white hover:bg-accent/90 text-xs h-10">
+              <Button
+                type="submit"
+                disabled={busy}
+                className="w-full bg-accent text-white hover:bg-accent/90 text-xs h-10"
+              >
                 {busy ? "Sending..." : "Send Reset Link"}
               </Button>
               <Button
@@ -399,8 +411,12 @@ function AgentAuthView() {
           ) : (
             <Tabs value={authTab} onValueChange={(v) => setAuthTab(v as any)}>
               <TabsList className="grid grid-cols-2 bg-surface-2 p-1 mb-5">
-                <TabsTrigger value="signin" className="text-xs">Sign In</TabsTrigger>
-                <TabsTrigger value="signup" className="text-xs">Create Account</TabsTrigger>
+                <TabsTrigger value="signin" className="text-xs">
+                  Sign In
+                </TabsTrigger>
+                <TabsTrigger value="signup" className="text-xs">
+                  Create Account
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="signin">
@@ -574,8 +590,16 @@ function DashboardView({
 
   const filteredSheets = useMemo(() => {
     if (!search.trim()) return sheets;
-    const q = search.toLowerCase();
-    return sheets.filter((s) => s.property_address.toLowerCase().includes(q));
+    const q = search.toLowerCase().trim();
+    return sheets.filter((s) => {
+      const addr = (s.property_address || "").toLowerCase();
+      const seller = (
+        s.sheet_data?.seller_last_name ||
+        (s as any).seller_last_name ||
+        ""
+      ).toLowerCase();
+      return addr.includes(q) || seller.includes(q);
+    });
   }, [sheets, search]);
 
   return (
@@ -587,7 +611,8 @@ function DashboardView({
             Saved Seller Net Sheets
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
-            Access and manage saved estimated net proceeds worksheets for your listing presentations.
+            Access and manage saved estimated net proceeds worksheets for your listing
+            presentations.
           </p>
         </div>
         <Button
@@ -604,7 +629,7 @@ function DashboardView({
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by property address..."
+            placeholder="Search by property address or seller last name..."
             className="pl-9 h-9 text-xs bg-surface-1 border-border"
           />
         </div>
@@ -647,6 +672,12 @@ function DashboardView({
                       {sheet.num_scenarios} {sheet.num_scenarios === 1 ? "Scenario" : "Scenarios"}
                     </span>
                   </div>
+                  {(sheet.sheet_data?.seller_last_name || (sheet as any).seller_last_name) && (
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-accent/10 text-accent border border-accent/20">
+                      Seller:{" "}
+                      {sheet.sheet_data?.seller_last_name || (sheet as any).seller_last_name}
+                    </span>
+                  )}
                 </div>
 
                 <div>
@@ -662,13 +693,17 @@ function DashboardView({
                 {sheet.sheet_data && (
                   <div className="pt-2 border-t border-border/60 grid grid-cols-2 gap-2 text-xs">
                     <div>
-                      <div className="text-[10px] text-muted-foreground uppercase font-semibold">List Price</div>
+                      <div className="text-[10px] text-muted-foreground uppercase font-semibold">
+                        List Price
+                      </div>
                       <div className="font-mono font-medium text-foreground">
                         {formatCurrency(sheet.sheet_data.scenario1_price)}
                       </div>
                     </div>
                     <div>
-                      <div className="text-[10px] text-muted-foreground uppercase font-semibold">Estimated Taxes</div>
+                      <div className="text-[10px] text-muted-foreground uppercase font-semibold">
+                        Estimated Taxes
+                      </div>
                       <div className="font-mono text-muted-foreground">
                         {formatCurrency(sheet.sheet_data.estimated_taxes || 0)}
                       </div>
@@ -722,7 +757,8 @@ function DashboardView({
           <DialogHeader>
             <DialogTitle>Delete Seller Net Sheet</DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Are you sure you want to permanently delete this net sheet? This action cannot be undone.
+              Are you sure you want to permanently delete this net sheet? This action cannot be
+              undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
@@ -830,10 +866,16 @@ function CalculatorView({
             "seller_concessions",
           ];
           scenarioKeys.forEach((key) => {
-            const val = loaded[key] || 0;
-            if (loaded[`${key}_1`] === undefined) loaded[`${key}_1`] = val;
-            if (loaded[`${key}_2`] === undefined) loaded[`${key}_2`] = val;
-            if (loaded[`${key}_3`] === undefined) loaded[`${key}_3`] = val;
+            const canonicalVal =
+              loaded[`${key}_1`] !== undefined && loaded[`${key}_1`] !== 0
+                ? loaded[`${key}_1`]
+                : loaded[key] !== undefined && loaded[key] !== 0
+                  ? loaded[key]
+                  : loaded[key] || 0;
+            loaded[key] = canonicalVal;
+            loaded[`${key}_1`] = canonicalVal;
+            if (!loaded[`${key}_2`]) loaded[`${key}_2`] = canonicalVal;
+            if (!loaded[`${key}_3`]) loaded[`${key}_3`] = canonicalVal;
           });
           setData(loaded);
         }
@@ -844,8 +886,22 @@ function CalculatorView({
     setData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const updateScenarioField = (fieldKey: string, scenarioIndex: 1 | 2 | 3, value: number) => {
+  const updateScenarioField = (
+    fieldKey: string,
+    scenarioIndex: 1 | 2 | 3,
+    value: number,
+    syncAll = true,
+  ) => {
     setData((prev) => {
+      if (syncAll) {
+        return {
+          ...prev,
+          [fieldKey]: value,
+          [`${fieldKey}_1`]: value,
+          [`${fieldKey}_2`]: value,
+          [`${fieldKey}_3`]: value,
+        };
+      }
       const next = { ...prev, [`${fieldKey}_${scenarioIndex}`]: value };
       if (scenarioIndex === 1) {
         next[fieldKey] = value;
@@ -1027,7 +1083,9 @@ function CalculatorView({
             onClick={() => setMobileTab("edit")}
             className={cn(
               "px-3 py-1 rounded-md transition-colors font-medium flex items-center gap-1.5",
-              mobileTab === "edit" ? "bg-surface-1 text-foreground shadow-2xs font-semibold" : "text-muted-foreground",
+              mobileTab === "edit"
+                ? "bg-surface-1 text-foreground shadow-2xs font-semibold"
+                : "text-muted-foreground",
             )}
           >
             <SlidersHorizontal className="h-3.5 w-3.5" /> Inputs
@@ -1037,7 +1095,9 @@ function CalculatorView({
             onClick={() => setMobileTab("preview")}
             className={cn(
               "px-3 py-1 rounded-md transition-colors font-medium flex items-center gap-1.5",
-              mobileTab === "preview" ? "bg-surface-1 text-foreground shadow-2xs font-semibold" : "text-muted-foreground",
+              mobileTab === "preview"
+                ? "bg-surface-1 text-foreground shadow-2xs font-semibold"
+                : "text-muted-foreground",
             )}
           >
             <Eye className="h-3.5 w-3.5" /> Client Preview
@@ -1110,18 +1170,32 @@ function CalculatorView({
             </div>
 
             <div className="space-y-3">
-              <div>
-                <Label htmlFor="prop-address" className="text-xs font-medium text-foreground">
-                  Property Address <span className="text-accent">*</span>
-                </Label>
-                <Input
-                  id="prop-address"
-                  value={data.property_address}
-                  onChange={(e) => updateField("property_address", e.target.value)}
-                  placeholder="e.g. 1244 Oak Ridge Dr, Rolla, MO"
-                  className="mt-1 h-9 text-xs bg-surface-2 border-border"
-                  required
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="sm:col-span-2">
+                  <Label htmlFor="prop-address" className="text-xs font-medium text-foreground">
+                    Property Address <span className="text-accent">*</span>
+                  </Label>
+                  <Input
+                    id="prop-address"
+                    value={data.property_address}
+                    onChange={(e) => updateField("property_address", e.target.value)}
+                    placeholder="e.g. 1244 Oak Ridge Dr, Rolla, MO"
+                    className="mt-1 h-9 text-xs bg-surface-2 border-border"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="seller-last-name" className="text-xs font-medium text-foreground">
+                    Seller Last Name
+                  </Label>
+                  <Input
+                    id="seller-last-name"
+                    value={data.seller_last_name || ""}
+                    onChange={(e) => updateField("seller_last_name", e.target.value)}
+                    placeholder="e.g. Smith"
+                    className="mt-1 h-9 text-xs bg-surface-2 border-border"
+                  />
+                </div>
               </div>
 
               {/* Price inputs for scenarios */}
@@ -1132,7 +1206,9 @@ function CalculatorView({
                     type="number"
                     step="5000"
                     value={data.scenario1_price || ""}
-                    onChange={(e) => updateField("scenario1_price", parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      updateField("scenario1_price", parseFloat(e.target.value) || 0)
+                    }
                     className="mt-1 h-8 text-xs font-mono bg-surface-2 border-border"
                   />
                 </div>
@@ -1143,7 +1219,9 @@ function CalculatorView({
                       type="number"
                       step="5000"
                       value={data.scenario2_price || ""}
-                      onChange={(e) => updateField("scenario2_price", parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        updateField("scenario2_price", parseFloat(e.target.value) || 0)
+                      }
                       className="mt-1 h-8 text-xs font-mono bg-surface-2 border-border"
                     />
                   </div>
@@ -1155,7 +1233,9 @@ function CalculatorView({
                       type="number"
                       step="5000"
                       value={data.scenario3_price || ""}
-                      onChange={(e) => updateField("scenario3_price", parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        updateField("scenario3_price", parseFloat(e.target.value) || 0)
+                      }
                       className="mt-1 h-8 text-xs font-mono bg-surface-2 border-border"
                     />
                   </div>
@@ -1175,7 +1255,9 @@ function CalculatorView({
 
             {hasSub50k && (
               <div className="p-2.5 rounded-lg bg-accent/8 border border-accent/20 text-xs space-y-2">
-                <div className="text-[11px] font-semibold text-accent">Sub-$50,000 Transaction Detected:</div>
+                <div className="text-[11px] font-semibold text-accent">
+                  Sub-$50,000 Transaction Detected:
+                </div>
                 <div className="flex flex-wrap gap-1.5">
                   <Button
                     type="button"
@@ -1231,7 +1313,9 @@ function CalculatorView({
                     <Input
                       type="number"
                       value={data.listing_comm_flat_fee ?? 1500}
-                      onChange={(e) => updateField("listing_comm_flat_fee", parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        updateField("listing_comm_flat_fee", parseFloat(e.target.value) || 0)
+                      }
                       className="h-8 text-xs font-mono bg-surface-2 border-border"
                     />
                     <span className="text-[10px] uppercase font-bold text-accent">Flat</span>
@@ -1242,7 +1326,9 @@ function CalculatorView({
                       type="number"
                       step="0.1"
                       value={data.listing_comm_pct}
-                      onChange={(e) => updateField("listing_comm_pct", parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        updateField("listing_comm_pct", parseFloat(e.target.value) || 0)
+                      }
                       className="h-8 text-xs font-mono bg-surface-2 border-border"
                     />
                     <span className="text-xs text-muted-foreground">%</span>
@@ -1258,7 +1344,9 @@ function CalculatorView({
                     <Input
                       type="number"
                       value={data.selling_comm_flat_fee ?? 1500}
-                      onChange={(e) => updateField("selling_comm_flat_fee", parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        updateField("selling_comm_flat_fee", parseFloat(e.target.value) || 0)
+                      }
                       className="h-8 text-xs font-mono bg-surface-2 border-border"
                     />
                     <span className="text-[10px] uppercase font-bold text-accent">Flat</span>
@@ -1269,7 +1357,9 @@ function CalculatorView({
                       type="number"
                       step="0.1"
                       value={data.selling_comm_pct}
-                      onChange={(e) => updateField("selling_comm_pct", parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        updateField("selling_comm_pct", parseFloat(e.target.value) || 0)
+                      }
                       className="h-8 text-xs font-mono bg-surface-2 border-border"
                     />
                     <span className="text-xs text-muted-foreground">%</span>
@@ -1292,7 +1382,9 @@ function CalculatorView({
                 <Input
                   type="number"
                   value={getFieldValue(data, "mortgage_payoff_1", 1) || ""}
-                  onChange={(e) => updateScenarioField("mortgage_payoff_1", 1, parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    updateScenarioField("mortgage_payoff_1", 1, parseFloat(e.target.value) || 0)
+                  }
                   placeholder="0"
                   className="mt-1 h-8 text-xs font-mono bg-surface-2 border-border"
                 />
@@ -1302,7 +1394,9 @@ function CalculatorView({
                 <Input
                   type="number"
                   value={getFieldValue(data, "mortgage_payoff_2", 1) || ""}
-                  onChange={(e) => updateScenarioField("mortgage_payoff_2", 1, parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    updateScenarioField("mortgage_payoff_2", 1, parseFloat(e.target.value) || 0)
+                  }
                   placeholder="0"
                   className="mt-1 h-8 text-xs font-mono bg-surface-2 border-border"
                 />
@@ -1312,7 +1406,9 @@ function CalculatorView({
                 <Input
                   type="number"
                   value={getFieldValue(data, "seller_concessions", 1) || ""}
-                  onChange={(e) => updateScenarioField("seller_concessions", 1, parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    updateScenarioField("seller_concessions", 1, parseFloat(e.target.value) || 0)
+                  }
                   placeholder="5000"
                   className="mt-1 h-8 text-xs font-mono bg-surface-2 border-border"
                 />
@@ -1322,7 +1418,9 @@ function CalculatorView({
                 <Input
                   type="number"
                   value={getFieldValue(data, "estimated_taxes", 1) || ""}
-                  onChange={(e) => updateScenarioField("estimated_taxes", 1, parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    updateScenarioField("estimated_taxes", 1, parseFloat(e.target.value) || 0)
+                  }
                   placeholder="1283"
                   className="mt-1 h-8 text-xs font-mono bg-surface-2 border-border"
                 />
@@ -1343,7 +1441,13 @@ function CalculatorView({
                 <Input
                   type="number"
                   value={getFieldValue(data, "seller_title_closing_fee", 1) || ""}
-                  onChange={(e) => updateScenarioField("seller_title_closing_fee", 1, parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    updateScenarioField(
+                      "seller_title_closing_fee",
+                      1,
+                      parseFloat(e.target.value) || 0,
+                    )
+                  }
                   className="mt-1 h-7 text-xs font-mono bg-surface-2 border-border"
                 />
               </div>
@@ -1352,7 +1456,9 @@ function CalculatorView({
                 <Input
                   type="number"
                   value={getFieldValue(data, "title_search_fee", 1) || ""}
-                  onChange={(e) => updateScenarioField("title_search_fee", 1, parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    updateScenarioField("title_search_fee", 1, parseFloat(e.target.value) || 0)
+                  }
                   className="mt-1 h-7 text-xs font-mono bg-surface-2 border-border"
                 />
               </div>
@@ -1361,7 +1467,9 @@ function CalculatorView({
                 <Input
                   type="number"
                   value={getFieldValue(data, "transaction_fee", 1) || ""}
-                  onChange={(e) => updateScenarioField("transaction_fee", 1, parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    updateScenarioField("transaction_fee", 1, parseFloat(e.target.value) || 0)
+                  }
                   className="mt-1 h-7 text-xs font-mono bg-surface-2 border-border"
                 />
               </div>
@@ -1370,7 +1478,13 @@ function CalculatorView({
                 <Input
                   type="number"
                   value={getFieldValue(data, "closing_protection_letter", 1) || ""}
-                  onChange={(e) => updateScenarioField("closing_protection_letter", 1, parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    updateScenarioField(
+                      "closing_protection_letter",
+                      1,
+                      parseFloat(e.target.value) || 0,
+                    )
+                  }
                   className="mt-1 h-7 text-xs font-mono bg-surface-2 border-border"
                 />
               </div>
@@ -1379,7 +1493,9 @@ function CalculatorView({
                 <Input
                   type="number"
                   value={getFieldValue(data, "warranty_deed_fee", 1) || ""}
-                  onChange={(e) => updateScenarioField("warranty_deed_fee", 1, parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    updateScenarioField("warranty_deed_fee", 1, parseFloat(e.target.value) || 0)
+                  }
                   className="mt-1 h-7 text-xs font-mono bg-surface-2 border-border"
                 />
               </div>
@@ -1388,7 +1504,9 @@ function CalculatorView({
                 <Input
                   type="number"
                   value={getFieldValue(data, "termite_letter", 1) || ""}
-                  onChange={(e) => updateScenarioField("termite_letter", 1, parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    updateScenarioField("termite_letter", 1, parseFloat(e.target.value) || 0)
+                  }
                   className="mt-1 h-7 text-xs font-mono bg-surface-2 border-border"
                 />
               </div>
@@ -1397,7 +1515,9 @@ function CalculatorView({
                 <Input
                   type="number"
                   value={getFieldValue(data, "inspections", 1) || ""}
-                  onChange={(e) => updateScenarioField("inspections", 1, parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    updateScenarioField("inspections", 1, parseFloat(e.target.value) || 0)
+                  }
                   className="mt-1 h-7 text-xs font-mono bg-surface-2 border-border"
                 />
               </div>
@@ -1406,7 +1526,9 @@ function CalculatorView({
                 <Input
                   type="number"
                   value={getFieldValue(data, "home_warranty", 1) || ""}
-                  onChange={(e) => updateScenarioField("home_warranty", 1, parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    updateScenarioField("home_warranty", 1, parseFloat(e.target.value) || 0)
+                  }
                   className="mt-1 h-7 text-xs font-mono bg-surface-2 border-border"
                 />
               </div>
@@ -1415,7 +1537,9 @@ function CalculatorView({
                 <Input
                   type="number"
                   value={getFieldValue(data, "miscellaneous", 1) || ""}
-                  onChange={(e) => updateScenarioField("miscellaneous", 1, parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    updateScenarioField("miscellaneous", 1, parseFloat(e.target.value) || 0)
+                  }
                   className="mt-1 h-7 text-xs font-mono bg-surface-2 border-border"
                 />
               </div>
@@ -1443,7 +1567,11 @@ function CalculatorView({
               <div className="border-b-2 border-amber-600/60 pb-5">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <img src={logo} alt="Matt Smith Real Estate Group" className="h-14 sm:h-16 w-auto" />
+                    <img
+                      src={logo}
+                      alt="Matt Smith Real Estate Group"
+                      className="h-14 sm:h-16 w-auto"
+                    />
                     <div className="border-l border-slate-300 pl-3">
                       <div className="text-[11px] uppercase tracking-wider text-amber-700 font-bold">
                         eXp Realty
@@ -1457,12 +1585,20 @@ function CalculatorView({
 
                 <div className="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-slate-200 text-xs text-slate-600">
                   <div>
-                    <div className="font-semibold text-slate-900">{data.property_address || "Property Address Pending"}</div>
-                    <div className="text-[11px] text-slate-500">Prepared for Seller Presentation</div>
+                    <div className="font-semibold text-slate-900">
+                      {data.property_address || "Property Address Pending"}
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      {data.seller_last_name
+                        ? `Prepared for ${data.seller_last_name} · Estimated Net Proceeds`
+                        : "Prepared for Seller Presentation"}
+                    </div>
                   </div>
                   <div className="text-right">
                     <div className="font-semibold text-slate-900">{data.agent_name}</div>
-                    <div className="text-[11px] text-slate-500">{data.agent_cell} · {data.agent_email}</div>
+                    <div className="text-[11px] text-slate-500">
+                      {data.agent_cell} · {data.agent_email}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1475,18 +1611,24 @@ function CalculatorView({
                       <th className="p-2.5">Item / Expense</th>
                       <th className="p-2.5 text-center font-mono border-l border-slate-200">
                         Scenario 1
-                        <div className="text-sm font-bold text-slate-950">{formatCurrency(calc1.salesPrice)}</div>
+                        <div className="text-sm font-bold text-slate-950">
+                          {formatCurrency(calc1.salesPrice)}
+                        </div>
                       </th>
                       {data.num_scenarios >= 2 && (
                         <th className="p-2.5 text-center font-mono border-l border-slate-200">
                           Scenario 2
-                          <div className="text-sm font-bold text-slate-950">{formatCurrency(calc2.salesPrice)}</div>
+                          <div className="text-sm font-bold text-slate-950">
+                            {formatCurrency(calc2.salesPrice)}
+                          </div>
                         </th>
                       )}
                       {data.num_scenarios >= 3 && (
                         <th className="p-2.5 text-center font-mono border-l border-slate-200">
                           Scenario 3
-                          <div className="text-sm font-bold text-slate-950">{formatCurrency(calc3.salesPrice)}</div>
+                          <div className="text-sm font-bold text-slate-950">
+                            {formatCurrency(calc3.salesPrice)}
+                          </div>
                         </th>
                       )}
                     </tr>
@@ -1495,45 +1637,69 @@ function CalculatorView({
                     {/* Commissions */}
                     <tr>
                       <td className="p-2">Listing Agent Commission</td>
-                      <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(calc1.listingComm)}</td>
+                      <td className="p-2 text-center font-mono border-l border-slate-200">
+                        {formatCurrency(calc1.listingComm)}
+                      </td>
                       {data.num_scenarios >= 2 && (
-                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(calc2.listingComm)}</td>
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(calc2.listingComm)}
+                        </td>
                       )}
                       {data.num_scenarios >= 3 && (
-                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(calc3.listingComm)}</td>
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(calc3.listingComm)}
+                        </td>
                       )}
                     </tr>
                     <tr>
                       <td className="p-2">Selling (Buyer) Commission</td>
-                      <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(calc1.sellingComm)}</td>
+                      <td className="p-2 text-center font-mono border-l border-slate-200">
+                        {formatCurrency(calc1.sellingComm)}
+                      </td>
                       {data.num_scenarios >= 2 && (
-                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(calc2.sellingComm)}</td>
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(calc2.sellingComm)}
+                        </td>
                       )}
                       {data.num_scenarios >= 3 && (
-                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(calc3.sellingComm)}</td>
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(calc3.sellingComm)}
+                        </td>
                       )}
                     </tr>
 
                     {/* Mortgages & Payoffs */}
                     <tr>
                       <td className="p-2">Principal Mortgage Payoff</td>
-                      <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "mortgage_payoff_1", 1))}</td>
+                      <td className="p-2 text-center font-mono border-l border-slate-200">
+                        {formatCurrency(getFieldValue(data, "mortgage_payoff_1", 1))}
+                      </td>
                       {data.num_scenarios >= 2 && (
-                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "mortgage_payoff_1", 2))}</td>
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(getFieldValue(data, "mortgage_payoff_1", 2))}
+                        </td>
                       )}
                       {data.num_scenarios >= 3 && (
-                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "mortgage_payoff_1", 3))}</td>
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(getFieldValue(data, "mortgage_payoff_1", 3))}
+                        </td>
                       )}
                     </tr>
                     {getFieldValue(data, "mortgage_payoff_2", 1) > 0 && (
                       <tr>
                         <td className="p-2">Second Mortgage Payoff</td>
-                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "mortgage_payoff_2", 1))}</td>
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(getFieldValue(data, "mortgage_payoff_2", 1))}
+                        </td>
                         {data.num_scenarios >= 2 && (
-                          <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "mortgage_payoff_2", 2))}</td>
+                          <td className="p-2 text-center font-mono border-l border-slate-200">
+                            {formatCurrency(getFieldValue(data, "mortgage_payoff_2", 2))}
+                          </td>
                         )}
                         {data.num_scenarios >= 3 && (
-                          <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "mortgage_payoff_2", 3))}</td>
+                          <td className="p-2 text-center font-mono border-l border-slate-200">
+                            {formatCurrency(getFieldValue(data, "mortgage_payoff_2", 3))}
+                          </td>
                         )}
                       </tr>
                     )}
@@ -1541,62 +1707,205 @@ function CalculatorView({
                     {/* Title & Closing */}
                     <tr>
                       <td className="p-2">Title Company Closing Fee</td>
-                      <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "seller_title_closing_fee", 1))}</td>
+                      <td className="p-2 text-center font-mono border-l border-slate-200">
+                        {formatCurrency(getFieldValue(data, "seller_title_closing_fee", 1))}
+                      </td>
                       {data.num_scenarios >= 2 && (
-                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "seller_title_closing_fee", 2))}</td>
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(getFieldValue(data, "seller_title_closing_fee", 2))}
+                        </td>
                       )}
                       {data.num_scenarios >= 3 && (
-                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "seller_title_closing_fee", 3))}</td>
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(getFieldValue(data, "seller_title_closing_fee", 3))}
+                        </td>
                       )}
                     </tr>
                     <tr>
                       <td className="p-2">Title Search & Deed Fees</td>
                       <td className="p-2 text-center font-mono border-l border-slate-200">
-                        {formatCurrency(getFieldValue(data, "title_search_fee", 1) + getFieldValue(data, "warranty_deed_fee", 1))}
+                        {formatCurrency(
+                          getFieldValue(data, "title_search_fee", 1) +
+                            getFieldValue(data, "warranty_deed_fee", 1),
+                        )}
                       </td>
                       {data.num_scenarios >= 2 && (
                         <td className="p-2 text-center font-mono border-l border-slate-200">
-                          {formatCurrency(getFieldValue(data, "title_search_fee", 2) + getFieldValue(data, "warranty_deed_fee", 2))}
+                          {formatCurrency(
+                            getFieldValue(data, "title_search_fee", 2) +
+                              getFieldValue(data, "warranty_deed_fee", 2),
+                          )}
                         </td>
                       )}
                       {data.num_scenarios >= 3 && (
                         <td className="p-2 text-center font-mono border-l border-slate-200">
-                          {formatCurrency(getFieldValue(data, "title_search_fee", 3) + getFieldValue(data, "warranty_deed_fee", 3))}
+                          {formatCurrency(
+                            getFieldValue(data, "title_search_fee", 3) +
+                              getFieldValue(data, "warranty_deed_fee", 3),
+                          )}
                         </td>
                       )}
                     </tr>
+                    {getFieldValue(data, "closing_protection_letter", 1) > 0 && (
+                      <tr>
+                        <td className="p-2">Closing Protection Letter</td>
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(getFieldValue(data, "closing_protection_letter", 1))}
+                        </td>
+                        {data.num_scenarios >= 2 && (
+                          <td className="p-2 text-center font-mono border-l border-slate-200">
+                            {formatCurrency(getFieldValue(data, "closing_protection_letter", 2))}
+                          </td>
+                        )}
+                        {data.num_scenarios >= 3 && (
+                          <td className="p-2 text-center font-mono border-l border-slate-200">
+                            {formatCurrency(getFieldValue(data, "closing_protection_letter", 3))}
+                          </td>
+                        )}
+                      </tr>
+                    )}
+                    {getFieldValue(data, "transaction_fee", 1) > 0 && (
+                      <tr>
+                        <td className="p-2">Brokerage Transaction Fee</td>
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(getFieldValue(data, "transaction_fee", 1))}
+                        </td>
+                        {data.num_scenarios >= 2 && (
+                          <td className="p-2 text-center font-mono border-l border-slate-200">
+                            {formatCurrency(getFieldValue(data, "transaction_fee", 2))}
+                          </td>
+                        )}
+                        {data.num_scenarios >= 3 && (
+                          <td className="p-2 text-center font-mono border-l border-slate-200">
+                            {formatCurrency(getFieldValue(data, "transaction_fee", 3))}
+                          </td>
+                        )}
+                      </tr>
+                    )}
+                    {getFieldValue(data, "termite_letter", 1) > 0 && (
+                      <tr>
+                        <td className="p-2">Termite Letter</td>
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(getFieldValue(data, "termite_letter", 1))}
+                        </td>
+                        {data.num_scenarios >= 2 && (
+                          <td className="p-2 text-center font-mono border-l border-slate-200">
+                            {formatCurrency(getFieldValue(data, "termite_letter", 2))}
+                          </td>
+                        )}
+                        {data.num_scenarios >= 3 && (
+                          <td className="p-2 text-center font-mono border-l border-slate-200">
+                            {formatCurrency(getFieldValue(data, "termite_letter", 3))}
+                          </td>
+                        )}
+                      </tr>
+                    )}
+                    {getFieldValue(data, "inspections", 1) > 0 && (
+                      <tr>
+                        <td className="p-2">Inspections</td>
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(getFieldValue(data, "inspections", 1))}
+                        </td>
+                        {data.num_scenarios >= 2 && (
+                          <td className="p-2 text-center font-mono border-l border-slate-200">
+                            {formatCurrency(getFieldValue(data, "inspections", 2))}
+                          </td>
+                        )}
+                        {data.num_scenarios >= 3 && (
+                          <td className="p-2 text-center font-mono border-l border-slate-200">
+                            {formatCurrency(getFieldValue(data, "inspections", 3))}
+                          </td>
+                        )}
+                      </tr>
+                    )}
+                    {getFieldValue(data, "home_warranty", 1) > 0 && (
+                      <tr>
+                        <td className="p-2">Home Warranty</td>
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(getFieldValue(data, "home_warranty", 1))}
+                        </td>
+                        {data.num_scenarios >= 2 && (
+                          <td className="p-2 text-center font-mono border-l border-slate-200">
+                            {formatCurrency(getFieldValue(data, "home_warranty", 2))}
+                          </td>
+                        )}
+                        {data.num_scenarios >= 3 && (
+                          <td className="p-2 text-center font-mono border-l border-slate-200">
+                            {formatCurrency(getFieldValue(data, "home_warranty", 3))}
+                          </td>
+                        )}
+                      </tr>
+                    )}
+                    {getFieldValue(data, "miscellaneous", 1) > 0 && (
+                      <tr>
+                        <td className="p-2">Miscellaneous</td>
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(getFieldValue(data, "miscellaneous", 1))}
+                        </td>
+                        {data.num_scenarios >= 2 && (
+                          <td className="p-2 text-center font-mono border-l border-slate-200">
+                            {formatCurrency(getFieldValue(data, "miscellaneous", 2))}
+                          </td>
+                        )}
+                        {data.num_scenarios >= 3 && (
+                          <td className="p-2 text-center font-mono border-l border-slate-200">
+                            {formatCurrency(getFieldValue(data, "miscellaneous", 3))}
+                          </td>
+                        )}
+                      </tr>
+                    )}
 
                     {/* Taxes & Concessions */}
                     <tr>
                       <td className="p-2">Estimated Taxes</td>
-                      <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "estimated_taxes", 1))}</td>
+                      <td className="p-2 text-center font-mono border-l border-slate-200">
+                        {formatCurrency(getFieldValue(data, "estimated_taxes", 1))}
+                      </td>
                       {data.num_scenarios >= 2 && (
-                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "estimated_taxes", 2))}</td>
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(getFieldValue(data, "estimated_taxes", 2))}
+                        </td>
                       )}
                       {data.num_scenarios >= 3 && (
-                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "estimated_taxes", 3))}</td>
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(getFieldValue(data, "estimated_taxes", 3))}
+                        </td>
                       )}
                     </tr>
                     <tr>
                       <td className="p-2">Seller Concessions (buyer credit)</td>
-                      <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "seller_concessions", 1))}</td>
+                      <td className="p-2 text-center font-mono border-l border-slate-200">
+                        {formatCurrency(getFieldValue(data, "seller_concessions", 1))}
+                      </td>
                       {data.num_scenarios >= 2 && (
-                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "seller_concessions", 2))}</td>
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(getFieldValue(data, "seller_concessions", 2))}
+                        </td>
                       )}
                       {data.num_scenarios >= 3 && (
-                        <td className="p-2 text-center font-mono border-l border-slate-200">{formatCurrency(getFieldValue(data, "seller_concessions", 3))}</td>
+                        <td className="p-2 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(getFieldValue(data, "seller_concessions", 3))}
+                        </td>
                       )}
                     </tr>
 
                     {/* Total Selling Costs */}
                     <tr className="bg-slate-100 font-bold border-t-2 border-slate-300 text-slate-900">
-                      <td className="p-2.5 uppercase tracking-wider text-[11px]">Total Selling Costs</td>
-                      <td className="p-2.5 text-center font-mono border-l border-slate-200">{formatCurrency(calc1.totalSellingCosts)}</td>
+                      <td className="p-2.5 uppercase tracking-wider text-[11px]">
+                        Total Selling Costs
+                      </td>
+                      <td className="p-2.5 text-center font-mono border-l border-slate-200">
+                        {formatCurrency(calc1.totalSellingCosts)}
+                      </td>
                       {data.num_scenarios >= 2 && (
-                        <td className="p-2.5 text-center font-mono border-l border-slate-200">{formatCurrency(calc2.totalSellingCosts)}</td>
+                        <td className="p-2.5 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(calc2.totalSellingCosts)}
+                        </td>
                       )}
                       {data.num_scenarios >= 3 && (
-                        <td className="p-2.5 text-center font-mono border-l border-slate-200">{formatCurrency(calc3.totalSellingCosts)}</td>
+                        <td className="p-2.5 text-center font-mono border-l border-slate-200">
+                          {formatCurrency(calc3.totalSellingCosts)}
+                        </td>
                       )}
                     </tr>
 
@@ -1605,25 +1914,31 @@ function CalculatorView({
                       <td className="p-3 uppercase tracking-wider text-xs text-emerald-900">
                         Estimated Cash to Seller
                       </td>
-                      <td className={cn(
-                        "p-3 text-center font-mono text-sm border-l border-emerald-200",
-                        calc1.cashToSeller < 0 ? "bg-red-50 text-red-900" : "text-emerald-900",
-                      )}>
+                      <td
+                        className={cn(
+                          "p-3 text-center font-mono text-sm border-l border-emerald-200",
+                          calc1.cashToSeller < 0 ? "bg-red-50 text-red-900" : "text-emerald-900",
+                        )}
+                      >
                         {formatCurrency(calc1.cashToSeller)}
                       </td>
                       {data.num_scenarios >= 2 && (
-                        <td className={cn(
-                          "p-3 text-center font-mono text-sm border-l border-emerald-200",
-                          calc2.cashToSeller < 0 ? "bg-red-50 text-red-900" : "text-emerald-900",
-                        )}>
+                        <td
+                          className={cn(
+                            "p-3 text-center font-mono text-sm border-l border-emerald-200",
+                            calc2.cashToSeller < 0 ? "bg-red-50 text-red-900" : "text-emerald-900",
+                          )}
+                        >
                           {formatCurrency(calc2.cashToSeller)}
                         </td>
                       )}
                       {data.num_scenarios >= 3 && (
-                        <td className={cn(
-                          "p-3 text-center font-mono text-sm border-l border-emerald-200",
-                          calc3.cashToSeller < 0 ? "bg-red-50 text-red-900" : "text-emerald-900",
-                        )}>
+                        <td
+                          className={cn(
+                            "p-3 text-center font-mono text-sm border-l border-emerald-200",
+                            calc3.cashToSeller < 0 ? "bg-red-50 text-red-900" : "text-emerald-900",
+                          )}
+                        >
                           {formatCurrency(calc3.cashToSeller)}
                         </td>
                       )}
@@ -1635,9 +1950,10 @@ function CalculatorView({
               {/* Disclaimer */}
               <div className="pt-3 border-t border-slate-200">
                 <p className="text-[9px] text-slate-500 font-mono text-center leading-relaxed">
-                  NOTE: THIS FORM IS INTENDED AS AN ESTIMATE ONLY. IT DOES NOT INCLUDE TAX PRORATION,
-                  ESCROW ADJUSTMENTS AND OTHER MISCELLANEOUS COSTS SOMETIMES ASSOCIATED WITH CLOSING. MATT
-                  SMITH REAL ESTATE GROUP/EXP REALTY ACCEPTS NO RESPONSIBILITY FOR THIS ESTIMATE.
+                  NOTE: THIS FORM IS INTENDED AS AN ESTIMATE ONLY. IT DOES NOT INCLUDE TAX
+                  PRORATION, ESCROW ADJUSTMENTS AND OTHER MISCELLANEOUS COSTS SOMETIMES ASSOCIATED
+                  WITH CLOSING. MATT SMITH REAL ESTATE GROUP/EXP REALTY ACCEPTS NO RESPONSIBILITY
+                  FOR THIS ESTIMATE.
                 </p>
               </div>
             </div>

@@ -7,6 +7,7 @@ export interface SheetDataForPdf {
   office_address: string;
   office_phone: string;
   property_address: string;
+  seller_last_name?: string;
   num_scenarios: 1 | 2 | 3;
   scenario1_price: number;
   scenario2_price: number;
@@ -38,11 +39,18 @@ export interface SheetDataForPdf {
 
 function getFieldValue(data: SheetDataForPdf, fieldKey: string, scenarioIndex: 1 | 2 | 3): number {
   const specificKey = `${fieldKey}_${scenarioIndex}`;
-  if (data[specificKey] !== undefined) {
+  if (data[specificKey] !== undefined && data[specificKey] !== 0) {
     return data[specificKey] as number;
   }
+  const col1Val = data[`${fieldKey}_1`];
+  if (col1Val !== undefined && col1Val !== 0) {
+    return col1Val as number;
+  }
   const legacyKey = fieldKey as keyof SheetDataForPdf;
-  return (data[legacyKey] as number) || 0;
+  if (data[legacyKey] !== undefined) {
+    return (data[legacyKey] as number) || 0;
+  }
+  return (data[specificKey] as number) || 0;
 }
 
 function formatMoney(amount: number): string {
@@ -78,6 +86,34 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
     import("jspdf"),
   ]);
   const numScenarios = data.num_scenarios || 1;
+
+  const scenarioKeys = [
+    "mortgage_payoff_1",
+    "mortgage_payoff_2",
+    "closing_protection_letter",
+    "seller_title_closing_fee",
+    "title_search_fee",
+    "warranty_deed_fee",
+    "termite_letter",
+    "inspections",
+    "home_warranty",
+    "transaction_fee",
+    "estimated_taxes",
+    "miscellaneous",
+    "seller_concessions",
+  ];
+  scenarioKeys.forEach((key) => {
+    const canonicalVal =
+      data[`${key}_1`] !== undefined && data[`${key}_1`] !== 0
+        ? data[`${key}_1`]
+        : data[key] !== undefined && data[key] !== 0
+          ? data[key]
+          : data[key] || 0;
+    data[key] = canonicalVal;
+    data[`${key}_1`] = canonicalVal;
+    if (!data[`${key}_2`]) data[`${key}_2`] = canonicalVal;
+    if (!data[`${key}_3`]) data[`${key}_3`] = canonicalVal;
+  });
 
   const calculateScenario = (salesPrice: number, scenarioIndex: 1 | 2 | 3) => {
     const isSub50k = salesPrice > 0 && salesPrice <= 50000;
@@ -154,14 +190,14 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
   const rowProceedsStyle = allNegative
     ? "background-color: #fee2e2; border-top: 2px solid #ef4444; border-bottom: 2px solid #ef4444; color: #991b1b;"
     : allPositive
-    ? "background-color: #d1fae5; border-top: 2px solid #10b981; border-bottom: 2px solid #10b981; color: #065f46;"
-    : "background-color: #f8fafc; border-top: 2px solid #cbd5e1; border-bottom: 2px solid #cbd5e1; color: #1e293b;";
+      ? "background-color: #d1fae5; border-top: 2px solid #10b981; border-bottom: 2px solid #10b981; color: #065f46;"
+      : "background-color: #f8fafc; border-top: 2px solid #cbd5e1; border-bottom: 2px solid #cbd5e1; color: #1e293b;";
 
   const labelProceedsStyle = allNegative
     ? "padding: 10px; text-transform: uppercase; color: #991b1b;"
     : allPositive
-    ? "padding: 10px; text-transform: uppercase; color: #065f46;"
-    : "padding: 10px; text-transform: uppercase; color: #1e293b;";
+      ? "padding: 10px; text-transform: uppercase; color: #065f46;"
+      : "padding: 10px; text-transform: uppercase; color: #1e293b;";
 
   const getCellProceedsStyle = (cash: number) => {
     if (cash < 0) {
@@ -230,8 +266,20 @@ export async function generateSellerNetPdf(data: SheetDataForPdf): Promise<void>
 
     <!-- PROPERTY ADDRESS BANNER -->
     <div style="margin-top: 12px; background-color: #1B2F5B; color: #ffffff; padding: 10px 16px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
-      <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #C9A84C;">Property Address</span>
-      <span style="font-size: 13px; font-weight: 700; color: #ffffff;">${data.property_address || "Untitled Property"}</span>
+      <div>
+        <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #C9A84C; display: block;">Property Address</span>
+        <span style="font-size: 13px; font-weight: 700; color: #ffffff;">${data.property_address || "Untitled Property"}</span>
+      </div>
+      ${
+        data.seller_last_name
+          ? `
+        <div style="text-align: right;">
+          <span style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; display: block;">Seller</span>
+          <span style="font-size: 13px; font-weight: 700; color: #C9A84C;">${data.seller_last_name}</span>
+        </div>
+      `
+          : ""
+      }
     </div>
 
     <!-- COST TABLE -->
@@ -364,6 +412,9 @@ function renderPdfRow(
   const v1 = getFieldValue(data, fieldKey, 1);
   const v2 = getFieldValue(data, fieldKey, 2);
   const v3 = getFieldValue(data, fieldKey, 3);
+  if (fieldKey === "mortgage_payoff_2" && v1 === 0 && v2 === 0 && v3 === 0) {
+    return "";
+  }
   return `
     <tr style="border-bottom: 1px solid #f1f5f9;">
       <td style="padding: 5px 10px; color: #475569;">${label}</td>

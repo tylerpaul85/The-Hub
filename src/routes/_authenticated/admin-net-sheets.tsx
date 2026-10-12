@@ -87,10 +87,16 @@ function AdminNetSheetsPage() {
     const q = search.toLowerCase().trim();
     if (!q) return sheets;
     return sheets.filter((s) => {
+      const sellerLastName = (
+        s.sheet_data?.seller_last_name ??
+        (s as any).seller_last_name ??
+        ""
+      ).toLowerCase();
       return (
         (s.property_address ?? "").toLowerCase().includes(q) ||
         (s.agent_name ?? "").toLowerCase().includes(q) ||
-        (s.agent_email ?? "").toLowerCase().includes(q)
+        (s.agent_email ?? "").toLowerCase().includes(q) ||
+        sellerLastName.includes(q)
       );
     });
   }, [sheets, search]);
@@ -116,8 +122,8 @@ function AdminNetSheetsPage() {
         </div>
         <h1 className="text-xl font-bold tracking-tight">Access Restricted</h1>
         <p className="text-sm text-muted-foreground">
-          This operations view displays all agent worksheets across the brokerage and is reserved for
-          Administrative, Marketing Operations, and Client Care team members.
+          This operations view displays all agent worksheets across the brokerage and is reserved
+          for Administrative, Marketing Operations, and Client Care team members.
         </p>
         <div className="pt-2">
           <Link to="/seller-net-proceeds">
@@ -215,7 +221,7 @@ function AdminNetSheetsPage() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by agent name, email, or property address…"
+            placeholder="Search by agent, seller last name, email, or address…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 text-xs h-9 bg-surface-2 border-border/80"
@@ -310,11 +316,15 @@ function AdminNetSheetsPage() {
                           <Building className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                           <span>{sheet.property_address || "Untitled Property"}</span>
                         </div>
-                        {sheet.office_address && (
+                        {data.seller_last_name ? (
+                          <div className="text-[11px] text-gold font-medium mt-0.5">
+                            Seller: {data.seller_last_name}
+                          </div>
+                        ) : sheet.office_address ? (
                           <div className="text-[10px] text-muted-foreground truncate max-w-xs mt-0.5">
                             {sheet.office_address}
                           </div>
-                        )}
+                        ) : null}
                       </td>
                       <td className="p-3.5 text-muted-foreground font-mono">
                         <div>{dateStr}</div>
@@ -436,19 +446,19 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
     const totalComm = listingComm + sellingComm;
 
     const fixedCosts =
-      (data.mortgage_payoff_1 || 0) +
-      (data.mortgage_payoff_2 || 0) +
-      (data.closing_protection_letter || 0) +
-      (data.seller_title_closing_fee || 0) +
-      (data.title_search_fee || 0) +
-      (data.warranty_deed_fee || 0) +
-      (data.termite_letter || 0) +
-      (data.inspections || 0) +
-      (data.home_warranty || 0) +
-      (data.transaction_fee || 0) +
-      (data.estimated_taxes || 0) +
-      (data.miscellaneous || 0) +
-      (data.seller_concessions || 0);
+      (data.mortgage_payoff_1 || data.mortgage_payoff_1_1 || 0) +
+      (data.mortgage_payoff_2 || data.mortgage_payoff_2_1 || 0) +
+      (data.closing_protection_letter || data.closing_protection_letter_1 || 0) +
+      (data.seller_title_closing_fee || data.seller_title_closing_fee_1 || 0) +
+      (data.title_search_fee || data.title_search_fee_1 || 0) +
+      (data.warranty_deed_fee || data.warranty_deed_fee_1 || 0) +
+      (data.termite_letter || data.termite_letter_1 || 0) +
+      (data.inspections || data.inspections_1 || 0) +
+      (data.home_warranty || data.home_warranty_1 || 0) +
+      (data.transaction_fee || data.transaction_fee_1 || 0) +
+      (data.estimated_taxes || data.estimated_taxes_1 || 0) +
+      (data.miscellaneous || data.miscellaneous_1 || 0) +
+      (data.seller_concessions || data.seller_concessions_1 || 0);
 
     const totalSellingCosts = totalComm + fixedCosts;
     const cashToSeller = salesPrice - totalSellingCosts;
@@ -470,14 +480,14 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
   const rowProceedsClasses = allProceedsNegative
     ? "bg-destructive/15 font-extrabold border-t-2 border-destructive/60 text-destructive"
     : allProceedsPositive
-    ? "bg-emerald-500/15 font-extrabold border-t-2 border-emerald-500/50 text-emerald-400"
-    : "bg-surface-2 font-extrabold border-t-2 border-border text-foreground";
+      ? "bg-emerald-500/15 font-extrabold border-t-2 border-emerald-500/50 text-emerald-400"
+      : "bg-surface-2 font-extrabold border-t-2 border-border text-foreground";
 
   const labelProceedsClasses = allProceedsNegative
     ? "p-3 uppercase text-destructive font-black"
     : allProceedsPositive
-    ? "p-3 uppercase text-emerald-400 font-black"
-    : "p-3 uppercase text-foreground font-black";
+      ? "p-3 uppercase text-emerald-400 font-black"
+      : "p-3 uppercase text-foreground font-black";
 
   const getProceedsCellClasses = (cash: number) => {
     if (cash < 0) {
@@ -486,7 +496,12 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
     return "p-3 text-center font-mono text-sm border-l border-emerald-500/40 bg-emerald-500/10 text-emerald-400 font-bold";
   };
 
-  const getCommLabel = (label: string, type?: "percent" | "flat", flatFee?: number, pct?: number) => {
+  const getCommLabel = (
+    label: string,
+    type?: "percent" | "flat",
+    flatFee?: number,
+    pct?: number,
+  ) => {
     if (type === "flat") {
       const allSub50k = activeCalcs.every((c) => c.salesPrice > 0 && c.salesPrice <= 50000);
       const anySub50k = activeCalcs.some((c) => c.salesPrice > 0 && c.salesPrice <= 50000);
@@ -512,6 +527,11 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
             <div className="text-base font-bold text-foreground">
               {sheet.property_address || "Untitled Property"}
             </div>
+            {data.seller_last_name && (
+              <div className="text-xs text-muted-foreground font-medium mt-0.5">
+                Seller: <span className="text-gold font-semibold">{data.seller_last_name}</span>
+              </div>
+            )}
           </div>
           <div className="text-left sm:text-right">
             <div className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
@@ -530,7 +550,9 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
           </div>
           <div>
             <span className="text-muted-foreground">Agent Email:</span>
-            <div className="font-semibold text-foreground truncate">{sheet.agent_email || "N/A"}</div>
+            <div className="font-semibold text-foreground truncate">
+              {sheet.agent_email || "N/A"}
+            </div>
           </div>
           <div>
             <span className="text-muted-foreground">Cell Phone:</span>
@@ -538,7 +560,9 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
           </div>
           <div>
             <span className="text-muted-foreground">Office:</span>
-            <div className="font-semibold text-foreground truncate">{sheet.office_address || "N/A"}</div>
+            <div className="font-semibold text-foreground truncate">
+              {sheet.office_address || "N/A"}
+            </div>
           </div>
         </div>
       </div>
@@ -592,24 +616,30 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
               </td>
               <td className="p-2 text-center font-mono border-l border-border/60">
                 <div>{formatCurrency(c1.listingComm)}</div>
-                {data.listing_comm_type === "flat" && c1.salesPrice > 0 && c1.salesPrice <= 50000 && (
-                  <span className="text-[10px] text-gold font-semibold">Flat Fee</span>
-                )}
+                {data.listing_comm_type === "flat" &&
+                  c1.salesPrice > 0 &&
+                  c1.salesPrice <= 50000 && (
+                    <span className="text-[10px] text-gold font-semibold">Flat Fee</span>
+                  )}
               </td>
               {num >= 2 && (
                 <td className="p-2 text-center font-mono border-l border-border/60">
                   <div>{formatCurrency(c2.listingComm)}</div>
-                  {data.listing_comm_type === "flat" && c2.salesPrice > 0 && c2.salesPrice <= 50000 && (
-                    <span className="text-[10px] text-gold font-semibold">Flat Fee</span>
-                  )}
+                  {data.listing_comm_type === "flat" &&
+                    c2.salesPrice > 0 &&
+                    c2.salesPrice <= 50000 && (
+                      <span className="text-[10px] text-gold font-semibold">Flat Fee</span>
+                    )}
                 </td>
               )}
               {num >= 3 && (
                 <td className="p-2 text-center font-mono border-l border-border/60">
                   <div>{formatCurrency(c3.listingComm)}</div>
-                  {data.listing_comm_type === "flat" && c3.salesPrice > 0 && c3.salesPrice <= 50000 && (
-                    <span className="text-[10px] text-gold font-semibold">Flat Fee</span>
-                  )}
+                  {data.listing_comm_type === "flat" &&
+                    c3.salesPrice > 0 &&
+                    c3.salesPrice <= 50000 && (
+                      <span className="text-[10px] text-gold font-semibold">Flat Fee</span>
+                    )}
                 </td>
               )}
             </tr>
@@ -624,39 +654,47 @@ function ReadOnlySheetViewer({ sheet }: { sheet: NetSheetRecord }) {
               </td>
               <td className="p-2 text-center font-mono border-l border-border/60">
                 <div>{formatCurrency(c1.sellingComm)}</div>
-                {data.selling_comm_type === "flat" && c1.salesPrice > 0 && c1.salesPrice <= 50000 && (
-                  <span className="text-[10px] text-gold font-semibold">Flat Fee</span>
-                )}
+                {data.selling_comm_type === "flat" &&
+                  c1.salesPrice > 0 &&
+                  c1.salesPrice <= 50000 && (
+                    <span className="text-[10px] text-gold font-semibold">Flat Fee</span>
+                  )}
               </td>
               {num >= 2 && (
                 <td className="p-2 text-center font-mono border-l border-border/60">
                   <div>{formatCurrency(c2.sellingComm)}</div>
-                  {data.selling_comm_type === "flat" && c2.salesPrice > 0 && c2.salesPrice <= 50000 && (
-                    <span className="text-[10px] text-gold font-semibold">Flat Fee</span>
-                  )}
+                  {data.selling_comm_type === "flat" &&
+                    c2.salesPrice > 0 &&
+                    c2.salesPrice <= 50000 && (
+                      <span className="text-[10px] text-gold font-semibold">Flat Fee</span>
+                    )}
                 </td>
               )}
               {num >= 3 && (
                 <td className="p-2 text-center font-mono border-l border-border/60">
                   <div>{formatCurrency(c3.sellingComm)}</div>
-                  {data.selling_comm_type === "flat" && c3.salesPrice > 0 && c3.salesPrice <= 50000 && (
-                    <span className="text-[10px] text-gold font-semibold">Flat Fee</span>
-                  )}
+                  {data.selling_comm_type === "flat" &&
+                    c3.salesPrice > 0 &&
+                    c3.salesPrice <= 50000 && (
+                      <span className="text-[10px] text-gold font-semibold">Flat Fee</span>
+                    )}
                 </td>
               )}
             </tr>
             <tr>
               <td className="p-2 text-muted-foreground">Principal Mortgage Payoff</td>
               <td className="p-2 text-center font-mono border-l border-border/60" colSpan={num}>
-                {formatCurrency(data.mortgage_payoff_1 || 0)}
+                {formatCurrency(data.mortgage_payoff_1 || data.mortgage_payoff_1_1 || 0)}
               </td>
             </tr>
-            <tr>
-              <td className="p-2 text-muted-foreground">Second Mortgage Payoff</td>
-              <td className="p-2 text-center font-mono border-l border-border/60" colSpan={num}>
-                {formatCurrency(data.mortgage_payoff_2 || 0)}
-              </td>
-            </tr>
+            {(data.mortgage_payoff_2 > 0 || data.mortgage_payoff_2_1 > 0) && (
+              <tr>
+                <td className="p-2 text-muted-foreground">Second Mortgage Payoff</td>
+                <td className="p-2 text-center font-mono border-l border-border/60" colSpan={num}>
+                  {formatCurrency(data.mortgage_payoff_2 || data.mortgage_payoff_2_1 || 0)}
+                </td>
+              </tr>
+            )}
             <tr>
               <td className="p-2 text-muted-foreground">Title Closing Fee</td>
               <td className="p-2 text-center font-mono border-l border-border/60" colSpan={num}>
