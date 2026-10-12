@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAgentAuth, isValidAgentEmail, type AgentAccount } from "@/hooks/use-agent-auth";
+import logo from "@/assets/msreg-logo.png";
 import logoBlack from "@/assets/msreg-logo-black.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
