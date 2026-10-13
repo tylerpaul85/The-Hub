@@ -20,6 +20,8 @@ import { Route as DataDeletionRouteImport } from './routes/data-deletion'
 import { Route as MarketStatsRouteImport } from './routes/market-stats'
 import { Route as OpenHouseManagementRouteImport } from './routes/open-house-management'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
+import { Route as ReferralFormRouteImport } from './routes/referral-form'
+import { Route as ReferralsRouteImport } from './routes/referrals'
 import { Route as RequestRouteImport } from './routes/request'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SellerNetProceedsRouteImport } from './routes/seller-net-proceeds'
@@ -52,6 +54,7 @@ import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as OpenHouseSigninIdRouteImport } from './routes/open-house-signin.$id'
 import { Route as AuthenticatedAdminAssistantRouteImport } from './routes/_authenticated/admin.assistant'
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin.audit'
+import { Route as AuthenticatedAdminReferralsRouteImport } from './routes/_authenticated/admin.referrals'
 import { Route as AuthenticatedAdminSwagCreditsRouteImport } from './routes/_authenticated/admin.swag-credits'
 import { Route as AuthenticatedEosIssuesRouteImport } from './routes/_authenticated/eos.issues'
 import { Route as AuthenticatedEosL10RouteImport } from './routes/_authenticated/eos.l10'
@@ -121,6 +124,16 @@ const OpenHouseManagementRoute = OpenHouseManagementRouteImport.update({
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
   id: '/privacy-policy',
   path: '/privacy-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReferralFormRoute = ReferralFormRouteImport.update({
+  id: '/referral-form',
+  path: '/referral-form',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReferralsRoute = ReferralsRouteImport.update({
+  id: '/referrals',
+  path: '/referrals',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RequestRoute = RequestRouteImport.update({
@@ -290,6 +303,12 @@ const AuthenticatedAdminAuditRoute = AuthenticatedAdminAuditRouteImport.update({
   path: '/admin/audit',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminReferralsRoute =
+  AuthenticatedAdminReferralsRouteImport.update({
+    id: '/admin/referrals',
+    path: '/admin/referrals',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminSwagCreditsRoute =
   AuthenticatedAdminSwagCreditsRouteImport.update({
     id: '/admin/swag-credits',
@@ -393,6 +412,8 @@ export interface FileRoutesByFullPath {
   '/market-stats': typeof MarketStatsRoute
   '/open-house-management': typeof OpenHouseManagementRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/referral-form': typeof ReferralFormRoute
+  '/referrals': typeof ReferralsRoute
   '/request': typeof RequestRoute
   '/reset-password': typeof ResetPasswordRoute
   '/seller-net-proceeds': typeof SellerNetProceedsRoute
@@ -425,6 +446,7 @@ export interface FileRoutesByFullPath {
   '/agents/': typeof AgentsIndexRoute
   '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/admin/referrals': typeof AuthenticatedAdminReferralsRoute
   '/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
   '/eos/issues': typeof AuthenticatedEosIssuesRoute
   '/eos/l10': typeof AuthenticatedEosL10RouteWithChildren
@@ -452,6 +474,8 @@ export interface FileRoutesByTo {
   '/market-stats': typeof MarketStatsRoute
   '/open-house-management': typeof OpenHouseManagementRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/referral-form': typeof ReferralFormRoute
+  '/referrals': typeof ReferralsRoute
   '/request': typeof RequestRoute
   '/reset-password': typeof ResetPasswordRoute
   '/seller-net-proceeds': typeof SellerNetProceedsRoute
@@ -482,6 +506,7 @@ export interface FileRoutesByTo {
   '/agents': typeof AgentsIndexRoute
   '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/admin/referrals': typeof AuthenticatedAdminReferralsRoute
   '/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
   '/eos/issues': typeof AuthenticatedEosIssuesRoute
   '/eos/rocks': typeof AuthenticatedEosRocksRoute
@@ -511,6 +536,8 @@ export interface FileRoutesById {
   '/market-stats': typeof MarketStatsRoute
   '/open-house-management': typeof OpenHouseManagementRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/referral-form': typeof ReferralFormRoute
+  '/referrals': typeof ReferralsRoute
   '/request': typeof RequestRoute
   '/reset-password': typeof ResetPasswordRoute
   '/seller-net-proceeds': typeof SellerNetProceedsRoute
@@ -543,6 +570,7 @@ export interface FileRoutesById {
   '/agents/': typeof AgentsIndexRoute
   '/_authenticated/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/_authenticated/admin/referrals': typeof AuthenticatedAdminReferralsRoute
   '/_authenticated/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
   '/_authenticated/eos/issues': typeof AuthenticatedEosIssuesRoute
   '/_authenticated/eos/l10': typeof AuthenticatedEosL10RouteWithChildren
@@ -573,6 +601,8 @@ export interface FileRouteTypes {
     | '/market-stats'
     | '/open-house-management'
     | '/privacy-policy'
+    | '/referral-form'
+    | '/referrals'
     | '/request'
     | '/reset-password'
     | '/seller-net-proceeds'
@@ -605,6 +635,7 @@ export interface FileRouteTypes {
     | '/agents/'
     | '/admin/assistant'
     | '/admin/audit'
+    | '/admin/referrals'
     | '/admin/swag-credits'
     | '/eos/issues'
     | '/eos/l10'
@@ -632,6 +663,8 @@ export interface FileRouteTypes {
     | '/market-stats'
     | '/open-house-management'
     | '/privacy-policy'
+    | '/referral-form'
+    | '/referrals'
     | '/request'
     | '/reset-password'
     | '/seller-net-proceeds'
@@ -662,6 +695,7 @@ export interface FileRouteTypes {
     | '/agents'
     | '/admin/assistant'
     | '/admin/audit'
+    | '/admin/referrals'
     | '/admin/swag-credits'
     | '/eos/issues'
     | '/eos/rocks'
@@ -690,6 +724,8 @@ export interface FileRouteTypes {
     | '/market-stats'
     | '/open-house-management'
     | '/privacy-policy'
+    | '/referral-form'
+    | '/referrals'
     | '/request'
     | '/reset-password'
     | '/seller-net-proceeds'
@@ -722,6 +758,7 @@ export interface FileRouteTypes {
     | '/agents/'
     | '/_authenticated/admin/assistant'
     | '/_authenticated/admin/audit'
+    | '/_authenticated/admin/referrals'
     | '/_authenticated/admin/swag-credits'
     | '/_authenticated/eos/issues'
     | '/_authenticated/eos/l10'
@@ -752,6 +789,8 @@ export interface RootRouteChildren {
   MarketStatsRoute: typeof MarketStatsRoute
   OpenHouseManagementRoute: typeof OpenHouseManagementRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
+  ReferralFormRoute: typeof ReferralFormRoute
+  ReferralsRoute: typeof ReferralsRoute
   RequestRoute: typeof RequestRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SellerNetProceedsRoute: typeof SellerNetProceedsRoute
@@ -839,6 +878,20 @@ declare module '@tanstack/react-router' {
       path: '/privacy-policy'
       fullPath: '/privacy-policy'
       preLoaderRoute: typeof PrivacyPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/referral-form': {
+      id: '/referral-form'
+      path: '/referral-form'
+      fullPath: '/referral-form'
+      preLoaderRoute: typeof ReferralFormRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/referrals': {
+      id: '/referrals'
+      path: '/referrals'
+      fullPath: '/referrals'
+      preLoaderRoute: typeof ReferralsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/request': {
@@ -1065,6 +1118,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAuditRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/referrals': {
+      id: '/_authenticated/admin/referrals'
+      path: '/admin/referrals'
+      fullPath: '/admin/referrals'
+      preLoaderRoute: typeof AuthenticatedAdminReferralsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/swag-credits': {
       id: '/_authenticated/admin/swag-credits'
       path: '/admin/swag-credits'
@@ -1257,6 +1317,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedVideosArchiveRoute: typeof AuthenticatedVideosArchiveRoute
   AuthenticatedAdminAssistantRoute: typeof AuthenticatedAdminAssistantRoute
   AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
+  AuthenticatedAdminReferralsRoute: typeof AuthenticatedAdminReferralsRoute
   AuthenticatedAdminSwagCreditsRoute: typeof AuthenticatedAdminSwagCreditsRoute
   AuthenticatedEosIssuesRoute: typeof AuthenticatedEosIssuesRoute
   AuthenticatedEosL10Route: typeof AuthenticatedEosL10RouteWithChildren
@@ -1290,6 +1351,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedVideosArchiveRoute: AuthenticatedVideosArchiveRoute,
   AuthenticatedAdminAssistantRoute: AuthenticatedAdminAssistantRoute,
   AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
+  AuthenticatedAdminReferralsRoute: AuthenticatedAdminReferralsRoute,
   AuthenticatedAdminSwagCreditsRoute: AuthenticatedAdminSwagCreditsRoute,
   AuthenticatedEosIssuesRoute: AuthenticatedEosIssuesRoute,
   AuthenticatedEosL10Route: AuthenticatedEosL10RouteWithChildren,
@@ -1333,6 +1395,8 @@ const rootRouteChildren: RootRouteChildren = {
   MarketStatsRoute: MarketStatsRoute,
   OpenHouseManagementRoute: OpenHouseManagementRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
+  ReferralFormRoute: ReferralFormRoute,
+  ReferralsRoute: ReferralsRoute,
   RequestRoute: RequestRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SellerNetProceedsRoute: SellerNetProceedsRoute,

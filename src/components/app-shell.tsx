@@ -36,6 +36,7 @@ import {
   CalendarDays,
   CircleAlert,
   BookOpen,
+  Send,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -80,6 +81,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/seller-net-proceeds", label: "Net Proceeds Calculator", icon: Calculator },
       { to: "/vendors", label: "Trusted Vendors", icon: Store },
       { to: "/closing-gift", label: "Closing Gift Request", icon: Gift },
+      { to: "/referral-form", label: "Outbound Referral Sheet", icon: Share2 },
     ],
   },
   {
@@ -110,6 +112,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: "/tasks", label: "Projects & Tasks", icon: ClipboardCheck },
       { to: "/inventory", label: "Closing Gifts & Inventory", icon: Boxes },
+      { to: "/admin/referrals", label: "Outbound Referrals", icon: Send },
       { to: "/admin-net-sheets", label: "Agent Net Sheets", icon: Calculator, adminOnly: true },
       { to: "/duty-calendar", label: "Duty Calendar", icon: CalendarDays },
       { to: "/duty-agents", label: "Duty Agents", icon: Users },
@@ -149,6 +152,9 @@ const CLIENT_CARE_ALLOWED = [
   "/requests",
   "/inventory",
   "/closing-gift",
+  "/referral-form",
+  "/referrals",
+  "/admin/referrals",
   "/my-availability",
   "/duty-calendar",
   "/duty-agents",
@@ -173,6 +179,9 @@ function getPageTitle(pathname: string): string {
     "/eos/scorecard": "EOS Scorecard",
     "/inventory": "Closing Gifts & Inventory",
     "/closing-gift": "Closing Gift Request",
+    "/referral-form": "Outbound Referral Sheet",
+    "/referrals": "Outbound Referral Sheet",
+    "/admin/referrals": "Outbound Referrals Desk",
     "/duty-calendar": "Duty Calendar",
     "/duty-agents": "Duty Agents",
     "/users": "Team Member Directory",

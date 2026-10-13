@@ -458,7 +458,10 @@ function RequestsInbox() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <PublicLinkBanner path="/request" label="Marketing Request" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+        <PublicLinkBanner path="/request" label="Marketing Request" />
+        <PublicLinkBanner path="/referral-form" label="Outbound Referral Sheet" />
+      </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-2">

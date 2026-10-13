@@ -106,6 +106,16 @@ export const DEFAULT_HUB_CARDS: HubCardDefinition[] = [
     to: "/seller-net-proceeds",
   },
   {
+    id: "outbound-referral",
+    title: "Outbound Referral Sheet",
+    subtitle: "Submit client referral details directly to Nancy & Client Care",
+    category: "clients",
+    defaultBadge: "Client Care",
+    actionLabel: "Submit Referral",
+    icon: Send,
+    to: "/referral-form",
+  },
+  {
     id: "listing-signs",
     title: "Listing Signs",
     subtitle: "Check in or check out yard signs & riders",
