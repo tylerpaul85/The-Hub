@@ -9,6 +9,7 @@ import {
   Signpost,
   ShoppingBag,
   BarChart3,
+  ClipboardCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -44,6 +45,16 @@ export const DEFAULT_HUB_CARDS: HubCardDefinition[] = [
     actionLabel: "Launch Kiosk",
     icon: DoorOpen,
     to: "/open-house-management",
+  },
+  {
+    id: "transaction-management",
+    title: "Transaction Management Hub",
+    subtitle: "Active escrow tracking, milestone checklists & TC coordination",
+    category: "listings",
+    defaultBadge: "Escrow & TC",
+    actionLabel: "Launch Hub",
+    icon: ClipboardCheck,
+    href: "https://transactionmanagementhub.netlify.app",
   },
   {
     id: "vendor-guide",
