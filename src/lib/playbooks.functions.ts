@@ -1386,10 +1386,24 @@ export const getPlaybookAcknowledgmentReport = createServerFn({ method: "GET" })
 // AGENT-FACING PLAYBOOK FUNCTIONS
 // -------------------------------------------------------------
 
+async function getSupabase() {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    try {
+      if (!supabaseAdmin || !supabaseAdmin.from) return null;
+    } catch {
+      return null;
+    }
+    return supabaseAdmin as any;
+  } catch {
+    return null;
+  }
+}
+
 export const listAgentPlaybooks = createServerFn({ method: "POST" })
   .validator((d: { agentId?: string } | undefined) => d || {})
   .handler(async ({ data }) => {
-    const sb = getSupabase();
+    const sb = await getSupabase();
     const agentId = data?.agentId;
 
     // 1. Group resolution
@@ -1569,7 +1583,7 @@ export const getAgentPlaybookBySlug = createServerFn({ method: "POST" })
   .validator((d: { slug: string; agentId?: string }) => d)
   .handler(async ({ data }) => {
     const { slug, agentId } = data;
-    const sb = getSupabase();
+    const sb = await getSupabase();
 
     // 1. Fetch playbook by slug or id
     let playbook: any = null;
@@ -1731,7 +1745,7 @@ export const searchPlaybooksFn = createServerFn({ method: "POST" })
     const cleanQuery = query.trim().toLowerCase();
     if (!cleanQuery) return [] as AgentPlaybookSearchResult[];
 
-    const sb = getSupabase();
+    const sb = await getSupabase();
 
     // 1. Try search_playbooks RPC
     if (sb) {
@@ -1801,7 +1815,7 @@ export const acknowledgePlaybookFn = createServerFn({ method: "POST" })
   .validator((d: { playbookId: string; agentId: string }) => d)
   .handler(async ({ data }) => {
     const { playbookId, agentId } = data;
-    const sb = getSupabase();
+    const sb = await getSupabase();
     const now = new Date().toISOString();
 
     if (sb) {
