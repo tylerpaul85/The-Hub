@@ -139,6 +139,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Admin",
     adminOnly: true,
     items: [
+      { to: "/admin/playbooks", label: "Playbooks Manager", icon: BookOpen },
       { to: "/users", label: "Team & Roles", icon: Users },
       { to: "/audit-log", label: "System Audit Log", icon: ShieldCheck },
     ],
@@ -191,7 +192,10 @@ function getPageTitle(pathname: string): string {
     "/audit-log": "Audit Log",
     "/admin/assistant": "FUB AI Assistant",
     "/admin/audit": "Agent Audit System",
+    "/admin/playbooks": "Playbooks Manager",
     "/experiments": "Experiments & Lab",
+    "/agent-tools": "Agent Tools Portal",
+    "/playbooks": "Playbook Library",
     "/seller-net-proceeds": "Seller Net Proceeds Calculator",
     "/vendors": "Trusted Vendor Guide",
   };

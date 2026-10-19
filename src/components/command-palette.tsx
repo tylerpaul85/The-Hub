@@ -5,6 +5,8 @@ import {
   DoorOpen,
   Boxes,
   Calculator,
+  BookOpen,
+  LayoutGrid,
   Store,
   Gift,
   Bot,
@@ -92,12 +94,28 @@ export function CommandPalette({
       },
       // Work With Clients
       {
+        id: "agent-tools",
+        name: "Agent Tools Portal",
+        description: "Agent productivity hub, Seller Net Proceeds & Playbook Library",
+        group: "Work With Clients",
+        to: "/agent-tools",
+        icon: LayoutGrid,
+      },
+      {
         id: "seller-net",
         name: "Seller Net Proceeds Calculator",
         description: "Calculate & save estimated net proceeds for sellers",
         group: "Work With Clients",
         to: "/seller-net-proceeds",
         icon: Calculator,
+      },
+      {
+        id: "playbooks",
+        name: "Playbook Library",
+        description: "Agent SOPs, objection scripts, listing & buyer playbooks",
+        group: "Work With Clients",
+        to: "/playbooks",
+        icon: BookOpen,
       },
       {
         id: "vendors",
@@ -293,6 +311,15 @@ export function CommandPalette({
       },
 
       // Admin
+      {
+        id: "playbooks-admin",
+        name: "Playbooks Manager",
+        description: "Admin SOP library, version history, access groups & acknowledgment reporting",
+        group: "Admin",
+        to: "/admin/playbooks",
+        icon: BookOpen,
+        adminOnly: true,
+      },
       {
         id: "users",
         name: "User & Role Management",

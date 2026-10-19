@@ -1,0 +1,258 @@
+import { useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { z } from "zod";
+import {
+  BookOpen,
+  Sparkles,
+  Calculator,
+  ArrowRight,
+  Search,
+  X,
+  Clock,
+  Layers,
+  CheckCircle2,
+} from "lucide-react";
+import { useAgentAuth } from "@/hooks/use-agent-auth";
+import { listAgentPlaybooks, searchPlaybooksFn, type AgentPlaybookSearchResult } from "@/lib/playbooks.functions";
+import { AgentPlaybookSearch } from "@/components/playbooks/agent-playbook-search";
+import { AgentRecentlyUpdated } from "@/components/playbooks/agent-recently-updated";
+import { AgentCategoriesView } from "@/components/playbooks/agent-categories-view";
+import { Button } from "@/components/ui/button";
+
+const searchSchema = z.object({
+  q: z.string().optional(),
+});
+
+export const Route = createFileRoute("/playbooks/")({
+  validateSearch: searchSchema,
+  component: PlaybooksIndexPage,
+  head: () => ({
+    meta: [
+      { title: "Playbook Library — Matt Smith Real Estate Group" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
+});
+
+function PlaybooksIndexPage() {
+  const { q } = Route.useSearch();
+  const navigate = useNavigate();
+  const { agent } = useAgentAuth();
+
+  // 1. Fetch accessible directory
+  const { data: directory, isLoading, error } = useQuery({
+    queryKey: ["agent-playbooks-directory", agent?.id],
+    queryFn: async () => {
+      return await listAgentPlaybooks({ data: { agentId: agent?.id } });
+    },
+    staleTime: 1000 * 60 * 3, // 3 minutes
+  });
+
+  // 2. Fetch full search results if q is present
+  const { data: fullSearchResults, isLoading: isSearchLoading } = useQuery({
+    queryKey: ["agent-playbooks-search", q, agent?.id],
+    queryFn: async () => {
+      if (!q || !q.trim()) return [];
+      return await searchPlaybooksFn({
+        data: {
+          query: q.trim(),
+          agentId: agent?.id,
+          limit: 30,
+        },
+      });
+    },
+    enabled: Boolean(q && q.trim()),
+  });
+
+  const handleSearchSubmit = (newQuery: string) => {
+    navigate({
+      to: "/playbooks",
+      search: (prev: any) => ({
+        ...prev,
+        q: newQuery.trim() ? newQuery.trim() : undefined,
+      }),
+    });
+  };
+
+  const handleClearSearch = () => {
+    navigate({
+      to: "/playbooks",
+      search: (prev: any) => ({ ...prev, q: undefined }),
+    });
+  };
+
+  return (
+    <div className="space-y-10">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-gradient-to-br from-surface-1 via-surface-1 to-surface-2 p-6 sm:p-8 lg:p-10 shadow-xl">
+        <div className="relative z-10 max-w-3xl space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/15 border border-accent/25 text-accent text-xs font-semibold">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>Agent Knowledge Base & Standard Operating Procedures</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground">
+            MSREG Playbook Library
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+            The private playbook portal for Matt Smith Real Estate Group agents. Search verified SOPs, proven objection scripts, in-home listing workflows, and buyer agreements.
+          </p>
+        </div>
+      </div>
+
+      {/* Large Search Bar */}
+      <AgentPlaybookSearch
+        initialQuery={q || ""}
+        onSearchSubmit={handleSearchSubmit}
+      />
+
+      {/* Loading state */}
+      {isLoading && (
+        <div className="p-12 text-center space-y-3">
+          <BookOpen className="h-8 w-8 animate-pulse text-gold mx-auto" />
+          <p className="text-sm text-muted-foreground">Loading your assigned playbooks...</p>
+        </div>
+      )}
+
+      {/* Error state */}
+      {error && !isLoading && (
+        <div className="p-8 rounded-2xl border border-destructive/40 bg-destructive/10 text-center space-y-2">
+          <p className="text-sm font-semibold text-destructive">Unable to load playbooks</p>
+          <p className="text-xs text-muted-foreground">{(error as any)?.message || "Please refresh or try again later."}</p>
+        </div>
+      )}
+
+      {/* When Search Query is Active: Full Search Results View */}
+      {q && q.trim() && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-foreground flex items-center gap-2">
+                <Search className="h-4 w-4 text-gold" />
+                <span>Results for &quot;{q}&quot;</span>
+                {!isSearchLoading && fullSearchResults && (
+                  <span className="text-xs font-bold text-muted-foreground bg-surface-2 px-2.5 py-0.5 rounded-full border border-border/60">
+                    {fullSearchResults.length} found
+                  </span>
+                )}
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Showing matching playbooks and SOPs from your accessible library
+              </p>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearSearch}
+              className="h-8 px-3 text-xs border-border bg-surface-1 hover:bg-surface-2 rounded-xl self-start sm:self-auto cursor-pointer"
+            >
+              <X className="h-3.5 w-3.5 mr-1.5" />
+              <span>Clear search</span>
+            </Button>
+          </div>
+
+          {isSearchLoading ? (
+            <div className="p-10 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+              <Sparkles className="h-4 w-4 animate-spin text-gold" />
+              <span>Searching playbooks...</span>
+            </div>
+          ) : fullSearchResults && fullSearchResults.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {fullSearchResults.map((pb) => (
+                <Link
+                  key={pb.id}
+                  to="/playbooks/$slug"
+                  params={{ slug: pb.slug }}
+                  className="group rounded-2xl border border-border/80 bg-surface-1 p-5 shadow-xs transition-all hover:border-gold/50 hover:bg-surface-2/40 hover:-translate-y-0.5 flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-surface-2 text-muted-foreground border border-border/70">
+                        {pb.category}
+                      </span>
+                      <span className="text-xs text-muted-foreground">By {pb.owner}</span>
+                    </div>
+
+                    <h3 className="text-base font-bold text-foreground group-hover:text-gold transition-colors leading-snug">
+                      {pb.title}
+                    </h3>
+
+                    <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+                      {pb.snippet || pb.summary}
+                    </p>
+                  </div>
+
+                  <div className="pt-4 mt-4 border-t border-border/50 flex items-center justify-between text-xs text-gold font-bold">
+                    <span>Open Playbook</span>
+                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="p-12 text-center rounded-2xl border border-border/80 bg-surface-1 space-y-3">
+              <BookOpen className="h-10 w-10 text-muted-foreground/40 mx-auto" />
+              <h3 className="text-base font-bold text-foreground">No playbooks found matching &quot;{q}&quot;</h3>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                Try searching for different terms or browse the full categories below.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearSearch}
+                className="mt-2 text-xs rounded-xl cursor-pointer"
+              >
+                Browse all categories
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* When No Search Active: Recently Updated Strip + Categories */}
+      {(!q || !q.trim()) && directory && (
+        <>
+          {/* Recently Updated Strip */}
+          {directory.recentlyUpdated && directory.recentlyUpdated.length > 0 && (
+            <AgentRecentlyUpdated playbooks={directory.recentlyUpdated} />
+          )}
+
+          {/* Categories Sections */}
+          <AgentCategoriesView
+            categories={directory.categories}
+            totalPlaybooksCount={directory.playbooks.length}
+          />
+        </>
+      )}
+
+      {/* Alternate Tool Footer Banner */}
+      <div className="rounded-3xl border border-border/80 bg-surface-1 p-6 sm:p-7 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-5">
+        <div className="flex items-center gap-4">
+          <div className="h-12 w-12 rounded-2xl bg-gold/10 border border-gold/20 flex items-center justify-center text-gold shrink-0">
+            <Calculator className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-foreground">Need to run a Seller Net Sheet?</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              The Seller Net Proceeds calculator is ready with your saved sheets, PDF downloads, and custom scenarios.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 w-full sm:w-auto shrink-0">
+          <Link to="/seller-net-proceeds" className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto h-10 bg-gold text-navy hover:bg-gold/90 font-bold text-xs rounded-xl shadow-xs cursor-pointer">
+              <span>Go to Net Proceeds</span>
+              <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+            </Button>
+          </Link>
+          <Link to="/agent-tools" className="w-full sm:w-auto">
+            <Button variant="outline" className="w-full sm:w-auto h-10 border-border hover:bg-surface-2 text-xs rounded-xl cursor-pointer">
+              Agent Tools Home
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}

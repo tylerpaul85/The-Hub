@@ -10,6 +10,7 @@ import {
   ShoppingBag,
   BarChart3,
   ClipboardCheck,
+  BookOpen,
   type LucideIcon,
 } from "lucide-react";
 
@@ -115,6 +116,16 @@ export const DEFAULT_HUB_CARDS: HubCardDefinition[] = [
     actionLabel: "Calculate Net",
     icon: Calculator,
     to: "/seller-net-proceeds",
+  },
+  {
+    id: "playbooks",
+    title: "Playbook Library",
+    subtitle: "Standard operating procedures, objection scripts & checklists",
+    category: "listings",
+    defaultBadge: "Library & SOPs",
+    actionLabel: "View Playbooks",
+    icon: BookOpen,
+    to: "/playbooks",
   },
   {
     id: "outbound-referral",

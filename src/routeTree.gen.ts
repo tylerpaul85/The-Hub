@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AgentToolboxRouteImport } from './routes/agent-toolbox'
+import { Route as AgentToolsRouteImport } from './routes/agent-tools'
 import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AvailabilityRouteImport } from './routes/availability'
@@ -19,6 +20,7 @@ import { Route as ClosingGiftRouteImport } from './routes/closing-gift'
 import { Route as DataDeletionRouteImport } from './routes/data-deletion'
 import { Route as MarketStatsRouteImport } from './routes/market-stats'
 import { Route as OpenHouseManagementRouteImport } from './routes/open-house-management'
+import { Route as PlaybooksRouteImport } from './routes/playbooks'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as ReferralFormRouteImport } from './routes/referral-form'
 import { Route as ReferralsRouteImport } from './routes/referrals'
@@ -52,8 +54,11 @@ import { Route as AuthenticatedVideosArchiveRouteImport } from './routes/_authen
 import { Route as AgentsIndexRouteImport } from './routes/agents.index'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as OpenHouseSigninIdRouteImport } from './routes/open-house-signin.$id'
+import { Route as PlaybooksIndexRouteImport } from './routes/playbooks.index'
+import { Route as PlaybooksSlugRouteImport } from './routes/playbooks.$slug'
 import { Route as AuthenticatedAdminAssistantRouteImport } from './routes/_authenticated/admin.assistant'
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin.audit'
+import { Route as AuthenticatedAdminPlaybooksRouteImport } from './routes/_authenticated/admin.playbooks'
 import { Route as AuthenticatedAdminReferralsRouteImport } from './routes/_authenticated/admin.referrals'
 import { Route as AuthenticatedAdminSwagCreditsRouteImport } from './routes/_authenticated/admin.swag-credits'
 import { Route as AuthenticatedEosIssuesRouteImport } from './routes/_authenticated/eos.issues'
@@ -84,6 +89,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AgentToolboxRoute = AgentToolboxRouteImport.update({
   id: '/agent-toolbox',
   path: '/agent-toolbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgentToolsRoute = AgentToolsRouteImport.update({
+  id: '/agent-tools',
+  path: '/agent-tools',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgentsRoute = AgentsRouteImport.update({
@@ -119,6 +129,11 @@ const MarketStatsRoute = MarketStatsRouteImport.update({
 const OpenHouseManagementRoute = OpenHouseManagementRouteImport.update({
   id: '/open-house-management',
   path: '/open-house-management',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlaybooksRoute = PlaybooksRouteImport.update({
+  id: '/playbooks',
+  path: '/playbooks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
@@ -292,6 +307,16 @@ const OpenHouseSigninIdRoute = OpenHouseSigninIdRouteImport.update({
   path: '/open-house-signin/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlaybooksIndexRoute = PlaybooksIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PlaybooksRoute,
+} as any)
+const PlaybooksSlugRoute = PlaybooksSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => PlaybooksRoute,
+} as any)
 const AuthenticatedAdminAssistantRoute =
   AuthenticatedAdminAssistantRouteImport.update({
     id: '/admin/assistant',
@@ -303,6 +328,12 @@ const AuthenticatedAdminAuditRoute = AuthenticatedAdminAuditRouteImport.update({
   path: '/admin/audit',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminPlaybooksRoute =
+  AuthenticatedAdminPlaybooksRouteImport.update({
+    id: '/admin/playbooks',
+    path: '/admin/playbooks',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminReferralsRoute =
   AuthenticatedAdminReferralsRouteImport.update({
     id: '/admin/referrals',
@@ -404,6 +435,7 @@ const ApiPublicWebhooksMetaDeletionRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agent-toolbox': typeof AgentToolboxRoute
+  '/agent-tools': typeof AgentToolsRoute
   '/agents': typeof AgentsRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/availability': typeof AvailabilityRoute
@@ -411,6 +443,7 @@ export interface FileRoutesByFullPath {
   '/data-deletion': typeof DataDeletionRoute
   '/market-stats': typeof MarketStatsRoute
   '/open-house-management': typeof OpenHouseManagementRoute
+  '/playbooks': typeof PlaybooksRouteWithChildren
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/referral-form': typeof ReferralFormRoute
   '/referrals': typeof ReferralsRoute
@@ -443,9 +476,12 @@ export interface FileRoutesByFullPath {
   '/videos-archive': typeof AuthenticatedVideosArchiveRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/open-house-signin/$id': typeof OpenHouseSigninIdRoute
+  '/playbooks/$slug': typeof PlaybooksSlugRoute
   '/agents/': typeof AgentsIndexRoute
+  '/playbooks/': typeof PlaybooksIndexRoute
   '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/admin/playbooks': typeof AuthenticatedAdminPlaybooksRoute
   '/admin/referrals': typeof AuthenticatedAdminReferralsRoute
   '/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
   '/eos/issues': typeof AuthenticatedEosIssuesRoute
@@ -467,6 +503,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agent-toolbox': typeof AgentToolboxRoute
+  '/agent-tools': typeof AgentToolsRoute
   '/auth': typeof AuthRouteWithChildren
   '/availability': typeof AvailabilityRoute
   '/closing-gift': typeof ClosingGiftRoute
@@ -503,9 +540,12 @@ export interface FileRoutesByTo {
   '/videos-archive': typeof AuthenticatedVideosArchiveRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/open-house-signin/$id': typeof OpenHouseSigninIdRoute
+  '/playbooks/$slug': typeof PlaybooksSlugRoute
   '/agents': typeof AgentsIndexRoute
+  '/playbooks': typeof PlaybooksIndexRoute
   '/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/admin/playbooks': typeof AuthenticatedAdminPlaybooksRoute
   '/admin/referrals': typeof AuthenticatedAdminReferralsRoute
   '/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
   '/eos/issues': typeof AuthenticatedEosIssuesRoute
@@ -528,6 +568,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/agent-toolbox': typeof AgentToolboxRoute
+  '/agent-tools': typeof AgentToolsRoute
   '/agents': typeof AgentsRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/availability': typeof AvailabilityRoute
@@ -535,6 +576,7 @@ export interface FileRoutesById {
   '/data-deletion': typeof DataDeletionRoute
   '/market-stats': typeof MarketStatsRoute
   '/open-house-management': typeof OpenHouseManagementRoute
+  '/playbooks': typeof PlaybooksRouteWithChildren
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/referral-form': typeof ReferralFormRoute
   '/referrals': typeof ReferralsRoute
@@ -567,9 +609,12 @@ export interface FileRoutesById {
   '/_authenticated/videos-archive': typeof AuthenticatedVideosArchiveRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/open-house-signin/$id': typeof OpenHouseSigninIdRoute
+  '/playbooks/$slug': typeof PlaybooksSlugRoute
   '/agents/': typeof AgentsIndexRoute
+  '/playbooks/': typeof PlaybooksIndexRoute
   '/_authenticated/admin/assistant': typeof AuthenticatedAdminAssistantRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/_authenticated/admin/playbooks': typeof AuthenticatedAdminPlaybooksRoute
   '/_authenticated/admin/referrals': typeof AuthenticatedAdminReferralsRoute
   '/_authenticated/admin/swag-credits': typeof AuthenticatedAdminSwagCreditsRoute
   '/_authenticated/eos/issues': typeof AuthenticatedEosIssuesRoute
@@ -593,6 +638,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/agent-toolbox'
+    | '/agent-tools'
     | '/agents'
     | '/auth'
     | '/availability'
@@ -600,6 +646,7 @@ export interface FileRouteTypes {
     | '/data-deletion'
     | '/market-stats'
     | '/open-house-management'
+    | '/playbooks'
     | '/privacy-policy'
     | '/referral-form'
     | '/referrals'
@@ -632,9 +679,12 @@ export interface FileRouteTypes {
     | '/videos-archive'
     | '/auth/callback'
     | '/open-house-signin/$id'
+    | '/playbooks/$slug'
     | '/agents/'
+    | '/playbooks/'
     | '/admin/assistant'
     | '/admin/audit'
+    | '/admin/playbooks'
     | '/admin/referrals'
     | '/admin/swag-credits'
     | '/eos/issues'
@@ -656,6 +706,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/agent-toolbox'
+    | '/agent-tools'
     | '/auth'
     | '/availability'
     | '/closing-gift'
@@ -692,9 +743,12 @@ export interface FileRouteTypes {
     | '/videos-archive'
     | '/auth/callback'
     | '/open-house-signin/$id'
+    | '/playbooks/$slug'
     | '/agents'
+    | '/playbooks'
     | '/admin/assistant'
     | '/admin/audit'
+    | '/admin/playbooks'
     | '/admin/referrals'
     | '/admin/swag-credits'
     | '/eos/issues'
@@ -716,6 +770,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/agent-toolbox'
+    | '/agent-tools'
     | '/agents'
     | '/auth'
     | '/availability'
@@ -723,6 +778,7 @@ export interface FileRouteTypes {
     | '/data-deletion'
     | '/market-stats'
     | '/open-house-management'
+    | '/playbooks'
     | '/privacy-policy'
     | '/referral-form'
     | '/referrals'
@@ -755,9 +811,12 @@ export interface FileRouteTypes {
     | '/_authenticated/videos-archive'
     | '/auth/callback'
     | '/open-house-signin/$id'
+    | '/playbooks/$slug'
     | '/agents/'
+    | '/playbooks/'
     | '/_authenticated/admin/assistant'
     | '/_authenticated/admin/audit'
+    | '/_authenticated/admin/playbooks'
     | '/_authenticated/admin/referrals'
     | '/_authenticated/admin/swag-credits'
     | '/_authenticated/eos/issues'
@@ -781,6 +840,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AgentToolboxRoute: typeof AgentToolboxRoute
+  AgentToolsRoute: typeof AgentToolsRoute
   AgentsRoute: typeof AgentsRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   AvailabilityRoute: typeof AvailabilityRoute
@@ -788,6 +848,7 @@ export interface RootRouteChildren {
   DataDeletionRoute: typeof DataDeletionRoute
   MarketStatsRoute: typeof MarketStatsRoute
   OpenHouseManagementRoute: typeof OpenHouseManagementRoute
+  PlaybooksRoute: typeof PlaybooksRouteWithChildren
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   ReferralFormRoute: typeof ReferralFormRoute
   ReferralsRoute: typeof ReferralsRoute
@@ -822,6 +883,13 @@ declare module '@tanstack/react-router' {
       path: '/agent-toolbox'
       fullPath: '/agent-toolbox'
       preLoaderRoute: typeof AgentToolboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agent-tools': {
+      id: '/agent-tools'
+      path: '/agent-tools'
+      fullPath: '/agent-tools'
+      preLoaderRoute: typeof AgentToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/agents': {
@@ -871,6 +939,13 @@ declare module '@tanstack/react-router' {
       path: '/open-house-management'
       fullPath: '/open-house-management'
       preLoaderRoute: typeof OpenHouseManagementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/playbooks': {
+      id: '/playbooks'
+      path: '/playbooks'
+      fullPath: '/playbooks'
+      preLoaderRoute: typeof PlaybooksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy-policy': {
@@ -1104,6 +1179,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OpenHouseSigninIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/playbooks/': {
+      id: '/playbooks/'
+      path: '/'
+      fullPath: '/playbooks/'
+      preLoaderRoute: typeof PlaybooksIndexRouteImport
+      parentRoute: typeof PlaybooksRoute
+    }
+    '/playbooks/$slug': {
+      id: '/playbooks/$slug'
+      path: '/$slug'
+      fullPath: '/playbooks/$slug'
+      preLoaderRoute: typeof PlaybooksSlugRouteImport
+      parentRoute: typeof PlaybooksRoute
+    }
     '/_authenticated/admin/assistant': {
       id: '/_authenticated/admin/assistant'
       path: '/admin/assistant'
@@ -1116,6 +1205,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/audit'
       fullPath: '/admin/audit'
       preLoaderRoute: typeof AuthenticatedAdminAuditRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/playbooks': {
+      id: '/_authenticated/admin/playbooks'
+      path: '/admin/playbooks'
+      fullPath: '/admin/playbooks'
+      preLoaderRoute: typeof AuthenticatedAdminPlaybooksRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/referrals': {
@@ -1317,6 +1413,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedVideosArchiveRoute: typeof AuthenticatedVideosArchiveRoute
   AuthenticatedAdminAssistantRoute: typeof AuthenticatedAdminAssistantRoute
   AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
+  AuthenticatedAdminPlaybooksRoute: typeof AuthenticatedAdminPlaybooksRoute
   AuthenticatedAdminReferralsRoute: typeof AuthenticatedAdminReferralsRoute
   AuthenticatedAdminSwagCreditsRoute: typeof AuthenticatedAdminSwagCreditsRoute
   AuthenticatedEosIssuesRoute: typeof AuthenticatedEosIssuesRoute
@@ -1351,6 +1448,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedVideosArchiveRoute: AuthenticatedVideosArchiveRoute,
   AuthenticatedAdminAssistantRoute: AuthenticatedAdminAssistantRoute,
   AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
+  AuthenticatedAdminPlaybooksRoute: AuthenticatedAdminPlaybooksRoute,
   AuthenticatedAdminReferralsRoute: AuthenticatedAdminReferralsRoute,
   AuthenticatedAdminSwagCreditsRoute: AuthenticatedAdminSwagCreditsRoute,
   AuthenticatedEosIssuesRoute: AuthenticatedEosIssuesRoute,
@@ -1383,10 +1481,25 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface PlaybooksRouteChildren {
+  PlaybooksSlugRoute: typeof PlaybooksSlugRoute
+  PlaybooksIndexRoute: typeof PlaybooksIndexRoute
+}
+
+const PlaybooksRouteChildren: PlaybooksRouteChildren = {
+  PlaybooksSlugRoute: PlaybooksSlugRoute,
+  PlaybooksIndexRoute: PlaybooksIndexRoute,
+}
+
+const PlaybooksRouteWithChildren = PlaybooksRoute._addFileChildren(
+  PlaybooksRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AgentToolboxRoute: AgentToolboxRoute,
+  AgentToolsRoute: AgentToolsRoute,
   AgentsRoute: AgentsRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   AvailabilityRoute: AvailabilityRoute,
@@ -1394,6 +1507,7 @@ const rootRouteChildren: RootRouteChildren = {
   DataDeletionRoute: DataDeletionRoute,
   MarketStatsRoute: MarketStatsRoute,
   OpenHouseManagementRoute: OpenHouseManagementRoute,
+  PlaybooksRoute: PlaybooksRouteWithChildren,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   ReferralFormRoute: ReferralFormRoute,
   ReferralsRoute: ReferralsRoute,
