@@ -9,15 +9,16 @@ import {
   ArrowRight,
   Search,
   X,
-  Clock,
   Layers,
-  CheckCircle2,
+  Award,
 } from "lucide-react";
 import { useAgentAuth } from "@/hooks/use-agent-auth";
 import { listAgentPlaybooks, searchPlaybooksFn, type AgentPlaybookSearchResult } from "@/lib/playbooks.functions";
 import { AgentPlaybookSearch } from "@/components/playbooks/agent-playbook-search";
-import { AgentRecentlyUpdated } from "@/components/playbooks/agent-recently-updated";
-import { AgentCategoriesView } from "@/components/playbooks/agent-categories-view";
+import { CourseHeroBanner } from "@/components/playbooks/course-hero-banner";
+import { CourseAccordionList } from "@/components/playbooks/course-accordion-list";
+import { CourseSidebarOverview } from "@/components/playbooks/course-sidebar-overview";
+import { PlaybookThumbnail } from "@/components/playbooks/playbook-thumbnail";
 import { Button } from "@/components/ui/button";
 
 const searchSchema = z.object({
@@ -29,7 +30,7 @@ export const Route = createFileRoute("/playbooks/")({
   component: PlaybooksIndexPage,
   head: () => ({
     meta: [
-      { title: "Playbook Library — Matt Smith Real Estate Group" },
+      { title: "Listing Agent Certification — Matt Smith Real Estate Group" },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -83,42 +84,45 @@ function PlaybooksIndexPage() {
   };
 
   return (
-    <div className="space-y-10">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-gradient-to-br from-surface-1 via-surface-1 to-surface-2 p-6 sm:p-8 lg:p-10 shadow-xl">
-        <div className="relative z-10 max-w-3xl space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/15 border border-accent/25 text-accent text-xs font-semibold">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Agent Knowledge Base & Standard Operating Procedures</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground">
-            MSREG Playbook Library
-          </h1>
-          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-            The private playbook portal for Matt Smith Real Estate Group agents. Search verified SOPs, proven objection scripts, in-home listing workflows, and buyer agreements.
-          </p>
+    <div className="space-y-8">
+      {/* Top Header & Breadcrumb Bar matching Image 1 */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-3">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+          <Link to="/agent-tools" className="hover:text-foreground transition-colors">
+            Home
+          </Link>
+          <span className="text-muted-foreground/60">&gt;</span>
+          <Link to="/playbooks" className="hover:text-foreground transition-colors">
+            Courses
+          </Link>
+          <span className="text-muted-foreground/60">&gt;</span>
+          <span className="font-bold text-foreground">Listing Agent Certification</span>
+        </div>
+
+        {/* Search bar at the top */}
+        <div className="w-full sm:w-80">
+          <AgentPlaybookSearch
+            initialQuery={q || ""}
+            onSearchSubmit={handleSearchSubmit}
+          />
         </div>
       </div>
 
-      {/* Large Search Bar */}
-      <AgentPlaybookSearch
-        initialQuery={q || ""}
-        onSearchSubmit={handleSearchSubmit}
-      />
-
       {/* Loading state */}
       {isLoading && (
-        <div className="p-12 text-center space-y-3">
-          <BookOpen className="h-8 w-8 animate-pulse text-gold mx-auto" />
-          <p className="text-sm text-muted-foreground">Loading your assigned playbooks...</p>
+        <div className="p-16 text-center space-y-3">
+          <BookOpen className="h-10 w-10 animate-pulse text-gold mx-auto" />
+          <p className="text-sm text-muted-foreground">Loading Listing Agent Certification curriculum...</p>
         </div>
       )}
 
       {/* Error state */}
       {error && !isLoading && (
         <div className="p-8 rounded-2xl border border-destructive/40 bg-destructive/10 text-center space-y-2">
-          <p className="text-sm font-semibold text-destructive">Unable to load playbooks</p>
-          <p className="text-xs text-muted-foreground">{(error as any)?.message || "Please refresh or try again later."}</p>
+          <p className="text-sm font-semibold text-destructive">Unable to load curriculum</p>
+          <p className="text-xs text-muted-foreground">
+            {(error as any)?.message || "Please refresh or try again later."}
+          </p>
         </div>
       )}
 
@@ -137,7 +141,7 @@ function PlaybooksIndexPage() {
                 )}
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Showing matching playbooks and SOPs from your accessible library
+                Showing matching lessons and SOPs from your certification library
               </p>
             </div>
 
@@ -148,14 +152,14 @@ function PlaybooksIndexPage() {
               className="h-8 px-3 text-xs border-border bg-surface-1 hover:bg-surface-2 rounded-xl self-start sm:self-auto cursor-pointer"
             >
               <X className="h-3.5 w-3.5 mr-1.5" />
-              <span>Clear search</span>
+              <span>Back to curriculum</span>
             </Button>
           </div>
 
           {isSearchLoading ? (
             <div className="p-10 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
               <Sparkles className="h-4 w-4 animate-spin text-gold" />
-              <span>Searching playbooks...</span>
+              <span>Searching lessons...</span>
             </div>
           ) : fullSearchResults && fullSearchResults.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -167,6 +171,12 @@ function PlaybooksIndexPage() {
                   className="group rounded-2xl border border-border/80 bg-surface-1 p-5 shadow-xs transition-all hover:border-gold/50 hover:bg-surface-2/40 hover:-translate-y-0.5 flex flex-col justify-between"
                 >
                   <div className="space-y-3">
+                    <PlaybookThumbnail
+                      title={pb.title}
+                      category={pb.category}
+                      className="w-full mb-2"
+                    />
+
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-surface-2 text-muted-foreground border border-border/70">
                         {pb.category}
@@ -184,7 +194,7 @@ function PlaybooksIndexPage() {
                   </div>
 
                   <div className="pt-4 mt-4 border-t border-border/50 flex items-center justify-between text-xs text-gold font-bold">
-                    <span>Open Playbook</span>
+                    <span>Open Lesson</span>
                     <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
                   </div>
                 </Link>
@@ -193,9 +203,9 @@ function PlaybooksIndexPage() {
           ) : (
             <div className="p-12 text-center rounded-2xl border border-border/80 bg-surface-1 space-y-3">
               <BookOpen className="h-10 w-10 text-muted-foreground/40 mx-auto" />
-              <h3 className="text-base font-bold text-foreground">No playbooks found matching &quot;{q}&quot;</h3>
+              <h3 className="text-base font-bold text-foreground">No lessons found matching &quot;{q}&quot;</h3>
               <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                Try searching for different terms or browse the full categories below.
+                Try searching for broader keywords like &quot;appointment&quot;, &quot;commission&quot;, or &quot;intake&quot;.
               </p>
               <Button
                 variant="outline"
@@ -203,30 +213,51 @@ function PlaybooksIndexPage() {
                 onClick={handleClearSearch}
                 className="mt-2 text-xs rounded-xl cursor-pointer"
               >
-                Browse all categories
+                Back to full curriculum
               </Button>
             </div>
           )}
         </div>
       )}
 
-      {/* When No Search Active: Recently Updated Strip + Categories */}
+      {/* When No Search Active: Course Hero Banner + Two-Column Course View (matching Image 1) */}
       {(!q || !q.trim()) && directory && (
-        <>
-          {/* Recently Updated Strip */}
-          {directory.recentlyUpdated && directory.recentlyUpdated.length > 0 && (
-            <AgentRecentlyUpdated playbooks={directory.recentlyUpdated} />
-          )}
-
-          {/* Categories Sections */}
-          <AgentCategoriesView
-            categories={directory.categories}
-            totalPlaybooksCount={directory.playbooks.length}
+        <div className="space-y-10">
+          {/* Top Wide Hero Banner */}
+          <CourseHeroBanner
+            title="Listing Agent Certification"
+            subtitle="The official Matt Smith Real Estate Group training curriculum. In-home presentation workflows, objection talk tracks, and transaction milestones."
+            playbooks={directory.playbooks}
           />
-        </>
+
+          {/* Main Two-Column Layout (matching Image 1 & 2) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Left Column (Primary): Expandable Module Accordion List */}
+            <div className="lg:col-span-8 space-y-4">
+              <div className="flex items-center justify-between px-1">
+                <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+                  <span>Certification Modules</span>
+                  <span className="text-xs font-semibold text-muted-foreground bg-surface-2 px-2.5 py-0.5 rounded-full border border-border/60">
+                    {directory.categories.length} Modules · {directory.playbooks.length} Lessons
+                  </span>
+                </h2>
+              </div>
+
+              <CourseAccordionList categories={directory.categories} />
+            </div>
+
+            {/* Right Column: Course Sidebar (Badge + Progress + Instructor) */}
+            <div className="lg:col-span-4 sticky top-20">
+              <CourseSidebarOverview
+                playbooks={directory.playbooks}
+                courseTitle="Listing Agent Certification"
+              />
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Alternate Tool Footer Banner */}
+      {/* Alternate Net Proceeds Tool Footer */}
       <div className="rounded-3xl border border-border/80 bg-surface-1 p-6 sm:p-7 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-5">
         <div className="flex items-center gap-4">
           <div className="h-12 w-12 rounded-2xl bg-gold/10 border border-gold/20 flex items-center justify-center text-gold shrink-0">

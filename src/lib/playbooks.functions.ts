@@ -101,6 +101,8 @@ export interface AgentPlaybookDetail extends AgentPlaybookItem {
   content: string;
   version_number: number;
   related_playbooks: AgentPlaybookItem[];
+  module_playbooks?: AgentPlaybookItem[];
+  all_playbooks?: AgentPlaybookItem[];
 }
 
 export interface AgentPlaybookSearchResult {
@@ -166,134 +168,355 @@ class MemoryPlaybookStore {
   ];
 
   playbooks: Array<PlaybookRecord & { version_counter: number }> = [
+    // MODULE 1: Intro to Listing Certification
     {
-      id: "pb-1",
-      title: "MSREG Listing Presentation & Valuation Walkthrough",
-      slug: "listing-presentation-valuation",
-      category: "Listings",
-      summary: "Comprehensive framework for conducting in-home listing appointments, presenting net sheets, and securing exclusive seller representation.",
-      content: `# MSREG Listing Presentation & Valuation Walkthrough
+      id: "pb-lc-1",
+      title: "Overview",
+      slug: "listing-certification-overview",
+      category: "Intro to Listing Certification",
+      summary: "Listing Partner Expectations The listing sales production process is the creation of a lead, converted lead into a client under agreement, marketing listings, acquiring and converting buyer into a contract and then a closing which results in a commission check now known as 'throughput'. Waste is any activity, time, money, energy that is used that does not result in the business getting closer to throughput.",
+      content: `# Overview
 
-## 1. Pre-Appointment Preparation
-Before arriving at the seller's home:
-- Run a 3-scenario Seller Net Sheet on the **Agent Tools Portal**
-- Pull 3 active, 3 pending, and 6 sold comparables within 1 mile
-- Prepare the branded MSREG Presentation Deck and seller brochure
+### Listing Partner Expectations
+The listing sales production process is the creation of a lead, converted lead into a client under agreement, marketing listings, acquiring and converting buyer into a contract and then a closing which results in a commission check now known as **'throughput'**.
 
-## 2. In-Home Flow
-1. **The Walkthrough (10-15 mins)**: Let the seller tour you through their home. Take notes on key upgrades and features.
-2. **Kitchen Table Discussion**: Transition to the dining/kitchen table to review market trends.
-3. **Value Proposition**: Walk through our 89-point marketing plan, professional videography, and staging strategy.
+Waste is any activity, time, money, energy that is used that does not result in the business getting closer to throughput.
 
-## 3. Video Walkthrough
-Watch Matt's live presentation recording below:
-https://www.youtube.com/watch?v=dQw4w9WgXcQ
+It is essential that a real estate sales business optimize their sales process to prevent and eliminate waste.
 
-> **Rule of Thumb**: Always present net proceeds as a range of price scenarios, never a single rigid figure.`,
-      tags: ["Listings", "Seller", "Presentation", "Pricing"],
+### Listing Side Team Goals:
+- **315 homes**
+- **45% Listing side business in 2025**
+
+> **Core Philosophy**: When you eliminate friction in lead follow-up and client preparation, your throughput multiplies without adding overtime hours.`,
+      tags: ["Certification", "Listings", "Overview", "Standards"],
       owner: "Matt Smith",
       status: "published",
-      last_reviewed_at: new Date(Date.now() - 25 * 86400000).toISOString(),
+      last_reviewed_at: new Date(Date.now() - 15 * 86400000).toISOString(),
       last_reviewed_by: "Matt Smith",
       assigned_groups: [{ id: "grp-1", name: "All Agents" }, { id: "grp-2", name: "Listing Specialists" }],
       assigned_group_ids: ["grp-1", "grp-2"],
       is_review_overdue: false,
-      months_since_review: 1,
-      version_counter: 2,
-      created_at: new Date(Date.now() - 120 * 86400000).toISOString(),
-      updated_at: new Date(Date.now() - 25 * 86400000).toISOString(),
+      months_since_review: 0.5,
+      version_counter: 1,
+      created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+      updated_at: new Date(Date.now() - 15 * 86400000).toISOString(),
     },
     {
-      id: "pb-2",
-      title: "Buyer Consultation & Broker Agreement Playbook",
-      slug: "buyer-consultation-broker-agreement",
-      category: "Buyers",
-      summary: "Step-by-step intake process to qualify buyers, set expectations, and sign exclusive buyer representation agreements with confidence.",
-      content: `# Buyer Consultation & Broker Representation
+      id: "pb-lc-2",
+      title: "Team Commitment to Agent",
+      slug: "team-commitment-to-agent",
+      category: "Intro to Listing Certification",
+      summary: "Team commitment to agent: Clarity on process - Lead Generation, Lead Conversion Leverage Accountability Strategy Sessions to maximize opportunities Clear process to navigate database to find opportunities Increased exposure and marketing exclusively around seller opportunities",
+      content: `# Team Commitment to Agent
 
-## Core Objectives
-- Establish fiduciary standard from first meeting
-- Explain buyer agent compensation clearly and transparently
-- Secure signed Buyer Broker Representation Agreement before touring properties
-
-## Conversation Track
-*"Our team's commitment is to ensure you never overpay and that you have an aggressive advocate at every step of escrow. Let's review how we protect your interests..."*
-
-### Essential Checklist
-- [ ] Financial pre-approval letter from vetted local lender
-- [ ] Must-have vs. Nice-to-have criteria worksheet
-- [ ] Signed Buyer Representation Agreement and Agency Disclosure`,
-      tags: ["Buyers", "Agreements", "Intake"],
-      owner: "Nancy Wood",
+### What MSREG Leadership Commits to Every Listing Partner:
+1. **Clarity on Process**: Full roadmap on lead generation, conversion leverage, and escrow workflow.
+2. **Accountability Strategy Sessions**: Dedicated weekly 1-on-1 strategy sessions to maximize listing opportunities.
+3. **Clear Process to Navigate Database**: Advanced CRM filters, saved smart lists, and priority seller tags in Follow Up Boss.
+4. **Increased Exposure**: Professional high-end photography, drone footage, targeted Meta & YouTube ads, and print marketing exclusively around your listings.
+5. **Full Administrative Backing**: Dedicated Listing Coordinator (LC) and Transaction Coordinator (TC) teams so you focus purely on high-dollar activities.`,
+      tags: ["Certification", "Team", "Commitment", "Leadership"],
+      owner: "Matt Smith",
       status: "published",
-      last_reviewed_at: new Date(Date.now() - 40 * 86400000).toISOString(),
-      last_reviewed_by: "Nancy Wood",
-      assigned_groups: [{ id: "grp-1", name: "All Agents" }, { id: "grp-3", name: "Buyer Specialists" }],
-      assigned_group_ids: ["grp-1", "grp-3"],
+      last_reviewed_at: new Date(Date.now() - 15 * 86400000).toISOString(),
+      last_reviewed_by: "Matt Smith",
+      assigned_groups: [{ id: "grp-1", name: "All Agents" }, { id: "grp-2", name: "Listing Specialists" }],
+      assigned_group_ids: ["grp-1", "grp-2"],
+      is_review_overdue: false,
+      months_since_review: 0.5,
+      version_counter: 1,
+      created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+      updated_at: new Date(Date.now() - 15 * 86400000).toISOString(),
+    },
+    {
+      id: "pb-lc-3",
+      title: "Agent Commitment to Team",
+      slug: "agent-commitment-to-team",
+      category: "Intro to Listing Certification",
+      summary: "Agent commitment to team: Present, positive and prepared. Follow our cultural standards. Listing partners need to be highly committed to closing 35 properties per year (9 per quarter) Role Play 3 times per week Prospecting minimum 1 hour every day (min 20 conversations per week) Responding to lead ...",
+      content: `# Agent Commitment to Team
+
+### Cultural Standards & Expectations:
+- **Present, Positive & Prepared**: Show up ready to win. No excuses, no victim mindset.
+- **Production Standard**: Highly committed to closing **35 properties per year** (9 per quarter).
+- **Skill Sharpening**: Role play 3 times per week on objection handling and consultation scripts.
+- **Dedicated Prospecting**: Minimum 1 hour every single day (min 20 verified conversations per week).
+- **Speed to Lead**: Respond to all incoming seller opportunities within 5 minutes.
+- **FUB Hygiene**: Update lead stages, notes, and tasks immediately following every client interaction.`,
+      tags: ["Certification", "Commitment", "Standards", "Accountability"],
+      owner: "Matt Smith",
+      status: "published",
+      last_reviewed_at: new Date(Date.now() - 15 * 86400000).toISOString(),
+      last_reviewed_by: "Matt Smith",
+      assigned_groups: [{ id: "grp-1", name: "All Agents" }, { id: "grp-2", name: "Listing Specialists" }],
+      assigned_group_ids: ["grp-1", "grp-2"],
+      is_review_overdue: false,
+      months_since_review: 0.5,
+      version_counter: 1,
+      created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+      updated_at: new Date(Date.now() - 15 * 86400000).toISOString(),
+    },
+
+    // MODULE 2: Prospecting for Listings 👀
+    {
+      id: "pb-lc-4",
+      title: "Database & Circle Prospecting Framework",
+      slug: "database-circle-prospecting-framework",
+      category: "Prospecting for Listings 👀",
+      summary: "Systematic outreach scripts to contact past clients, sphere of influence, and homeowners surrounding recently listed and just-sold properties.",
+      content: `# Database & Circle Prospecting Framework
+
+## 1. The Circle Prospecting Call Track
+*"Hi [Name], this is [Agent] with Matt Smith Real Estate Group. I'm calling because we just put a home under contract right down the street on [Street Name], and we still have 4 pre-approved buyers looking for a home in your neighborhood. Have you had any thoughts about what your home might be worth in today's market?"*
+
+## 2. Key Daily Milestones
+- [ ] 20 Circle dials surrounding your team's newest listing
+- [ ] 5 Past client check-ins with updated equity estimates
+- [ ] Log all notes directly in FUB under the 'Circle Prospecting' smart list`,
+      tags: ["Prospecting", "Phone", "Circle", "Scripts"],
+      owner: "Matt Smith",
+      status: "published",
+      last_reviewed_at: new Date(Date.now() - 20 * 86400000).toISOString(),
+      last_reviewed_by: "Matt Smith",
+      assigned_groups: [{ id: "grp-1", name: "All Agents" }, { id: "grp-2", name: "Listing Specialists" }],
+      assigned_group_ids: ["grp-1", "grp-2"],
+      is_review_overdue: false,
+      months_since_review: 0.7,
+      version_counter: 1,
+      created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+      updated_at: new Date(Date.now() - 20 * 86400000).toISOString(),
+    },
+    {
+      id: "pb-lc-5",
+      title: "Expireds & FSBO Conversion Tracks",
+      slug: "expireds-fsbo-conversion-tracks",
+      category: "Prospecting for Listings 👀",
+      summary: "Value-first dialogue to assist frustrated sellers who failed to sell with their previous agent or need professional marketing leverage.",
+      content: `# Expireds & FSBO Conversion Tracks
+
+## The Expired Diagnosis Track
+*"I understand you might be frustrated that your home didn't sell the first time around. In our experience, homes usually fail to sell for one of three reasons: presentation, pricing, or marketing exposure. When we look at your property's analytics, where do you think things fell short?"*
+
+### Action Checklist:
+- Deliver the MSREG Proof of Production Book
+- Provide a side-by-side comparison of our 89-point plan vs. standard MLS entry`,
+      tags: ["Prospecting", "Expireds", "FSBO", "Conversion"],
+      owner: "Matt Smith",
+      status: "published",
+      last_reviewed_at: new Date(Date.now() - 20 * 86400000).toISOString(),
+      last_reviewed_by: "Matt Smith",
+      assigned_groups: [{ id: "grp-1", name: "All Agents" }, { id: "grp-2", name: "Listing Specialists" }],
+      assigned_group_ids: ["grp-1", "grp-2"],
+      is_review_overdue: false,
+      months_since_review: 0.7,
+      version_counter: 1,
+      created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+      updated_at: new Date(Date.now() - 20 * 86400000).toISOString(),
+    },
+
+    // MODULE 3: The Listing Appointment 🤝
+    {
+      id: "pb-lc-6",
+      title: "Pre-Appointment Dossier & Net Sheet Scenarios",
+      slug: "pre-appointment-dossier-net-sheet",
+      category: "The Listing Appointment 🤝",
+      summary: "Preparing 3 net sheet scenarios on the Seller Net Proceeds tool and assembling the branded MSREG pre-listing presentation dossier.",
+      content: `# Pre-Appointment Dossier & Net Sheet Scenarios
+
+## 1. 24 Hours Before Appointment
+- Open the **Seller Net Proceeds** calculator in Agent Tools
+- Run 3 scenarios: Conservative, Target Market, and Premium
+- Generate the branded MSREG PDF report
+- Review deed records, taxes, and outstanding mortgage balances
+
+## 2. Pre-Listing Video
+Send this confirmation video track before leaving the office:
+https://www.youtube.com/watch?v=dQw4w9WgXcQ`,
+      tags: ["Appointment", "Net Sheet", "Preparation"],
+      owner: "Matt Smith",
+      status: "published",
+      last_reviewed_at: new Date(Date.now() - 10 * 86400000).toISOString(),
+      last_reviewed_by: "Matt Smith",
+      assigned_groups: [{ id: "grp-1", name: "All Agents" }, { id: "grp-2", name: "Listing Specialists" }],
+      assigned_group_ids: ["grp-1", "grp-2"],
+      is_review_overdue: false,
+      months_since_review: 0.3,
+      version_counter: 2,
+      created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+      updated_at: new Date(Date.now() - 10 * 86400000).toISOString(),
+    },
+    {
+      id: "pb-lc-7",
+      title: "In-Home Walkthrough & 89-Point Marketing Plan",
+      slug: "in-home-walkthrough-89-point-marketing",
+      category: "The Listing Appointment 🤝",
+      summary: "The kitchen table sequence, staging walkthrough, explaining our aggressive 89-point marketing engine, and agreeing on price.",
+      content: `# In-Home Walkthrough & 89-Point Marketing Plan
+
+## Step 1: The Tour (10-15 Minutes)
+Let the seller lead. Carry your clipboard, take notes on upgrades, and praise architectural details.
+
+## Step 2: The Kitchen Table Pivot
+Transition to the kitchen table. Present the market graph showing active vs. sold absorption rates.
+
+## Step 3: Commission & Representation Agreement
+Sign the Exclusive Right to Sell Agreement before leaving the home.`,
+      tags: ["Appointment", "Pricing", "Walkthrough"],
+      owner: "Matt Smith",
+      status: "published",
+      last_reviewed_at: new Date(Date.now() - 10 * 86400000).toISOString(),
+      last_reviewed_by: "Matt Smith",
+      assigned_groups: [{ id: "grp-1", name: "All Agents" }, { id: "grp-2", name: "Listing Specialists" }],
+      assigned_group_ids: ["grp-1", "grp-2"],
+      is_review_overdue: false,
+      months_since_review: 0.3,
+      version_counter: 1,
+      created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+      updated_at: new Date(Date.now() - 10 * 86400000).toISOString(),
+    },
+    {
+      id: "pb-lc-7b",
+      title: "Commission & Value Defense Talk Tracks",
+      slug: "commission-value-defense-scripts",
+      category: "The Listing Appointment 🤝",
+      summary: "Battle-tested responses to 'Will you cut your commission?' and defending your equity protection value at the kitchen table.",
+      content: `# Commission & Value Defense Talk Tracks
+
+## The Fee Defense Track
+*"I appreciate you asking! Can I share something with you? In real estate, the most expensive agent is the one who discounts their fee upfront, because if an agent cannot negotiate and defend their own value, how aggressively will they defend your home's equity against buyer agents?"*`,
+      tags: ["Objections", "Commission", "Scripts"],
+      owner: "Matt Smith",
+      status: "published",
+      last_reviewed_at: new Date(Date.now() - 10 * 86400000).toISOString(),
+      last_reviewed_by: "Matt Smith",
+      assigned_groups: [{ id: "grp-1", name: "All Agents" }, { id: "grp-2", name: "Listing Specialists" }],
+      assigned_group_ids: ["grp-1", "grp-2"],
+      is_review_overdue: false,
+      months_since_review: 0.3,
+      version_counter: 1,
+      created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+      updated_at: new Date(Date.now() - 10 * 86400000).toISOString(),
+    },
+
+    // MODULE 4: Submitting a listing to your LC
+    {
+      id: "pb-lc-8",
+      title: "Submitting a listing to your LC",
+      slug: "submitting-a-listing-to-your-lc",
+      category: "Submitting a listing to your LC",
+      summary: "Checklists, disclosure packages, and intake steps required by your LC to launch MLS entry, yard sign placement, lockbox, and photography.",
+      content: `# Submitting a Listing to Your LC
+
+### Required Intake Items:
+1. Executed Exclusive Right to Sell Listing Agreement
+2. Seller's Disclosure Statement (signed & dated)
+3. Lead-Based Paint Disclosure (if built prior to 1978)
+4. Key & Lockbox placement location
+5. Preferred showing instructions & alarm codes
+6. Staging & photography booking date
+
+Submit all files through the Hub Intake within 24 hours of execution.`,
+      tags: ["LC", "Intake", "Compliance", "Checklist"],
+      owner: "Operations Team",
+      status: "published",
+      last_reviewed_at: new Date(Date.now() - 30 * 86400000).toISOString(),
+      last_reviewed_by: "Operations Team",
+      assigned_groups: [{ id: "grp-1", name: "All Agents" }, { id: "grp-2", name: "Listing Specialists" }],
+      assigned_group_ids: ["grp-1", "grp-2"],
       is_review_overdue: false,
       months_since_review: 1,
       version_counter: 1,
-      created_at: new Date(Date.now() - 90 * 86400000).toISOString(),
-      updated_at: new Date(Date.now() - 40 * 86400000).toISOString(),
+      created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+      updated_at: new Date(Date.now() - 30 * 86400000).toISOString(),
     },
+
+    // MODULE 5: Under Contract to Close
     {
-      id: "pb-3",
-      title: "Commission & Timing Objection Handling Scripts",
-      slug: "commission-timing-objection-scripts",
-      category: "Objections",
-      summary: "Battle-tested responses to 'Will you cut your commission?', 'We want to wait for rates to drop', and 'We have a friend in real estate'.",
-      content: `# Commission & Timing Objection Handling Scripts
+      id: "pb-lc-9",
+      title: "Under Contract to Close",
+      slug: "under-contract-to-close",
+      category: "Under Contract to Close",
+      summary: "Handing off executed contract to TC team within 2 hours, confirming escrow title receipt, and timeline notification.",
+      content: `# Under Contract to Close
 
-## 1. "Will you reduce your commission fee?"
-### Script Response:
-*"I appreciate you asking! Can I share something with you? In real estate, the most expensive agent is the one who discounts their fee upfront, because if an agent cannot negotiate and defend their own value, how aggressively will they defend your home's equity against buyer agents?"*
+## 1. Immediate Hand-Off (Within 2 Hours)
+- Upload fully executed purchase contract to Transaction Management
+- Tag your Transaction Coordinator (TC)
+- Verify receipt of Earnest Money Deposit (EMD) from buyer's title company
 
-## 2. "We want to wait until interest rates drop."
-### Script Response:
-*"That's a very common thought! But consider what happens when rates drop 1%: tens of thousands of sideline buyers flood back into the market, driving home prices up through multiple offer wars. You marry the house, but you date the rate—you can always refinance later, but you can't undo paying $40,000 more for the home."*`,
-      tags: ["Scripts", "Objections", "Negotiation"],
-      owner: "Matt Smith",
-      status: "published",
-      // Flagged as overdue (>6 months ago)
-      last_reviewed_at: new Date(Date.now() - 210 * 86400000).toISOString(),
-      last_reviewed_by: "Matt Smith",
-      assigned_groups: [{ id: "grp-1", name: "All Agents" }],
-      assigned_group_ids: ["grp-1"],
-      is_review_overdue: true,
-      months_since_review: 7,
-      version_counter: 3,
-      created_at: new Date(Date.now() - 250 * 86400000).toISOString(),
-      updated_at: new Date(Date.now() - 210 * 86400000).toISOString(),
-    },
-    {
-      id: "pb-4",
-      title: "Contract-to-Close Milestone & TC Hand-Off SOP",
-      slug: "contract-to-close-tc-handoff",
-      category: "Operations",
-      summary: "Standard operating procedure for transitioning an executed contract to our Transaction Coordination team and managing deadlines.",
-      content: `# Contract-to-Close Milestone SOP
-
-## 1. Day 1: Contract Execution
-- Send fully executed contract to TC team via the Transaction Management Hub within 2 hours
-- Confirm earnest money deposit receipt and escrow holding title company
-- Notify client with official Welcome to Escrow timeline email
-
-## 2. Inspection Contingency (Days 1 - 10)
-- Schedule home, termite, and radon inspections within first 48 hours
-- Review resolution of acceptable conditions with client`,
-      tags: ["Operations", "Escrow", "SOP", "Checklists"],
+## 2. Timeline Calendar
+- Inspection Period Deadline: Day 10
+- Appraisal Order Confirmation: Day 14
+- Loan Commitment: Day 21
+- Final Walkthrough & Closing: Day 30`,
+      tags: ["Escrow", "TC", "Deadlines", "Contracts"],
       owner: "Operations Team",
       status: "published",
-      // Flagged as overdue (>6 months ago)
-      last_reviewed_at: new Date(Date.now() - 220 * 86400000).toISOString(),
+      last_reviewed_at: new Date(Date.now() - 30 * 86400000).toISOString(),
       last_reviewed_by: "Operations Team",
-      assigned_groups: [{ id: "grp-1", name: "All Agents" }, { id: "grp-4", name: "New Agent Onboarding" }],
-      assigned_group_ids: ["grp-1", "grp-4"],
-      is_review_overdue: true,
-      months_since_review: 7.3,
+      assigned_groups: [{ id: "grp-1", name: "All Agents" }, { id: "grp-2", name: "Listing Specialists" }],
+      assigned_group_ids: ["grp-1", "grp-2"],
+      is_review_overdue: false,
+      months_since_review: 1,
       version_counter: 1,
-      created_at: new Date(Date.now() - 240 * 86400000).toISOString(),
-      updated_at: new Date(Date.now() - 220 * 86400000).toISOString(),
+      created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+      updated_at: new Date(Date.now() - 30 * 86400000).toISOString(),
+    },
+
+    // MODULE 6: Your next steps to becoming listing certified...
+    {
+      id: "pb-lc-10",
+      title: "Your next steps to becoming listing certified...",
+      slug: "your-next-steps-to-becoming-listing-certified",
+      category: "Your next steps to becoming listing certified...",
+      summary: "Final checklist, mock appointment audit with Matt, and official MSREG Listing Partner certification activation.",
+      content: `# Your Next Steps to Becoming Listing Certified
+
+### Final Steps to Active Certification:
+1. Complete all modules in the Listing Agent Certification
+2. Schedule your 30-minute mock listing appointment audit with Matt Smith or Team Leadership
+3. Receive official certification badge and inclusion in seller lead rotation!`,
+      tags: ["Certification", "Audit", "SignOff"],
+      owner: "Matt Smith",
+      status: "published",
+      last_reviewed_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+      last_reviewed_by: "Matt Smith",
+      assigned_groups: [{ id: "grp-1", name: "All Agents" }, { id: "grp-2", name: "Listing Specialists" }],
+      assigned_group_ids: ["grp-1", "grp-2"],
+      is_review_overdue: false,
+      months_since_review: 0.1,
+      version_counter: 1,
+      created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+      updated_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+    },
+
+    // MODULE 7: Listing Certification - Lunch and Learn
+    {
+      id: "pb-lc-11",
+      title: "Listing Certification - Lunch and Learn",
+      slug: "listing-certification-lunch-and-learn",
+      category: "Listing Certification - Lunch and Learn",
+      summary: "Full video recording of Matt Smith's masterclass breaking down real-world listing consultations, live objections, and closing technique.",
+      content: `# Listing Certification - Lunch and Learn
+
+Watch the full masterclass replay below with Matt Smith:
+
+https://www.youtube.com/watch?v=dQw4w9WgXcQ
+
+> **Key Takeaway**: High conversion isn't about pushing; it's about asking deeper diagnostic questions so the seller discovers for themselves that MSREG is the only logical choice.`,
+      tags: ["Masterclass", "Video", "Training"],
+      owner: "Matt Smith",
+      status: "published",
+      last_reviewed_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+      last_reviewed_by: "Matt Smith",
+      assigned_groups: [{ id: "grp-1", name: "All Agents" }, { id: "grp-2", name: "Listing Specialists" }],
+      assigned_group_ids: ["grp-1", "grp-2"],
+      is_review_overdue: false,
+      months_since_review: 0.1,
+      version_counter: 1,
+      created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+      updated_at: new Date(Date.now() - 5 * 86400000).toISOString(),
     },
   ];
 
@@ -1431,24 +1654,40 @@ export const getAgentPlaybookBySlug = createServerFn({ method: "POST" })
       }
     }
 
-    // 4. Related playbooks
-    let allPlaybooks: any[] = [];
-    if (sb) {
-      try {
-        const { data: dbAll } = await sb
-          .from("playbooks")
-          .select("id, title, slug, category, summary, tags, owner, last_reviewed_at, updated_at")
-          .eq("status", "published")
-          .neq("id", playbook.id);
-        if (Array.isArray(dbAll)) allPlaybooks = dbAll;
-      } catch {}
-    }
-    if (allPlaybooks.length === 0) {
-      allPlaybooks = memoryStore.playbooks.filter((p) => p.status === "published" && p.id !== playbook.id);
-    }
+    // 4. Module Playbooks & All Playbooks for Course Sidebar Navigation
+    const allPublishedList = memoryStore.playbooks.filter((p) => p.status === "published");
+    const userAckIds = new Set(
+      memoryStore.acknowledgments
+        .filter((a) => a.agent_id === agentId)
+        .map((a) => a.playbook_id)
+    );
 
+    const mapToItem = (p: any): AgentPlaybookItem => {
+      const words = (p.content || p.summary || "").split(/\s+/).filter(Boolean).length;
+      return {
+        id: p.id,
+        title: p.title,
+        slug: p.slug || slugify(p.title),
+        category: p.category,
+        summary: p.summary || "",
+        tags: p.tags || [],
+        owner: p.owner,
+        last_reviewed_at: p.last_reviewed_at,
+        updated_at: p.updated_at,
+        read_time_minutes: Math.max(1, Math.ceil(words / 180)),
+        acknowledged: userAckIds.has(p.id) || (p.id === playbook.id && acknowledged),
+      };
+    };
+
+    const allPlaybooksMapped = allPublishedList.map(mapToItem);
+    const modulePlaybooksMapped = allPublishedList
+      .filter((p) => p.category === playbook.category)
+      .map(mapToItem);
+
+    // 5. Related playbooks
     const currentTags = new Set(playbook.tags || []);
-    const related = allPlaybooks
+    const related = allPublishedList
+      .filter((p) => p.id !== playbook.id)
       .map((p) => {
         let score = 0;
         if (p.category === playbook.category) score += 3;
@@ -1459,23 +1698,7 @@ export const getAgentPlaybookBySlug = createServerFn({ method: "POST" })
       .filter((r) => r.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, 3)
-      .map((r) => {
-        const p = r.playbook;
-        const words = (p.summary || "").split(/\s+/).filter(Boolean).length;
-        return {
-          id: p.id,
-          title: p.title,
-          slug: p.slug || slugify(p.title),
-          category: p.category,
-          summary: p.summary || "",
-          tags: p.tags || [],
-          owner: p.owner,
-          last_reviewed_at: p.last_reviewed_at,
-          updated_at: p.updated_at,
-          read_time_minutes: Math.max(1, Math.ceil(words / 180)),
-          acknowledged: false,
-        } as AgentPlaybookItem;
-      });
+      .map((r) => mapToItem(r.playbook));
 
     const words = (playbook.content || playbook.summary || "").split(/\s+/).filter(Boolean).length;
     const readTime = Math.max(1, Math.ceil(words / 180));
@@ -1496,6 +1719,8 @@ export const getAgentPlaybookBySlug = createServerFn({ method: "POST" })
       acknowledged,
       acknowledged_at,
       related_playbooks: related,
+      module_playbooks: modulePlaybooksMapped,
+      all_playbooks: allPlaybooksMapped,
     } as AgentPlaybookDetail;
   });
 
