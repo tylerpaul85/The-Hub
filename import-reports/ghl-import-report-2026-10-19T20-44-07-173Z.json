@@ -1,0 +1,132 @@
+{
+  "timestamp": "2026-10-19T20:44:07.173Z",
+  "exportDir": "./export",
+  "dryRun": true,
+  "aiUsed": false,
+  "totalScanned": 3,
+  "totalCategories": 1,
+  "totalImported": 0,
+  "totalCreated": 0,
+  "totalUpdated": 0,
+  "totalFailed": 0,
+  "totalAttachmentsUploaded": 1,
+  "totalGhlVideosNeedingMigration": 1,
+  "totalFlaggedDuplicates": 0,
+  "totalFlaggedOutdated": 1,
+  "categories": [
+    {
+      "id": "mock-listing-agent-certification",
+      "name": "Listing Agent Certification",
+      "slug": "listing-agent-certification",
+      "count": 3
+    }
+  ],
+  "lessons": [
+    {
+      "filePath": "/Users/tyler/Desktop/calendar-hub-craft-main/export/Listing Agent Certification/01 Pre-Listing Process/01-pre-listing-dossier.md",
+      "product": "Listing Agent Certification",
+      "category": "01 Pre-Listing Process",
+      "order": 1,
+      "title": "Pre-Listing Dossier & Seller Intake",
+      "slug": "pre-listing-dossier",
+      "sourceRef": "https://app.gohighlevel.com/v2/location/msreg/courses/listing-cert/lesson-101",
+      "action": "skipped_dry_run",
+      "categoryId": "mock-listing-agent-certification",
+      "summary": "Official procedure for Pre-Listing Dossier & Seller Intake within 01 Pre-Listing Process.",
+      "tags": [
+        "Listing",
+        "Pre-Listing Process",
+        "SOP",
+        "Process"
+      ],
+      "attachmentsUploaded": [
+        {
+          "originalPath": "./images/cma-diagram.png",
+          "storagePath": "ghl-imports/listing-agent-certification/01-pre-listing-process/6b7fa434f92a-cma-diagram.png",
+          "publicUrl": "https://supabase-storage.local/playbooks/ghl-imports/listing-agent-certification/01-pre-listing-process/6b7fa434f92a-cma-diagram.png",
+          "fileSizeBytes": 70
+        }
+      ],
+      "ghlVideos": [
+        "https://cdn.leadconnectorhq.com/courses/videos/lesson101-overview.mp4"
+      ],
+      "allVideos": [
+        "https://cdn.leadconnectorhq.com/courses/videos/lesson101-overview.mp4"
+      ],
+      "flagDuplicate": false,
+      "flagOutdated": false,
+      "flagOutdatedReason": "",
+      "usedAi": false
+    },
+    {
+      "filePath": "/Users/tyler/Desktop/calendar-hub-craft-main/export/Listing Agent Certification/01 Pre-Listing Process/02-in-home-consultation.md",
+      "product": "Listing Agent Certification",
+      "category": "01 Pre-Listing Process",
+      "order": 2,
+      "title": "The In-Home Listing Consultation",
+      "slug": "in-home-consultation",
+      "sourceRef": "https://app.gohighlevel.com/v2/location/msreg/courses/listing-cert/lesson-102",
+      "action": "skipped_dry_run",
+      "categoryId": "mock-listing-agent-certification",
+      "summary": "Official procedure for The In-Home Listing Consultation within 01 Pre-Listing Process.",
+      "tags": [
+        "Listing",
+        "Pre-Listing Process",
+        "SOP",
+        "Process"
+      ],
+      "attachmentsUploaded": [],
+      "ghlVideos": [],
+      "allVideos": [
+        "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+      ],
+      "flagDuplicate": false,
+      "flagOutdated": false,
+      "flagOutdatedReason": "",
+      "usedAi": false
+    },
+    {
+      "filePath": "/Users/tyler/Desktop/calendar-hub-craft-main/export/Listing Agent Certification/01 Pre-Listing Process/03-legacy-mls-archive.md",
+      "product": "Listing Agent Certification",
+      "category": "01 Pre-Listing Process",
+      "order": 3,
+      "title": "Legacy MLS Data Entry (2019 Archive)",
+      "slug": "legacy-mls-archive",
+      "sourceRef": "https://app.gohighlevel.com/v2/location/msreg/courses/listing-cert/lesson-103",
+      "action": "skipped_dry_run",
+      "categoryId": "mock-listing-agent-certification",
+      "summary": "Official procedure for Legacy MLS Data Entry (2019 Archive) within 01 Pre-Listing Process.",
+      "tags": [
+        "Listing",
+        "Pre-Listing Process",
+        "SOP",
+        "Process"
+      ],
+      "attachmentsUploaded": [],
+      "ghlVideos": [],
+      "allVideos": [],
+      "flagDuplicate": false,
+      "flagOutdated": true,
+      "flagOutdatedReason": "Content contains references to previous years or legacy tools.",
+      "usedAi": false
+    }
+  ],
+  "ghlVideosList": [
+    {
+      "title": "Pre-Listing Dossier & Seller Intake",
+      "product": "Listing Agent Certification",
+      "category": "01 Pre-Listing Process",
+      "videoUrl": "https://cdn.leadconnectorhq.com/courses/videos/lesson101-overview.mp4",
+      "sourceRef": "https://app.gohighlevel.com/v2/location/msreg/courses/listing-cert/lesson-101"
+    }
+  ],
+  "flaggedLessons": [
+    {
+      "title": "Legacy MLS Data Entry (2019 Archive)",
+      "filePath": "/Users/tyler/Desktop/calendar-hub-craft-main/export/Listing Agent Certification/01 Pre-Listing Process/03-legacy-mls-archive.md",
+      "flagType": "outdated",
+      "reason": "Content contains references to previous years or legacy tools."
+    }
+  ],
+  "failedLessons": []
+}
