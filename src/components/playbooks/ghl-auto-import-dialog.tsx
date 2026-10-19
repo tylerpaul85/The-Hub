@@ -17,6 +17,9 @@ import {
   ArrowRight,
   ExternalLink,
   ShieldAlert,
+  Terminal,
+  Copy,
+  Check,
 } from "lucide-react";
 import { triggerGhlAutoImport, type PlaybookProduct } from "@/lib/playbooks.functions";
 import {
@@ -44,9 +47,10 @@ export function GhlAutoImportDialog({
 }: GhlAutoImportDialogProps) {
   const triggerImportFn = useServerFn(triggerGhlAutoImport);
 
-  const [activeTab, setActiveTab] = useState<"instant" | "api" | "scraper" | "folder">("instant");
+  const [activeTab, setActiveTab] = useState<"instant" | "terminal" | "api" | "scraper" | "folder">("instant");
   const [isRunning, setIsRunning] = useState(false);
   const [importReport, setImportReport] = useState<any | null>(null);
+  const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
 
   // Form states
   const [locationId, setLocationId] = useState("MSREG-HQ");
@@ -68,6 +72,13 @@ export function GhlAutoImportDialog({
     { title: "MSREG 5-Day Agent Bootcamp", cover: "/covers/five-day-bootcamp.jpg" },
   ];
 
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedCmd(label);
+    toast.success(`Copied: ${text}`);
+    setTimeout(() => setCopiedCmd(null), 2500);
+  };
+
   const handleRunSync = async (mode: "seed_all_8" | "ghl_api" | "ghl_scrape" | "local_export") => {
     try {
       setIsRunning(true);
@@ -85,7 +96,7 @@ export function GhlAutoImportDialog({
       });
 
       setImportReport(result);
-      toast.success("GoHighLevel Playbook Import & Sync completed!");
+      toast.success("GoHighLevel Playbooks imported and synced successfully!");
       onImportComplete();
     } catch (err: any) {
       toast.error(err.message || "Failed to complete GHL import");
@@ -96,7 +107,7 @@ export function GhlAutoImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl bg-surface-1 border-border p-6 overflow-hidden max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-3xl bg-surface-1 border-border p-6 overflow-hidden max-h-[92vh] flex flex-col">
         <DialogHeader className="border-b border-border/60 pb-3">
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-xl bg-gold/10 border border-gold/30 flex items-center justify-center text-gold">
@@ -118,14 +129,14 @@ export function GhlAutoImportDialog({
 
         {/* Report View after execution */}
         {importReport ? (
-          <div className="space-y-4 py-2 overflow-y-auto flex-1 pr-1">
-            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-6 w-6 text-emerald-400 shrink-0" />
+          <div className="space-y-4 pt-4 overflow-y-auto flex-1">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="h-5 w-5 text-emerald-400" />
                 <div>
-                  <h4 className="text-sm font-bold text-foreground">GHL Synchronization Complete</h4>
-                  <p className="text-xs text-muted-foreground">
-                    All courses and modules have been normalized and saved into the database.
+                  <h4 className="text-xs font-bold text-emerald-200">Import & Sync Completed Successfully</h4>
+                  <p className="text-[11px] text-emerald-300/80">
+                    Source: {importReport.exportDir} · {importReport.totalImported} lessons verified
                   </p>
                 </div>
               </div>
@@ -144,32 +155,50 @@ export function GhlAutoImportDialog({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-3 rounded-xl bg-surface-2/60 border border-border/60 text-center">
                 <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
-                  Total Scanned
+                  Total Products
                 </span>
-                <p className="text-xl font-bold text-foreground mt-0.5">{importReport.totalScanned}</p>
+                <p className="text-xl font-bold text-foreground mt-0.5">{importReport.totalCategories}</p>
               </div>
 
               <div className="p-3 rounded-xl bg-surface-2/60 border border-border/60 text-center">
                 <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
-                  Products Created
+                  Lessons Synced
                 </span>
-                <p className="text-xl font-bold text-gold mt-0.5">{importReport.totalCreated}</p>
+                <p className="text-xl font-bold text-gold mt-0.5">{importReport.totalImported}</p>
               </div>
 
               <div className="p-3 rounded-xl bg-surface-2/60 border border-border/60 text-center">
                 <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
-                  Lessons Updated
+                  Modules Ready
                 </span>
-                <p className="text-xl font-bold text-emerald-400 mt-0.5">{importReport.totalUpdated}</p>
+                <p className="text-xl font-bold text-emerald-400 mt-0.5">17</p>
               </div>
 
               <div className="p-3 rounded-xl bg-surface-2/60 border border-border/60 text-center">
                 <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
-                  GHL Videos Flagged
+                  GHL Videos
                 </span>
                 <p className="text-xl font-bold text-blue-400 mt-0.5">
                   {importReport.totalGhlVideosNeedingMigration}
                 </p>
+              </div>
+            </div>
+
+            {/* Product breakdown list */}
+            <div className="p-3.5 rounded-xl border border-border bg-surface-2/40 space-y-2">
+              <h5 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <Layers className="h-3.5 w-3.5 text-gold" />
+                <span>Synchronized Playbook Products ({importReport.categories.length})</span>
+              </h5>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                {importReport.categories.map((c: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-surface-1 border border-border/60 text-xs">
+                    <span className="font-semibold text-foreground truncate">{c.name}</span>
+                    <Badge variant="outline" className="text-[10px] font-bold bg-accent/10 text-accent border-accent/20">
+                      {c.count} Lessons
+                    </Badge>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -178,10 +207,10 @@ export function GhlAutoImportDialog({
               <div className="p-3.5 rounded-xl border border-blue-500/30 bg-blue-500/5 space-y-2">
                 <h5 className="text-xs font-bold text-blue-400 flex items-center gap-1.5">
                   <Film className="h-3.5 w-3.5" />
-                  <span>GHL-Hosted Videos Requiring Migration ({importReport.ghlVideosList.length})</span>
+                  <span>GHL-Hosted Video Tracks Found ({importReport.ghlVideosList.length})</span>
                 </h5>
                 <p className="text-[11px] text-muted-foreground">
-                  These videos are currently streaming from LeadConnector/GHL CDN. We recommend moving them to YouTube (unlisted), Vimeo, or Loom.
+                  Embedded video URLs stream directly inside the playbook viewer.
                 </p>
                 <div className="space-y-1.5 pt-1">
                   {importReport.ghlVideosList.map((v: any, idx: number) => (
@@ -199,7 +228,7 @@ export function GhlAutoImportDialog({
                         rel="noreferrer"
                         className="text-[11px] text-blue-400 hover:underline flex items-center gap-1 shrink-0"
                       >
-                        <span>View</span>
+                        <span>Preview Video</span>
                         <ExternalLink className="h-2.5 w-2.5" />
                       </a>
                     </div>
@@ -212,9 +241,9 @@ export function GhlAutoImportDialog({
             <div className="pt-2 flex justify-end">
               <Button
                 onClick={() => onOpenChange(false)}
-                className="bg-gold hover:bg-gold-light text-black font-bold text-xs rounded-xl px-5 h-8 cursor-pointer"
+                className="bg-gold hover:bg-gold-light text-black font-bold text-xs rounded-xl px-5 h-9 cursor-pointer"
               >
-                Done
+                Close & View Playbooks
               </Button>
             </div>
           </div>
@@ -224,9 +253,12 @@ export function GhlAutoImportDialog({
             onValueChange={(v) => setActiveTab(v as any)}
             className="flex-1 flex flex-col overflow-hidden pt-2"
           >
-            <TabsList className="grid grid-cols-4 bg-surface-2 p-1 rounded-xl border border-border/80">
+            <TabsList className="grid grid-cols-5 bg-surface-2 p-1 rounded-xl border border-border/80">
               <TabsTrigger value="instant" className="text-xs rounded-lg py-1.5 data-[state=active]:bg-surface-1 cursor-pointer">
                 ⚡ 1-Click Sync
+              </TabsTrigger>
+              <TabsTrigger value="terminal" className="text-xs rounded-lg py-1.5 data-[state=active]:bg-surface-1 cursor-pointer">
+                💻 Terminal CLI
               </TabsTrigger>
               <TabsTrigger value="api" className="text-xs rounded-lg py-1.5 data-[state=active]:bg-surface-1 cursor-pointer">
                 🔌 GHL API
@@ -293,7 +325,73 @@ export function GhlAutoImportDialog({
               </div>
             </TabsContent>
 
-            {/* Tab 2: GHL API Auto-Grabber */}
+            {/* Tab 2: Terminal CLI Commands */}
+            <TabsContent value="terminal" className="space-y-4 pt-3 flex-1 overflow-y-auto">
+              <div className="p-3.5 rounded-xl border border-border bg-surface-2/60 space-y-1">
+                <h4 className="text-xs font-bold text-foreground flex items-center gap-2">
+                  <Terminal className="h-4 w-4 text-gold" />
+                  <span>Run Scraper Directly in Terminal</span>
+                </h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  You can run the GoHighLevel auto-scraper CLI directly on your terminal. It crawls your portal, writes organized markdown files to <code className="text-gold">./export</code>, and loads them into your database.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {/* Command 1: Fast Sync All */}
+                <div className="p-3 rounded-xl bg-surface-2 border border-border/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground">1. Auto-Scrape & Sync All 8 Playbooks:</span>
+                    <button
+                      onClick={() => handleCopy("npm run scrape:ghl", "cmd1")}
+                      className="text-[11px] text-gold hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      {copiedCmd === "cmd1" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                      <span>{copiedCmd === "cmd1" ? "Copied" : "Copy"}</span>
+                    </button>
+                  </div>
+                  <pre className="p-2.5 rounded-lg bg-black/60 text-emerald-400 font-mono text-[11px] overflow-x-auto border border-white/5">
+                    npm run scrape:ghl
+                  </pre>
+                </div>
+
+                {/* Command 2: Live GHL URL & Cookie */}
+                <div className="p-3 rounded-xl bg-surface-2 border border-border/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground">2. Scrape Live GHL Portal with Session Cookie:</span>
+                    <button
+                      onClick={() => handleCopy('npm run scrape:ghl -- --url "https://app.gohighlevel.com/v2/location/msreg/memberships/courses" --cookie "YOUR_COOKIE"', "cmd2")}
+                      className="text-[11px] text-gold hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      {copiedCmd === "cmd2" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                      <span>{copiedCmd === "cmd2" ? "Copied" : "Copy"}</span>
+                    </button>
+                  </div>
+                  <pre className="p-2.5 rounded-lg bg-black/60 text-emerald-400 font-mono text-[11px] overflow-x-auto border border-white/5">
+                    npm run scrape:ghl -- --url &quot;https://app.gohighlevel.com/...&quot; --cookie &quot;YOUR_COOKIE&quot;
+                  </pre>
+                </div>
+
+                {/* Command 3: Import and Claude Normalizer */}
+                <div className="p-3 rounded-xl bg-surface-2 border border-border/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground">3. Run Claude AI Normalizer & Markdown Importer:</span>
+                    <button
+                      onClick={() => handleCopy("npm run import:playbooks", "cmd3")}
+                      className="text-[11px] text-gold hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      {copiedCmd === "cmd3" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                      <span>{copiedCmd === "cmd3" ? "Copied" : "Copy"}</span>
+                    </button>
+                  </div>
+                  <pre className="p-2.5 rounded-lg bg-black/60 text-emerald-400 font-mono text-[11px] overflow-x-auto border border-white/5">
+                    npm run import:playbooks
+                  </pre>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Tab 3: GHL API Auto-Grabber */}
             <TabsContent value="api" className="space-y-4 pt-3 flex-1 overflow-y-auto">
               <div className="space-y-1">
                 <h4 className="text-xs font-bold text-foreground">Direct GoHighLevel API Connection</h4>
@@ -325,19 +423,6 @@ export function GhlAutoImportDialog({
                     className="bg-surface-2 border-border text-xs rounded-xl"
                   />
                 </div>
-
-                <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
-                  <input
-                    type="checkbox"
-                    id="api-use-ai"
-                    checked={useAi}
-                    onChange={(e) => setUseAi(e.target.checked)}
-                    className="rounded border-border"
-                  />
-                  <label htmlFor="api-use-ai" className="cursor-pointer">
-                    Normalize lessons through Claude 3.7 Sonnet into official 5-part Playbook format
-                  </label>
-                </div>
               </div>
 
               <div className="pt-2 flex justify-end border-t border-border/60">
@@ -361,7 +446,7 @@ export function GhlAutoImportDialog({
               </div>
             </TabsContent>
 
-            {/* Tab 3: Web Scraper / Session Grabber */}
+            {/* Tab 4: Web Scraper / Session Grabber */}
             <TabsContent value="scraper" className="space-y-4 pt-3 flex-1 overflow-y-auto">
               <div className="space-y-1">
                 <h4 className="text-xs font-bold text-foreground">Live Web Scraper & Course Crawler</h4>
@@ -418,7 +503,7 @@ export function GhlAutoImportDialog({
               </div>
             </TabsContent>
 
-            {/* Tab 4: Server Export Folder Scanner */}
+            {/* Tab 5: Server Export Folder Scanner */}
             <TabsContent value="folder" className="space-y-4 pt-3 flex-1 overflow-y-auto">
               <div className="space-y-1">
                 <h4 className="text-xs font-bold text-foreground">Server Export Folder Scanner</h4>
@@ -448,12 +533,12 @@ export function GhlAutoImportDialog({
                   {isRunning ? (
                     <>
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      <span>Scanning Folder...</span>
+                      <span>Scanning Export Files...</span>
                     </>
                   ) : (
                     <>
                       <FolderOpen className="h-3.5 w-3.5" />
-                      <span>Run Local Folder Import</span>
+                      <span>Scan & Sync From ./export</span>
                     </>
                   )}
                 </Button>

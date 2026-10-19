@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "import:playbooks": "npx -y tsx scripts/import-ghl-playbooks.ts"
+    "import:playbooks": "npx -y tsx scripts/import-ghl-playbooks.ts",
+    "scrape:ghl": "npx -y tsx scripts/scrape-ghl-portal.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
