@@ -151,7 +151,23 @@ export interface AgentPlaybookSearchResult {
   acknowledged?: boolean;
 }
 
+export interface AgentCourseCard {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  cover_image_url: string;
+  sections_count: number;
+  lessons_count: number;
+  completed_lessons_count: number;
+  progress_percent: number;
+  status: "published" | "draft";
+  assigned_groups: Array<{ id: string; name: string }>;
+}
+
 export interface AgentPlaybooksDirectoryResponse {
+  courses: AgentCourseCard[];
+  selectedCourse?: AgentCourseCard | null;
   playbooks: AgentPlaybookItem[];
   categories: Array<{
     name: string;
@@ -2101,10 +2117,11 @@ async function getSupabase() {
 }
 
 export const listAgentPlaybooks = createServerFn({ method: "POST" })
-  .validator((d: { agentId?: string } | undefined) => d || {})
+  .validator((d: { agentId?: string; courseSlug?: string } | undefined) => d || {})
   .handler(async ({ data }) => {
     const sb = await getSupabase();
     const agentId = data?.agentId;
+    const requestedCourseSlug = data?.courseSlug;
 
     // 1. Group resolution
     const agentGroupIds = new Set<string>();
@@ -2151,7 +2168,7 @@ export const listAgentPlaybooks = createServerFn({ method: "POST" })
           .from("playbooks")
           .select("*, playbook_assigned_groups(group_id)")
           .eq("status", "published")
-          .order("updated_at", { ascending: false });
+          .order("sort_order", { ascending: true });
 
         if (Array.isArray(dbPlaybooks) && dbPlaybooks.length > 0) {
           playbooksList = dbPlaybooks.map((p: any) => {
@@ -2161,6 +2178,9 @@ export const listAgentPlaybooks = createServerFn({ method: "POST" })
               title: p.title,
               slug: p.slug || slugify(p.title),
               category: p.category || "General",
+              product: p.category,
+              subcategory: p.subcategory || p.category,
+              sort_order: p.sort_order || 1,
               summary: p.summary || "",
               content: p.content || "",
               tags: p.tags || [],
@@ -2183,6 +2203,9 @@ export const listAgentPlaybooks = createServerFn({ method: "POST" })
           title: p.title,
           slug: p.slug || slugify(p.title),
           category: p.category,
+          product: p.product || p.category,
+          subcategory: p.subcategory || p.category,
+          sort_order: p.sort_order || 1,
           summary: p.summary || "",
           content: p.content || "",
           tags: p.tags || [],
@@ -2219,8 +2242,94 @@ export const listAgentPlaybooks = createServerFn({ method: "POST" })
         .forEach((a) => ackMap.set(a.playbook_id, a.acknowledged_at));
     }
 
-    // 5. Items mapping
-    const items: AgentPlaybookItem[] = accessiblePlaybooks.map((p) => {
+    // 5. Accessible Products & Courses
+    const allProducts = await listAdminProducts();
+    const accessibleProducts = allProducts.filter((prod) => {
+      if (!prod.assigned_groups || prod.assigned_groups.length === 0) return true;
+      return prod.assigned_groups.some((g) => {
+        const gName = g.name.toLowerCase();
+        if (gName.includes("all agent")) return true;
+        return agentGroupIds.has(g.id);
+      });
+    });
+
+    const courses: AgentCourseCard[] = accessibleProducts.map((prod) => {
+      const prodNameNorm = prod.name.toLowerCase().trim();
+      const prodSlugNorm = prod.slug.toLowerCase().trim();
+
+      const courseLessons = accessiblePlaybooks.filter((pb) => {
+        const pbProd = (pb.product || "").toLowerCase().trim();
+        const pbCat = (pb.category || "").toLowerCase().trim();
+        return (
+          pbProd === prodNameNorm ||
+          pbProd === prodSlugNorm ||
+          pbCat === prodNameNorm ||
+          pbCat === prodSlugNorm ||
+          (prodSlugNorm === "listing-agent-certification" && pbCat.includes("listing"))
+        );
+      });
+
+      const completed = courseLessons.filter((p) => ackMap.has(p.id)).length;
+      const progressPercent =
+        courseLessons.length > 0 ? Math.round((completed / courseLessons.length) * 100) : 0;
+
+      const sectionsSet = new Set<string>();
+      courseLessons.forEach((p) => {
+        if (p.subcategory && p.subcategory.toLowerCase() !== prodNameNorm) {
+          sectionsSet.add(p.subcategory);
+        } else if (p.category.toLowerCase() !== prodNameNorm) {
+          sectionsSet.add(p.category);
+        } else {
+          sectionsSet.add("01 General");
+        }
+      });
+
+      return {
+        id: prod.id,
+        name: prod.name,
+        slug: prod.slug,
+        description: prod.description || `Training curriculum and SOPs for ${prod.name}`,
+        cover_image_url: prod.cover_image_url || "/covers/listing-agent-playbook.jpg",
+        sections_count: sectionsSet.size || prod.sections_count || 1,
+        lessons_count: courseLessons.length || prod.lessons_count || 0,
+        completed_lessons_count: completed,
+        progress_percent: progressPercent,
+        status: prod.status,
+        assigned_groups: prod.assigned_groups || [],
+      };
+    });
+
+    // 6. If a course is selected, filter lessons to that course
+    let selectedCourse: AgentCourseCard | null = null;
+    let filteredItems = accessiblePlaybooks;
+
+    if (requestedCourseSlug) {
+      selectedCourse =
+        courses.find(
+          (c) =>
+            c.slug === requestedCourseSlug ||
+            c.name.toLowerCase() === requestedCourseSlug.toLowerCase()
+        ) || null;
+
+      if (selectedCourse) {
+        const selName = selectedCourse.name.toLowerCase();
+        const selSlug = selectedCourse.slug.toLowerCase();
+        filteredItems = accessiblePlaybooks.filter((pb) => {
+          const pbProd = (pb.product || "").toLowerCase().trim();
+          const pbCat = (pb.category || "").toLowerCase().trim();
+          return (
+            pbProd === selName ||
+            pbProd === selSlug ||
+            pbCat === selName ||
+            pbCat === selSlug ||
+            (selSlug === "listing-agent-certification" && pbCat.includes("listing"))
+          );
+        });
+      }
+    }
+
+    // 7. Items mapping
+    const items: AgentPlaybookItem[] = filteredItems.map((p) => {
       const words = (p.content || p.summary || "").split(/\s+/).filter(Boolean).length;
       const readTime = Math.max(1, Math.ceil(words / 180));
       const ackDate = ackMap.get(p.id);
@@ -2230,6 +2339,8 @@ export const listAgentPlaybooks = createServerFn({ method: "POST" })
         title: p.title,
         slug: p.slug,
         category: p.category,
+        product: p.product,
+        subcategory: p.subcategory,
         summary: p.summary,
         tags: p.tags,
         owner: p.owner,
@@ -2242,37 +2353,36 @@ export const listAgentPlaybooks = createServerFn({ method: "POST" })
       };
     });
 
-    // 6. Categories breakdown
-    const categoryDescriptions: Record<string, string> = {
-      Listings: "Pre-listing dossiers, in-home valuation decks, commission narratives, and pricing strategies.",
-      Buyers: "Intake workflows, buyer consultations, broker representation agreements, and showing tours.",
-      Objections: "Battle-tested talk tracks for commission discounts, rate drops, and timing objections.",
-      Operations: "Escrow milestones, transaction coordination hand-offs, checklists, and compliance.",
-      Scripts: "Conversational frameworks for sphere outreach, open houses, and circle prospecting.",
-      Culture: "Core values, team standards, accountability benchmarks, and team guidelines.",
-      General: "Standard operating procedures and company reference documents.",
-    };
-
+    // 8. Categories / Modules breakdown
     const categoryMap = new Map<string, AgentPlaybookItem[]>();
     for (const item of items) {
-      const cat = item.category || "General";
-      if (!categoryMap.has(cat)) categoryMap.set(cat, []);
-      categoryMap.get(cat)!.push(item);
+      let sec = item.subcategory;
+      if (selectedCourse) {
+        if (!sec || sec.toLowerCase() === selectedCourse.name.toLowerCase()) {
+          sec = item.category.toLowerCase() !== selectedCourse.name.toLowerCase() ? item.category : "01 General Modules";
+        }
+      } else {
+        sec = item.product || item.category || "General";
+      }
+      if (!categoryMap.has(sec)) categoryMap.set(sec, []);
+      categoryMap.get(sec)!.push(item);
     }
 
     const categories = Array.from(categoryMap.entries()).map(([name, catItems]) => ({
       name,
-      description: categoryDescriptions[name] || `Team operating procedures and resources for ${name}.`,
+      description: `Operating procedures and resources for ${name}.`,
       count: catItems.length,
       playbooks: catItems,
     }));
 
-    // 7. Recently updated
+    // 9. Recently updated
     const recentlyUpdated = [...items]
       .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
       .slice(0, 6);
 
     return {
+      courses,
+      selectedCourse,
       playbooks: items,
       categories,
       recentlyUpdated,
