@@ -38,6 +38,8 @@ interface PlaybookEditorDialogProps {
   groups: PlaybookGroup[];
   onSaved: () => void;
   currentUser?: string;
+  defaultProduct?: string;
+  defaultCategory?: string;
 }
 
 const CATEGORIES = [
@@ -58,6 +60,8 @@ export function PlaybookEditorDialog({
   groups,
   onSaved,
   currentUser = "Admin",
+  defaultProduct,
+  defaultCategory,
 }: PlaybookEditorDialogProps) {
   const upsertFn = useServerFn(upsertAdminPlaybook);
 
@@ -95,18 +99,18 @@ export function PlaybookEditorDialog({
       setChangeSummary("");
     } else {
       setTitle("");
-      setCategory("General");
+      setCategory(defaultCategory || "General");
       setSummary("");
       setContent(
         `# Overview\n\nProvide the core objective and background of this playbook.\n\n## Step-by-Step Instructions\n\n1. First action step\n2. Second action step\n\n## Scripts & Key Talking Points\n\n*"Our team's standard is to deliver an exceptional experience..."*\n`
       );
-      setTagsInput("");
+      setTagsInput(defaultProduct ? `${defaultProduct.split(" ")[0]}, SOP` : "");
       setOwner("Matt Smith");
       setStatus("draft");
       setSelectedGroupIds(groups.map((g) => g.id).slice(0, 1));
       setChangeSummary("");
     }
-  }, [playbook, groups, open]);
+  }, [playbook, groups, open, defaultCategory, defaultProduct]);
 
   // Insert markdown text at cursor position in textarea
   const insertTextAtCursor = (insertion: string) => {
@@ -200,6 +204,8 @@ export function PlaybookEditorDialog({
           id: playbook?.id,
           title: title.trim(),
           category,
+          product: playbook?.product || defaultProduct,
+          subcategory: category,
           summary: summary.trim() || null,
           content,
           tags,
@@ -289,6 +295,9 @@ export function PlaybookEditorDialog({
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full h-9 rounded-md border border-border bg-surface-1 px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
                 >
+                  {category && !CATEGORIES.includes(category) && (
+                    <option value={category}>{category}</option>
+                  )}
                   {CATEGORIES.map((c) => (
                     <option key={c} value={c}>
                       {c}
