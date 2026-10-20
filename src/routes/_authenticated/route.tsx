@@ -1,5 +1,6 @@
-import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, useRouterState, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { Clock, Calculator, BookOpen, Sparkles, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { AppShell } from "@/components/app-shell";
 import { ContentDetailProvider } from "@/components/content-detail-provider";
@@ -55,29 +56,70 @@ function AuthLayout() {
     );
   }
 
-  // User signed in but hasn't been approved by an admin yet.
-  // Show a holding screen rather than the full app.
+  // User signed in but hasn't been approved by an admin yet for backend hub access.
+  // Show clear message and provide direct access to Agent Tools.
   if (isPendingApproval) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <div className="max-w-md text-center space-y-4">
-          <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-gold/10 mx-auto">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-            </svg>
+      <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12">
+        <div className="max-w-lg w-full bg-surface-1 border border-border/80 rounded-3xl p-6 sm:p-8 text-center space-y-6 shadow-2xl backdrop-blur-md">
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10 text-amber-400 mx-auto border border-amber-500/20">
+            <Clock className="h-7 w-7" />
           </div>
-          <h1 className="text-xl font-semibold">Account pending approval</h1>
-          <p className="text-sm text-muted-foreground">
-            Your account has been created. An admin will review and activate it shortly.
-            You'll be able to sign in once approved.
-          </p>
-          <p className="text-xs text-muted-foreground">Signed in as {user.email}</p>
-          <button
-            onClick={signOut}
-            className="mt-2 text-sm text-gold hover:underline"
-          >
-            Sign out
-          </button>
+
+          <div className="space-y-2">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              Staff Backend Access Pending
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+              Your account is registered for the <strong className="text-foreground">Internal Marketing &amp; Operations Hub</strong>. An administrator must approve your role before you can access backend marketing tools.
+            </p>
+          </div>
+
+          {/* Callout specifically for Agents */}
+          <div className="rounded-2xl border border-gold/30 bg-gold/5 p-4 sm:p-5 text-left space-y-3">
+            <div className="flex items-center gap-2 text-gold font-semibold text-sm">
+              <Sparkles className="h-4 w-4" />
+              <span>Looking for Agent Tools or Net Proceeds?</span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Real estate agents <strong className="text-foreground">do not need admin approval</strong> to use the Seller Net Proceeds calculator or Playbooks. You have full instant access right now:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+              <Link
+                to="/seller-net-proceeds"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-gold text-navy font-semibold text-xs hover:bg-gold/90 transition-all shadow-sm"
+              >
+                <Calculator className="h-3.5 w-3.5" />
+                <span>Seller Net Proceeds</span>
+              </Link>
+              <Link
+                to="/playbooks"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-surface-2 border border-border text-foreground font-semibold text-xs hover:bg-surface-2/80 transition-all"
+              >
+                <BookOpen className="h-3.5 w-3.5" />
+                <span>Playbook Library</span>
+              </Link>
+            </div>
+            <div className="text-center pt-1">
+              <Link
+                to="/agent-tools"
+                className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-gold transition-colors"
+              >
+                <span>View all Agent Tools</span>
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="pt-2 flex items-center justify-between text-xs text-muted-foreground border-t border-border/60">
+            <span>Signed in as <span className="font-mono text-foreground">{user.email}</span></span>
+            <button
+              onClick={signOut}
+              className="text-gold hover:underline font-medium cursor-pointer"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </div>
     );

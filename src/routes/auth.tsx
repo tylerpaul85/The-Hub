@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { ArrowLeft, Lock } from "lucide-react";
+import { ArrowLeft, Lock, Calculator, ArrowRight, Sparkles } from "lucide-react";
 import logo from "@/assets/msreg-logo.png";
 import { logAuthEvent, checkRateLimit } from "@/lib/audit.functions";
 
@@ -168,6 +168,32 @@ function AuthPage() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Staff &amp; Internal Login</h1>
             <p className="text-xs text-muted-foreground mt-1">Marketing Hub Operations &amp; Management</p>
+          </div>
+        </div>
+
+        {/* Agent Tools Callout Banner */}
+        <div className="rounded-2xl border border-gold/30 bg-gold/5 p-4 text-center space-y-2 shadow-sm backdrop-blur-xs">
+          <div className="flex items-center justify-center gap-1.5 text-gold text-xs font-semibold">
+            <Calculator className="h-4 w-4" />
+            <span>Looking for Seller Net Proceeds or Playbooks?</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground leading-normal">
+            Agents do <strong className="text-foreground">not</strong> need staff approval to use calculators or training playbooks.
+          </p>
+          <div className="flex items-center justify-center gap-2 pt-1">
+            <Link
+              to="/seller-net-proceeds"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gold text-navy font-semibold text-xs hover:bg-gold/90 transition-all shadow-2xs"
+            >
+              <span>Net Proceeds Calculator</span>
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+            <Link
+              to="/agent-tools"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-2 border border-border text-foreground font-semibold text-xs hover:bg-surface-2/80 transition-all"
+            >
+              <span>Agent Tools</span>
+            </Link>
           </div>
         </div>
 

@@ -54,7 +54,27 @@ function AuthCallbackPage() {
           );
         }
 
-        // Check if the new account is pending admin approval
+        // Auto-sync into agent tools / seller proceeds session
+        try {
+          const { syncAgentSessionFn } = await import("@/lib/agent-auth.functions");
+          const fullName =
+            user.user_metadata?.full_name ||
+            user.user_metadata?.name ||
+            [user.user_metadata?.first_name, user.user_metadata?.last_name].filter(Boolean).join(" ");
+          const res = await syncAgentSessionFn({
+            data: {
+              email: user.email,
+              fullName: fullName || undefined,
+            },
+          });
+          if (res?.token) {
+            localStorage.setItem("seller_session", res.token);
+          }
+        } catch (e) {
+          console.warn("[auth/callback] auto-sync agent session error:", e);
+        }
+
+        // Check if the new account is pending admin approval for the staff backend
         const { data: profile } = await (supabase as any)
           .from("profiles")
           .select("pending_approval")
@@ -62,13 +82,12 @@ function AuthCallbackPage() {
           .single();
 
         if (profile?.pending_approval) {
-          // Let them through to a pending screen — the route layout will
-          // show the pending message and block app access.
-          navigate({ to: "/dashboard", replace: true });
-          toast.info(
-            "Your account has been created and is awaiting admin approval.",
-            { duration: 8000 },
+          // If they are awaiting internal staff approval for marketing, take them directly to Agent Tools!
+          toast.success(
+            "Signed in! You have instant access to Seller Net Proceeds & Playbooks.",
+            { duration: 6000 },
           );
+          navigate({ to: "/agent-tools", replace: true });
           return;
         }
 

@@ -22,6 +22,7 @@ interface AgentAuthContextValue {
   loading: boolean;
   signUpAgent: (email: string, password: string, fullName: string, phone?: string) => Promise<void>;
   signInAgent: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: (redirectTo?: string) => Promise<void>;
   signOutAgent: () => Promise<void>;
   resetAgentPassword: (email: string) => Promise<void>;
   refreshAgent: () => Promise<void>;
@@ -71,19 +72,91 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  useEffect(() => {
-    const savedToken = localStorage.getItem("seller_session");
-    if (savedToken) {
-      setToken(savedToken);
-      fetchAgentProfile(savedToken);
-    } else {
-      setLoading(false);
+  const syncSupabaseUserToAgent = async (userEmail: string, userMeta?: any) => {
+    if (!isValidAgentEmail(userEmail)) return;
+    try {
+      const { syncAgentSessionFn } = await import("@/lib/agent-auth.functions");
+      const fullName = userMeta?.full_name || userMeta?.name || [userMeta?.first_name, userMeta?.last_name].filter(Boolean).join(" ");
+      const res = await syncAgentSessionFn({
+        data: {
+          email: userEmail,
+          fullName: fullName || undefined,
+          phone: userMeta?.phone || undefined,
+        },
+      });
+      if (res?.token && res?.account) {
+        setToken(res.token);
+        setAgent(res.account);
+        localStorage.setItem("seller_session", res.token);
+      }
+    } catch (err) {
+      console.warn("[syncSupabaseUserToAgent] unable to auto-sync agent session:", err);
     }
+  };
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function initAuth() {
+      const savedToken = localStorage.getItem("seller_session");
+      if (savedToken) {
+        setToken(savedToken);
+        await fetchAgentProfile(savedToken);
+      } else {
+        // Check if there is an active Supabase Google session
+        try {
+          const { data } = await supabase.auth.getSession();
+          const supaUser = data.session?.user;
+          if (supaUser?.email && isValidAgentEmail(supaUser.email)) {
+            await syncSupabaseUserToAgent(supaUser.email, supaUser.user_metadata);
+          }
+        } catch (e) {
+          // ignore
+        } finally {
+          if (mounted) setLoading(false);
+        }
+      }
+    }
+
+    initAuth();
+
+    // Listen to Supabase auth changes so Google OAuth log-ins auto-sync
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user?.email && isValidAgentEmail(session.user.email)) {
+        const curToken = localStorage.getItem("seller_session");
+        if (!curToken) {
+          await syncSupabaseUserToAgent(session.user.email, session.user.user_metadata);
+        }
+      }
+    });
+
+    return () => {
+      mounted = false;
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   const refreshAgent = async () => {
     if (token) {
       await fetchAgentProfile(token);
+    }
+  };
+
+  const signInWithGoogle = async (redirectTo?: string) => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: redirectTo || window.location.href,
+        queryParams: {
+          hd: "mattsmithrealestategroup.com",
+          access_type: "offline",
+          prompt: "select_account",
+        },
+      },
+    });
+    if (error) {
+      toast.error(error.message || "Failed to initiate Google sign-in");
+      throw error;
     }
   };
 
@@ -163,11 +236,13 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
     setAgent(null);
     setToken(null);
     localStorage.removeItem("seller_session");
+    // Also sign out of Supabase if signed in
+    await supabase.auth.signOut().catch(() => {});
     toast.success("Signed out");
   };
 
   const resetAgentPassword = async (email: string) => {
-    toast.info("Password reset is currently being updated for the new Seller system. Please contact an admin for assistance.");
+    toast.info("Password reset: You can sign in instantly with Google, or contact Tyler for a password reset.");
   };
 
   return (
@@ -177,6 +252,7 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
         loading,
         signUpAgent,
         signInAgent,
+        signInWithGoogle,
         signOutAgent,
         resetAgentPassword,
         refreshAgent,

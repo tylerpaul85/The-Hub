@@ -15,9 +15,14 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Trash2, Mail, Clock, CheckCircle2, XCircle, UserCheck } from "lucide-react";
+import { Trash2, Mail, Clock, CheckCircle2, XCircle, UserCheck, Calculator, Info } from "lucide-react";
 import { format, formatDistanceToNow, isPast } from "date-fns";
-import { inviteUser, removeUser as removeUserFn } from "@/lib/user-admin.functions";
+import {
+  inviteUser,
+  removeUser as removeUserFn,
+  getPendingUsersFn,
+  type PendingUserWithAgentStatus,
+} from "@/lib/user-admin.functions";
 
 type AppRole =
   | "admin"
@@ -54,21 +59,13 @@ function roleLabel(role: AppRole): string {
   return ROLE_OPTIONS.find((o) => o.value === role)?.label ?? role;
 }
 
-interface PendingUser {
-  id: string;
-  email: string;
-  first_name: string | null;
-  last_name: string | null;
-  created_at: string;
-}
-
 function PendingUserRow({
   u,
   onApprove,
   onRemove,
   isPending,
 }: {
-  u: PendingUser;
+  u: PendingUserWithAgentStatus;
   onApprove: (userId: string, role: AppRole) => void;
   onRemove: (userId: string) => void;
   isPending: boolean;
@@ -77,12 +74,20 @@ function PendingUserRow({
   return (
     <div className="p-4 flex flex-wrap items-center gap-4">
       <div className="flex-1 min-w-[220px]">
-        <div className="font-medium text-sm">
-          {[u.first_name, u.last_name].filter(Boolean).join(" ") || u.email}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-medium text-sm">
+            {[u.first_name, u.last_name].filter(Boolean).join(" ") || u.email}
+          </span>
+          {u.isAgent && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/25">
+              <Calculator className="h-3 w-3" />
+              <span>Agent Tools Active</span>
+            </span>
+          )}
         </div>
         <div className="text-xs text-muted-foreground">{u.email}</div>
         <div className="text-xs text-muted-foreground">
-          Signed up {formatDistanceToNow(new Date(u.created_at), { addSuffix: true })}
+          Requested {formatDistanceToNow(new Date(u.created_at), { addSuffix: true })}
         </div>
       </div>
       <Select value={approveRole} onValueChange={(v) => setApproveRole(v as AppRole)}>
@@ -101,15 +106,22 @@ function PendingUserRow({
         disabled={isPending}
         className="bg-gold text-gold-foreground hover:bg-gold/90"
       >
-        <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> Approve
+        <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> Approve Staff Access
       </Button>
       <Button
         size="sm"
         variant="ghost"
         onClick={() => {
-          if (confirm(`Reject and remove ${u.email}?`)) onRemove(u.id);
+          if (
+            confirm(
+              `Reject staff backend access for ${u.email}?\n\nNote: This will only decline access to the internal marketing dashboard. They will still have full access to Seller Net Proceeds and Agent Tools.`,
+            )
+          ) {
+            onRemove(u.id);
+          }
         }}
         className="text-destructive hover:text-destructive hover:bg-destructive/10"
+        title="Decline internal marketing hub access"
       >
         <Trash2 className="h-4 w-4" />
       </Button>
@@ -196,24 +208,14 @@ function UsersPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const getPendingFn = useServerFn(getPendingUsersFn);
+
   // --- Pending-approval users ---
   const { data: pendingUsers = [] } = useQuery({
     queryKey: ["pending-approval-users"],
     enabled: isAdmin,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("profiles")
-        .select("id, email, first_name, last_name, created_at")
-        .eq("pending_approval", true)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as Array<{
-        id: string;
-        email: string;
-        first_name: string | null;
-        last_name: string | null;
-        created_at: string;
-      }>;
+      return await getPendingFn();
     },
   });
 
@@ -474,10 +476,28 @@ function UsersPage() {
       {/* ── Pending Approval Users ── */}
       {pendingUsers.length > 0 && (
         <section className="bg-card border border-amber-500/30 rounded-xl overflow-hidden mb-6">
-          <div className="p-5 border-b border-amber-500/30 flex items-center gap-2">
-            <UserCheck className="h-4 w-4 text-amber-400" />
-            <h2 className="font-semibold text-amber-300">Awaiting Approval ({pendingUsers.length})</h2>
+          <div className="p-5 border-b border-amber-500/30 flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <UserCheck className="h-4 w-4 text-amber-400" />
+              <h2 className="font-semibold text-amber-300">Staff Backend Access Requests ({pendingUsers.length})</h2>
+            </div>
+            <span className="text-xs text-amber-400/90 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20 font-medium">
+              Only required for Marketing Hub Backend
+            </span>
           </div>
+
+          <div className="p-4 bg-amber-500/5 border-b border-amber-500/20 text-xs text-muted-foreground leading-relaxed flex items-start gap-2.5">
+            <Info className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              <span className="font-medium text-foreground">
+                Real estate agents do NOT need approval for Seller Net Proceeds or Playbooks.
+              </span>
+              <p>
+                Agents already have unrestricted access to calculators and training tools independently. The requests below are only for staff who need permissions to manage content calendars, video approvals, or inventory in the backend. Rejecting a request here will <strong className="text-foreground">never</strong> lock an agent out of Seller Net Proceeds.
+              </p>
+            </div>
+          </div>
+
           <div className="divide-y divide-border">
             {pendingUsers.map((u) => (
               <PendingUserRow

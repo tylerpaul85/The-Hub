@@ -13,6 +13,7 @@ import logo from "@/assets/msreg-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
+import { useAgentAuth } from "@/hooks/use-agent-auth";
 import { cn } from "@/lib/utils";
 import { DEFAULT_HUB_CARDS, type HubCardDefinition } from "@/lib/hub-cards.config";
 import { getPublicHubCardSettings } from "@/lib/hub-card-order.functions";
@@ -37,6 +38,7 @@ const IOS_TIP_KEY = "msreg-agent-hub-ios-tip-dismissed";
 
 function AgentsHome() {
   const { user } = useAuth();
+  const { agent } = useAgentAuth();
   const [showIosTip, setShowIosTip] = useState(false);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<"all" | "listings" | "clients" | "requests">("all");
@@ -122,10 +124,10 @@ function AgentsHome() {
   }, [orderedCards, search, category]);
 
   const firstName =
+    agent?.full_name?.split(" ")[0] ||
     (user?.user_metadata as any)?.first_name ||
     user?.email?.split("@")[0] ||
     "Agent";
-
 
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-x-hidden selection:bg-gold/30 selection:text-white px-4 py-6 sm:py-10 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
@@ -151,13 +153,23 @@ function AgentsHome() {
             </span>
           </div>
 
-          <Link
-            to={user ? "/dashboard" : "/auth"}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/80 bg-surface-2/60 hover:bg-surface-2 hover:border-gold/50 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-all shadow-2xs group"
-          >
-            <LogIn className="h-3 w-3 text-muted-foreground group-hover:text-gold transition-colors" />
-            <span>{user ? "Internal Dashboard" : "Staff Login"}</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            {agent && (
+              <Link
+                to="/agent-tools"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gold/40 bg-gold/10 hover:bg-gold/20 text-[11px] font-semibold text-gold transition-all shadow-2xs"
+              >
+                <span>Agent Tools</span>
+              </Link>
+            )}
+            <Link
+              to={user ? "/dashboard" : "/auth"}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/80 bg-surface-2/60 hover:bg-surface-2 hover:border-gold/50 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-all shadow-2xs group"
+            >
+              <LogIn className="h-3 w-3 text-muted-foreground group-hover:text-gold transition-colors" />
+              <span>{user ? "Internal Dashboard" : "Staff Login"}</span>
+            </Link>
+          </div>
         </div>
 
         {/* Central Brand Lockup */}

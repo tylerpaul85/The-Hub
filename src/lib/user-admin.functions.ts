@@ -86,7 +86,8 @@ export const removeUser = createServerFn({ method: "POST" })
     await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
     await supabaseAdmin.from("profiles").delete().eq("id", data.userId);
 
-    // Hard delete the auth user.
+    // Hard delete the internal auth user (only revokes backend hub access).
+    // Note: This does NOT delete their seller_proceeds_accounts or agent tools data.
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId, false);
     if (error && !/not found|does not exist/i.test(error.message)) {
       throw new Error(`Auth delete failed: ${error.message}`);
@@ -94,3 +95,45 @@ export const removeUser = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
+export interface PendingUserWithAgentStatus {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  created_at: string;
+  isAgent: boolean;
+}
+
+export const getPendingUsersFn = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<PendingUserWithAgentStatus[]> => {
+    const { data: roleRows } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    const isAdmin = (roleRows ?? []).some((r: any) => r.role === "admin");
+    if (!isAdmin) throw new Error("Forbidden: admin role required");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [{ data: pending, error: pErr }, { data: sellerAccs, error: sErr }] = await Promise.all([
+      supabaseAdmin
+        .from("profiles")
+        .select("id, email, first_name, last_name, created_at")
+        .eq("pending_approval", true)
+        .order("created_at", { ascending: false }),
+      supabaseAdmin
+        .from("seller_proceeds_accounts")
+        .select("email"),
+    ]);
+
+    if (pErr) throw pErr;
+    if (sErr) throw sErr;
+
+    const agentEmailSet = new Set((sellerAccs ?? []).map((s: any) => s.email?.toLowerCase()));
+    return (pending ?? []).map((u: any) => ({
+      ...u,
+      isAgent: agentEmailSet.has(u.email?.toLowerCase()),
+    }));
+  });
+
