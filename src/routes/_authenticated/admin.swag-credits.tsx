@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -56,6 +57,7 @@ import {
   Sparkles,
   ExternalLink,
   RotateCcw,
+  Send,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { toast } from "sonner";
@@ -66,6 +68,7 @@ import {
   revokeSwagCredit as revokeSwagCreditFn,
   syncSwagCreditBalances as syncSwagCreditBalancesFn,
   checkShopifyConfig as checkShopifyConfigFn,
+  sendSwagCreditReminders as sendSwagCreditRemindersFn,
 } from "@/lib/shopify-swag-credits.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/swag-credits")({
@@ -113,6 +116,16 @@ Here is your swag credit gift card code - {{code}}
 You can access the from the hub or using this url www.msregswag.com
 Let me know if you have any questions!`;
 
+const REMINDER_DEFAULT_SUBJECT = "Reminder: You have {{balance}} in MSREG Swag Store Credit!";
+
+const REMINDER_DEFAULT_BODY = `Hey {{first_name}}!
+Just a friendly reminder that you have {{balance}} in MSREG Swag Store credit available to spend!
+
+Your gift card code is: {{code}}
+
+You can shop anytime from the Agent Hub or directly at www.msregswag.com.
+Let me know if you have any questions!`;
+
 function AdminSwagCreditsPage() {
   const { isAdmin, roles, loading: authLoading } = useAuth();
   const isMarketing = roles?.includes("marketing_coordinator");
@@ -124,6 +137,16 @@ function AdminSwagCreditsPage() {
   const [isIssueOpen, setIsIssueOpen] = useState(false);
   const [revealedCodes, setRevealedCodes] = useState<Record<string, boolean>>({});
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
+
+  // Reminder Dialog State
+  const [isReminderOpen, setIsReminderOpen] = useState(false);
+  const [includeUnspent, setIncludeUnspent] = useState(true);
+  const [includePartial, setIncludePartial] = useState(false);
+  const [excludedCreditIds, setExcludedCreditIds] = useState<Record<string, boolean>>({});
+  const [emailOverrides, setEmailOverrides] = useState<Record<string, string>>({});
+  const [reminderSubject, setReminderSubject] = useState(REMINDER_DEFAULT_SUBJECT);
+  const [reminderBody, setReminderBody] = useState(REMINDER_DEFAULT_BODY);
+  const [reminderTab, setReminderTab] = useState<"edit" | "preview">("edit");
 
   // Form State: Recipient Selection
   const [useCustomRecipient, setUseCustomRecipient] = useState(false);
@@ -159,6 +182,7 @@ function AdminSwagCreditsPage() {
   const revokeCredit = useServerFn(revokeSwagCreditFn);
   const syncBalances = useServerFn(syncSwagCreditBalancesFn);
   const checkConfig = useServerFn(checkShopifyConfigFn);
+  const sendReminders = useServerFn(sendSwagCreditRemindersFn);
 
   // Queries
   const { data: config, isLoading: isConfigLoading } = useQuery({
@@ -255,6 +279,150 @@ function AdminSwagCreditsPage() {
       toast.error(err.message || "Failed to sync balances.");
     },
   });
+
+  const sendRemindersMutation = useMutation({
+    mutationFn: async (payload: {
+      recipients: Array<{ creditId: string; recipientEmail: string }>;
+      includeUnspent: boolean;
+      includePartial: boolean;
+      emailSubject: string;
+      emailBody: string;
+    }) => {
+      return await sendReminders({ data: payload });
+    },
+    onSuccess: (res: any) => {
+      qc.invalidateQueries({ queryKey: ["swag-credits-list"] });
+      if (res.sentCount > 0 && res.failedCount === 0) {
+        toast.success(
+          `Successfully sent ${res.sentCount} swag credit reminder email${res.sentCount === 1 ? "" : "s"}!`,
+        );
+        setIsReminderOpen(false);
+      } else if (res.sentCount > 0 && res.failedCount > 0) {
+        toast.warning(
+          `Sent ${res.sentCount} email${res.sentCount === 1 ? "" : "s"}, ${res.failedCount} failed: ${res.errors?.[0] || ""}`,
+          { duration: 8000 },
+        );
+        setIsReminderOpen(false);
+      } else {
+        toast.error(
+          res.errors?.[0] || "No reminder emails could be sent. Please check recipient email addresses.",
+        );
+      }
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to send reminder emails.");
+    },
+  });
+
+  // Resolve email for a credit record (uses stored recipient_email, or matches agent_name in toolbox_agents, or manual override)
+  const resolveCreditEmail = useMemo(() => {
+    const agentEmailByName = new Map<string, string>();
+    for (const a of toolboxAgents) {
+      if (a.name && a.email) {
+        agentEmailByName.set(a.name.trim().toLowerCase(), a.email.trim());
+      }
+    }
+    return (credit: SwagCredit): string => {
+      if (emailOverrides[credit.id] !== undefined) {
+        return emailOverrides[credit.id];
+      }
+      if (credit.recipient_email && credit.recipient_email.trim()) {
+        return credit.recipient_email.trim();
+      }
+      const matched = agentEmailByName.get((credit.agent_name || "").trim().toLowerCase());
+      if (matched) return matched;
+      // If agent_name itself looks like an email
+      if (credit.agent_name && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(credit.agent_name.trim())) {
+        return credit.agent_name.trim();
+      }
+      return "";
+    };
+  }, [toolboxAgents, emailOverrides]);
+
+  // Categorize credits by balance status (strictly excluding $0 balance and non-active credits)
+  const reminderStats = useMemo(() => {
+    const unspent: SwagCredit[] = [];
+    const partial: SwagCredit[] = [];
+    let zeroBalanceCount = 0;
+
+    for (const c of credits) {
+      const bal = Number(c.balance || 0);
+      const amt = Number(c.amount || 0);
+      if (c.status !== "active" || bal <= 0) {
+        if (bal <= 0) zeroBalanceCount++;
+        continue;
+      }
+      if (bal >= amt - 0.005) {
+        unspent.push(c);
+      } else {
+        partial.push(c);
+      }
+    }
+
+    return { unspent, partial, zeroBalanceCount, totalEligible: unspent.length + partial.length };
+  }, [credits]);
+
+  // Credits matching the checked category boxes (never includes $0 balance)
+  const matchingReminderCredits = useMemo(() => {
+    const list: SwagCredit[] = [];
+    if (includeUnspent) {
+      list.push(...reminderStats.unspent);
+    }
+    if (includePartial) {
+      list.push(...reminderStats.partial);
+    }
+    return list;
+  }, [includeUnspent, includePartial, reminderStats]);
+
+  // Selected credits ready to send (checked individually and has valid email)
+  const selectedReminderRecipients = useMemo(() => {
+    return matchingReminderCredits
+      .filter((c) => !excludedCreditIds[c.id])
+      .map((c) => ({
+        credit: c,
+        email: resolveCreditEmail(c).trim(),
+      }));
+  }, [matchingReminderCredits, excludedCreditIds, resolveCreditEmail]);
+
+  const validSelectedRecipients = useMemo(() => {
+    return selectedReminderRecipients.filter((r) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email));
+  }, [selectedReminderRecipients]);
+
+  const handleOpenReminderDialog = () => {
+    setIncludeUnspent(true);
+    setIncludePartial(reminderStats.unspent.length === 0 && reminderStats.partial.length > 0);
+    setExcludedCreditIds({});
+    setReminderSubject(REMINDER_DEFAULT_SUBJECT);
+    setReminderBody(REMINDER_DEFAULT_BODY);
+    setReminderTab("edit");
+    setIsReminderOpen(true);
+  };
+
+  const handleSendRemindersSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!includeUnspent && !includePartial) {
+      toast.error("Please check at least one recipient group above.");
+      return;
+    }
+    if (validSelectedRecipients.length === 0) {
+      toast.error("No selected recipients with valid email addresses.");
+      return;
+    }
+    if (!reminderSubject.trim() || !reminderBody.trim()) {
+      toast.error("Please provide both an email subject and body.");
+      return;
+    }
+    sendRemindersMutation.mutate({
+      recipients: validSelectedRecipients.map((r) => ({
+        creditId: r.credit.id,
+        recipientEmail: r.email,
+      })),
+      includeUnspent,
+      includePartial,
+      emailSubject: reminderSubject.trim(),
+      emailBody: reminderBody.trim(),
+    });
+  };
 
   // Preset switching logic
   const handleCreditTypeChange = (newType: CreditType) => {
@@ -453,7 +621,7 @@ function AdminSwagCreditsPage() {
           </span>
         }
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -465,6 +633,21 @@ function AdminSwagCreditsPage() {
                 className={`h-3.5 w-3.5 mr-1.5 ${syncMutation.isPending || isRefetching ? "animate-spin" : ""}`}
               />
               Sync Balances
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleOpenReminderDialog}
+              disabled={isCreditsLoading}
+              className="border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[var(--text-primary)] hover:bg-[var(--accent)]/20 font-semibold h-9 text-xs"
+            >
+              <Send className="h-3.5 w-3.5 mr-1.5 text-[var(--accent)]" />
+              Email Balance Reminders
+              {reminderStats.totalEligible > 0 && (
+                <span className="ml-1.5 px-1.5 py-0.2 rounded-full bg-[var(--accent)]/20 text-[var(--accent)] font-mono text-[11px]">
+                  {reminderStats.totalEligible}
+                </span>
+              )}
             </Button>
             <Button
               onClick={handleOpenIssue}
@@ -1221,6 +1404,417 @@ function AdminSwagCreditsPage() {
               Done
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* SEND BALANCE REMINDER EMAILS DIALOG */}
+      <Dialog open={isReminderOpen} onOpenChange={setIsReminderOpen}>
+        <DialogContent className="bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-primary)] max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-[var(--text-primary)] text-xl font-bold flex items-center gap-2">
+              <Send className="h-5 w-5 text-[var(--accent)]" />
+              Email Swag Credit Balance Reminders
+            </DialogTitle>
+            <DialogDescription className="text-xs text-[var(--text-secondary)]">
+              Send an email to agents with their available swag credit balance, gift card code, and a direct link to the swag store (www.msregswag.com).
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSendRemindersSubmit} className="space-y-5 py-2">
+            {/* Step 1: Audience Checkboxes */}
+            <div className="space-y-3 p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-bold uppercase tracking-wider text-[var(--accent)] flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5" /> 1. Choose Who to Email
+                </Label>
+                {config?.configured && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => syncMutation.mutate()}
+                    disabled={syncMutation.isPending}
+                    className="h-6 px-2 text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  >
+                    <RefreshCw
+                      className={`h-3 w-3 mr-1 ${syncMutation.isPending ? "animate-spin" : ""}`}
+                    />
+                    Sync Shopify Balances First
+                  </Button>
+                )}
+              </div>
+
+              <div className="space-y-2.5">
+                {/* Checkbox 1: Unspent full balance */}
+                <label
+                  htmlFor="check-unspent"
+                  className={`flex items-start justify-between gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
+                    includeUnspent
+                      ? "bg-[var(--accent)]/10 border-[var(--accent)]/60"
+                      : "bg-[var(--surface-1)] border-[var(--border)] hover:border-[var(--accent)]/30"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="check-unspent"
+                      checked={includeUnspent}
+                      onCheckedChange={(checked) => setIncludeUnspent(checked === true)}
+                      className="mt-0.5"
+                    />
+                    <div className="space-y-0.5">
+                      <div className="text-sm font-semibold text-[var(--text-primary)]">
+                        Agents who haven&apos;t spent any of their money
+                      </div>
+                      <div className="text-xs text-[var(--text-secondary)]">
+                        100% of their original swag credit is still available (Balance = Original Amount)
+                      </div>
+                    </div>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-xs font-mono shrink-0"
+                  >
+                    {reminderStats.unspent.length} {reminderStats.unspent.length === 1 ? "agent" : "agents"}
+                  </Badge>
+                </label>
+
+                {/* Checkbox 2: Partially spent balance */}
+                <label
+                  htmlFor="check-partial"
+                  className={`flex items-start justify-between gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
+                    includePartial
+                      ? "bg-[var(--accent)]/10 border-[var(--accent)]/60"
+                      : "bg-[var(--surface-1)] border-[var(--border)] hover:border-[var(--accent)]/30"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="check-partial"
+                      checked={includePartial}
+                      onCheckedChange={(checked) => setIncludePartial(checked === true)}
+                      className="mt-0.5"
+                    />
+                    <div className="space-y-0.5">
+                      <div className="text-sm font-semibold text-[var(--text-primary)]">
+                        Include agents who have some of their amount left
+                      </div>
+                      <div className="text-xs text-[var(--text-secondary)]">
+                        Have spent part of their credit, but still have a remaining balance over $0.00
+                      </div>
+                    </div>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className="bg-amber-500/10 text-amber-400 border-amber-500/20 text-xs font-mono shrink-0"
+                  >
+                    {reminderStats.partial.length} {reminderStats.partial.length === 1 ? "agent" : "agents"}
+                  </Badge>
+                </label>
+              </div>
+
+              <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)] pt-1">
+                <Ban className="h-3.5 w-3.5 text-rose-400 shrink-0" />
+                <span>
+                  Agents with a <strong className="text-[var(--text-secondary)]">$0.00 balance</strong> ({reminderStats.zeroBalanceCount} cards) or revoked credits are automatically excluded.
+                </span>
+              </div>
+            </div>
+
+            {/* Step 2: Matching Recipients Preview & Selection */}
+            <div className="space-y-2.5 p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-bold uppercase tracking-wider text-[var(--accent)] flex items-center gap-1.5">
+                  <Ticket className="h-3.5 w-3.5" /> 2. Recipients ({validSelectedRecipients.length} of {matchingReminderCredits.length} ready)
+                </Label>
+                {matchingReminderCredits.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setExcludedCreditIds({})}
+                      className="text-[11px] text-[var(--accent)] hover:underline"
+                    >
+                      Select all
+                    </button>
+                    <span className="text-[var(--text-muted)] text-xs">·</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next: Record<string, boolean> = {};
+                        for (const c of matchingReminderCredits) next[c.id] = true;
+                        setExcludedCreditIds(next);
+                      }}
+                      className="text-[11px] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:underline"
+                    >
+                      Deselect all
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {matchingReminderCredits.length === 0 ? (
+                <div className="p-6 text-center text-xs text-[var(--text-muted)] bg-[var(--surface-1)] rounded-lg border border-[var(--border)]">
+                  {!includeUnspent && !includePartial
+                    ? "Check at least one option above to see matching agents."
+                    : "No active swag credits match the selected balance filter."}
+                </div>
+              ) : (
+                <div className="max-h-52 overflow-y-auto divide-y divide-[var(--border)] rounded-lg border border-[var(--border)] bg-[var(--surface-1)]">
+                  {matchingReminderCredits.map((credit) => {
+                    const isSelected = !excludedCreditIds[credit.id];
+                    const resolvedEmail = resolveCreditEmail(credit);
+                    const hasValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resolvedEmail.trim());
+                    const isUnspentCard = Number(credit.balance) >= Number(credit.amount) - 0.005;
+
+                    return (
+                      <div
+                        key={credit.id}
+                        className={`p-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs transition-colors ${
+                          isSelected ? "bg-[var(--surface-1)]" : "bg-[var(--surface-2)]/40 opacity-60"
+                        }`}
+                      >
+                        <div className="flex items-start sm:items-center gap-2.5 min-w-0">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={(checked) => {
+                              setExcludedCreditIds((prev) => ({
+                                ...prev,
+                                [credit.id]: checked !== true,
+                              }));
+                            }}
+                          />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-[var(--text-primary)] truncate">
+                                {credit.agent_name}
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className={
+                                  isUnspentCard
+                                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] py-0 h-4"
+                                    : "bg-amber-500/10 text-amber-400 border-amber-500/20 text-[10px] py-0 h-4"
+                                }
+                              >
+                                {isUnspentCard ? "Unspent" : "Partial Left"}
+                              </Badge>
+                              <span className="font-mono text-[11px] text-[var(--text-muted)]">
+                                Code: ••••{credit.gift_card_code.slice(-4)}
+                              </span>
+                            </div>
+
+                            {credit.recipient_email ||
+                            (resolvedEmail && emailOverrides[credit.id] === undefined) ? (
+                              <div className="text-[11px] text-[var(--text-secondary)] truncate mt-0.5">
+                                {resolvedEmail}
+                              </div>
+                            ) : (
+                              <div className="mt-1 flex items-center gap-1.5">
+                                <Input
+                                  type="email"
+                                  placeholder="Enter recipient email…"
+                                  value={emailOverrides[credit.id] ?? resolvedEmail}
+                                  onChange={(e) =>
+                                    setEmailOverrides((prev) => ({
+                                      ...prev,
+                                      [credit.id]: e.target.value,
+                                    }))
+                                  }
+                                  className={`h-6 text-[11px] px-2 w-56 bg-[var(--surface-2)] ${
+                                    !hasValidEmail ? "border-amber-500/60" : "border-[var(--border)]"
+                                  }`}
+                                />
+                                {!hasValidEmail && (
+                                  <span className="text-[10px] text-amber-400 font-medium">
+                                    Email required
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="text-right font-mono shrink-0 pl-6 sm:pl-0">
+                          <span className="font-bold text-emerald-400">
+                            ${Number(credit.balance).toFixed(2)}
+                          </span>
+                          <span className="text-[var(--text-muted)] text-[11px]">
+                            {" "}
+                            / ${Number(credit.amount).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Step 3: Email Subject & Body */}
+            <div className="space-y-3 p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-bold uppercase tracking-wider text-[var(--accent)] flex items-center gap-1.5">
+                  <Mail className="h-3.5 w-3.5" /> 3. Reminder Email Message
+                </Label>
+                <div className="flex items-center gap-2">
+                  {(reminderSubject !== REMINDER_DEFAULT_SUBJECT ||
+                    reminderBody !== REMINDER_DEFAULT_BODY) && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setReminderSubject(REMINDER_DEFAULT_SUBJECT);
+                        setReminderBody(REMINDER_DEFAULT_BODY);
+                      }}
+                      className="h-7 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] px-2"
+                    >
+                      <RotateCcw className="h-3 w-3 mr-1" /> Reset default
+                    </Button>
+                  )}
+                  <Tabs
+                    value={reminderTab}
+                    onValueChange={(v) => setReminderTab(v as "edit" | "preview")}
+                    className="w-auto"
+                  >
+                    <TabsList className="bg-[var(--surface-1)] h-7 p-0.5 border border-[var(--border)]">
+                      <TabsTrigger value="edit" className="text-xs h-6 px-2.5">
+                        Edit
+                      </TabsTrigger>
+                      <TabsTrigger value="preview" className="text-xs h-6 px-2.5">
+                        Preview
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="reminder-subject" className="text-xs text-[var(--text-secondary)] font-medium">
+                  Subject Line
+                </Label>
+                <Input
+                  id="reminder-subject"
+                  value={reminderSubject}
+                  onChange={(e) => setReminderSubject(e.target.value)}
+                  className="bg-[var(--surface-1)] border-[var(--border)] focus-visible:ring-1 focus-visible:ring-[var(--accent)] text-sm text-[var(--text-primary)]"
+                />
+              </div>
+
+              {reminderTab === "edit" ? (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between flex-wrap gap-1">
+                    <Label htmlFor="reminder-body" className="text-xs text-[var(--text-secondary)] font-medium">
+                      Email Body
+                    </Label>
+                    <span className="text-[11px] text-[var(--text-muted)]">
+                      Placeholders:{" "}
+                      <code className="text-[var(--accent)] font-mono bg-[var(--surface-1)] px-1 py-0.5 rounded border border-[var(--border)]">
+                        {"{{first_name}}"}
+                      </code>{" "}
+                      <code className="text-[var(--accent)] font-mono bg-[var(--surface-1)] px-1 py-0.5 rounded border border-[var(--border)]">
+                        {"{{balance}}"}
+                      </code>{" "}
+                      <code className="text-[var(--accent)] font-mono bg-[var(--surface-1)] px-1 py-0.5 rounded border border-[var(--border)]">
+                        {"{{code}}"}
+                      </code>
+                    </span>
+                  </div>
+                  <Textarea
+                    id="reminder-body"
+                    rows={6}
+                    value={reminderBody}
+                    onChange={(e) => setReminderBody(e.target.value)}
+                    className="bg-[var(--surface-1)] border-[var(--border)] focus-visible:ring-1 focus-visible:ring-[var(--accent)] text-sm font-sans leading-relaxed min-h-[140px] text-[var(--text-primary)]"
+                  />
+                </div>
+              ) : (
+                /* Live Preview of Reminder Email */
+                (() => {
+                  const sample = validSelectedRecipients[0]?.credit || matchingReminderCredits[0];
+                  const sampleName = sample?.agent_name || "Alex Morgan";
+                  const sampleFirst = sampleName.trim().split(/\s+/)[0] || "Alex";
+                  const sampleBalance = sample ? `$${Number(sample.balance).toFixed(2)}` : "$50.00";
+                  const sampleAmount = sample ? `$${Number(sample.amount).toFixed(2)}` : "$50.00";
+                  const sampleCode = sample?.gift_card_code || "MSREG-SWAG-CODE";
+                  const sampleEmail = sample ? resolveCreditEmail(sample) : "agent@example.com";
+
+                  const interpolate = (str: string) =>
+                    str
+                      .replace(/\$?\{\{\s*balance\s*\}\}|\$?\[\s*balance\s*\]/gi, sampleBalance)
+                      .replace(/\$?\{\{\s*amount\s*\}\}|\$?\[\s*amount\s*\]/gi, sampleAmount)
+                      .replace(/\{\{\s*first_name\s*\}\}|\[\s*first_name\s*\]/gi, sampleFirst)
+                      .replace(/\{\{\s*name\s*\}\}|\[\s*name\s*\]/gi, sampleName)
+                      .replace(/\{\{\s*code\s*\}\}|\[\s*code\s*\]/gi, sampleCode);
+
+                  return (
+                    <div className="rounded-xl border border-[var(--border)] bg-[#0C0F17] p-5 text-slate-100 text-sm space-y-3 font-sans shadow-inner">
+                      <div className="border-b border-slate-800 pb-2.5 flex items-center justify-between text-xs text-slate-400">
+                        <div>
+                          <span className="text-slate-500 font-medium">Previewing for:</span>{" "}
+                          {sampleName} ({sampleEmail || "no email"})
+                        </div>
+                        <div>
+                          <span className="text-slate-500 font-medium">Store:</span> www.msregswag.com
+                        </div>
+                      </div>
+                      <div className="font-bold text-white text-base">
+                        {interpolate(reminderSubject)}
+                      </div>
+                      <div className="whitespace-pre-wrap text-slate-300 leading-relaxed text-xs sm:text-sm py-1">
+                        {interpolate(reminderBody)}
+                      </div>
+                      <div className="bg-[#131826] border border-amber-500/40 rounded-xl p-4 text-center my-2 shadow-sm space-y-1">
+                        <div className="text-[10px] uppercase font-bold tracking-wider text-amber-400">
+                          Your Gift Card Code
+                        </div>
+                        <div className="font-mono text-xl font-extrabold text-white tracking-widest">
+                          {sampleCode}
+                        </div>
+                        <div className="text-xs text-slate-300">
+                          Available Balance:{" "}
+                          <span className="text-emerald-400 font-bold">{sampleBalance}</span>
+                        </div>
+                        <div className="pt-2">
+                          <span className="inline-block bg-amber-600 text-white text-xs font-semibold px-4 py-2 rounded-lg">
+                            Shop Swag Store → (www.msregswag.com)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()
+              )}
+            </div>
+
+            <DialogFooter className="pt-2 border-t border-[var(--border)]">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsReminderOpen(false)}
+                className="border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface-2)] text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                className="bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] font-semibold text-xs shadow-sm"
+                disabled={
+                  sendRemindersMutation.isPending ||
+                  validSelectedRecipients.length === 0 ||
+                  !config?.hasResend
+                }
+              >
+                <Send className="h-3.5 w-3.5 mr-1.5" />
+                {sendRemindersMutation.isPending
+                  ? "Sending Reminders…"
+                  : `Send Email to ${validSelectedRecipients.length} ${
+                      validSelectedRecipients.length === 1 ? "Agent" : "Agents"
+                    }`}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

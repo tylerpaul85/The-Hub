@@ -18,21 +18,66 @@ const RevokeCreditSchema = z.object({
   creditId: z.string().uuid(),
 });
 
+const SendRemindersSchema = z.object({
+  recipients: z
+    .array(
+      z.object({
+        creditId: z.string().uuid(),
+        recipientEmail: z.string().trim().email("Valid email required"),
+      }),
+    )
+    .min(1, "At least one recipient is required"),
+  includeUnspent: z.boolean().default(true),
+  includePartial: z.boolean().default(true),
+  emailSubject: z.string().trim().min(1).max(255),
+  emailBody: z.string().trim().min(1).max(10000),
+});
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 /**
  * Format plain text and HTML for the swag gift card email
  */
 function buildSwagCreditEmail(opts: {
   agentName: string;
   amount: number;
+  originalAmount?: number;
   giftCardCode: string;
   subject: string;
   rawBody: string;
-}): { html: string; text: string } {
+}): { subject: string; html: string; text: string } {
   const codeRegex = /\{\{\s*code\s*\}\}|\[\s*code\s*\]/gi;
+  const balanceRegex = /\$?\{\{\s*balance\s*\}\}|\$?\[\s*balance\s*\]/gi;
+  const amountRegex = /\$?\{\{\s*amount\s*\}\}|\$?\[\s*amount\s*\]/gi;
+  const nameRegex = /\{\{\s*name\s*\}\}|\[\s*name\s*\]/gi;
+  const firstNameRegex = /\{\{\s*first_name\s*\}\}|\[\s*first_name\s*\]/gi;
+
+  const firstName = opts.agentName.trim().split(/\s+/)[0] || opts.agentName;
+  const formattedBalance = `$${opts.amount.toFixed(2)}`;
+  const origAmt = opts.originalAmount ?? opts.amount;
+  const formattedAmount = `$${origAmt.toFixed(2)}`;
+
+  const resolvedSubject = opts.subject
+    .replace(balanceRegex, formattedBalance)
+    .replace(amountRegex, formattedAmount)
+    .replace(nameRegex, opts.agentName)
+    .replace(firstNameRegex, firstName)
+    .replace(codeRegex, opts.giftCardCode);
+
   const hasCodePlaceholder = codeRegex.test(opts.rawBody);
 
   // Plain text replacement
-  let text = opts.rawBody;
+  let text = opts.rawBody
+    .replace(balanceRegex, formattedBalance)
+    .replace(amountRegex, formattedAmount)
+    .replace(nameRegex, opts.agentName)
+    .replace(firstNameRegex, firstName);
+
   if (hasCodePlaceholder) {
     text = text.replace(codeRegex, opts.giftCardCode);
   } else {
@@ -45,10 +90,7 @@ function buildSwagCreditEmail(opts: {
     .map((line) => {
       if (!line.trim()) return "<br/>";
       // Escape HTML
-      let l = line
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
+      let l = escapeHtml(line);
 
       // Replace URL www.msregswag.com
       l = l.replace(
@@ -56,13 +98,26 @@ function buildSwagCreditEmail(opts: {
         (match) => {
           const href = match.startsWith("http") ? match : `http://${match}`;
           return `<a href="${href}" target="_blank" style="color: #f59e0b; text-decoration: underline; font-weight: 600;">${match}</a>`;
-        }
+        },
       );
+
+      // Name & amount replacements
+      l = l
+        .replace(nameRegex, escapeHtml(opts.agentName))
+        .replace(firstNameRegex, escapeHtml(firstName))
+        .replace(
+          balanceRegex,
+          `<span style="color: #34d399; font-weight: 700;">${formattedBalance}</span>`,
+        )
+        .replace(
+          amountRegex,
+          `<span style="color: #f8fafc; font-weight: 700;">${formattedAmount}</span>`,
+        );
 
       // Inline code replacement
       l = l.replace(
         codeRegex,
-        `<span style="font-family: 'Courier New', Courier, monospace; font-weight: 700; color: #f59e0b; letter-spacing: 1px; background: #0f172a; padding: 2px 6px; border-radius: 4px; border: 1px solid #d97706;">${opts.giftCardCode}</span>`
+        `<span style="font-family: 'Courier New', Courier, monospace; font-weight: 700; color: #f59e0b; letter-spacing: 1px; background: #0f172a; padding: 2px 6px; border-radius: 4px; border: 1px solid #d97706;">${opts.giftCardCode}</span>`,
       );
 
       return `<p style="margin: 0 0 14px; font-size: 15px; line-height: 1.6; color: #cbd5e1;">${l}</p>`;
@@ -74,7 +129,7 @@ function buildSwagCreditEmail(opts: {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${opts.subject}</title>
+  <title>${escapeHtml(resolvedSubject)}</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc;">
   <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0f172a; padding: 40px 16px;">
@@ -87,7 +142,7 @@ function buildSwagCreditEmail(opts: {
                 Swag Store Credit
               </span>
               <h1 style="margin: 14px 0 0; font-size: 22px; font-weight: 700; color: #f8fafc; line-height: 1.3;">
-                ${opts.subject}
+                ${escapeHtml(resolvedSubject)}
               </h1>
             </td>
           </tr>
@@ -108,7 +163,11 @@ function buildSwagCreditEmail(opts: {
                       ${opts.giftCardCode}
                     </div>
                     <div style="font-size: 13px; color: #94a3b8; font-weight: 500;">
-                      Available Balance: <span style="color: #34d399; font-weight: 700;">$${opts.amount.toFixed(2)}</span>
+                      Available Balance: <span style="color: #34d399; font-weight: 700;">$${opts.amount.toFixed(2)}</span>${
+                        origAmt > opts.amount + 0.005
+                          ? ` <span style="color: #64748b; font-size: 12px;">(of $${origAmt.toFixed(2)} issued)</span>`
+                          : ""
+                      }
                     </div>
                   </td>
                 </tr>
@@ -139,7 +198,7 @@ function buildSwagCreditEmail(opts: {
 </body>
 </html>`;
 
-  return { html, text };
+  return { subject: resolvedSubject, html, text };
 }
 
 // Helper for verifying admin or marketing coordinator privileges
@@ -550,5 +609,195 @@ export const checkShopifyConfig = createServerFn({ method: "GET" })
       configured: hasLegacyToken || hasNewCredentials,
       storeUrl: process.env.SHOPIFY_STORE_URL || null,
       hasResend: !!process.env.RESEND_API_KEY,
+    };
+  });
+
+/**
+ * Send reminder emails for existing active swag credits with balance > $0.
+ */
+export const sendSwagCreditReminders = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => SendRemindersSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    await verifyMarketingAdmin(context);
+
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey) {
+      throw new Error("RESEND_API_KEY is not configured on the server.");
+    }
+
+    let fromEmail =
+      process.env.RESEND_FROM_EMAIL ||
+      "MSREG Swag <notifications@msreginternal.com>";
+    if (fromEmail.includes("mattsmithrealestategroup.com")) {
+      fromEmail = fromEmail.replace(/mattsmithrealestategroup\.com/g, "msreginternal.com");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const creditIds = Array.from(new Set(data.recipients.map((r) => r.creditId)));
+    const emailByCreditId = new Map(
+      data.recipients.map((r) => [r.creditId, r.recipientEmail.trim()]),
+    );
+
+    const { data: credits, error: fetchErr } = await supabaseAdmin
+      .from("shopify_swag_credits")
+      .select("*")
+      .in("id", creditIds);
+
+    if (fetchErr || !credits) {
+      throw new Error(fetchErr?.message || "Failed to fetch swag credit records.");
+    }
+
+    let sentCount = 0;
+    let failedCount = 0;
+    let skippedZeroBalanceCount = 0;
+    const errors: string[] = [];
+
+    const emailPayloads: Array<{
+      creditId: string;
+      agentName: string;
+      recipientEmail: string;
+      payload: {
+        from: string;
+        to: string[];
+        subject: string;
+        html: string;
+        text: string;
+      };
+    }> = [];
+
+    for (const credit of credits) {
+      const balance = Number(credit.balance || 0);
+      const amount = Number(credit.amount || 0);
+
+      // Strictly exclude $0 balance or non-active credits
+      if (credit.status !== "active" || balance <= 0) {
+        skippedZeroBalanceCount++;
+        continue;
+      }
+
+      const isUnspent = balance >= amount - 0.005;
+      const isPartial = balance > 0 && balance < amount - 0.005;
+
+      if ((isUnspent && !data.includeUnspent) || (isPartial && !data.includePartial)) {
+        continue;
+      }
+
+      const recipientEmail =
+        emailByCreditId.get(credit.id) || (credit.recipient_email ?? "").trim();
+
+      if (!recipientEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail)) {
+        failedCount++;
+        errors.push(`${credit.agent_name}: Missing or invalid email address`);
+        continue;
+      }
+
+      // Persist resolved email if the credit row didn't have one saved yet
+      if (!credit.recipient_email && recipientEmail) {
+        try {
+          await supabaseAdmin
+            .from("shopify_swag_credits")
+            .update({ recipient_email: recipientEmail })
+            .eq("id", credit.id);
+        } catch {
+          // Ignore if recipient_email column does not exist
+        }
+      }
+
+      const { subject, html, text } = buildSwagCreditEmail({
+        agentName: credit.agent_name,
+        amount: balance,
+        originalAmount: amount,
+        giftCardCode: credit.gift_card_code,
+        subject: data.emailSubject,
+        rawBody: data.emailBody,
+      });
+
+      emailPayloads.push({
+        creditId: credit.id,
+        agentName: credit.agent_name,
+        recipientEmail,
+        payload: {
+          from: fromEmail,
+          to: [recipientEmail],
+          subject,
+          html,
+          text,
+        },
+      });
+    }
+
+    if (emailPayloads.length === 0) {
+      return {
+        ok: true,
+        sentCount: 0,
+        failedCount,
+        skippedZeroBalanceCount,
+        errors,
+      };
+    }
+
+    // Send in chunks of 50 via Resend batch endpoint, with per-email fallback
+    const chunkSize = 50;
+    for (let i = 0; i < emailPayloads.length; i += chunkSize) {
+      const chunk = emailPayloads.slice(i, i + chunkSize);
+      try {
+        const batchRes = await fetch("https://api.resend.com/emails/batch", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${resendApiKey}`,
+          },
+          body: JSON.stringify(chunk.map((item) => item.payload)),
+        });
+
+        if (batchRes.ok) {
+          sentCount += chunk.length;
+          continue;
+        }
+      } catch (batchErr) {
+        console.warn("Resend batch call failed, falling back to sequential send:", batchErr);
+      }
+
+      // Sequential fallback with rate-limit spacing
+      for (let j = 0; j < chunk.length; j++) {
+        const item = chunk[j];
+        if (j > 0) {
+          await new Promise((r) => setTimeout(r, 550));
+        }
+        try {
+          const singleRes = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${resendApiKey}`,
+            },
+            body: JSON.stringify(item.payload),
+          });
+          const singleData = await singleRes.json().catch(() => ({}));
+          if (!singleRes.ok) {
+            failedCount++;
+            errors.push(
+              `${item.agentName} (${item.recipientEmail}): ${
+                singleData?.message || singleData?.error || `HTTP ${singleRes.status}`
+              }`,
+            );
+          } else {
+            sentCount++;
+          }
+        } catch (err: any) {
+          failedCount++;
+          errors.push(`${item.agentName} (${item.recipientEmail}): ${err?.message || "Network error"}`);
+        }
+      }
+    }
+
+    return {
+      ok: true,
+      sentCount,
+      failedCount,
+      skippedZeroBalanceCount,
+      errors,
     };
   });
