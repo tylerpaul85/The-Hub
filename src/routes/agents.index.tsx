@@ -8,6 +8,16 @@ import {
   ChevronRight,
   Share,
   Plus,
+  Calculator,
+  DoorOpen,
+  Gift,
+  Share2,
+  ShoppingBag,
+  Store,
+  BookOpen,
+  Sparkles,
+  Copy,
+  Check,
 } from "lucide-react";
 import logo from "@/assets/msreg-logo.png";
 import { Button } from "@/components/ui/button";
@@ -17,6 +27,8 @@ import { useAgentAuth } from "@/hooks/use-agent-auth";
 import { cn } from "@/lib/utils";
 import { DEFAULT_HUB_CARDS, type HubCardDefinition } from "@/lib/hub-cards.config";
 import { getPublicHubCardSettings } from "@/lib/hub-card-order.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/agents/")({
   component: AgentsHome,
@@ -42,6 +54,28 @@ function AgentsHome() {
   const [showIosTip, setShowIosTip] = useState(false);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<"all" | "listings" | "clients" | "requests">("all");
+  const [copiedCode, setCopiedCode] = useState(false);
+
+  const userOrAgentEmail = user?.email || agent?.email;
+
+  const { data: swagCredit } = useQuery({
+    queryKey: ["agents-home-swag-credit", userOrAgentEmail],
+    enabled: !!userOrAgentEmail,
+    queryFn: async () => {
+      const email = (userOrAgentEmail || "").toLowerCase().trim();
+      const { data, error } = await (supabase as any)
+        .from("shopify_swag_credits")
+        .select("id, agent_name, recipient_email, balance, amount, gift_card_code, status")
+        .eq("status", "active")
+        .order("created_at", { ascending: false });
+
+      if (error || !data) return null;
+      const matched = data.find(
+        (c: any) => (c.recipient_email || "").toLowerCase().trim() === email,
+      );
+      return matched || null;
+    },
+  });
 
   const { data: settings } = useQuery({
     queryKey: ["agent-hub-card-settings"],
@@ -188,6 +222,114 @@ function AgentsHome() {
             </p>
           </div>
         </header>
+
+        {/* ─── Personal Swag Pass Banner (If Agent Has Active Swag Credit) ─── */}
+        {swagCredit && Number(swagCredit.balance) > 0 && (
+          <div className="rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-surface-1 to-surface-2 p-4 text-xs shadow-md max-w-2xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 space-y-0.5">
+                <div className="font-bold text-foreground text-sm flex items-center gap-2">
+                  <span>You have ${Number(swagCredit.balance).toFixed(2)} in Swag Store Credit!</span>
+                </div>
+                <div className="text-[11px] text-muted-foreground flex items-center gap-2">
+                  <span>Code:</span>
+                  <code className="font-mono font-bold text-amber-400 bg-surface-2 px-1.5 py-0.5 rounded border border-border">
+                    {swagCredit.gift_card_code}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(swagCredit.gift_card_code);
+                      setCopiedCode(true);
+                      toast.success("Swag code copied!");
+                      setTimeout(() => setCopiedCode(false), 2000);
+                    }}
+                    className="text-amber-400 hover:underline inline-flex items-center gap-1 font-semibold cursor-pointer"
+                  >
+                    {copiedCode ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                    <span>{copiedCode ? "Copied" : "Copy"}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <a
+              href="http://www.msregswag.com"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-sm transition-all shrink-0 cursor-pointer"
+            >
+              <ShoppingBag className="h-3.5 w-3.5" />
+              <span>Shop Swag Store</span>
+            </a>
+          </div>
+        )}
+
+        {/* ─── High-Speed Deal Launcher Bar (6 Core 1-Tap Agent Actions) ─── */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 max-w-3xl mx-auto">
+          <Link
+            to="/seller-net-proceeds"
+            className="flex items-center gap-2 p-2.5 rounded-xl border border-border/80 bg-surface-1/90 hover:bg-surface-2 hover:border-gold/50 text-xs font-semibold text-foreground transition-all shadow-xs group"
+          >
+            <div className="p-1 rounded-lg bg-gold/10 text-gold group-hover:scale-105 transition-transform">
+              <Calculator className="h-3.5 w-3.5" />
+            </div>
+            <span className="truncate">Net Sheet</span>
+          </Link>
+
+          <Link
+            to="/open-house-management"
+            className="flex items-center gap-2 p-2.5 rounded-xl border border-border/80 bg-surface-1/90 hover:bg-surface-2 hover:border-blue-500/50 text-xs font-semibold text-foreground transition-all shadow-xs group"
+          >
+            <div className="p-1 rounded-lg bg-blue-500/10 text-blue-400 group-hover:scale-105 transition-transform">
+              <DoorOpen className="h-3.5 w-3.5" />
+            </div>
+            <span className="truncate">Open Houses</span>
+          </Link>
+
+          <Link
+            to="/closing-gift"
+            className="flex items-center gap-2 p-2.5 rounded-xl border border-border/80 bg-surface-1/90 hover:bg-surface-2 hover:border-emerald-500/50 text-xs font-semibold text-foreground transition-all shadow-xs group"
+          >
+            <div className="p-1 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-105 transition-transform">
+              <Gift className="h-3.5 w-3.5" />
+            </div>
+            <span className="truncate">Closing Gift</span>
+          </Link>
+
+          <Link
+            to="/referral-form"
+            className="flex items-center gap-2 p-2.5 rounded-xl border border-border/80 bg-surface-1/90 hover:bg-surface-2 hover:border-purple-500/50 text-xs font-semibold text-foreground transition-all shadow-xs group"
+          >
+            <div className="p-1 rounded-lg bg-purple-500/10 text-purple-400 group-hover:scale-105 transition-transform">
+              <Share2 className="h-3.5 w-3.5" />
+            </div>
+            <span className="truncate">Referral Sheet</span>
+          </Link>
+
+          <Link
+            to="/vendor-guide"
+            className="flex items-center gap-2 p-2.5 rounded-xl border border-border/80 bg-surface-1/90 hover:bg-surface-2 hover:border-amber-500/50 text-xs font-semibold text-foreground transition-all shadow-xs group"
+          >
+            <div className="p-1 rounded-lg bg-amber-500/10 text-amber-400 group-hover:scale-105 transition-transform">
+              <Store className="h-3.5 w-3.5" />
+            </div>
+            <span className="truncate">Vendor List</span>
+          </Link>
+
+          <Link
+            to="/playbooks"
+            className="flex items-center gap-2 p-2.5 rounded-xl border border-border/80 bg-surface-1/90 hover:bg-surface-2 hover:border-accent/50 text-xs font-semibold text-foreground transition-all shadow-xs group"
+          >
+            <div className="p-1 rounded-lg bg-accent/10 text-accent group-hover:scale-105 transition-transform">
+              <BookOpen className="h-3.5 w-3.5" />
+            </div>
+            <span className="truncate">Playbooks</span>
+          </Link>
+        </div>
 
         {/* Search & Category Filter Controls */}
         <div className="space-y-3 max-w-2xl mx-auto">

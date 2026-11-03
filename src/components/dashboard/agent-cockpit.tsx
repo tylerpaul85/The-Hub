@@ -1,12 +1,20 @@
 import { useState, useMemo } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { QrCode } from "@/components/qr-code";
+import logo from "@/assets/msreg-logo.png";
 import {
   Calculator,
   DoorOpen,
@@ -28,8 +36,16 @@ import {
   CheckCircle2,
   FileText,
   MapPin,
-  QrCode,
-  ShieldAlert,
+  QrCode as QrIcon,
+  Phone,
+  MessageSquare,
+  Search,
+  DollarSign,
+  Download,
+  Share,
+  Sliders,
+  Send,
+  User,
 } from "lucide-react";
 
 interface SwagCredit {
@@ -60,12 +76,45 @@ interface NetSheetItem {
   created_at: string;
 }
 
+interface VendorItem {
+  id: string;
+  name: string;
+  company: string | null;
+  phone: string | null;
+  email: string | null;
+  category: { id: string; name: string } | null;
+}
+
 export function AgentCockpit() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [copiedCode, setCopiedCode] = useState(false);
+  const [isDigitalPassOpen, setIsDigitalPassOpen] = useState(false);
+  const [vendorSearch, setVendorSearch] = useState("");
+  const [selectedVendorCategory, setSelectedVendorCategory] = useState<string>("all");
+
+  // ─── Deal Estimator State (Instant Net Proceeds Calculator) ───
+  const [calcPrice, setCalcPrice] = useState<number>(375000);
+  const [calcPayoff, setCalcPayoff] = useState<number>(180000);
+  const [calcCommRate, setCalcCommRate] = useState<number>(6.0);
+  const [calcClosingFees, setCalcClosingFees] = useState<number>(2500);
+
+  // Derived Calculations
+  const calcCommission = useMemo(
+    () => Math.round(calcPrice * (calcCommRate / 100)),
+    [calcPrice, calcCommRate],
+  );
+  const calcEstimatedNet = useMemo(
+    () => Math.max(0, calcPrice - calcPayoff - calcCommission - calcClosingFees),
+    [calcPrice, calcPayoff, calcCommission, calcClosingFees],
+  );
+  const calcAgentCommissionShare = useMemo(
+    () => Math.round(calcPrice * ((calcCommRate / 2) / 100)),
+    [calcPrice, calcCommRate],
+  );
 
   // 1. Fetch Swag Credit for logged-in user
-  const { data: swagCredits = [], isLoading: isSwagLoading } = useQuery({
+  const { data: swagCredits = [] } = useQuery({
     queryKey: ["agent-cockpit-swag-credit", user?.email],
     enabled: !!user?.email,
     queryFn: async () => {
@@ -80,7 +129,6 @@ export function AgentCockpit() {
 
       if (error || !data) return [];
 
-      // Filter by recipient_email or matching agent name
       const matched = (data as SwagCredit[]).filter((c) => {
         const cEmail = (c.recipient_email || "").toLowerCase().trim();
         const cName = (c.agent_name || "").toLowerCase().trim();
@@ -126,7 +174,6 @@ export function AgentCockpit() {
 
       if (error || !data) return [];
 
-      // If user has a name, prefer sheets with their name, otherwise return latest
       if (userFirstName) {
         const filtered = (data as NetSheetItem[]).filter((s) =>
           (s.agent_name || "").toLowerCase().includes(userFirstName),
@@ -134,6 +181,28 @@ export function AgentCockpit() {
         if (filtered.length > 0) return filtered;
       }
       return (data ?? []) as NetSheetItem[];
+    },
+  });
+
+  // 4. Fetch Vetted Vendors for Speed-Dial Directory
+  const { data: vendorDirectory = { vendors: [] as VendorItem[], categories: [] as any[] } } = useQuery({
+    queryKey: ["agent-cockpit-vendors-directory"],
+    queryFn: async () => {
+      const [{ data: vData }, { data: cData }] = await Promise.all([
+        (supabase as any)
+          .from("vendors")
+          .select("id, name, company, phone, email, category:vendor_categories(id, name)")
+          .order("name", { ascending: true })
+          .limit(60),
+        (supabase as any)
+          .from("vendor_categories")
+          .select("id, name, sort_order")
+          .order("sort_order", { ascending: true }),
+      ]);
+      return {
+        vendors: (vData ?? []) as VendorItem[],
+        categories: (cData ?? []) as any[],
+      };
     },
   });
 
@@ -150,21 +219,118 @@ export function AgentCockpit() {
     toast.success(`Copied kiosk registration link for ${address}`);
   };
 
+  // Copy quick formatted client text summary
+  const handleCopyClientEstimate = () => {
+    const text = `Hi! Here is your estimated seller net proceeds breakdown:
+• Sale Price: $${calcPrice.toLocaleString()}
+• Est. Mortgage Payoff: $${calcPayoff.toLocaleString()}
+• Est. Commissions (${calcCommRate}%): $${calcCommission.toLocaleString()}
+• Est. Title & Closing Fees: $${calcClosingFees.toLocaleString()}
+------------------------------------
+✨ ESTIMATED NET PROCEEDS: $${calcEstimatedNet.toLocaleString()}
+
+Let me know if you would like me to prepare an official 3-scenario net sheet!`;
+
+    navigator.clipboard.writeText(text);
+    toast.success("Formatted client estimate copied to clipboard!");
+  };
+
+  // Launch Full 3-Scenario Designer with prefilled values
+  const handleLaunchFullDesigner = () => {
+    navigate({
+      to: "/seller-net-proceeds",
+      search: {
+        price: calcPrice,
+        payoff: calcPayoff,
+        comm: calcCommRate,
+      } as any,
+    });
+  };
+
   const swagBalance = activeSwagCredit ? Number(activeSwagCredit.balance) : 0;
   const swagAmount = activeSwagCredit ? Number(activeSwagCredit.amount) : 0;
   const swagPercentLeft =
     swagAmount > 0 ? Math.min(100, Math.max(0, Math.round((swagBalance / swagAmount) * 100))) : 0;
 
+  // Agent name & vCard contact definition
+  const agentFullName =
+    (user?.user_metadata as any)?.full_name ||
+    [user?.user_metadata?.first_name, user?.user_metadata?.last_name].filter(Boolean).join(" ") ||
+    user?.email?.split("@")[0] ||
+    "Agent";
+
+  const agentEmail = user?.email || "agent@mattsmithrealestategroup.com";
+  const agentPhone = (user?.user_metadata as any)?.phone || "(573) 426-3800";
+
+  // Standard vCard 3.0 string for iOS & Android native contact import
+  const vCardString = useMemo(() => {
+    const names = agentFullName.split(" ");
+    const firstName = names[0] || "Agent";
+    const lastName = names.slice(1).join(" ") || "";
+
+    return [
+      "BEGIN:VCARD",
+      "VERSION:3.0",
+      `N:${lastName};${firstName};;;`,
+      `FN:${agentFullName}`,
+      "ORG:Matt Smith Real Estate Group",
+      "TITLE:Realtor®",
+      `TEL;TYPE=CELL,VOICE:${agentPhone}`,
+      `EMAIL;TYPE=WORK,INTERNET:${agentEmail}`,
+      "URL:https://www.msregswag.com",
+      "NOTE:Matt Smith Real Estate Group · Agent Hub",
+      "END:VCARD",
+    ].join("\n");
+  }, [agentFullName, agentPhone, agentEmail]);
+
+  const handleDownloadVCard = () => {
+    const blob = new Blob([vCardString], { type: "text/vcard;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${agentFullName.replace(/\s+/g, "_")}_Contact.vcf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("Contact card (.vcf) downloaded!");
+  };
+
+  // Filtered vendors for speed dial
+  const filteredVendors = useMemo(() => {
+    return vendorDirectory.vendors.filter((v) => {
+      const matchesCat =
+        selectedVendorCategory === "all" || v.category?.id === selectedVendorCategory;
+      const q = vendorSearch.toLowerCase().trim();
+      const matchesSearch =
+        !q ||
+        v.name.toLowerCase().includes(q) ||
+        (v.company && v.company.toLowerCase().includes(q)) ||
+        (v.category?.name && v.category.name.toLowerCase().includes(q));
+      return matchesCat && matchesSearch;
+    });
+  }, [vendorDirectory.vendors, selectedVendorCategory, vendorSearch]);
+
   return (
     <div className="space-y-8 animate-in fade-in-50 duration-300">
-      {/* ─── Hero Spotlight: Swag Pass & Personal Rewards ─── */}
+      {/* ─── Hero Spotlight: Swag Pass & Digital Card Launcher ─── */}
       <section className="relative overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-br from-[#131826] via-[#101522] to-[#1c160c] p-6 sm:p-7 shadow-xl ring-1 ring-white/[0.06]">
         <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-semibold">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>MSREG Swag Store Pass</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-semibold">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>MSREG Swag Store Pass</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDigitalPassOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-2 border border-border hover:border-gold/50 text-slate-300 hover:text-white text-xs font-semibold transition-all cursor-pointer shadow-sm hover:scale-105"
+              >
+                <QrIcon className="h-3.5 w-3.5 text-gold" />
+                <span>My Digital Contact Pass &amp; QR</span>
+              </button>
             </div>
 
             <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
@@ -239,6 +405,176 @@ export function AgentCockpit() {
               >
                 Credits Info
               </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Innovation 1: Interactive Deal & Net Proceeds Fast Estimator ─── */}
+      <section className="bg-surface-1 border border-border/80 rounded-3xl p-5 sm:p-6 shadow-md relative overflow-hidden ring-1 ring-white/[0.04]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3 mb-5">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2.5 rounded-xl bg-gold/10 text-gold border border-gold/20 shadow-inner">
+              <Calculator className="h-5 w-5 stroke-[1.75]" />
+            </div>
+            <div>
+              <h3 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
+                <span>Instant Deal &amp; Net Proceeds Estimator</span>
+                <Badge variant="outline" className="bg-gold/10 text-gold border-gold/25 text-[10px]">
+                  On-the-Fly Math
+                </Badge>
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Quick calculations for phone calls, kitchen table consults, and price drop scenarios.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCopyClientEstimate}
+              className="text-xs h-8 border-border hover:bg-surface-2 text-slate-300 hover:text-white"
+            >
+              <Copy className="h-3.5 w-3.5 mr-1 text-gold" />
+              Copy SMS to Client
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleLaunchFullDesigner}
+              className="text-xs h-8 bg-gold text-navy hover:bg-gold/90 font-bold shadow-sm"
+            >
+              <span>Full 3-Scenario PDF</span>
+              <ArrowRight className="h-3.5 w-3.5 ml-1" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          {/* Left inputs column */}
+          <div className="lg:col-span-7 space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Listing / Sale Price
+                </Label>
+                <span className="font-mono text-base font-bold text-gold">
+                  ${calcPrice.toLocaleString()}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={75000}
+                max={1200000}
+                step={5000}
+                value={calcPrice}
+                onChange={(e) => setCalcPrice(Number(e.target.value))}
+                className="w-full accent-gold cursor-pointer"
+              />
+              <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
+                <span>$75,000</span>
+                <span>$500,000</span>
+                <span>$1,200,000+</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+              {/* Mortgage Payoff */}
+              <div className="space-y-1">
+                <Label className="text-[11px] font-semibold text-muted-foreground">
+                  Est. Loan Payoff ($)
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-2.5 top-2 text-xs text-muted-foreground">$</span>
+                  <Input
+                    type="number"
+                    step={1000}
+                    value={calcPayoff || ""}
+                    onChange={(e) => setCalcPayoff(Number(e.target.value))}
+                    className="h-8 pl-6 text-xs bg-surface-2 border-border font-mono text-foreground"
+                    placeholder="180000"
+                  />
+                </div>
+              </div>
+
+              {/* Commission Rate */}
+              <div className="space-y-1">
+                <Label className="text-[11px] font-semibold text-muted-foreground">
+                  Total Commission (%)
+                </Label>
+                <div className="flex items-center gap-1">
+                  {[5, 5.5, 6].map((rate) => (
+                    <button
+                      key={rate}
+                      type="button"
+                      onClick={() => setCalcCommRate(rate)}
+                      className={`flex-1 h-8 rounded-lg text-xs font-semibold border transition-all ${
+                        calcCommRate === rate
+                          ? "bg-gold text-navy border-gold"
+                          : "bg-surface-2 border-border text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {rate}%
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Title & Closing Fees */}
+              <div className="space-y-1">
+                <Label className="text-[11px] font-semibold text-muted-foreground">
+                  Closing Fees ($)
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-2.5 top-2 text-xs text-muted-foreground">$</span>
+                  <Input
+                    type="number"
+                    step={250}
+                    value={calcClosingFees || ""}
+                    onChange={(e) => setCalcClosingFees(Number(e.target.value))}
+                    className="h-8 pl-6 text-xs bg-surface-2 border-border font-mono text-foreground"
+                    placeholder="2500"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right output breakdown card */}
+          <div className="lg:col-span-5 bg-surface-2/80 border border-border/80 rounded-2xl p-4.5 space-y-3 shadow-inner">
+            <div className="flex items-baseline justify-between">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Estimated Net Proceeds
+              </span>
+              <span className="text-xl sm:text-2xl font-black font-mono text-emerald-400">
+                ${calcEstimatedNet.toLocaleString()}
+              </span>
+            </div>
+
+            <div className="space-y-1.5 text-xs divide-y divide-border/50 border-t border-border/60 pt-2">
+              <div className="flex justify-between text-muted-foreground pt-1">
+                <span>Sale Price</span>
+                <span className="font-mono text-foreground">${calcPrice.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground pt-1">
+                <span>Mortgage Payoff</span>
+                <span className="font-mono text-rose-400">-${calcPayoff.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground pt-1">
+                <span>Total Commissions ({calcCommRate}%)</span>
+                <span className="font-mono text-rose-400">-${calcCommission.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground pt-1">
+                <span>Est. Title &amp; Closing Costs</span>
+                <span className="font-mono text-rose-400">-${calcClosingFees.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground pt-1">
+                <span>Your Commission Split (Est. 50%)</span>
+                <span className="font-mono text-amber-400 font-bold">
+                  ${calcAgentCommissionShare.toLocaleString()}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -454,7 +790,7 @@ export function AgentCockpit() {
                       target="_blank"
                       className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-400 text-[11px] font-semibold transition-colors"
                     >
-                      <QrCode className="h-3 w-3" />
+                      <QrIcon className="h-3 w-3" />
                       Kiosk
                     </Link>
                   </div>
@@ -530,6 +866,136 @@ export function AgentCockpit() {
           </div>
         </section>
       </div>
+
+      {/* ─── Innovation 2: Vetted Vendor Speed-Dial & Field Directory ─── */}
+      <section className="bg-surface-1 border border-border/80 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+              <Phone className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
+                <span>Vendor Speed-Dial &amp; Field Directory</span>
+                <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/25 text-[10px]">
+                  1-Tap Call &amp; Text
+                </Badge>
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Trusted local inspectors, lenders, stagers, and contractors ready when a client asks.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="relative w-48 sm:w-60">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search vendor or trade…"
+                value={vendorSearch}
+                onChange={(e) => setVendorSearch(e.target.value)}
+                className="h-8 pl-8 text-xs bg-surface-2 border-border"
+              />
+            </div>
+            <Link
+              to="/vendors"
+              className="text-xs font-semibold text-accent hover:underline flex items-center gap-1 shrink-0"
+            >
+              Full Guide <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Category Filter Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
+          <button
+            type="button"
+            onClick={() => setSelectedVendorCategory("all")}
+            className={`px-3 py-1 rounded-full font-semibold transition-all text-xs shrink-0 cursor-pointer ${
+              selectedVendorCategory === "all"
+                ? "bg-purple-500 text-white shadow-sm"
+                : "bg-surface-2 text-muted-foreground hover:text-foreground border border-border"
+            }`}
+          >
+            All Trades ({vendorDirectory.vendors.length})
+          </button>
+          {vendorDirectory.categories.map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setSelectedVendorCategory(cat.id)}
+              className={`px-3 py-1 rounded-full font-semibold transition-all text-xs shrink-0 cursor-pointer ${
+                selectedVendorCategory === cat.id
+                  ? "bg-purple-500 text-white shadow-sm"
+                  : "bg-surface-2 text-muted-foreground hover:text-foreground border border-border"
+              }`}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Vendors Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {filteredVendors.length === 0 ? (
+            <div className="col-span-full py-8 text-center text-xs text-muted-foreground">
+              No matching vendors found.
+            </div>
+          ) : (
+            filteredVendors.slice(0, 9).map((v) => (
+              <div
+                key={v.id}
+                className="p-3.5 rounded-2xl bg-surface-2/60 border border-border/80 hover:bg-surface-2 hover:border-purple-500/40 transition-all flex flex-col justify-between gap-2.5"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-bold text-xs text-foreground truncate">{v.name}</span>
+                    {v.category?.name && (
+                      <span className="text-[10px] text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full font-semibold border border-purple-500/20 shrink-0">
+                        {v.category.name}
+                      </span>
+                    )}
+                  </div>
+                  {v.company && (
+                    <div className="text-[11px] text-muted-foreground truncate mt-0.5">{v.company}</div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 pt-2 border-t border-border/50 text-[11px]">
+                  {v.phone && (
+                    <>
+                      <a
+                        href={`tel:${v.phone.replace(/[^0-9]/g, "")}`}
+                        className="flex-1 inline-flex items-center justify-center gap-1 h-7 rounded-lg bg-surface-1 hover:bg-emerald-500/15 border border-border hover:border-emerald-500/30 text-emerald-400 font-semibold transition-colors"
+                      >
+                        <Phone className="h-3 w-3" />
+                        <span>Call</span>
+                      </a>
+                      <a
+                        href={`sms:${v.phone.replace(/[^0-9]/g, "")}`}
+                        className="flex-1 inline-flex items-center justify-center gap-1 h-7 rounded-lg bg-surface-1 hover:bg-blue-500/15 border border-border hover:border-blue-500/30 text-blue-400 font-semibold transition-colors"
+                      >
+                        <MessageSquare className="h-3 w-3" />
+                        <span>Text</span>
+                      </a>
+                    </>
+                  )}
+                  {v.email && (
+                    <a
+                      href={`mailto:${v.email}`}
+                      className="px-2 h-7 inline-flex items-center justify-center rounded-lg bg-surface-1 hover:bg-surface-3 border border-border text-muted-foreground hover:text-foreground transition-colors"
+                      title={v.email}
+                    >
+                      <Mail className="h-3 w-3" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
 
       {/* ─── Agent Brand, Marketing & Knowledge Suite ─── */}
       <section className="space-y-3">
@@ -612,6 +1078,62 @@ export function AgentCockpit() {
           </Link>
         </div>
       </section>
+
+      {/* ─── Digital Agent Pass & vCard Contact QR Modal ─── */}
+      <Dialog open={isDigitalPassOpen} onOpenChange={setIsDigitalPassOpen}>
+        <DialogContent className="bg-surface-1 border-border text-foreground max-w-sm sm:max-w-md shadow-2xl p-0 overflow-hidden">
+          <div className="bg-gradient-to-br from-[#1c160c] via-surface-1 to-[#0f172a] p-6 text-center space-y-4 border-b border-border/60">
+            <img src={logo} alt="MSREG" className="h-10 w-auto mx-auto drop-shadow-md" />
+
+            <div>
+              <h3 className="text-lg font-bold text-foreground">{agentFullName}</h3>
+              <p className="text-xs text-gold font-medium">Realtor® · Matt Smith Real Estate Group</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5 font-mono">{agentEmail}</p>
+            </div>
+
+            {/* QR Card Presentation */}
+            <div className="bg-white p-4 rounded-2xl shadow-xl inline-block mx-auto border-2 border-amber-500/30">
+              <QrCode
+                value={vCardString}
+                size={180}
+                showModal={false}
+                className="mx-auto"
+              />
+            </div>
+
+            <div className="text-xs text-muted-foreground px-4 leading-relaxed">
+              Scan with any iPhone or Android camera to <strong className="text-foreground">instantly save contact card</strong> into phone contacts!
+            </div>
+          </div>
+
+          <div className="p-4 bg-surface-2/60 flex items-center justify-between gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadVCard}
+              className="flex-1 text-xs border-border hover:bg-surface-2"
+            >
+              <Download className="h-3.5 w-3.5 mr-1 text-gold" />
+              Download .vcf File
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                navigator.clipboard.writeText(
+                  `${agentFullName} - Realtor®, Matt Smith Real Estate Group\nPhone: ${agentPhone}\nEmail: ${agentEmail}\nWebsite: www.msregswag.com`,
+                );
+                toast.success("Contact info copied to clipboard!");
+              }}
+              className="flex-1 text-xs bg-gold text-navy hover:bg-gold/90 font-bold"
+            >
+              <Copy className="h-3.5 w-3.5 mr-1" />
+              Copy Text Info
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
