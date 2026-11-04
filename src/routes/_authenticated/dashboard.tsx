@@ -168,11 +168,12 @@ function Dashboard() {
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground font-sans">
-              {getTimeGreeting()}, {firstName}.
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-normal tracking-tight text-foreground leading-[1.1]">
+              {getTimeGreeting()},{" "}
+              <span className="italic font-normal text-accent">{firstName}</span>.
             </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground max-w-xl leading-relaxed">
-              Internal operations mission control. Monitor incoming agent requests, gift fulfillment queues, phone coverage, and EOS deliverables.
+            <p className="text-xs sm:text-sm text-muted-foreground font-sans max-w-2xl leading-relaxed">
+              Matt Smith Real Estate Group operations mission control. Triage incoming agent requests, monitor phone duty coverage, expedite client closing gifts, and review transaction desk health.
             </p>
           </div>
 

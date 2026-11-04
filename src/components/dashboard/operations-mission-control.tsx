@@ -207,137 +207,149 @@ export function OperationsMissionControl() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {/* Beacon 1: Closing Gifts */}
-          <Link
-            to="/inventory"
-            className="p-3.5 rounded-2xl border border-border bg-surface-1/90 hover:bg-surface-2/90 hover:border-amber-500/40 transition-all shadow-sm space-y-1 block group"
-          >
-            <div className="flex items-center justify-between">
-              <Boxes className="h-4 w-4 text-amber-400" />
-              <Badge
-                variant="outline"
-                className={`text-[10px] font-bold ${
-                  pendingClosingGifts.length > 0
-                    ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                    : "bg-surface-2 text-muted-foreground border-border"
-                }`}
-              >
-                {pendingClosingGifts.length} Pending
-              </Badge>
-            </div>
-            <div className="text-lg font-extrabold font-mono text-foreground group-hover:text-amber-400 transition-colors">
-              {pendingClosingGifts.length}
-            </div>
-            <div className="text-[11px] text-muted-foreground truncate">Closing Gifts Queue</div>
-          </Link>
-
-          {/* Beacon 2: Outbound Referrals */}
-          <Link
-            to="/admin/referrals"
-            className="p-3.5 rounded-2xl border border-border bg-surface-1/90 hover:bg-surface-2/90 hover:border-purple-500/40 transition-all shadow-sm space-y-1 block group"
-          >
-            <div className="flex items-center justify-between">
-              <Send className="h-4 w-4 text-purple-400" />
-              <Badge
-                variant="outline"
-                className="text-[10px] font-bold bg-purple-500/15 text-purple-400 border-purple-500/30"
-              >
-                Active Desk
-              </Badge>
-            </div>
-            <div className="text-lg font-extrabold font-mono text-foreground group-hover:text-purple-400 transition-colors">
-              {activeReferrals.length}
-            </div>
-            <div className="text-[11px] text-muted-foreground truncate">Outbound Deals</div>
-          </Link>
-
-          {/* Beacon 3: Marketing Requests Inbox */}
+          {/* Beacon 1: Marketing Requests Inbox */}
           <Link
             to="/requests"
-            className="p-3.5 rounded-2xl border border-border bg-surface-1/90 hover:bg-surface-2/90 hover:border-blue-500/40 transition-all shadow-sm space-y-1 block group"
+            className="p-3.5 rounded-2xl border border-border/80 bg-surface-1/90 hover:bg-surface-2 hover:border-blue-500/40 transition-all duration-150 shadow-2xs space-y-2 block group relative ring-1 ring-inset ring-white/[0.04]"
           >
             <div className="flex items-center justify-between">
               <Inbox className="h-4 w-4 text-blue-400" />
               <Badge
                 variant="outline"
-                className={`text-[10px] font-bold ${
+                className={`text-[10px] font-mono font-bold ${
                   pendingRequestsCount > 0
                     ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
-                    : "bg-surface-2 text-muted-foreground border-border"
+                    : "bg-surface-2 text-muted-foreground border-border/80"
                 }`}
               >
-                {pendingRequestsCount > 0 ? `${pendingRequestsCount} Pending` : "Queue Clean"}
+                {pendingRequestsCount > 0 ? `${pendingRequestsCount} Pending` : "Clear"}
               </Badge>
             </div>
-            <div className="text-lg font-extrabold font-mono text-foreground group-hover:text-blue-400 transition-colors">
+            <div className="text-2xl font-bold font-mono text-foreground group-hover:text-blue-400 transition-colors">
               {pendingRequestsCount}
             </div>
-            <div className="text-[11px] text-muted-foreground truncate">Requests Inbox</div>
+            <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground truncate">
+              Marketing Requests
+            </div>
+          </Link>
+
+          {/* Beacon 2: Closing Gifts Queue */}
+          <Link
+            to="/inventory"
+            className="p-3.5 rounded-2xl border border-border/80 bg-surface-1/90 hover:bg-surface-2 hover:border-amber-500/40 transition-all duration-150 shadow-2xs space-y-2 block group relative ring-1 ring-inset ring-white/[0.04]"
+          >
+            <div className="flex items-center justify-between">
+              <Boxes className="h-4 w-4 text-amber-400" />
+              <Badge
+                variant="outline"
+                className={`text-[10px] font-mono font-bold ${
+                  pendingClosingGifts.length > 0
+                    ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                    : "bg-surface-2 text-muted-foreground border-border/80"
+                }`}
+              >
+                {pendingClosingGifts.length} Queue
+              </Badge>
+            </div>
+            <div className="text-2xl font-bold font-mono text-foreground group-hover:text-amber-400 transition-colors">
+              {pendingClosingGifts.length}
+            </div>
+            <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground truncate">
+              Closing Gifts
+            </div>
+          </Link>
+
+          {/* Beacon 3: Outbound Referrals */}
+          <Link
+            to="/admin/referrals"
+            className="p-3.5 rounded-2xl border border-border/80 bg-surface-1/90 hover:bg-surface-2 hover:border-purple-500/40 transition-all duration-150 shadow-2xs space-y-2 block group relative ring-1 ring-inset ring-white/[0.04]"
+          >
+            <div className="flex items-center justify-between">
+              <Send className="h-4 w-4 text-purple-400" />
+              <Badge
+                variant="outline"
+                className="text-[10px] font-mono font-bold bg-purple-500/15 text-purple-400 border-purple-500/30"
+              >
+                Active Desk
+              </Badge>
+            </div>
+            <div className="text-2xl font-bold font-mono text-foreground group-hover:text-purple-400 transition-colors">
+              {activeReferrals.length}
+            </div>
+            <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground truncate">
+              Outbound Deals
+            </div>
           </Link>
 
           {/* Beacon 4: Swag Store Balances in Field */}
           <Link
             to="/admin/swag-credits"
-            className="p-3.5 rounded-2xl border border-border bg-surface-1/90 hover:bg-surface-2/90 hover:border-emerald-500/40 transition-all shadow-sm space-y-1 block group"
+            className="p-3.5 rounded-2xl border border-border/80 bg-surface-1/90 hover:bg-surface-2 hover:border-emerald-500/40 transition-all duration-150 shadow-2xs space-y-2 block group relative ring-1 ring-inset ring-white/[0.04]"
           >
             <div className="flex items-center justify-between">
               <ShoppingBag className="h-4 w-4 text-emerald-400" />
               <Badge
                 variant="outline"
-                className="text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                className="text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
               >
                 {swagStats.count} Cards
               </Badge>
             </div>
-            <div className="text-lg font-extrabold font-mono text-foreground group-hover:text-emerald-400 transition-colors">
+            <div className="text-2xl font-bold font-mono text-foreground group-hover:text-emerald-400 transition-colors">
               ${swagStats.totalBalance.toLocaleString("en-US", { maximumFractionDigits: 0 })}
             </div>
-            <div className="text-[11px] text-muted-foreground truncate">Unspent Swag Credit</div>
+            <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground truncate">
+              Unspent Swag Credit
+            </div>
           </Link>
 
           {/* Beacon 5: Agent Net Sheets */}
           <Link
             to="/admin-net-sheets"
-            className="p-3.5 rounded-2xl border border-border bg-surface-1/90 hover:bg-surface-2/90 hover:border-amber-500/40 transition-all shadow-sm space-y-1 block group"
+            className="p-3.5 rounded-2xl border border-border/80 bg-surface-1/90 hover:bg-surface-2 hover:border-amber-500/40 transition-all duration-150 shadow-2xs space-y-2 block group relative ring-1 ring-inset ring-white/[0.04]"
           >
             <div className="flex items-center justify-between">
               <Calculator className="h-4 w-4 text-amber-400" />
               <Badge
                 variant="outline"
-                className="text-[10px] font-bold bg-surface-2 text-muted-foreground border-border"
+                className="text-[10px] font-mono font-bold bg-surface-2 text-muted-foreground border-border/80"
               >
-                Archived
+                Ledger
               </Badge>
             </div>
-            <div className="text-lg font-extrabold font-mono text-foreground group-hover:text-amber-400 transition-colors">
+            <div className="text-2xl font-bold font-mono text-foreground group-hover:text-amber-400 transition-colors">
               {recentNetSheets.length}+
             </div>
-            <div className="text-[11px] text-muted-foreground truncate">Agent Net Sheets</div>
+            <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground truncate">
+              Agent Net Sheets
+            </div>
           </Link>
 
-          {/* Beacon 6: Content Approvals */}
+          {/* Beacon 6: Content Pipeline */}
           <Link
             to="/calendar"
             search={() => ({})}
-            className="p-3.5 rounded-2xl border border-border bg-surface-1/90 hover:bg-surface-2/90 hover:border-rose-500/40 transition-all shadow-sm space-y-1 block group"
+            className="p-3.5 rounded-2xl border border-border/80 bg-surface-1/90 hover:bg-surface-2 hover:border-rose-500/40 transition-all duration-150 shadow-2xs space-y-2 block group relative ring-1 ring-inset ring-white/[0.04]"
           >
             <div className="flex items-center justify-between">
               <ListTodo className="h-4 w-4 text-rose-400" />
               <Badge
                 variant="outline"
-                className={`text-[10px] font-bold ${
+                className={`text-[10px] font-mono font-bold ${
                   contentReviewItems.length > 0
                     ? "bg-rose-500/15 text-rose-400 border-rose-500/30"
-                    : "bg-surface-2 text-muted-foreground border-border"
+                    : "bg-surface-2 text-muted-foreground border-border/80"
                 }`}
               >
                 Review
               </Badge>
             </div>
-            <div className="text-lg font-extrabold font-mono text-foreground group-hover:text-rose-400 transition-colors">
+            <div className="text-2xl font-bold font-mono text-foreground group-hover:text-rose-400 transition-colors">
               {contentReviewItems.length}
             </div>
-            <div className="text-[11px] text-muted-foreground truncate">Marketing Reviews</div>
+            <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground truncate">
+              Content Pipeline
+            </div>
           </Link>
         </div>
       </section>
