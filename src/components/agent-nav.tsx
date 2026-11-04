@@ -2,7 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import {
   LayoutGrid,
   Calculator,
-  BookOpen,
+  DoorOpen,
   LogOut,
   ArrowLeft,
   User,
@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface AgentNavProps {
-  activeTool: "tools" | "proceeds" | "playbooks";
+  activeTool?: "tools" | "proceeds" | "kiosks";
 }
 
 export function AgentNav({ activeTool }: AgentNavProps) {
@@ -40,11 +40,10 @@ export function AgentNav({ activeTool }: AgentNavProps) {
       icon: Calculator,
     },
     {
-      id: "playbooks",
-      label: "Playbook Library",
-      to: "/playbooks",
-      icon: BookOpen,
-      badge: "Beta",
+      id: "kiosks",
+      label: "Open Houses",
+      to: "/open-houses",
+      icon: DoorOpen,
     },
   ];
 

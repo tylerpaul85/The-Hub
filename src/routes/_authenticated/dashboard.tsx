@@ -27,7 +27,6 @@ import {
   ArrowRight,
   Gift,
   Share2,
-  BookOpen,
 } from "lucide-react";
 import { QuoteOfTheDay } from "@/components/quote-of-the-day";
 import { AgentCockpit } from "@/components/dashboard/agent-cockpit";
@@ -129,7 +128,6 @@ function Dashboard() {
     { label: "Swag Store", to: "/admin/swag-credits", icon: ShoppingBag },
     { label: "Brand Kit", to: "/toolbox", icon: CreditCard },
     { label: "Vendors", to: "/vendors", icon: Store },
-    { label: "Playbooks", to: "/playbooks", icon: BookOpen },
     ...(isOperationsStaff
       ? [
           { label: "Inventory", to: "/inventory", icon: Boxes },

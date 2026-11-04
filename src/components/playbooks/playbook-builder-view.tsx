@@ -173,18 +173,6 @@ export function PlaybookBuilderView({
             <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
             <span>Add Section</span>
           </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            asChild
-            className="h-8 px-3 rounded-xl border-border bg-surface-1 hover:bg-surface-2 text-xs flex items-center gap-1.5 cursor-pointer"
-          >
-            <Link to="/playbooks" search={{ course: product.slug }}>
-              <ExternalLink className="h-3.5 w-3.5 text-blue-400" />
-              <span>Preview as Agent</span>
-            </Link>
-          </Button>
         </div>
       </div>
 

@@ -1,17 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Calculator,
-  BookOpen,
+  DoorOpen,
   ArrowRight,
   ShieldCheck,
   Sparkles,
   Layers,
-  FileSpreadsheet,
   CheckCircle2,
-  Clock,
-  Building,
-  Phone,
-  Mail,
 } from "lucide-react";
 import { useAgentAuth } from "@/hooks/use-agent-auth";
 import { AgentAuthView } from "@/components/agent-auth-view";
@@ -48,7 +43,7 @@ function AgentToolsHomePage() {
     return (
       <AgentAuthView
         title="MSREG Agent Tools"
-        subtitle="Sign in with your @mattsmithrealestategroup.com agent account to access Seller Net Proceeds and the Playbook Library."
+        subtitle="Sign in with your @mattsmithrealestategroup.com agent account to access Seller Net Proceeds and agent tools."
         onSuccessRedirectTo="/agent-tools"
       />
     );
@@ -84,7 +79,7 @@ function AgentToolsHomePage() {
               Welcome back, {agent.full_name.split(" ")[0]}!
             </h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Select an agent tool below to run client presentations, compute seller net proceeds, or access team playbooks and operating procedures.
+              Select an agent tool below to run client presentations, compute seller net proceeds, or launch interactive open house lead kiosks.
             </p>
           </div>
         </div>
@@ -135,44 +130,44 @@ function AgentToolsHomePage() {
             </div>
           </div>
 
-          {/* Tool Card 2: Playbooks */}
-          <div className="group relative flex flex-col justify-between rounded-3xl border border-border/80 bg-surface-1 p-6 sm:p-7 shadow-lg transition-all duration-300 hover:border-accent/50 hover:shadow-2xl hover:shadow-accent/5 hover:-translate-y-0.5">
+          {/* Tool Card 2: Open House Kiosks */}
+          <div className="group relative flex flex-col justify-between rounded-3xl border border-border/80 bg-surface-1 p-6 sm:p-7 shadow-lg transition-all duration-300 hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-500/5 hover:-translate-y-0.5">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent border border-accent/20 shadow-inner group-hover:scale-105 transition-transform">
-                  <BookOpen className="h-6 w-6" />
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-inner group-hover:scale-105 transition-transform">
+                  <DoorOpen className="h-6 w-6" />
                 </div>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-accent/15 text-accent border border-accent/25">
-                  Library &amp; SOPs
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-500/15 text-blue-400 border border-blue-500/25">
+                  Lead Capture
                 </span>
               </div>
 
               <div>
-                <h2 className="text-xl font-bold tracking-tight text-foreground group-hover:text-accent transition-colors">
-                  Playbook Library
+                <h2 className="text-xl font-bold tracking-tight text-foreground group-hover:text-blue-400 transition-colors">
+                  Open House Kiosks
                 </h2>
                 <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-                  Browse proven agent operating systems, objection handling scripts, listing presentation guides, and transaction milestone checklists. Master team standards with comprehensive step-by-step playbooks.
+                  Launch iPad registration mode, display live QR sign-in badges for walk-in visitors, and automatically sync new buyer leads into Follow Up Boss in real-time.
                 </p>
               </div>
 
               <div className="pt-2 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
                 <span className="inline-flex items-center gap-1 bg-surface-2 px-2.5 py-1 rounded-lg border border-border/60">
-                  <CheckCircle2 className="h-3 w-3 text-accent" /> Standard Operating Procedures
+                  <CheckCircle2 className="h-3 w-3 text-blue-400" /> iPad &amp; QR Check-in
                 </span>
                 <span className="inline-flex items-center gap-1 bg-surface-2 px-2.5 py-1 rounded-lg border border-border/60">
-                  <CheckCircle2 className="h-3 w-3 text-accent" /> Objection Handling Scripts
+                  <CheckCircle2 className="h-3 w-3 text-blue-400" /> Instant FUB Lead Sync
                 </span>
                 <span className="inline-flex items-center gap-1 bg-surface-2 px-2.5 py-1 rounded-lg border border-border/60">
-                  <CheckCircle2 className="h-3 w-3 text-accent" /> Buyer &amp; Seller Guides
+                  <CheckCircle2 className="h-3 w-3 text-blue-400" /> Attendee CSV Exports
                 </span>
               </div>
             </div>
 
             <div className="pt-6 mt-6 border-t border-border/60">
-              <Link to="/playbooks" className="block">
-                <Button className="w-full h-11 bg-accent text-white hover:bg-accent/90 font-bold text-xs rounded-xl shadow-md shadow-accent/15 group-hover:shadow-accent/30 transition-all flex items-center justify-center gap-2 cursor-pointer">
-                  <span>Explore Playbook Library</span>
+              <Link to="/open-houses" className="block">
+                <Button className="w-full h-11 bg-blue-600 text-white hover:bg-blue-500 font-bold text-xs rounded-xl shadow-md shadow-blue-500/15 group-hover:shadow-blue-500/30 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                  <span>Launch Open House Kiosks</span>
                   <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>

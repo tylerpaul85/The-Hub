@@ -24,7 +24,6 @@ import {
   Mail,
   CreditCard,
   Store,
-  BookOpen,
   Sparkles,
   ExternalLink,
   Copy,
@@ -1008,7 +1007,7 @@ Let me know if you would like me to prepare an official 3-scenario net sheet!`;
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
           <Link
             to="/signatures"
             className="p-4 rounded-xl border border-border bg-surface-1 hover:bg-surface-2 hover:border-accent/40 transition-all flex items-start gap-3 group"
@@ -1056,23 +1055,6 @@ Let me know if you would like me to prepare an official 3-scenario net sheet!`;
               </h5>
               <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
                 Search vetted home inspectors, title companies, painters, stagers, and lenders.
-              </p>
-            </div>
-          </Link>
-
-          <Link
-            to="/playbooks"
-            className="p-4 rounded-xl border border-border bg-surface-1 hover:bg-surface-2 hover:border-accent/40 transition-all flex items-start gap-3 group"
-          >
-            <div className="p-2.5 rounded-lg bg-surface-2 border border-border text-accent group-hover:scale-105 transition-transform shrink-0">
-              <BookOpen className="h-4 w-4" />
-            </div>
-            <div>
-              <h5 className="text-sm font-semibold text-foreground group-hover:text-accent transition-colors">
-                Playbook Library
-              </h5>
-              <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
-                Objection handling scripts, buyer and seller consult workflows, and closing checklists.
               </p>
             </div>
           </Link>

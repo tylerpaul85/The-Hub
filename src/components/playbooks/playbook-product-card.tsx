@@ -101,16 +101,6 @@ export function PlaybookProductCard({
                   <Layers className="h-3.5 w-3.5 text-gold" />
                   <span>Build Curriculum</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link
-                    to="/playbooks"
-                    search={{ course: product.slug }}
-                    className="cursor-pointer text-xs flex items-center gap-2 w-full"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5 text-blue-400" />
-                    <span>Preview as Agent</span>
-                  </Link>
-                </DropdownMenuItem>
                 {onEditProduct && (
                   <DropdownMenuItem
                     onClick={() => onEditProduct(product)}

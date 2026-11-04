@@ -195,7 +195,6 @@ function getPageTitle(pathname: string): string {
     "/admin/playbooks": "Playbooks Manager",
     "/experiments": "Experiments & Lab",
     "/agent-tools": "Agent Tools Portal",
-    "/playbooks": "Playbook Library",
     "/seller-net-proceeds": "Seller Net Proceeds Calculator",
     "/vendors": "Trusted Vendor Guide",
   };

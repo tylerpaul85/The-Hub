@@ -118,16 +118,6 @@ export const DEFAULT_HUB_CARDS: HubCardDefinition[] = [
     to: "/seller-net-proceeds",
   },
   {
-    id: "playbooks",
-    title: "Playbook Library",
-    subtitle: "Standard operating procedures, objection scripts & checklists",
-    category: "listings",
-    defaultBadge: "Library & SOPs",
-    actionLabel: "View Playbooks",
-    icon: BookOpen,
-    to: "/playbooks",
-  },
-  {
     id: "outbound-referral",
     title: "Outbound Referral Sheet",
     subtitle: "Submit client referral details directly to Nancy & Client Care",

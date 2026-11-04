@@ -18,7 +18,7 @@ interface AgentAuthViewProps {
 
 export function AgentAuthView({
   title = "MSREG Agent Tools",
-  subtitle = "Sign in with your @mattsmithrealestategroup.com agent account to access Seller Net Proceeds, Playbooks, and tools.",
+  subtitle = "Sign in with your @mattsmithrealestategroup.com agent account to access Seller Net Proceeds and agent tools.",
   onSuccessRedirectTo = "/agent-tools",
 }: AgentAuthViewProps) {
   const { signInAgent, signUpAgent, signInWithGoogle, resetAgentPassword } = useAgentAuth();

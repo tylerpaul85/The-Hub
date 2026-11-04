@@ -96,7 +96,7 @@ export function CommandPalette({
       {
         id: "agent-tools",
         name: "Agent Tools Portal",
-        description: "Agent productivity hub, Seller Net Proceeds & Playbook Library",
+        description: "Agent productivity hub, Seller Net Proceeds & Open House Kiosks",
         group: "Work With Clients",
         to: "/agent-tools",
         icon: LayoutGrid,
@@ -108,14 +108,6 @@ export function CommandPalette({
         group: "Work With Clients",
         to: "/seller-net-proceeds",
         icon: Calculator,
-      },
-      {
-        id: "playbooks",
-        name: "Playbook Library",
-        description: "Agent SOPs, objection scripts, listing & buyer playbooks",
-        group: "Work With Clients",
-        to: "/playbooks",
-        icon: BookOpen,
       },
       {
         id: "vendors",

@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, useNavigate, useRouterState, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { Clock, Calculator, BookOpen, Sparkles, ArrowRight } from "lucide-react";
+import { Clock, Calculator, Sparkles, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { AppShell } from "@/components/app-shell";
 import { ContentDetailProvider } from "@/components/content-detail-provider";
@@ -82,22 +82,15 @@ function AuthLayout() {
               <span>Looking for Agent Tools or Net Proceeds?</span>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Real estate agents <strong className="text-foreground">do not need admin approval</strong> to use the Seller Net Proceeds calculator or Playbooks. You have full instant access right now:
+              Real estate agents <strong className="text-foreground">do not need admin approval</strong> to use the Seller Net Proceeds calculator. You have full instant access right now:
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+            <div className="pt-1">
               <Link
                 to="/seller-net-proceeds"
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-gold text-navy font-semibold text-xs hover:bg-gold/90 transition-all shadow-sm"
+                className="inline-flex w-full items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-gold text-navy font-semibold text-xs hover:bg-gold/90 transition-all shadow-sm"
               >
                 <Calculator className="h-3.5 w-3.5" />
-                <span>Seller Net Proceeds</span>
-              </Link>
-              <Link
-                to="/playbooks"
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-surface-2 border border-border text-foreground font-semibold text-xs hover:bg-surface-2/80 transition-all"
-              >
-                <BookOpen className="h-3.5 w-3.5" />
-                <span>Playbook Library</span>
+                <span>Launch Seller Net Proceeds</span>
               </Link>
             </div>
             <div className="text-center pt-1">

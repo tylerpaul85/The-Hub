@@ -268,8 +268,8 @@ function AgentsHome() {
           </div>
         )}
 
-        {/* ─── High-Speed Deal Launcher Bar (6 Core 1-Tap Agent Actions) ─── */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 max-w-3xl mx-auto">
+        {/* ─── High-Speed Deal Launcher Bar (5 Core 1-Tap Agent Actions) ─── */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 max-w-3xl mx-auto">
           <Link
             to="/seller-net-proceeds"
             className="flex items-center gap-2 p-2.5 rounded-xl border border-border/80 bg-surface-1/90 hover:bg-surface-2 hover:border-gold/50 text-xs font-semibold text-foreground transition-all shadow-xs group"
@@ -318,16 +318,6 @@ function AgentsHome() {
               <Store className="h-3.5 w-3.5" />
             </div>
             <span className="truncate">Vendor List</span>
-          </Link>
-
-          <Link
-            to="/playbooks"
-            className="flex items-center gap-2 p-2.5 rounded-xl border border-border/80 bg-surface-1/90 hover:bg-surface-2 hover:border-accent/50 text-xs font-semibold text-foreground transition-all shadow-xs group"
-          >
-            <div className="p-1 rounded-lg bg-accent/10 text-accent group-hover:scale-105 transition-transform">
-              <BookOpen className="h-3.5 w-3.5" />
-            </div>
-            <span className="truncate">Playbooks</span>
           </Link>
         </div>
 
