@@ -1,11 +1,20 @@
 import { useState, useMemo } from "react";
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 import { MyRocksWidget } from "@/components/my-rocks-widget";
 import { MyTasksWidget } from "@/components/my-tasks-widget";
 import { ClientCareClosingGifts } from "@/components/client-care-closing-gifts";
@@ -36,6 +45,13 @@ import {
   Shirt,
   DollarSign,
   User,
+  Check,
+  Search,
+  Eye,
+  FileText,
+  MapPin,
+  Mail,
+  Loader2,
 } from "lucide-react";
 
 interface PendingMarketingReq {
@@ -83,10 +99,56 @@ interface RecentNetSheetRow {
 
 export function OperationsMissionControl() {
   const { user, isAdmin, roles } = useAuth();
+  const qc = useQueryClient();
   const [triageTab, setTriageTab] = useState<"requests" | "closing-gifts" | "referrals" | "net-sheets">("requests");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRequestModal, setSelectedRequestModal] = useState<PendingMarketingReq | null>(null);
 
   const isMarketing = isAdmin || roles?.includes("marketing_coordinator");
   const isClientCare = roles?.includes("client_care");
+
+  // Quick Inline Mutations for Operations Staff
+  const quickApproveMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any)
+        .from("marketing_requests")
+        .update({
+          status: "approved",
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: user?.id,
+        })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Request approved and moved to creative queue");
+      qc.invalidateQueries({ queryKey: ["ops-pulse-pending-marketing-requests"] });
+      qc.invalidateQueries({ queryKey: ["ops-pulse-pending-requests-count"] });
+      qc.invalidateQueries({ queryKey: ["shell-pending-marketing-count"] });
+      setSelectedRequestModal(null);
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Could not approve request");
+    },
+  });
+
+  const quickFulfillGiftMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any)
+        .from("closing_gift_requests")
+        .update({ status: "fulfilled" })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Closing gift marked as fulfilled");
+      qc.invalidateQueries({ queryKey: ["ops-pulse-closing-gifts"] });
+      qc.invalidateQueries({ queryKey: ["shell-pending-gifts-count"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Could not update gift request");
+    },
+  });
 
   // 1. Live Operations Pulse Queries
   // Closing Gift Requests (Pending)
@@ -144,6 +206,29 @@ export function OperationsMissionControl() {
       return (data ?? []) as PendingMarketingReq[];
     },
   });
+
+  const filteredMarketingRequests = useMemo(() => {
+    if (!searchQuery.trim()) return pendingMarketingRequests;
+    const q = searchQuery.toLowerCase();
+    return pendingMarketingRequests.filter(
+      (r) =>
+        (r.agent_name && r.agent_name.toLowerCase().includes(q)) ||
+        (r.property_address && r.property_address.toLowerCase().includes(q)) ||
+        (r.description && r.description.toLowerCase().includes(q)) ||
+        r.request_types?.some((t) => t.toLowerCase().includes(q)),
+    );
+  }, [pendingMarketingRequests, searchQuery]);
+
+  const filteredClosingGifts = useMemo(() => {
+    if (!searchQuery.trim()) return pendingClosingGifts;
+    const q = searchQuery.toLowerCase();
+    return pendingClosingGifts.filter(
+      (g) =>
+        (g.agent_name && g.agent_name.toLowerCase().includes(q)) ||
+        (g.client_first_name && g.client_first_name.toLowerCase().includes(q)) ||
+        (g.client_last_name && g.client_last_name.toLowerCase().includes(q)),
+    );
+  }, [pendingClosingGifts, searchQuery]);
 
   // Active Swag Credits & Total Unspent Balance
   const { data: swagStats = { count: 0, totalBalance: 0 } } = useQuery({
@@ -356,60 +441,77 @@ export function OperationsMissionControl() {
 
       {/* ─── Operations Live Triage Stream (Interactive Feed) ─── */}
       <section className="bg-surface-1 border border-border/80 rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="p-4 sm:p-5 border-b border-border/60 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <h4 className="text-base font-bold text-foreground">Operational Triage Stream</h4>
+            <h4 className="text-base font-bold text-foreground font-sans">Operational Triage Stream</h4>
             <p className="text-xs text-muted-foreground">Actionable queues for client fulfillment, outbound referrals, and deal documents</p>
           </div>
 
-          <Tabs value={triageTab} onValueChange={(v) => setTriageTab(v as any)} className="w-auto">
-            <TabsList className="bg-surface-2 h-8 p-0.5 border border-border">
-              <TabsTrigger value="requests" className="text-xs h-7 px-3 flex items-center gap-1.5">
-                <Inbox className="h-3.5 w-3.5" />
-                <span>Marketing Requests</span>
-                {pendingRequestsCount > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold">
-                    {pendingRequestsCount}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="closing-gifts" className="text-xs h-7 px-3 flex items-center gap-1.5">
-                <Boxes className="h-3.5 w-3.5" />
-                <span>Closing Gifts</span>
-                {pendingClosingGifts.length > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold">
-                    {pendingClosingGifts.length}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="referrals" className="text-xs h-7 px-3 flex items-center gap-1.5">
-                <Send className="h-3.5 w-3.5" />
-                <span>Referral Desk</span>
-                {activeReferrals.length > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full bg-purple-500/20 text-purple-400 text-[10px] font-bold">
-                    {activeReferrals.length}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="net-sheets" className="text-xs h-7 px-3 flex items-center gap-1.5">
-                <Calculator className="h-3.5 w-3.5" />
-                <span>Net Sheets</span>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+            <div className="relative w-full sm:w-52">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Filter queue..."
+                className="pl-8 h-8 text-xs bg-surface-2 border-border/80 rounded-xl"
+              />
+            </div>
+
+            <Tabs value={triageTab} onValueChange={(v) => setTriageTab(v as any)} className="w-auto">
+              <TabsList className="bg-surface-2 h-8 p-0.5 border border-border">
+                <TabsTrigger value="requests" className="text-xs h-7 px-3 flex items-center gap-1.5 font-medium">
+                  <Inbox className="h-3.5 w-3.5" />
+                  <span>Marketing Requests</span>
+                  {pendingRequestsCount > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold font-mono">
+                      {pendingRequestsCount}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="closing-gifts" className="text-xs h-7 px-3 flex items-center gap-1.5 font-medium">
+                  <Boxes className="h-3.5 w-3.5" />
+                  <span>Closing Gifts</span>
+                  {pendingClosingGifts.length > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold font-mono">
+                      {pendingClosingGifts.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="referrals" className="text-xs h-7 px-3 flex items-center gap-1.5 font-medium">
+                  <Send className="h-3.5 w-3.5" />
+                  <span>Referrals</span>
+                  {activeReferrals.length > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full bg-purple-500/20 text-purple-400 text-[10px] font-bold font-mono">
+                      {activeReferrals.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="net-sheets" className="text-xs h-7 px-3 flex items-center gap-1.5 font-medium">
+                  <Calculator className="h-3.5 w-3.5" />
+                  <span>Net Sheets</span>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
         </div>
 
         <div className="p-0">
           {triageTab === "requests" && (
             <div className="divide-y divide-border/40">
-              {pendingMarketingRequests.length === 0 ? (
+              {filteredMarketingRequests.length === 0 ? (
                 <div className="py-12 text-center text-xs text-muted-foreground space-y-1">
                   <CheckCircle2 className="h-6 w-6 text-emerald-400 mx-auto mb-2" />
                   <div className="font-semibold text-foreground">Marketing Requests Clear</div>
-                  <p>No incoming creative, flyer, or listing requests currently awaiting review.</p>
+                  <p>
+                    {searchQuery
+                      ? "No pending marketing requests matching your filter."
+                      : "No incoming creative, flyer, or listing requests currently awaiting review."}
+                  </p>
                 </div>
               ) : (
-                pendingMarketingRequests.map((req) => (
+                filteredMarketingRequests.map((req) => (
                   <div key={req.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-surface-2/40 transition-colors">
                     <div className="space-y-1.5 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -417,17 +519,18 @@ export function OperationsMissionControl() {
                           {req.agent_name || "Agent Request"}
                         </span>
                         {req.priority === "high" ? (
-                          <Badge variant="outline" className="text-[10px] bg-red-500/10 text-red-400 border-red-500/20 font-bold uppercase tracking-wider">
+                          <Badge variant="outline" className="text-[10px] bg-red-500/10 text-red-400 border-red-500/20 font-bold font-mono uppercase tracking-wider">
                             Rush / High Priority
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-400 border-blue-500/20 capitalize">
+                          <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-400 border-blue-500/20 capitalize font-mono">
                             {req.priority || "Normal"}
                           </Badge>
                         )}
                         {req.property_address && (
-                          <span className="text-xs text-slate-300 font-medium truncate max-w-xs">
-                            • {req.property_address}
+                          <span className="text-xs text-slate-300 font-medium truncate max-w-xs flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
+                            <span className="truncate">{req.property_address}</span>
                           </span>
                         )}
                       </div>
@@ -442,19 +545,45 @@ export function OperationsMissionControl() {
                             Due: {format(new Date(req.deadline), "MMM d")}
                           </span>
                         )}
-                        <span className="text-muted-foreground/60 text-[11px]">
+                        <span className="text-muted-foreground/60 text-[11px] font-mono">
                           Submitted {format(new Date(req.created_at), "MMM d, h:mm a")}
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSelectedRequestModal(req)}
+                        className="h-8 px-2.5 text-xs border-border bg-surface-2/80 hover:bg-surface-3 hover:text-foreground gap-1.5 font-semibold rounded-xl"
+                        title="View request details and description"
+                      >
+                        <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span>Details</span>
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        onClick={() => quickApproveMutation.mutate(req.id)}
+                        disabled={quickApproveMutation.isPending}
+                        className="h-8 px-3 text-xs bg-emerald-600/90 hover:bg-emerald-600 text-white gap-1.5 font-semibold rounded-xl shadow-2xs"
+                        title="Quick approve and queue for creative production"
+                      >
+                        {quickApproveMutation.isPending ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Check className="h-3.5 w-3.5" />
+                        )}
+                        <span>Approve</span>
+                      </Button>
+
                       <Link
                         to="/requests"
-                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-accent text-white text-xs font-semibold hover:bg-accent-hover transition-colors shadow-sm"
+                        className="inline-flex items-center justify-center h-8 w-8 rounded-xl bg-surface-2 hover:bg-surface-3 border border-border text-muted-foreground hover:text-foreground transition-colors"
+                        title="Open full Requests Desk"
                       >
-                        <Inbox className="h-3.5 w-3.5" />
-                        <span>Open in Requests Desk</span>
+                        <ExternalLink className="h-3.5 w-3.5" />
                       </Link>
                     </div>
                   </div>
@@ -464,22 +593,26 @@ export function OperationsMissionControl() {
           )}
           {triageTab === "closing-gifts" && (
             <div className="divide-y divide-border/40">
-              {pendingClosingGifts.length === 0 ? (
+              {filteredClosingGifts.length === 0 ? (
                 <div className="py-12 text-center text-xs text-muted-foreground space-y-1">
                   <CheckCircle2 className="h-6 w-6 text-emerald-400 mx-auto mb-2" />
                   <div className="font-semibold text-foreground">All Closing Gifts Fulfilled!</div>
-                  <p>No client gift requests currently waiting for courier delivery.</p>
+                  <p>
+                    {searchQuery
+                      ? "No pending closing gift requests matching your filter."
+                      : "No client gift requests currently waiting for courier delivery."}
+                  </p>
                 </div>
               ) : (
-                pendingClosingGifts.slice(0, 5).map((req) => (
+                filteredClosingGifts.slice(0, 6).map((req) => (
                   <div key={req.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-surface-2/40 transition-colors">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-sm text-foreground">
                           {req.client_first_name} {req.client_last_name}
                         </span>
-                        <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-400 border-amber-500/20">
-                          Pending Delivery
+                        <Badge variant="outline" className="text-[10px] font-mono bg-amber-500/10 text-amber-400 border-amber-500/20">
+                          Pending Packaging
                         </Badge>
                       </div>
                       <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
@@ -489,13 +622,28 @@ export function OperationsMissionControl() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+                      <Button
+                        size="sm"
+                        onClick={() => quickFulfillGiftMutation.mutate(req.id)}
+                        disabled={quickFulfillGiftMutation.isPending}
+                        className="h-8 px-3 text-xs bg-amber-600/90 hover:bg-amber-600 text-white gap-1.5 font-semibold rounded-xl shadow-2xs"
+                        title="Mark packaged and dispatched"
+                      >
+                        {quickFulfillGiftMutation.isPending ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Check className="h-3.5 w-3.5" />
+                        )}
+                        <span>Mark Fulfilled</span>
+                      </Button>
+
                       <Link
                         to="/inventory"
-                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-accent text-white text-xs font-semibold hover:bg-accent-hover transition-colors shadow-sm"
+                        className="inline-flex items-center justify-center h-8 w-8 rounded-xl bg-surface-2 hover:bg-surface-3 border border-border text-muted-foreground hover:text-foreground transition-colors"
+                        title="Open full Inventory Desk"
                       >
-                        <Boxes className="h-3.5 w-3.5" />
-                        <span>Fulfill in Inventory</span>
+                        <ExternalLink className="h-3.5 w-3.5" />
                       </Link>
                     </div>
                   </div>
@@ -567,10 +715,10 @@ export function OperationsMissionControl() {
             </div>
           )}
         </div>
-      </section>
+      </section >
 
-      {/* ─── EOS Quarterly Execution & Task Velocity ─── */}
-      <section className="space-y-4">
+    {/* ─── EOS Quarterly Execution & Task Velocity ─── */ }
+    < section className = "space-y-4" >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-2">
           <div>
             <h3 className="text-base sm:text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
@@ -603,10 +751,10 @@ export function OperationsMissionControl() {
           <MyRocksWidget />
           <MyTasksWidget />
         </div>
-      </section>
+      </section >
 
-      {/* ─── Operations & Marketing Tool Matrix ─── */}
-      <section className="space-y-3">
+    {/* ─── Operations & Marketing Tool Matrix ─── */ }
+    < section className = "space-y-3" >
         <div className="border-b border-border/60 pb-2">
           <h3 className="text-base font-bold text-foreground tracking-tight">
             Operations &amp; Admin Suite
@@ -755,6 +903,93 @@ export function OperationsMissionControl() {
           </Link>
         </div>
       </section>
+
+      {/* Quick View Request Details Modal */}
+      <Dialog open={!!selectedRequestModal} onOpenChange={(open) => !open && setSelectedRequestModal(null)}>
+        <DialogContent className="max-w-lg bg-surface-1 border-border text-foreground">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-[10px] font-mono uppercase bg-surface-2">
+                {selectedRequestModal?.priority || "Normal"}
+              </Badge>
+              <DialogTitle className="text-base font-bold text-foreground">
+                {selectedRequestModal?.agent_name}&apos;s Request
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+
+          {selectedRequestModal && (
+            <div className="space-y-4 py-2 text-xs">
+              <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-surface-2/60 border border-border">
+                <div>
+                  <span className="text-muted-foreground block text-[10px] uppercase font-mono tracking-wider">Agent</span>
+                  <div className="font-semibold text-foreground mt-0.5">{selectedRequestModal.agent_name}</div>
+                  <div className="text-muted-foreground text-[11px] truncate">{selectedRequestModal.agent_email}</div>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block text-[10px] uppercase font-mono tracking-wider">Deadline</span>
+                  <div className="font-semibold text-foreground mt-0.5">
+                    {selectedRequestModal.deadline
+                      ? format(new Date(selectedRequestModal.deadline), "EEEE, MMM d, yyyy")
+                      : "No deadline specified"}
+                  </div>
+                </div>
+              </div>
+
+              {selectedRequestModal.property_address && (
+                <div className="p-3 rounded-xl bg-surface-2/60 border border-border">
+                  <span className="text-muted-foreground block text-[10px] uppercase font-mono tracking-wider">Property Address</span>
+                  <div className="font-semibold text-foreground mt-0.5">{selectedRequestModal.property_address}</div>
+                </div>
+              )}
+
+              <div>
+                <span className="text-muted-foreground block text-[10px] uppercase font-mono tracking-wider mb-1.5">Request Types</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedRequestModal.request_types?.map((type) => (
+                    <span key={type} className="px-2.5 py-1 rounded-md bg-surface-2 border border-border text-xs text-foreground font-medium">
+                      {type}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <span className="text-muted-foreground block text-[10px] uppercase font-mono tracking-wider mb-1">Description / Notes</span>
+                <div className="p-3 rounded-xl bg-surface-2/80 border border-border text-xs leading-relaxed text-slate-200 whitespace-pre-wrap">
+                  {selectedRequestModal.description || "No additional description provided."}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex items-center justify-between sm:justify-between gap-2 pt-2 border-t border-border">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSelectedRequestModal(null)}
+              className="text-xs h-9 border-border bg-surface-2 hover:bg-surface-3"
+            >
+              Close
+            </Button>
+            {selectedRequestModal && (
+              <Button
+                type="button"
+                onClick={() => quickApproveMutation.mutate(selectedRequestModal.id)}
+                disabled={quickApproveMutation.isPending}
+                className="text-xs h-9 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold gap-1.5 shadow-sm"
+              >
+                {quickApproveMutation.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Check className="h-3.5 w-3.5" />
+                )}
+                <span>Approve &amp; Move to In Progress</span>
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

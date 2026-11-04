@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { toast } from "sonner";
 import {
   ExternalLink,
   Search,
@@ -26,6 +28,8 @@ import {
   Building2,
   Clock,
   Radio,
+  Copy,
+  Check,
 } from "lucide-react";
 import { OperationsMissionControl } from "@/components/dashboard/operations-mission-control";
 
@@ -117,6 +121,29 @@ function Dashboard() {
     staleTime: 1000 * 60 * 5,
   });
 
+  const [copiedDuty, setCopiedDuty] = useState(false);
+
+  const copyDutyBriefing = async () => {
+    if (!todayDuty || todayDuty.length === 0) {
+      toast.info("No duty assignments logged for today.");
+      return;
+    }
+    const lines = [
+      `📞 MSREG Today's Phone Duty Roster (${format(new Date(), "EEEE, MMM d")}):`,
+      ...todayDuty.map((d: any) => `• ${d.office ? d.office.toUpperCase() : "OFFICE"}: ${d.agentName}`),
+      `Have a productive day!`,
+    ];
+    const text = lines.join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedDuty(true);
+      toast.success("Duty shift briefing copied to clipboard!");
+      setTimeout(() => setCopiedDuty(false), 2500);
+    } catch {
+      toast.error("Failed to copy duty roster to clipboard");
+    }
+  };
+
   const firstName =
     (user?.user_metadata as any)?.first_name ||
     user?.email?.split("@")[0] ||
@@ -169,8 +196,7 @@ function Dashboard() {
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-normal tracking-tight text-foreground leading-[1.1]">
-              {getTimeGreeting()},{" "}
-              <span className="italic font-normal text-accent">{firstName}</span>.
+              {getTimeGreeting()}, {firstName}.
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground font-sans max-w-2xl leading-relaxed">
               Matt Smith Real Estate Group operations mission control. Triage incoming agent requests, monitor phone duty coverage, expedite client closing gifts, and review transaction desk health.
@@ -226,6 +252,27 @@ function Dashboard() {
                   <Clock className="h-3.5 w-3.5 text-amber-400" />
                   <span>No duty shifts logged for today</span>
                 </div>
+              )}
+
+              {todayDuty.length > 0 && (
+                <button
+                  type="button"
+                  onClick={copyDutyBriefing}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-2 hover:bg-surface-3 border border-border text-xs font-semibold text-foreground hover:text-accent transition-colors shadow-2xs cursor-pointer"
+                  title="Copy formatted duty shift dispatch for Slack or text message"
+                >
+                  {copiedDuty ? (
+                    <>
+                      <Check className="h-3.5 w-3.5 text-emerald-400" />
+                      <span className="text-emerald-400 font-mono text-[11px]">Copied Briefing</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="font-mono text-[11px]">Copy Dispatch</span>
+                    </>
+                  )}
+                </button>
               )}
 
               <Link
