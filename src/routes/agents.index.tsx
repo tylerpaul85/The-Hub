@@ -14,7 +14,7 @@ import {
   Share2,
   ShoppingBag,
   Store,
-  BookOpen,
+  LogOut,
   Sparkles,
   Copy,
   Check,
@@ -50,7 +50,7 @@ const IOS_TIP_KEY = "msreg-agent-hub-ios-tip-dismissed";
 
 function AgentsHome() {
   const { user } = useAuth();
-  const { agent } = useAgentAuth();
+  const { agent, signOutAgent } = useAgentAuth();
   const [showIosTip, setShowIosTip] = useState(false);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<"all" | "listings" | "clients" | "requests">("all");
@@ -189,12 +189,18 @@ function AgentsHome() {
 
           <div className="flex items-center gap-2">
             {agent && (
-              <Link
-                to="/agent-tools"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gold/40 bg-gold/10 hover:bg-gold/20 text-[11px] font-semibold text-gold transition-all shadow-2xs"
+              <button
+                type="button"
+                onClick={() => {
+                  signOutAgent();
+                  toast.success("Signed out of agent session");
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/80 bg-surface-2/60 hover:bg-surface-2 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-all shadow-2xs cursor-pointer"
+                title={`Sign out (${agent.full_name})`}
               >
-                <span>Agent Tools</span>
-              </Link>
+                <LogOut className="h-3 w-3 text-muted-foreground" />
+                <span>Sign Out ({agent.full_name.split(" ")[0]})</span>
+              </button>
             )}
             <Link
               to={user ? "/dashboard" : "/auth"}

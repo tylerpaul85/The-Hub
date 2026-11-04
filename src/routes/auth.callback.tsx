@@ -82,12 +82,12 @@ function AuthCallbackPage() {
           .single();
 
         if (profile?.pending_approval) {
-          // If they are awaiting internal staff approval for marketing, take them directly to Agent Tools!
+          // If they are awaiting internal staff approval for marketing, take them directly to Seller Net Proceeds
           toast.success(
-            "Signed in! You have instant access to Seller Net Proceeds & Playbooks.",
+            "Signed in! You have instant access to Seller Net Proceeds.",
             { duration: 6000 },
           );
-          navigate({ to: "/agent-tools", replace: true });
+          navigate({ to: "/seller-net-proceeds", replace: true });
           return;
         }
 

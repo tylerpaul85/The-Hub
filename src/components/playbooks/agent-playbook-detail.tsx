@@ -90,7 +90,7 @@ export function AgentPlaybookDetailView({ playbook, onAcknowledged }: AgentPlayb
       {/* Top Breadcrumb Bar matching Image 3 */}
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground pb-2 border-b border-border/50">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <Link to="/agent-tools" className="hover:text-foreground transition-colors">
+          <Link to="/agents" className="hover:text-foreground transition-colors">
             Home
           </Link>
           <span className="text-muted-foreground/60">&gt;</span>

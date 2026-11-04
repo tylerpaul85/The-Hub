@@ -94,14 +94,6 @@ export function CommandPalette({
       },
       // Work With Clients
       {
-        id: "agent-tools",
-        name: "Agent Tools Portal",
-        description: "Agent productivity hub, Seller Net Proceeds & Open House Kiosks",
-        group: "Work With Clients",
-        to: "/agent-tools",
-        icon: LayoutGrid,
-      },
-      {
         id: "seller-net",
         name: "Seller Net Proceeds Calculator",
         description: "Calculate & save estimated net proceeds for sellers",

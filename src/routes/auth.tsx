@@ -175,24 +175,18 @@ function AuthPage() {
         <div className="rounded-2xl border border-gold/30 bg-gold/5 p-4 text-center space-y-2 shadow-sm backdrop-blur-xs">
           <div className="flex items-center justify-center gap-1.5 text-gold text-xs font-semibold">
             <Calculator className="h-4 w-4" />
-            <span>Looking for Seller Net Proceeds or Playbooks?</span>
+            <span>Looking for Seller Net Proceeds?</span>
           </div>
           <p className="text-[11px] text-muted-foreground leading-normal">
-            Agents do <strong className="text-foreground">not</strong> need staff approval to use calculators or training playbooks.
+            Agents do <strong className="text-foreground">not</strong> need staff approval to use the Seller Net Proceeds calculator.
           </p>
           <div className="flex items-center justify-center gap-2 pt-1">
             <Link
               to="/seller-net-proceeds"
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gold text-navy font-semibold text-xs hover:bg-gold/90 transition-all shadow-2xs"
             >
-              <span>Net Proceeds Calculator</span>
+              <span>Launch Net Proceeds Calculator</span>
               <ArrowRight className="h-3 w-3" />
-            </Link>
-            <Link
-              to="/agent-tools"
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-2 border border-border text-foreground font-semibold text-xs hover:bg-surface-2/80 transition-all"
-            >
-              <span>Agent Tools</span>
             </Link>
           </div>
         </div>

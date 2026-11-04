@@ -198,7 +198,7 @@ function SellerNetProceedsPage() {
       <AgentAuthView
         title="Seller Net Proceeds"
         subtitle="Sign in with your @mattsmithrealestategroup.com agent account to create and manage net sheets."
-        onSuccessRedirectTo="/agent-tools"
+        onSuccessRedirectTo="/seller-net-proceeds"
       />
     );
   }

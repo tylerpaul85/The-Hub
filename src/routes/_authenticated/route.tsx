@@ -95,10 +95,10 @@ function AuthLayout() {
             </div>
             <div className="text-center pt-1">
               <Link
-                to="/agent-tools"
+                to="/agents"
                 className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-gold transition-colors"
               >
-                <span>View all Agent Tools</span>
+                <span>Return to Agent Hub</span>
                 <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
