@@ -106,14 +106,14 @@ export function OperationsMissionControl() {
     },
   });
 
-  // Active Open Houses
-  const { data: openHousesCount = 0 } = useQuery({
-    queryKey: ["ops-pulse-open-houses-count"],
+  // Pending Marketing Requests
+  const { data: pendingRequestsCount = 0 } = useQuery({
+    queryKey: ["ops-pulse-pending-requests-count"],
     queryFn: async () => {
       const { count, error } = await (supabase as any)
-        .from("toolbox_open_houses")
+        .from("marketing_requests")
         .select("*", { count: "exact", head: true })
-        .eq("status", "active");
+        .eq("status", "pending");
       if (error) return 0;
       return count || 0;
     },
@@ -225,24 +225,28 @@ export function OperationsMissionControl() {
             <div className="text-[11px] text-muted-foreground truncate">Outbound Deals</div>
           </Link>
 
-          {/* Beacon 3: Weekend Open Houses */}
+          {/* Beacon 3: Marketing Requests Inbox */}
           <Link
-            to="/open-houses"
+            to="/requests"
             className="p-3.5 rounded-2xl border border-border bg-surface-1/90 hover:bg-surface-2/90 hover:border-blue-500/40 transition-all shadow-sm space-y-1 block group"
           >
             <div className="flex items-center justify-between">
-              <Calendar className="h-4 w-4 text-blue-400" />
+              <Inbox className="h-4 w-4 text-blue-400" />
               <Badge
                 variant="outline"
-                className="text-[10px] font-bold bg-blue-500/15 text-blue-400 border-blue-500/30"
+                className={`text-[10px] font-bold ${
+                  pendingRequestsCount > 0
+                    ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
+                    : "bg-surface-2 text-muted-foreground border-border"
+                }`}
               >
-                Kiosks
+                {pendingRequestsCount > 0 ? `${pendingRequestsCount} Pending` : "Queue Clean"}
               </Badge>
             </div>
             <div className="text-lg font-extrabold font-mono text-foreground group-hover:text-blue-400 transition-colors">
-              {openHousesCount}
+              {pendingRequestsCount}
             </div>
-            <div className="text-[11px] text-muted-foreground truncate">Open Houses Active</div>
+            <div className="text-[11px] text-muted-foreground truncate">Requests Inbox</div>
           </Link>
 
           {/* Beacon 4: Swag Store Balances in Field */}

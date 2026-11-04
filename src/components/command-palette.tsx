@@ -30,6 +30,7 @@ import {
   LogOut,
   FolderOpen,
   FlaskConical,
+  ExternalLink,
 } from "lucide-react";
 import {
   CommandDialog,
@@ -75,55 +76,22 @@ export function CommandPalette({
 
   const tools: ToolItem[] = useMemo(
     () => [
-      // Market a Listing
+      // Marketing & Listings
       {
         id: "listings",
         name: "Active Listings & Graphics",
         description: "Under contract, pending, just listed packs & photos",
-        group: "Market a Listing",
+        group: "Marketing & Listings",
         to: "/listings",
         icon: Home,
       },
       {
-        id: "open-houses",
-        name: "Open Houses",
-        description: "Schedule, live QR sign-in, attendee export & checklists",
-        group: "Market a Listing",
-        to: "/open-houses",
-        icon: DoorOpen,
-      },
-      // Work With Clients
-      {
-        id: "seller-net",
-        name: "Seller Net Proceeds Calculator",
-        description: "Calculate & save estimated net proceeds for sellers",
-        group: "Work With Clients",
-        to: "/seller-net-proceeds",
-        icon: Calculator,
-      },
-      {
-        id: "vendors",
-        name: "Trusted Vendor Guide",
-        description: "Search 120+ local vetted home service contractors",
-        group: "Work With Clients",
-        to: "/vendors",
-        icon: Store,
-      },
-      {
-        id: "closing-gift",
-        name: "Closing Gift Request",
-        description: "Order client closing gifts & apparel",
-        group: "Work With Clients",
-        to: "/closing-gift",
-        icon: Gift,
-      },
-      {
-        id: "referral-form",
-        name: "Outbound Referral Sheet",
-        description: "Submit client referral details to Nancy & Client Care",
-        group: "Work With Clients",
-        to: "/referral-form",
-        icon: Share2,
+        id: "agent-hub",
+        name: "View Agent Hub",
+        description: "Open the public agent portal with calculators, kiosk & materials",
+        group: "External Portals",
+        to: "/agents",
+        icon: ExternalLink,
       },
       {
         id: "admin-referrals",
@@ -146,7 +114,7 @@ export function CommandPalette({
         id: "fub-assistant",
         name: "FUB AI Assistant",
         description: "Draft communication scripts and FUB message templates",
-        group: "Work With Clients",
+        group: "Operations",
         to: "/admin/assistant",
         icon: Bot,
         adminOnly: true,

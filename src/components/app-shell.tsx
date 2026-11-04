@@ -37,6 +37,7 @@ import {
   CircleAlert,
   BookOpen,
   Send,
+  ExternalLink,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -69,47 +70,9 @@ interface NavSection {
 
 const NAV_SECTIONS: NavSection[] = [
   {
-    title: "Market a Listing",
+    title: "Operations & Tasks",
     items: [
-      { to: "/listings", label: "Active Listings", icon: Home },
-      { to: "/open-houses", label: "Open Houses", icon: DoorOpen },
-    ],
-  },
-  {
-    title: "Work With Clients",
-    items: [
-      { to: "/seller-net-proceeds", label: "Net Proceeds Calculator", icon: Calculator },
-      { to: "/vendors", label: "Trusted Vendors", icon: Store },
-      { to: "/closing-gift", label: "Closing Gift Request", icon: Gift },
-      { to: "/referral-form", label: "Outbound Referral Sheet", icon: Share2 },
-    ],
-  },
-  {
-    title: "My Brand",
-    items: [
-      { to: "/signatures", label: "Email Signatures", icon: Mail },
-      { to: "/toolbox", label: "Brand Assets & Toolbox", icon: CreditCard },
-    ],
-  },
-  {
-    title: "Perks & Events",
-    items: [
-      { to: "/admin/swag-credits", label: "Swag Store & Credits", icon: ShoppingBag },
-      { to: "/special-events", label: "Special Events", icon: Sparkles },
-    ],
-  },
-  {
-    title: "Team Workspace",
-    teamOnly: true,
-    items: [
-      { to: "/calendar", label: "Content Calendar", icon: Calendar, marketingOnly: true },
-      { to: "/videos", label: "Video Pipeline", icon: Video, marketingOnly: true },
       { to: "/requests", label: "Requests Inbox", icon: Inbox },
-    ],
-  },
-  {
-    title: "Operations",
-    items: [
       { to: "/tasks", label: "Projects & Tasks", icon: ClipboardCheck },
       { to: "/inventory", label: "Closing Gifts & Inventory", icon: Boxes },
       { to: "/admin/referrals", label: "Outbound Referrals", icon: Send },
@@ -120,12 +83,32 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: "EOS",
+    title: "Marketing & Media",
+    teamOnly: true,
+    items: [
+      { to: "/calendar", label: "Content Calendar", icon: Calendar, marketingOnly: true },
+      { to: "/videos", label: "Video Pipeline", icon: Video, marketingOnly: true },
+      { to: "/listings", label: "Active Listings", icon: Home },
+      { to: "/special-events", label: "Special Events", icon: Sparkles },
+    ],
+  },
+  {
+    title: "EOS Leadership",
     items: [
       { to: "/eos/l10", label: "L10 Meetings", icon: ClipboardList },
-      { to: "/eos/rocks", label: "Rocks", icon: Target },
-      { to: "/eos/issues", label: "Issues", icon: CircleAlert },
+      { to: "/eos/rocks", label: "Quarterly Rocks", icon: Target },
+      { to: "/eos/issues", label: "Issues List", icon: CircleAlert },
       { to: "/eos/scorecard", label: "Scorecard", icon: BarChart3 },
+    ],
+  },
+  {
+    title: "Administration",
+    adminOnly: true,
+    items: [
+      { to: "/admin/swag-credits", label: "Swag Store Credits", icon: ShoppingBag },
+      { to: "/admin/playbooks", label: "Playbooks Manager", icon: BookOpen },
+      { to: "/users", label: "Team & Roles", icon: Users },
+      { to: "/audit-log", label: "System Audit Log", icon: ShieldCheck },
     ],
   },
   {
@@ -133,15 +116,6 @@ const NAV_SECTIONS: NavSection[] = [
     experimentsOnly: true,
     items: [
       { to: "/experiments", label: "Experiments", icon: FlaskConical },
-    ],
-  },
-  {
-    title: "Admin",
-    adminOnly: true,
-    items: [
-      { to: "/admin/playbooks", label: "Playbooks Manager", icon: BookOpen },
-      { to: "/users", label: "Team & Roles", icon: Users },
-      { to: "/audit-log", label: "System Audit Log", icon: ShieldCheck },
     ],
   },
 ];
@@ -152,9 +126,6 @@ const CLIENT_CARE_ALLOWED = [
   "/tasks",
   "/requests",
   "/inventory",
-  "/closing-gift",
-  "/referral-form",
-  "/referrals",
   "/admin/referrals",
   "/my-availability",
   "/duty-calendar",
@@ -352,6 +323,26 @@ export function AppShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
+        {/* Quick Bridge to Agent Hub */}
+        <div className="p-2 border-t border-border shrink-0">
+          <Link
+            to="/agents"
+            className={cn(
+              "flex items-center justify-between px-2.5 py-2 rounded-xl bg-surface-2/60 hover:bg-surface-2 border border-border/80 text-xs font-semibold text-text-secondary hover:text-text-primary transition-all group",
+              sidebarCollapsed && "justify-center px-1",
+            )}
+            title="Open Public Agent Hub"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
+              {!sidebarCollapsed && <span className="truncate">View Agent Hub</span>}
+            </div>
+            {!sidebarCollapsed && (
+              <ExternalLink className="h-3.5 w-3.5 text-text-muted group-hover:text-accent transition-colors shrink-0" />
+            )}
+          </Link>
+        </div>
+
         {/* User Footer */}
         <div className="p-2 border-t border-border shrink-0 bg-surface-1">
           <div className={cn("flex items-center gap-2 px-2 py-1.5 rounded-md", !sidebarCollapsed && "bg-surface-2/60")}>
@@ -537,6 +528,21 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </div>
               ))}
             </nav>
+
+            {/* Quick Bridge to Agent Hub */}
+            <div className="p-3 border-t border-border">
+              <Link
+                to="/agents"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex items-center justify-between px-3 py-2 rounded-xl bg-surface-2/70 border border-border/80 text-xs font-semibold text-text-secondary hover:text-text-primary transition-all"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                  <span>View Agent Hub</span>
+                </div>
+                <ExternalLink className="h-3.5 w-3.5 text-accent" />
+              </Link>
+            </div>
 
             <div className="p-3 border-t border-border bg-surface-2/40 pb-[max(1rem,calc(env(safe-area-inset-bottom,0px)+0.75rem))]">
               <div className="flex items-center justify-between">
