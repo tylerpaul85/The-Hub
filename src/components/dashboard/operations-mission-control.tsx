@@ -38,6 +38,18 @@ import {
   User,
 } from "lucide-react";
 
+interface PendingMarketingReq {
+  id: string;
+  agent_name: string;
+  agent_email: string;
+  request_types: string[];
+  property_address: string | null;
+  priority: string;
+  deadline: string | null;
+  description: string;
+  created_at: string;
+}
+
 interface ClosingGiftPendingReq {
   id: string;
   agent_name: string;
@@ -71,7 +83,7 @@ interface RecentNetSheetRow {
 
 export function OperationsMissionControl() {
   const { user, isAdmin, roles } = useAuth();
-  const [triageTab, setTriageTab] = useState<"closing-gifts" | "referrals" | "net-sheets" | "content">("closing-gifts");
+  const [triageTab, setTriageTab] = useState<"requests" | "closing-gifts" | "referrals" | "net-sheets">("requests");
 
   const isMarketing = isAdmin || roles?.includes("marketing_coordinator");
   const isClientCare = roles?.includes("client_care");
@@ -116,6 +128,20 @@ export function OperationsMissionControl() {
         .eq("status", "pending");
       if (error) return 0;
       return count || 0;
+    },
+  });
+
+  const { data: pendingMarketingRequests = [], isLoading: isRequestsLoading } = useQuery({
+    queryKey: ["ops-pulse-pending-marketing-requests"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("marketing_requests")
+        .select("id, agent_name, agent_email, request_types, property_address, priority, deadline, description, created_at")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(8);
+      if (error) return [];
+      return (data ?? []) as PendingMarketingReq[];
     },
   });
 
@@ -326,6 +352,15 @@ export function OperationsMissionControl() {
 
           <Tabs value={triageTab} onValueChange={(v) => setTriageTab(v as any)} className="w-auto">
             <TabsList className="bg-surface-2 h-8 p-0.5 border border-border">
+              <TabsTrigger value="requests" className="text-xs h-7 px-3 flex items-center gap-1.5">
+                <Inbox className="h-3.5 w-3.5" />
+                <span>Marketing Requests</span>
+                {pendingRequestsCount > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold">
+                    {pendingRequestsCount}
+                  </span>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="closing-gifts" className="text-xs h-7 px-3 flex items-center gap-1.5">
                 <Boxes className="h-3.5 w-3.5" />
                 <span>Closing Gifts</span>
@@ -338,9 +373,11 @@ export function OperationsMissionControl() {
               <TabsTrigger value="referrals" className="text-xs h-7 px-3 flex items-center gap-1.5">
                 <Send className="h-3.5 w-3.5" />
                 <span>Referral Desk</span>
-                <span className="px-1.5 py-0.2 rounded-full bg-purple-500/20 text-purple-400 text-[10px] font-bold">
-                  {activeReferrals.length}
-                </span>
+                {activeReferrals.length > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full bg-purple-500/20 text-purple-400 text-[10px] font-bold">
+                    {activeReferrals.length}
+                  </span>
+                )}
               </TabsTrigger>
               <TabsTrigger value="net-sheets" className="text-xs h-7 px-3 flex items-center gap-1.5">
                 <Calculator className="h-3.5 w-3.5" />
@@ -351,6 +388,68 @@ export function OperationsMissionControl() {
         </div>
 
         <div className="p-0">
+          {triageTab === "requests" && (
+            <div className="divide-y divide-border/40">
+              {pendingMarketingRequests.length === 0 ? (
+                <div className="py-12 text-center text-xs text-muted-foreground space-y-1">
+                  <CheckCircle2 className="h-6 w-6 text-emerald-400 mx-auto mb-2" />
+                  <div className="font-semibold text-foreground">Marketing Requests Clear</div>
+                  <p>No incoming creative, flyer, or listing requests currently awaiting review.</p>
+                </div>
+              ) : (
+                pendingMarketingRequests.map((req) => (
+                  <div key={req.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-surface-2/40 transition-colors">
+                    <div className="space-y-1.5 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-sm text-foreground">
+                          {req.agent_name || "Agent Request"}
+                        </span>
+                        {req.priority === "high" ? (
+                          <Badge variant="outline" className="text-[10px] bg-red-500/10 text-red-400 border-red-500/20 font-bold uppercase tracking-wider">
+                            Rush / High Priority
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-400 border-blue-500/20 capitalize">
+                            {req.priority || "Normal"}
+                          </Badge>
+                        )}
+                        {req.property_address && (
+                          <span className="text-xs text-slate-300 font-medium truncate max-w-xs">
+                            • {req.property_address}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+                        {req.request_types?.map((t: string) => (
+                          <span key={t} className="px-2 py-0.5 rounded-md bg-surface-2 border border-border/80 text-[11px] font-medium text-slate-300">
+                            {t}
+                          </span>
+                        ))}
+                        {req.deadline && (
+                          <span className="text-amber-400 font-mono text-[11px]">
+                            Due: {format(new Date(req.deadline), "MMM d")}
+                          </span>
+                        )}
+                        <span className="text-muted-foreground/60 text-[11px]">
+                          Submitted {format(new Date(req.created_at), "MMM d, h:mm a")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                      <Link
+                        to="/requests"
+                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-accent text-white text-xs font-semibold hover:bg-accent-hover transition-colors shadow-sm"
+                      >
+                        <Inbox className="h-3.5 w-3.5" />
+                        <span>Open in Requests Desk</span>
+                      </Link>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
           {triageTab === "closing-gifts" && (
             <div className="divide-y divide-border/40">
               {pendingClosingGifts.length === 0 ? (

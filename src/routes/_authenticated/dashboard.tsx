@@ -11,7 +11,6 @@ import { format } from "date-fns";
 import {
   ExternalLink,
   Search,
-  ShieldCheck,
   Boxes,
   Target,
   Inbox,
@@ -21,13 +20,18 @@ import {
   Send,
   CalendarDays,
   ShoppingBag,
+  ArrowRight,
+  PhoneCall,
+  MapPin,
+  Building2,
+  Clock,
+  Radio,
 } from "lucide-react";
-import { QuoteOfTheDay } from "@/components/quote-of-the-day";
 import { OperationsMissionControl } from "@/components/dashboard/operations-mission-control";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
-  head: () => ({ meta: [{ title: "Operations Mission Control — MSREG Hub" }] }),
+  head: () => ({ meta: [{ title: "Operations Console — Matt Smith Real Estate Group" }] }),
 });
 
 function getTimeGreeting() {
@@ -38,7 +42,7 @@ function getTimeGreeting() {
 }
 
 function Dashboard() {
-  const { user, isAdmin, roles } = useAuth();
+  const { user, isAdmin, role, roles } = useAuth();
   const detail = useContentDetail();
 
   const isMarketing =
@@ -65,6 +69,54 @@ function Dashboard() {
     return i.status === "needs_revision" && i.created_by === user?.id;
   });
 
+  // Pending Marketing Requests Counter
+  const { data: pendingRequestsCount = 0 } = useQuery({
+    queryKey: ["ops-pending-requests-count"],
+    queryFn: async () => {
+      const { count, error } = await (supabase as any)
+        .from("marketing_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+      if (error) return 0;
+      return count || 0;
+    },
+  });
+
+  // Today's Duty Shift Briefing
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth() + 1;
+  const currentDay = today.getDate();
+
+  const { data: todayDuty = [] } = useQuery({
+    queryKey: ["today-duty-briefing", currentYear, currentMonth, currentDay],
+    queryFn: async () => {
+      const { data: assignments, error: aErr } = await (supabase as any)
+        .from("duty_calendar")
+        .select("duty_day, office, assigned_agent_id")
+        .eq("year", currentYear)
+        .eq("month", currentMonth)
+        .eq("duty_day", currentDay);
+      if (aErr || !assignments || assignments.length === 0) return [];
+
+      const agentIds = assignments.map((a: any) => a.assigned_agent_id).filter(Boolean);
+      if (agentIds.length === 0) return [];
+
+      const { data: agents } = await (supabase as any)
+        .from("duty_calendar_agents")
+        .select("id, name, office")
+        .in("id", agentIds);
+
+      const agentMap = new Map((agents ?? []).map((ag: any) => [ag.id, ag]));
+
+      return assignments.map((asgn: any) => ({
+        office: asgn.office,
+        agentName: agentMap.get(asgn.assigned_agent_id)?.name || "Assigned Agent",
+      }));
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
   const firstName =
     (user?.user_metadata as any)?.first_name ||
     user?.email?.split("@")[0] ||
@@ -75,7 +127,12 @@ function Dashboard() {
   };
 
   const staffQuickActions = [
-    { label: "Requests Inbox", to: "/requests", icon: Inbox },
+    {
+      label: "Requests Inbox",
+      to: "/requests",
+      icon: Inbox,
+      badge: pendingRequestsCount > 0 ? `${pendingRequestsCount}` : undefined,
+    },
     { label: "Projects & Tasks", to: "/tasks", icon: ClipboardCheck },
     ...(isMarketing
       ? [
@@ -92,34 +149,92 @@ function Dashboard() {
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-7">
-      {/* ─── Executive Header & Operations Status ─── */}
+      {/* ─── Architectural Command Station Header ─── */}
       <div className="space-y-4">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-wider text-accent flex items-center gap-1.5">
-              <span>{format(new Date(), "EEEE, MMMM d, yyyy")}</span>
-              <span>•</span>
-              <span className="text-emerald-400 font-medium">MSREG Internal Operations</span>
+        {/* Operator Station Stamp Bar */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border/80 pb-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-[11px] font-mono font-semibold text-emerald-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                OPERATOR ONLINE
+              </span>
+              <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground/80">
+                STATION // MSREG OPERATIONS
+              </span>
+              <span className="text-muted-foreground/40">•</span>
+              <span className="text-[11px] font-mono text-muted-foreground">
+                {format(new Date(), "EEEE, MMM d, yyyy")}
+              </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground mt-1">
+
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground font-sans">
               {getTimeGreeting()}, {firstName}.
             </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              Internal staff mission control. Review queues, fulfillment, projects, and team schedule.
+            <p className="text-xs sm:text-sm text-muted-foreground max-w-xl leading-relaxed">
+              Internal operations mission control. Monitor incoming agent requests, gift fulfillment queues, phone coverage, and EOS deliverables.
             </p>
           </div>
 
-          {/* Quick Action Bridge to Agent Hub */}
-          <div className="flex items-center gap-2">
+          {/* Quick Bridge to Agent Hub */}
+          <div className="flex items-center gap-2 shrink-0">
             <Link
               to="/agents"
               target="_blank"
               className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-border/80 bg-surface-1 hover:bg-surface-2 hover:border-gold/50 text-xs font-semibold text-foreground transition-all shadow-xs group"
             >
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Open Agent Hub</span>
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              <span>View Public Agent Hub</span>
               <ExternalLink className="h-3.5 w-3.5 text-muted-foreground group-hover:text-gold transition-colors" />
             </Link>
+          </div>
+        </div>
+
+        {/* ─── Today's Operational Field & Duty Roster ─── */}
+        <div className="rounded-2xl border border-border/80 bg-surface-1/90 p-4 sm:p-5 shadow-xs relative overflow-hidden ring-1 ring-inset ring-white/[0.04]">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Radio className="h-4 w-4 text-accent animate-pulse" />
+                <span className="text-xs font-bold uppercase tracking-widest text-accent font-mono">
+                  Today's Field &amp; Duty Roster
+                </span>
+                <span className="text-[10px] font-mono text-muted-foreground px-1.5 py-0.5 rounded bg-surface-2 border border-border/60">
+                  Day {currentDay} of {format(today, "MMMM")}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Assigned floor agents for inbound prospect calls and walk-in buyer coverage:
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              {todayDuty.length > 0 ? (
+                todayDuty.map((d: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface-2/80 border border-border text-xs font-medium"
+                  >
+                    <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-muted-foreground capitalize">{d.office}:</span>
+                    <span className="font-bold text-foreground">{d.agentName}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface-2/60 border border-border/60 text-xs text-muted-foreground font-mono">
+                  <Clock className="h-3.5 w-3.5 text-amber-400" />
+                  <span>No duty shifts logged for today</span>
+                </div>
+              )}
+
+              <Link
+                to="/duty-calendar"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-surface-2 hover:bg-surface-3 border border-border text-xs font-semibold text-foreground hover:text-accent transition-colors ml-auto sm:ml-0"
+              >
+                <span>Full Duty Roster</span>
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -127,17 +242,17 @@ function Dashboard() {
         <button
           type="button"
           onClick={openSearch}
-          className="w-full flex items-center justify-between gap-3 px-4 py-3 sm:py-3.5 rounded-2xl border border-border bg-surface-1 hover:bg-surface-2/80 hover:border-accent/40 shadow-sm transition-all duration-150 text-left group cursor-pointer"
+          className="w-full flex items-center justify-between gap-3 px-4 py-3 sm:py-3.5 rounded-2xl border border-border bg-surface-1 hover:bg-surface-2/80 hover:border-accent/40 shadow-sm transition-all duration-150 text-left group cursor-pointer ring-1 ring-inset ring-white/[0.04]"
         >
           <div className="flex items-center gap-3 min-w-0">
             <Search className="h-4 w-4 text-muted-foreground group-hover:text-accent transition-colors shrink-0" />
             <span className="text-xs sm:text-sm text-muted-foreground group-hover:text-foreground transition-colors truncate">
-              Search staff operations, requests, tasks, inventory, referrals, schedule...
+              Search staff operations, incoming requests, inventory, referrals, schedule...
             </span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <span className="hidden sm:inline-flex text-[11px] font-medium text-muted-foreground px-2 py-0.5 rounded-md bg-surface-2 border border-border">
-              Operations Search
+              Operations Console
             </span>
             <kbd className="inline-flex items-center justify-center text-xs font-mono text-muted-foreground px-2 py-0.5 rounded-md bg-surface-2 border border-border font-semibold">
               ⌘K
@@ -148,17 +263,22 @@ function Dashboard() {
         {/* Staff Operations Quick Deck */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
           <span className="text-xs font-medium text-muted-foreground shrink-0 mr-1 hidden sm:inline">
-            Quick Desk:
+            Direct Desks:
           </span>
           {staffQuickActions.map((action) => (
             <Link
               key={action.to}
               to={action.to}
               search={(action as any).search}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-border bg-surface-1 hover:bg-surface-2 hover:border-accent/40 text-foreground transition-all duration-150 shrink-0 shadow-2xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-border bg-surface-1 hover:bg-surface-2 hover:border-accent/40 text-foreground transition-all duration-150 shrink-0 shadow-2xs group"
             >
-              <action.icon className="h-3.5 w-3.5 text-accent shrink-0" />
+              <action.icon className="h-3.5 w-3.5 text-accent shrink-0 group-hover:scale-105 transition-transform" />
               <span>{action.label}</span>
+              {action.badge && (
+                <span className="px-1.5 py-0.2 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold font-mono">
+                  {action.badge}
+                </span>
+              )}
             </Link>
           ))}
         </div>
@@ -174,7 +294,7 @@ function Dashboard() {
                 Needs Your Attention ({actionItems.length})
               </h2>
             </div>
-            <span className="text-xs font-medium text-amber-500">
+            <span className="text-xs font-medium text-amber-500 font-mono uppercase tracking-wider">
               Action Required
             </span>
           </div>
@@ -208,9 +328,6 @@ function Dashboard() {
           </div>
         </section>
       )}
-
-      {/* Quote of the Day */}
-      <QuoteOfTheDay />
 
       {/* ─── Operations Mission Control Core ─── */}
       <OperationsMissionControl />
