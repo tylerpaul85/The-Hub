@@ -43,7 +43,7 @@ export const Route = createFileRoute("/referral-form")({
   head: () => ({
     meta: [
       { title: "Outbound Referral Sheet — MSREG Hub" },
-      { name: "description", content: "Submit outbound referral information sheet to Client Care (Nancy)." },
+      { name: "description", content: "Submit outbound referral information sheet to Client Care." },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -163,7 +163,7 @@ function OutboundReferralPage() {
       if (res.ok) {
         setSubmittedData(payload);
         setSubmittedId(res.id);
-        toast.success("Outbound referral submitted! Nancy has been notified via email.");
+        toast.success("Outbound referral submitted! Client Care has been notified via email.");
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (err: any) {
@@ -255,7 +255,7 @@ function OutboundReferralPage() {
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-surface-2/90 border border-border/80 text-[11px] text-text-secondary">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Direct Desk: Nancy</span>
+              <span>Direct Desk: Client Care</span>
             </div>
             <Link
               to="/admin/referrals"
@@ -286,9 +286,7 @@ function OutboundReferralPage() {
                   Referral Successfully Dispatched
                 </h1>
                 <p className="text-sm text-text-secondary max-w-lg mx-auto leading-relaxed">
-                  Nancy at Client Care (
-                  <span className="text-emerald-400 font-medium">nancy@mattsmithrealestategroup.com</span>
-                  ) has received an email with the complete client and transaction specifications to begin
+                  The Client Care team has received an email with the complete client and transaction specifications to begin
                   outreach.
                 </p>
               </div>
@@ -301,7 +299,7 @@ function OutboundReferralPage() {
                 </div>
                 <div className="p-2 rounded-lg bg-surface-2/60 border border-border/60 text-center">
                   <span className="block font-semibold text-text-primary">2. Outreach</span>
-                  <span className="text-accent text-[10px]">Nancy notified</span>
+                  <span className="text-accent text-[10px]">Client Care notified</span>
                 </div>
                 <div className="p-2 rounded-lg bg-surface-2/60 border border-border/60 text-center">
                   <span className="block font-semibold text-text-primary">3. Agreement</span>
@@ -496,7 +494,7 @@ function OutboundReferralPage() {
                     Outbound Referral Information Sheet
                   </h1>
                   <p className="text-sm text-text-secondary leading-relaxed">
-                    Submit client details directly to Client Care. Nancy will be notified immediately to
+                    Submit client details directly to Client Care. Our team will be notified immediately to
                     execute destination broker outreach, referral fee agreements, and ensure seamless client
                     placement.
                   </p>
@@ -1054,7 +1052,7 @@ function OutboundReferralPage() {
                         ) : (
                           <>
                             <Send className="h-4 w-4" />
-                            <span>Submit Referral to Nancy</span>
+                            <span>Submit Referral to Client Care</span>
                           </>
                         )}
                       </Button>
@@ -1064,32 +1062,32 @@ function OutboundReferralPage() {
                     <div className="pt-2 flex items-start gap-2.5 text-[11px] text-text-muted border-t border-border/40">
                       <ShieldCheck className="h-4 w-4 text-accent shrink-0 mt-0.5" />
                       <p className="leading-relaxed">
-                        Instant dispatch to <strong className="text-text-secondary">Nancy</strong>.
+                        Instant dispatch to <strong className="text-text-secondary">Client Care</strong>.
                         Automatically creates a trackable record in The Hub Operations Desk.
                       </p>
                     </div>
                   </div>
 
-                  {/* Nancy Desk Context Card */}
+                  {/* Client Care Desk Context Card */}
                   <div className="rounded-2xl border border-border/80 bg-surface-1/60 p-5 space-y-3">
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-xl bg-accent/15 border border-accent/25 flex items-center justify-center font-bold text-accent text-sm shrink-0">
-                        NC
+                        CC
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-text-primary">Nancy — Client Care</p>
-                        <p className="text-[11px] text-text-muted">Direct Outbound Specialist</p>
+                        <p className="text-xs font-bold text-text-primary">Client Care Operations Desk</p>
+                        <p className="text-[11px] text-text-muted">Direct Outbound & Referral Coordination</p>
                       </div>
                     </div>
                     <p className="text-xs text-text-secondary leading-relaxed">
                       Questions on referral fee rates, out-of-state broker vetting, or custom relocation terms?
-                      Reach out directly at:
+                      Reach out directly to the Client Care team:
                     </p>
                     <a
-                      href="mailto:nancy@mattsmithrealestategroup.com"
+                      href="mailto:clientcare@mattsmithrealestategroup.com"
                       className="text-xs text-accent hover:underline font-medium block truncate"
                     >
-                      nancy@mattsmithrealestategroup.com
+                      clientcare@mattsmithrealestategroup.com
                     </a>
                   </div>
                 </div>

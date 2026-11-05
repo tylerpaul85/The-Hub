@@ -22,7 +22,10 @@ const SubmitOutboundReferralSchema = z.object({
 
 export type SubmitOutboundReferralInput = z.infer<typeof SubmitOutboundReferralSchema>;
 
-const NANCY_EMAIL = "nancy@mattsmithrealestategroup.com";
+const CLIENT_CARE_EMAIL =
+  process.env.CLIENT_CARE_EMAIL ||
+  process.env.REFERRALS_NOTIFICATION_EMAIL ||
+  "clientcare@mattsmithrealestategroup.com";
 
 function formatHtmlEmail(data: SubmitOutboundReferralInput, referralId: string): string {
   const isBuying = data.transaction_type === "buying" || data.transaction_type === "both";
@@ -79,7 +82,7 @@ function formatHtmlEmail(data: SubmitOutboundReferralInput, referralId: string):
       <td style="padding: 28px 32px;">
 
         <p style="margin-top: 0; margin-bottom: 20px; font-size: 14px; line-height: 1.5; color: #9ca3af;">
-          Hi Nancy, a new outbound referral information sheet was submitted by <strong style="color: #ffffff;">${data.agent_name}</strong>. Here are the full client and transaction details to move your process along:
+          A new outbound referral information sheet was submitted by <strong style="color: #ffffff;">${data.agent_name}</strong>. Here are the full client and transaction details to move the process along:
         </p>
 
         <!-- Quick Summary Box -->
@@ -249,7 +252,7 @@ export const submitOutboundReferral = createServerFn({ method: "POST" })
 
     const referralId = inserted.id;
 
-    // 2. Dispatch Email to Nancy via Resend
+    // 2. Dispatch Email to Client Care via Resend
     let emailSent = false;
     let emailError: string | null = null;
     const resendApiKey = process.env.RESEND_API_KEY;
@@ -263,9 +266,9 @@ export const submitOutboundReferral = createServerFn({ method: "POST" })
 
     if (resendApiKey) {
       try {
-        const recipients = [NANCY_EMAIL];
+        const recipients = [CLIENT_CARE_EMAIL];
         const ccRecipients: string[] = [];
-        if (data.agent_email && data.agent_email.toLowerCase() !== NANCY_EMAIL.toLowerCase()) {
+        if (data.agent_email && data.agent_email.toLowerCase() !== CLIENT_CARE_EMAIL.toLowerCase()) {
           ccRecipients.push(data.agent_email.trim());
         }
 

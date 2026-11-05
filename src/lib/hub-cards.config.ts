@@ -120,7 +120,7 @@ export const DEFAULT_HUB_CARDS: HubCardDefinition[] = [
   {
     id: "outbound-referral",
     title: "Outbound Referral Sheet",
-    subtitle: "Submit client referral details directly to Nancy & Client Care",
+    subtitle: "Submit client referral details directly to Client Care",
     category: "clients",
     defaultBadge: "Client Care",
     actionLabel: "Submit Referral",

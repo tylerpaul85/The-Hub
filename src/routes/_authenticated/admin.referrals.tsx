@@ -718,7 +718,7 @@ function AdminReferralsPage() {
                 </div>
               )}
 
-              {/* Nancy & Admin Controls */}
+              {/* Client Care & Admin Controls */}
               <div className="border-t border-border pt-4 space-y-4">
                 <p className="text-xs font-bold text-gold uppercase tracking-wider">
                   Client Care Management Controls
@@ -746,7 +746,7 @@ function AdminReferralsPage() {
                   <div className="space-y-1.5">
                     <Label className="text-xs font-semibold">Assigned Specialist</Label>
                     <Input
-                      placeholder="e.g. Nancy"
+                      placeholder="e.g. Client Care Coordinator"
                       value={editAssignedTo}
                       onChange={(e) => setEditAssignedTo(e.target.value)}
                       className="bg-background text-xs"
