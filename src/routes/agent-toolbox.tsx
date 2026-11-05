@@ -52,6 +52,7 @@ import {
   MessageSquareQuote,
   FileDown,
   Layers,
+  Palette,
 } from "lucide-react";
 
 export const Route = createFileRoute("/agent-toolbox")({
@@ -331,38 +332,101 @@ function Toolbox({ token, onLock }: { token: string; onLock: () => void }) {
 
 function ListingsList({ token, onOpen }: { token: string; onOpen: (id: string) => void }) {
   const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "coming_soon" | "sold">("all");
   const fetchListings = useServerFn(listPublicListings);
   const { data, isLoading } = useQuery({
     queryKey: ["public-toolbox-listings", token],
     queryFn: () => fetchListings({ data: { token } }),
   });
 
+  const allListings = (data?.listings ?? []) as any[];
+
+  const counts = useMemo(() => {
+    return {
+      all: allListings.length,
+      active: allListings.filter((l) => l.status === "active").length,
+      coming_soon: allListings.filter((l) => l.status === "coming_soon").length,
+      sold: allListings.filter((l) => l.status === "sold").length,
+    };
+  }, [allListings]);
+
   const filtered = useMemo(() => {
-    const items = (data?.listings ?? []) as any[];
+    let items = allListings;
+    if (statusFilter !== "all") {
+      items = items.filter((l) => l.status === statusFilter);
+    }
     if (!q.trim()) return items;
     const s = q.toLowerCase();
     return items.filter(
       (l) => l.address?.toLowerCase().includes(s) || (l.agent_name ?? "").toLowerCase().includes(s),
     );
-  }, [data, q]);
+  }, [allListings, statusFilter, q]);
 
   return (
     <div className="space-y-4">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search by address or agent"
-          className="pl-9 h-11 text-base"
-        />
+      <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search by address or agent name…"
+            className="pl-9 h-11 text-base bg-surface-1 border-border/70"
+          />
+          {q && (
+            <button
+              onClick={() => setQ("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* Status Filter Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          {(
+            [
+              { id: "all", label: "All Properties", count: counts.all },
+              { id: "active", label: "Active", count: counts.active },
+              { id: "coming_soon", label: "Coming Soon", count: counts.coming_soon },
+              { id: "sold", label: "Sold", count: counts.sold },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setStatusFilter(tab.id)}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-xs font-medium border transition-all shrink-0 flex items-center gap-1.5",
+                statusFilter === tab.id
+                  ? "bg-gold text-navy border-gold font-semibold shadow-xs"
+                  : "bg-surface-2/60 text-muted-foreground border-border/80 hover:text-foreground hover:bg-surface-2",
+              )}
+            >
+              <span>{tab.label}</span>
+              <span
+                className={cn(
+                  "px-1.5 py-0.5 rounded-full text-[10px] font-mono",
+                  statusFilter === tab.id
+                    ? "bg-navy/20 text-navy font-bold"
+                    : "bg-surface-3/80 text-muted-foreground",
+                )}
+              >
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {isLoading ? (
-        <div className="text-center text-muted-foreground text-sm py-10">Loading…</div>
+        <div className="text-center text-muted-foreground text-sm py-10">Loading listings…</div>
       ) : filtered.length === 0 ? (
-        <Card className="p-8 text-center text-sm text-muted-foreground border-dashed">
-          {q ? "No listings match your search." : "No listings available yet."}
+        <Card className="p-8 text-center text-sm text-muted-foreground border-dashed bg-surface-1/40">
+          {q || statusFilter !== "all"
+            ? "No listings match your current filters. Try resetting the search or category."
+            : "No listings available yet."}
         </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -433,6 +497,197 @@ function ListingsList({ token, onOpen }: { token: string; onOpen: (id: string) =
 
 /* -------- Listing detail -------- */
 
+async function copyImageToClipboard(imageUrl: string) {
+  try {
+    const res = await fetch(imageUrl);
+    const blob = await res.blob();
+    if (blob.type === "image/png") {
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      toast.success("Photo copied to clipboard!");
+      return;
+    }
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    const blobUrl = URL.createObjectURL(blob);
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = blobUrl;
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas context failed");
+    ctx.drawImage(img, 0, 0);
+    URL.revokeObjectURL(blobUrl);
+
+    canvas.toBlob(async (pngBlob) => {
+      if (!pngBlob) {
+        toast.error("Format conversion failed");
+        return;
+      }
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": pngBlob })]);
+        toast.success("Photo copied to clipboard!");
+      } catch {
+        toast.error("Direct image copy not supported on this device. Use download.");
+      }
+    }, "image/png");
+  } catch {
+    toast.error("Could not copy photo. Please use Download instead.");
+  }
+}
+
+function SocialPostLauncher({ listing }: { listing: any }) {
+  const [selectedHook, setSelectedHook] = useState(
+    listing.status === "coming_soon"
+      ? "coming_soon"
+      : listing.status === "sold"
+        ? "sold"
+        : "just_listed"
+  );
+  const [copied, setCopied] = useState(false);
+
+  const hooks: Record<string, { label: string; headline: string; emoji: string }> = {
+    just_listed: {
+      label: "Just Listed",
+      headline: `🚨 NEW ON MARKET: ${listing.address} 🚨`,
+      emoji: "✨",
+    },
+    open_house: {
+      label: "Open House",
+      headline: `🏡 WEEKEND OPEN HOUSE: ${listing.address} 🏡`,
+      emoji: "🗝️",
+    },
+    price_update: {
+      label: "Price Update",
+      headline: `🔥 REMARKABLE VALUE & OPPORTUNITY: ${listing.address} 🔥`,
+      emoji: "🏷️",
+    },
+    sold: {
+      label: "Under Contract / Sold",
+      headline: `🥂 ANOTHER PROPERTY SOLD: ${listing.address}! 🥂`,
+      emoji: "🎉",
+    },
+  };
+
+  const currentHook = hooks[selectedHook] || hooks.just_listed;
+
+  const fullPostText = useMemo(() => {
+    const lines = [
+      currentHook.headline,
+      "",
+      listing.description
+        ? listing.description
+        : "An exceptional property opportunity brought to you by Matt Smith Real Estate Group.",
+      "",
+      `📍 Location: ${listing.address}`,
+      listing.agent_name
+        ? `👤 Listing Specialist: ${listing.agent_name}`
+        : "👤 Represented by Matt Smith Real Estate Group",
+      "",
+      "Ready to schedule a private tour or request more details? Send us a DM or contact our team directly today!",
+      "",
+      "#MSREG #MattSmithRealEstateGroup #RollaRealEstate #MidMissouriHomes #DreamHome #JustListed",
+    ];
+    return lines.join("\n");
+  }, [currentHook, listing]);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(fullPostText);
+      setCopied(true);
+      toast.success("Formatted social post copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy post");
+    }
+  };
+
+  const handleShare = async () => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: `${currentHook.label} — ${listing.address}`,
+          text: fullPostText,
+        });
+      } catch {}
+    } else {
+      handleCopy();
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/10 via-surface-1 to-surface-2 p-4 sm:p-5 shadow-sm space-y-3.5">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-xl bg-gold/20 text-gold flex items-center justify-center border border-gold/30 shrink-0">
+            <Sparkles className="h-4 w-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">Fast Social Post Studio</h3>
+            <p className="text-[11px] text-muted-foreground">
+              Select your hook and 1-click copy or share pre-formatted text for Instagram, Facebook, or SMS
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Button
+            size="sm"
+            onClick={handleCopy}
+            className="bg-gold text-navy hover:bg-gold/90 font-semibold h-8 text-xs shadow-xs"
+          >
+            {copied ? (
+              <>
+                <Check className="h-3.5 w-3.5 mr-1" /> Copied!
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5 mr-1" /> Copy Caption
+              </>
+            )}
+          </Button>
+          {typeof navigator !== "undefined" && "share" in navigator && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleShare}
+              className="border-border text-foreground hover:bg-surface-2 h-8 text-xs"
+              title="Share via native device sheet"
+            >
+              <Share2 className="h-3.5 w-3.5 mr-1" /> Share
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {Object.entries(hooks).map(([key, h]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setSelectedHook(key)}
+            className={cn(
+              "px-3 py-1 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5",
+              selectedHook === key
+                ? "bg-gold text-navy border-gold font-semibold shadow-xs"
+                : "bg-surface-2/80 text-muted-foreground border-border/80 hover:text-foreground",
+            )}
+          >
+            <span>{h.emoji}</span>
+            <span>{h.label}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="rounded-xl border border-border/60 bg-black/40 p-3 text-xs font-mono text-muted-foreground/90 whitespace-pre-wrap max-h-36 overflow-y-auto leading-relaxed select-all">
+        {fullPostText}
+      </div>
+    </div>
+  );
+}
+
 function ListingView({ token, id, onBack }: { token: string; id: string; onBack: () => void }) {
   const fetchListing = useServerFn(getPublicListing);
   const { data, isLoading } = useQuery({
@@ -477,6 +732,9 @@ function ListingView({ token, id, onBack }: { token: string; id: string; onBack:
           <p className="text-sm text-muted-foreground mt-2">{listing.description}</p>
         )}
       </div>
+
+      {/* Fast Social Post Studio */}
+      <SocialPostLauncher listing={listing} />
 
       {photos.length > 0 && <PhotoGallery photos={photos} address={listing.address} />}
 
@@ -633,12 +891,26 @@ function PhotoGallery({ photos, address }: { photos: any[]; address: string }) {
                 loading="lazy"
               />
             </button>
-            <div className="p-1.5">
-              <DownloadButton
-                url={p.file_url}
-                filename={`${slug(address)}-${String(idx + 1).padStart(2, "0")}.jpg`}
-                small
-              />
+            <div className="p-1.5 flex gap-1">
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  copyImageToClipboard(p.file_url || p.drive_url || p.thumbnail_url || "");
+                }}
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs flex-1 border-border/80 hover:border-gold/50 text-foreground"
+                title="Copy photo to clipboard"
+              >
+                <Copy className="h-3 w-3 mr-1 text-gold" /> Copy
+              </Button>
+              <div className="flex-1">
+                <DownloadButton
+                  url={p.file_url}
+                  filename={`${slug(address)}-${String(idx + 1).padStart(2, "0")}.jpg`}
+                  small
+                />
+              </div>
             </div>
           </div>
         ))}
@@ -654,13 +926,21 @@ function PhotoGallery({ photos, address }: { photos: any[]; address: string }) {
             alt=""
             className="max-w-full max-h-[80vh] object-contain"
           />
-          <div className="mt-4 flex gap-2" onClick={(e) => e.stopPropagation()}>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
               size="sm"
               variant="secondary"
               onClick={() => setLightbox((i) => (i! > 0 ? i! - 1 : photos.length - 1))}
             >
               Prev
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-gold/50 text-gold hover:bg-gold/10"
+              onClick={() => copyImageToClipboard(photos[lightbox].file_url || photos[lightbox].drive_url || photos[lightbox].thumbnail_url || "")}
+            >
+              <Copy className="h-3.5 w-3.5 mr-1" /> Copy Image
             </Button>
             <DownloadButton
               url={photos[lightbox].file_url}
@@ -752,7 +1032,16 @@ function DownloadButton({
 
 /* -------- Branding -------- */
 
+const BRAND_PALETTE = [
+  { name: "Cognac Amber", hex: "#C45A2C", textClass: "text-white" },
+  { name: "Titanium Dark", hex: "#131826", textClass: "text-white" },
+  { name: "Brass Gold", hex: "#D4A373", textClass: "text-navy font-bold" },
+  { name: "Pure White", hex: "#FFFFFF", textClass: "text-slate-900 border border-border" },
+  { name: "Slate Neutral", hex: "#64748B", textClass: "text-white" },
+];
+
 function BrandList({ token }: { token: string }) {
+  const [canvasBg, setCanvasBg] = useState<"dark" | "light" | "navy" | "checker">("dark");
   const fetchBrand = useServerFn(listPublicBrand);
   const { data, isLoading } = useQuery({
     queryKey: ["public-toolbox-brand", token],
@@ -765,6 +1054,15 @@ function BrandList({ token }: { token: string }) {
     return g;
   }, [items]);
 
+  const copyHex = async (hex: string, name: string) => {
+    try {
+      await navigator.clipboard.writeText(hex);
+      toast.success(`Copied ${name} (${hex}) to clipboard!`);
+    } catch {
+      toast.error("Could not copy color code");
+    }
+  };
+
   if (isLoading) return <div className="text-center text-muted-foreground py-10">Loading…</div>;
   if (items.length === 0)
     return (
@@ -773,8 +1071,80 @@ function BrandList({ token }: { token: string }) {
       </Card>
     );
 
+  const canvasBgClass = {
+    dark: "bg-surface-2/80",
+    light: "bg-slate-100",
+    navy: "bg-[#0B101B]",
+    checker: "bg-black/70 bg-[radial-gradient(#ffffff22_1px,transparent_1px)] bg-[size:12px_12px]",
+  }[canvasBg];
+
   return (
     <div className="space-y-6">
+      {/* Brand Color Studio */}
+      <div className="rounded-2xl border border-border/70 bg-surface-1/90 p-4 space-y-3">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Palette className="h-4 w-4 text-gold" />
+            <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
+              MSREG Brand Color Palette
+            </span>
+            <span className="text-[11px] text-muted-foreground hidden sm:inline">
+              · Tap any swatch to copy Hex
+            </span>
+          </div>
+          {/* Contrast Mode Selector */}
+          <div className="flex items-center gap-1 bg-surface-2/80 rounded-lg p-0.5 border border-border/60 text-xs">
+            <span className="text-[10px] text-muted-foreground px-1.5 font-medium">Canvas:</span>
+            {(
+              [
+                { id: "dark", label: "Dark" },
+                { id: "light", label: "Light" },
+                { id: "navy", label: "Navy" },
+                { id: "checker", label: "Grid" },
+              ] as const
+            ).map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setCanvasBg(c.id)}
+                className={cn(
+                  "px-2 py-0.5 rounded text-[11px] font-medium transition-all",
+                  canvasBg === c.id
+                    ? "bg-gold text-navy font-bold shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          {BRAND_PALETTE.map((p) => (
+            <button
+              key={p.hex}
+              onClick={() => copyHex(p.hex, p.name)}
+              className="flex items-center gap-2.5 p-2 rounded-xl border border-border/60 bg-surface-2/60 hover:bg-surface-2 hover:border-gold/50 active:scale-[0.98] transition-all text-left group"
+            >
+              <div
+                className={cn(
+                  "h-8 w-8 rounded-lg shrink-0 shadow-inner flex items-center justify-center text-[10px]",
+                  p.textClass,
+                )}
+                style={{ backgroundColor: p.hex }}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="text-[11px] font-semibold text-foreground truncate group-hover:text-gold transition-colors">
+                  {p.name}
+                </div>
+                <div className="text-[10px] font-mono text-muted-foreground truncate">{p.hex}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {Object.entries(grouped).map(([cat, list]) => (
         <section key={cat} className="space-y-2">
           <h3 className="text-sm font-semibold text-gold">
@@ -784,11 +1154,14 @@ function BrandList({ token }: { token: string }) {
             {list.map((i) => {
               const isImg = isImageUrl(i.file_url);
               return (
-                <div key={i.id} className="group relative rounded-2xl overflow-hidden border border-border/80 bg-surface-1/95 hover:bg-surface-1 hover:border-gold/50 shadow-sm hover:shadow-[0_16px_36px_-10px_rgba(0,0,0,0.5),0_0_20px_-4px_rgba(196,90,44,0.2)] hover:-translate-y-1 transition-all duration-300 ring-1 ring-inset ring-white/[0.06]">
+                <div
+                  key={i.id}
+                  className="group relative rounded-2xl overflow-hidden border border-border/80 bg-surface-1/95 hover:bg-surface-1 hover:border-gold/50 shadow-sm hover:shadow-[0_16px_36px_-10px_rgba(0,0,0,0.5),0_0_20px_-4px_rgba(196,90,44,0.2)] hover:-translate-y-1 transition-all duration-300 ring-1 ring-inset ring-white/[0.06]"
+                >
                   {/* Top sheen line */}
                   <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 group-hover:via-gold/50 to-transparent transition-all duration-300 z-10" />
 
-                  <div className="aspect-square bg-surface-2/60 flex items-center justify-center p-3">
+                  <div className={cn("aspect-square flex items-center justify-center p-4 transition-colors", canvasBgClass)}>
                     {isImg ? (
                       <img
                         src={i.file_url}
@@ -801,7 +1174,25 @@ function BrandList({ token }: { token: string }) {
                   </div>
                   <div className="p-3 space-y-2 border-t border-border/50 bg-surface-1/80">
                     <div className="text-xs font-semibold text-foreground truncate">{i.name}</div>
-                    <DownloadButton url={i.file_url} filename={i.name || "asset"} small />
+                    <div className="flex items-center gap-1">
+                      {isImg && (
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copyImageToClipboard(i.file_url);
+                          }}
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-xs flex-1 border-border/80 hover:border-gold/50 text-foreground"
+                          title="Copy logo directly to clipboard"
+                        >
+                          <Copy className="h-3 w-3 mr-1 text-gold" /> Copy
+                        </Button>
+                      )}
+                      <div className={isImg ? "flex-1" : "w-full"}>
+                        <DownloadButton url={i.file_url} filename={i.name || "asset"} small />
+                      </div>
+                    </div>
                   </div>
                 </div>
               );

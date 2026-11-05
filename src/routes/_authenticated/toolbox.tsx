@@ -437,6 +437,25 @@ function ListingsTab({ onOpen, userId }: { onOpen: (id: string) => void; userId:
     onError: (e: any) => toast.error(e.message),
   });
 
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await sb.from("toolbox_listings").update({ status }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Listing status updated");
+      qc.invalidateQueries({ queryKey: ["toolbox-listings"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const copyAgentLink = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const url = `${window.location.origin}/agent-toolbox?tab=listings&id=${id}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Agent public toolbox link copied!");
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -531,14 +550,26 @@ function ListingsTab({ onOpen, userId }: { onOpen: (id: string) => void; userId:
                   {/* Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   
-                  <div className="absolute top-3 left-3">
-                    <Badge className={cn("border border-background/20 font-medium tracking-wide shadow-sm backdrop-blur-sm bg-background/80", STATUS_CLASS[l.status])}>
-                      {STATUS_LABEL[l.status] ?? l.status}
-                    </Badge>
+                  <div className="absolute top-3 left-3 z-10" onClick={(e) => e.stopPropagation()}>
+                    <Select
+                      value={l.status}
+                      onValueChange={(val) => updateStatus.mutate({ id: l.id, status: val })}
+                    >
+                      <SelectTrigger className={cn("h-6 text-[10px] font-semibold border shadow-sm backdrop-blur-md px-2 rounded-full", STATUS_CLASS[l.status])}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTS.map((opt) => (
+                          <SelectItem key={opt} value={opt} className="text-xs">
+                            {STATUS_LABEL[opt]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   {isArchived && (
-                    <Badge className="absolute top-3 right-3 border border-gold/40 bg-navy/90 text-gold shadow-sm backdrop-blur-sm">
+                    <Badge className="absolute top-3 right-3 border border-gold/40 bg-navy/90 text-gold shadow-sm backdrop-blur-sm z-10">
                       Archived
                     </Badge>
                   )}
@@ -560,6 +591,15 @@ function ListingsTab({ onOpen, userId }: { onOpen: (id: string) => void; userId:
                     </span>
                   </div>
                   <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs border-border/80 text-foreground hover:border-gold/50 hover:bg-gold/10"
+                      onClick={(e) => copyAgentLink(e, l.id)}
+                      title="Copy public link for agents"
+                    >
+                      <Copy className="h-3 w-3 mr-1 text-gold" /> Copy Link
+                    </Button>
                     {isArchived ? (
                       <Button
                         size="sm"
@@ -788,6 +828,7 @@ function ListingSheet({
 
             <CaptionsSection
               listingId={listing.id}
+              listing={listing}
               userId={userId}
               captions={captions}
               onChange={invAll}
@@ -1054,16 +1095,20 @@ function GraphicSection(props: {
 
 function CaptionsSection({
   listingId,
+  listing,
   userId,
   captions,
   onChange,
 }: {
   listingId: string;
+  listing?: Listing | null;
   userId: string | null;
   captions: Caption[];
   onChange: () => void;
 }) {
   const [text, setText] = useState("");
+  const [generating, setGenerating] = useState(false);
+
   const add = async () => {
     if (!text.trim()) return;
     await sb
@@ -1072,6 +1117,37 @@ function CaptionsSection({
     setText("");
     onChange();
   };
+
+  const generateSocialSuite = async () => {
+    setGenerating(true);
+    const addr = listing?.address || "Featured Home";
+    const agent = listing?.agent_name || "Matt Smith Real Estate Group";
+
+    const suite = [
+      `🚨 JUST LISTED IN ROLLA / MID-MISSOURI! 🚨\n\n📍 ${addr}\n👤 Represented by ${agent}\n\nKey Highlights:\n• Premium finishes & move-in ready design\n• Exceptional neighborhood & prime convenience\n• Private outdoor living space\n\n💬 Send us a DM or contact ${agent} today to schedule your private tour!\n\n#MSREG #MattSmithRealEstateGroup #NewListing #RollaMO #MidMissouriRealEstate #DreamHome`,
+
+      `🏡 OPEN HOUSE & PRIVATE TOURS THIS WEEKEND! 🏡\n\n📍 ${addr}\n\nJoin ${agent} to walk through this remarkable property in person. Don't miss your chance to explore everything this home has to offer.\n\n📅 Full property specs and walkthrough details available now — DM us for the complete private info sheet!\n\n#MSREG #OpenHouse #HomeTour #RealEstate`,
+
+      `🔥 NEW LISTING SPOTLIGHT: ${addr}!\n\nLooking for your next move? This stunning property listed with ${agent} is officially available. DM us "INFO" for instant photos, pricing, and showing appointments!`,
+    ];
+
+    try {
+      for (const cap of suite) {
+        await sb.from("toolbox_captions").insert({
+          listing_id: listingId,
+          caption_text: cap,
+          created_by: userId,
+        });
+      }
+      toast.success("Generated 3 instant social captions!");
+      onChange();
+    } catch {
+      toast.error("Failed to generate captions");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const remove = async (id: string) => {
     await sb.from("toolbox_captions").delete().eq("id", id);
     onChange();
@@ -1082,9 +1158,29 @@ function CaptionsSection({
   };
   return (
     <section>
-      <h3 className="text-sm font-semibold flex items-center gap-2 text-gold mb-2">
-        <FileText className="h-4 w-4" /> Ready-to-use Captions
-      </h3>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <h3 className="text-sm font-semibold flex items-center gap-2 text-gold">
+          <FileText className="h-4 w-4" /> Ready-to-use Captions
+        </h3>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={generating}
+          onClick={generateSocialSuite}
+          className="h-7 text-xs border-gold/40 text-gold hover:bg-gold/10"
+        >
+          {generating ? (
+            <>
+              <Loader2 className="h-3 w-3 mr-1 animate-spin" /> Generating…
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-3.5 w-3.5 mr-1" />
+              Auto-Fill Social Suite
+            </>
+          )}
+        </Button>
+      </div>
       <div className="space-y-2">
         {captions.map((c) => (
           <div key={c.id} className="rounded border border-border bg-card/50 p-3 group">
