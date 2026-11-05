@@ -617,9 +617,18 @@ function VideoCard({ video, address }: { video: any; address: string }) {
   const [imgError, setImgError] = useState(false);
   const parsed = useMemo(() => parseVideoSource(video.drive_url || video.file_url), [video]);
 
-  const copyLink = async () => {
+  const targetUrl = video.drive_url || video.file_url || "";
+
+  const openVideo = () => {
+    if (targetUrl) {
+      window.open(targetUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const copyLink = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
-      await navigator.clipboard.writeText(video.drive_url || video.file_url || "");
+      await navigator.clipboard.writeText(targetUrl);
       toast.success("Video link copied to clipboard!");
     } catch {
       toast.error("Could not copy link");
@@ -630,6 +639,9 @@ function VideoCard({ video, address }: { video: any; address: string }) {
     video.name && video.name !== "Video"
       ? video.name
       : `${address} — Property Walkthrough`;
+
+  const canPlayInline =
+    parsed?.type === "youtube" || parsed?.type === "vimeo" || parsed?.type === "direct";
 
   return (
     <div className="rounded-2xl border border-gold/40 bg-surface-1 overflow-hidden shadow-lg hover:border-gold/60 transition-all duration-300 ring-1 ring-white/10 w-full">
@@ -675,7 +687,7 @@ function VideoCard({ video, address }: { video: any; address: string }) {
 
       {/* Video Viewport */}
       <div className="relative aspect-video w-full bg-black overflow-hidden">
-        {isPlaying && parsed?.embedUrl ? (
+        {isPlaying && canPlayInline && parsed?.embedUrl ? (
           parsed.type === "direct" ? (
             <video
               src={parsed.embedUrl}
@@ -696,10 +708,10 @@ function VideoCard({ video, address }: { video: any; address: string }) {
           <button
             type="button"
             onClick={() => {
-              if (parsed?.embedUrl) {
+              if (canPlayInline) {
                 setIsPlaying(true);
               } else {
-                window.open(video.drive_url || video.file_url, "_blank");
+                openVideo();
               }
             }}
             className="group/player relative w-full h-full block cursor-pointer text-left bg-gradient-to-br from-zinc-950 via-surface-2 to-black overflow-hidden focus:outline-none"
@@ -723,11 +735,11 @@ function VideoCard({ video, address }: { video: any; address: string }) {
                 <Play className="h-6 w-6 sm:h-7 sm:w-7 fill-navy ml-0.5" />
               </div>
               <div className="space-y-0.5 max-w-[90%]">
-                <span className="inline-block text-xs sm:text-sm font-bold tracking-wider uppercase text-white drop-shadow-md bg-black/70 px-3 py-1 rounded-full backdrop-blur-md border border-white/15">
-                  Watch Video Walkthrough
+                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold tracking-wider uppercase text-white drop-shadow-md bg-black/70 px-3.5 py-1.5 rounded-full backdrop-blur-md border border-white/15">
+                  Watch Video Walkthrough <ExternalLink className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gold" />
                 </span>
                 <span className="block text-[10px] sm:text-[11px] text-white/80 drop-shadow">
-                  Click to play inline or open in Google Drive
+                  Click to open HD video player on Google Drive
                 </span>
               </div>
             </div>
