@@ -746,7 +746,7 @@ function AdminReferralsPage() {
                   <div className="space-y-1.5">
                     <Label className="text-xs font-semibold">Assigned Specialist</Label>
                     <Input
-                      placeholder="e.g. Client Care Coordinator"
+                      placeholder="e.g. Client Care Specialist"
                       value={editAssignedTo}
                       onChange={(e) => setEditAssignedTo(e.target.value)}
                       className="bg-background text-xs"

@@ -82,7 +82,7 @@ function formatHtmlEmail(data: SubmitOutboundReferralInput, referralId: string):
       <td style="padding: 28px 32px;">
 
         <p style="margin-top: 0; margin-bottom: 20px; font-size: 14px; line-height: 1.5; color: #9ca3af;">
-          A new outbound referral information sheet was submitted by <strong style="color: #ffffff;">${data.agent_name}</strong>. Here are the full client and transaction details to move the process along:
+          A new outbound referral information sheet was submitted by <strong style="color: #ffffff;">${data.agent_name}</strong> for the Client Care Specialist to coordinate. Here are the full client and transaction details:
         </p>
 
         <!-- Quick Summary Box -->
