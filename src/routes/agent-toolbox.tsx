@@ -53,6 +53,7 @@ import {
   FileDown,
   Layers,
   Palette,
+  Play,
 } from "lucide-react";
 
 export const Route = createFileRoute("/agent-toolbox")({
@@ -539,152 +540,219 @@ async function copyImageToClipboard(imageUrl: string) {
   }
 }
 
-function SocialPostLauncher({ listing }: { listing: any }) {
-  const [selectedHook, setSelectedHook] = useState(
-    listing.status === "coming_soon"
-      ? "coming_soon"
-      : listing.status === "sold"
-        ? "sold"
-        : "just_listed"
-  );
-  const [copied, setCopied] = useState(false);
+function parseVideoSource(rawUrl: string | null | undefined) {
+  if (!rawUrl || typeof rawUrl !== "string") return null;
+  const url = rawUrl.trim();
+  if (!url) return null;
 
-  const hooks: Record<string, { label: string; headline: string; emoji: string }> = {
-    just_listed: {
-      label: "Just Listed",
-      headline: `🚨 NEW ON MARKET: ${listing.address} 🚨`,
-      emoji: "✨",
-    },
-    open_house: {
-      label: "Open House",
-      headline: `🏡 WEEKEND OPEN HOUSE: ${listing.address} 🏡`,
-      emoji: "🗝️",
-    },
-    price_update: {
-      label: "Price Update",
-      headline: `🔥 REMARKABLE VALUE & OPPORTUNITY: ${listing.address} 🔥`,
-      emoji: "🏷️",
-    },
-    sold: {
-      label: "Under Contract / Sold",
-      headline: `🥂 ANOTHER PROPERTY SOLD: ${listing.address}! 🥂`,
-      emoji: "🎉",
-    },
+  // Google Drive
+  const gdriveMatch =
+    url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+    url.match(/\/open\?id=([a-zA-Z0-9_-]+)/) ||
+    url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (gdriveMatch && gdriveMatch[1]) {
+    const fileId = gdriveMatch[1];
+    return {
+      type: "gdrive",
+      fileId,
+      embedUrl: `https://drive.google.com/file/d/${fileId}/preview`,
+      thumbnailUrl: `https://lh3.googleusercontent.com/d/${fileId}`,
+      directUrl: url,
+      label: "Google Drive Video",
+    };
+  }
+
+  // YouTube
+  const ytMatch =
+    url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|(?:embed|v)\/))([a-zA-Z0-9_-]{11})/);
+  if (ytMatch && ytMatch[1]) {
+    const ytId = ytMatch[1];
+    return {
+      type: "youtube",
+      fileId: ytId,
+      embedUrl: `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1`,
+      thumbnailUrl: `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`,
+      directUrl: url,
+      label: "YouTube Video",
+    };
+  }
+
+  // Vimeo
+  const vimeoMatch = url.match(/vimeo\.com\/(?:video\/)?([0-9]+)/);
+  if (vimeoMatch && vimeoMatch[1]) {
+    return {
+      type: "vimeo",
+      fileId: vimeoMatch[1],
+      embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`,
+      thumbnailUrl: null,
+      directUrl: url,
+      label: "Vimeo Video",
+    };
+  }
+
+  // Direct MP4 / WebM / Quicktime
+  if (/\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(url)) {
+    return {
+      type: "direct",
+      fileId: null,
+      embedUrl: url,
+      thumbnailUrl: null,
+      directUrl: url,
+      label: "Direct Video",
+    };
+  }
+
+  return {
+    type: "other",
+    fileId: null,
+    embedUrl: null,
+    thumbnailUrl: null,
+    directUrl: url,
+    label: "Video Link",
   };
+}
 
-  const currentHook = hooks[selectedHook] || hooks.just_listed;
+function VideoCard({ video, address }: { video: any; address: string }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const parsed = useMemo(() => parseVideoSource(video.drive_url || video.file_url), [video]);
 
-  const fullPostText = useMemo(() => {
-    const lines = [
-      currentHook.headline,
-      "",
-      listing.description
-        ? listing.description
-        : "An exceptional property opportunity brought to you by Matt Smith Real Estate Group.",
-      "",
-      `📍 Location: ${listing.address}`,
-      listing.agent_name
-        ? `👤 Listing Specialist: ${listing.agent_name}`
-        : "👤 Represented by Matt Smith Real Estate Group",
-      "",
-      "Ready to schedule a private tour or request more details? Send us a DM or contact our team directly today!",
-      "",
-      "#MSREG #MattSmithRealEstateGroup #RollaRealEstate #MidMissouriHomes #DreamHome #JustListed",
-    ];
-    return lines.join("\n");
-  }, [currentHook, listing]);
-
-  const handleCopy = async () => {
+  const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(fullPostText);
-      setCopied(true);
-      toast.success("Formatted social post copied to clipboard!");
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(video.drive_url || video.file_url || "");
+      toast.success("Video link copied to clipboard!");
     } catch {
-      toast.error("Failed to copy post");
+      toast.error("Could not copy link");
     }
   };
 
-  const handleShare = async () => {
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({
-          title: `${currentHook.label} — ${listing.address}`,
-          text: fullPostText,
-        });
-      } catch {}
-    } else {
-      handleCopy();
-    }
-  };
+  const title =
+    video.name && video.name !== "Video"
+      ? video.name
+      : `${address} — Property Walkthrough`;
 
   return (
-    <div className="rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/10 via-surface-1 to-surface-2 p-4 sm:p-5 shadow-sm space-y-3.5">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-xl bg-gold/20 text-gold flex items-center justify-center border border-gold/30 shrink-0">
-            <Sparkles className="h-4 w-4" />
+    <div className="rounded-2xl border-2 border-gold/40 bg-surface-1 overflow-hidden shadow-lg hover:border-gold/60 transition-all duration-300 ring-1 ring-white/10">
+      {/* Header bar */}
+      <div className="px-4 py-3 bg-surface-2/95 border-b border-border/80 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="h-9 w-9 rounded-xl bg-gold/15 text-gold border border-gold/30 flex items-center justify-center shrink-0">
+            <VideoIcon className="h-4.5 w-4.5" />
           </div>
-          <div>
-            <h3 className="text-sm font-semibold text-foreground">Fast Social Post Studio</h3>
-            <p className="text-[11px] text-muted-foreground">
-              Select your hook and 1-click copy or share pre-formatted text for Instagram, Facebook, or SMS
-            </p>
+          <div className="min-w-0">
+            <div className="text-sm font-bold text-foreground truncate flex items-center gap-2">
+              <span className="truncate">{title}</span>
+              <Badge className="bg-gold/20 text-gold border-gold/30 text-[10px] font-medium px-2 py-0.5 shrink-0">
+                Property Video
+              </Badge>
+            </div>
+            <div className="text-[11px] text-muted-foreground truncate">
+              {parsed?.label ?? "Video"} · Click below to play walkthrough inline or open in Drive
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
+
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             size="sm"
-            onClick={handleCopy}
-            className="bg-gold text-navy hover:bg-gold/90 font-semibold h-8 text-xs shadow-xs"
+            variant="outline"
+            onClick={copyLink}
+            className="h-8 text-xs border-border/80 text-foreground hover:bg-surface-2 hover:border-gold/50"
+            title="Copy video link for text / email"
           >
-            {copied ? (
-              <>
-                <Check className="h-3.5 w-3.5 mr-1" /> Copied!
-              </>
-            ) : (
-              <>
-                <Copy className="h-3.5 w-3.5 mr-1" /> Copy Caption
-              </>
-            )}
+            <Copy className="h-3.5 w-3.5 mr-1 text-gold" /> Copy Link
           </Button>
-          {typeof navigator !== "undefined" && "share" in navigator && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleShare}
-              className="border-border text-foreground hover:bg-surface-2 h-8 text-xs"
-              title="Share via native device sheet"
-            >
-              <Share2 className="h-3.5 w-3.5 mr-1" /> Share
-            </Button>
-          )}
+          <a
+            href={video.drive_url || video.file_url}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center justify-center rounded-lg h-8 px-3 text-xs font-semibold bg-gold text-navy hover:bg-gold/90 transition shadow-xs"
+          >
+            <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open on Drive
+          </a>
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 flex-wrap">
-        {Object.entries(hooks).map(([key, h]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setSelectedHook(key)}
-            className={cn(
-              "px-3 py-1 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5",
-              selectedHook === key
-                ? "bg-gold text-navy border-gold font-semibold shadow-xs"
-                : "bg-surface-2/80 text-muted-foreground border-border/80 hover:text-foreground",
-            )}
+      {/* Video Viewport */}
+      <div className="relative aspect-video w-full bg-black flex items-center justify-center overflow-hidden">
+        {isPlaying && parsed?.embedUrl ? (
+          parsed.type === "direct" ? (
+            <video
+              src={parsed.embedUrl}
+              controls
+              autoPlay
+              className="w-full h-full object-contain"
+            />
+          ) : (
+            <iframe
+              src={parsed.embedUrl}
+              allow="autoplay; encrypted-media; fullscreen"
+              allowFullScreen
+              className="w-full h-full border-0"
+              title={title}
+            />
+          )
+        ) : (
+          <div
+            onClick={() => {
+              if (parsed?.embedUrl) {
+                setIsPlaying(true);
+              } else {
+                window.open(video.drive_url || video.file_url, "_blank");
+              }
+            }}
+            className="group/player relative w-full h-full cursor-pointer flex items-center justify-center bg-gradient-to-br from-zinc-950 via-surface-2 to-black"
           >
-            <span>{h.emoji}</span>
-            <span>{h.label}</span>
-          </button>
-        ))}
-      </div>
+            {/* Thumbnail */}
+            {parsed?.thumbnailUrl && !imgError ? (
+              <img
+                src={parsed.thumbnailUrl}
+                alt={title}
+                onError={() => setImgError(true)}
+                className="w-full h-full object-cover group-hover/player:scale-105 transition-transform duration-500 opacity-75"
+              />
+            ) : null}
 
-      <div className="rounded-xl border border-border/60 bg-black/40 p-3 text-xs font-mono text-muted-foreground/90 whitespace-pre-wrap max-h-36 overflow-y-auto leading-relaxed select-all">
-        {fullPostText}
+            {/* Dark gradient overlay */}
+            <div className="absolute inset-0 bg-black/45 group-hover/player:bg-black/30 transition-colors" />
+
+            {/* Prominent Play Button */}
+            <div className="relative z-10 flex flex-col items-center gap-3">
+              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-gold text-navy flex items-center justify-center shadow-[0_0_30px_rgba(212,163,115,0.6)] group-hover/player:scale-110 group-hover/player:shadow-[0_0_45px_rgba(212,163,115,0.9)] transition-all duration-300">
+                <Play className="h-8 w-8 sm:h-9 sm:w-9 fill-navy ml-1" />
+              </div>
+              <div className="text-center space-y-0.5">
+                <span className="text-xs sm:text-sm font-bold tracking-wider uppercase text-white drop-shadow-md bg-black/70 px-3.5 py-1.5 rounded-full backdrop-blur-md border border-white/15 block">
+                  Watch Video Walkthrough
+                </span>
+                <span className="text-[11px] text-white/70 block pt-1">
+                  Click to play inline or open in Google Drive
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+function VideoShowcase({ videos, address }: { videos: any[]; address: string }) {
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-bold text-gold flex items-center gap-2">
+          <VideoIcon className="h-5 w-5 text-gold" /> Property Videos & Walkthroughs
+          <span className="text-xs text-muted-foreground font-normal">· {videos.length}</span>
+        </h2>
+      </div>
+
+      <div className="space-y-4">
+        {videos.map((v: any) => (
+          <VideoCard key={v.id} video={v} address={address} />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -733,34 +801,10 @@ function ListingView({ token, id, onBack }: { token: string; id: string; onBack:
         )}
       </div>
 
-      {/* Fast Social Post Studio */}
-      <SocialPostLauncher listing={listing} />
+      {/* Prominent Video Walkthrough Showcase */}
+      {videos.length > 0 && <VideoShowcase videos={videos} address={listing.address} />}
 
       {photos.length > 0 && <PhotoGallery photos={photos} address={listing.address} />}
-
-      {videos.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-gold flex items-center gap-2">
-            <VideoIcon className="h-4 w-4" /> Videos
-          </h2>
-          <div className="space-y-2">
-            {videos.map((v: any) => (
-              <a
-                key={v.id}
-                href={v.drive_url}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-4 py-3 hover:border-gold/60 active:scale-[0.99] transition"
-              >
-                <span className="flex items-center gap-2 text-sm truncate">
-                  <ExternalLink className="h-4 w-4 text-gold shrink-0" />
-                  <span className="truncate">Open video on Drive</span>
-                </span>
-              </a>
-            ))}
-          </div>
-        </section>
-      )}
 
       {graphics.length > 0 && (
         <section className="space-y-2">

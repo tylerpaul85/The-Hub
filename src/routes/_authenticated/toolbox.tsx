@@ -1019,7 +1019,7 @@ function VideoSection({
       listing_id: listingId,
       asset_type: "video",
       drive_url: url.trim(),
-      name: "Video",
+      name: "Property Walkthrough Video",
       created_by: userId,
     });
     setUrl("");
@@ -1034,11 +1034,11 @@ function VideoSection({
   return (
     <section>
       <h3 className="text-sm font-semibold flex items-center gap-2 text-gold mb-2">
-        <VideoIcon className="h-4 w-4" /> Videos (Google Drive)
+        <VideoIcon className="h-4 w-4" /> Videos (Google Drive, YouTube, or direct link)
       </h3>
       <div className="flex gap-2">
         <Input
-          placeholder="Paste Google Drive URL"
+          placeholder="Paste Google Drive URL or video link…"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && add()}
@@ -1048,26 +1048,52 @@ function VideoSection({
           Add
         </Button>
       </div>
-      <div className="space-y-1 mt-3">
-        {assets.map((a) => (
-          <div
-            key={a.id}
-            className="flex items-center justify-between gap-2 rounded border border-border bg-card/50 px-3 py-2"
-          >
-            <a
-              href={a.drive_url ?? "#"}
-              target="_blank"
-              rel="noreferrer"
-              className="text-sm text-gold hover:underline truncate flex items-center gap-2"
+      <div className="space-y-2 mt-3">
+        {assets.map((a) => {
+          const driveMatch =
+            (a.drive_url ?? "").match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+            (a.drive_url ?? "").match(/\/open\?id=([a-zA-Z0-9_-]+)/) ||
+            (a.drive_url ?? "").match(/[?&]id=([a-zA-Z0-9_-]+)/);
+          const thumb = driveMatch ? `https://lh3.googleusercontent.com/d/${driveMatch[1]}` : null;
+          return (
+            <div
+              key={a.id}
+              className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card/60 p-2.5"
             >
-              <ExternalLink className="h-3.5 w-3.5 shrink-0" />{" "}
-              <span className="truncate">{a.drive_url}</span>
-            </a>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => remove(a)}>
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        ))}
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="h-10 w-14 rounded-lg bg-surface-2 border border-border/80 flex items-center justify-center shrink-0 overflow-hidden relative">
+                  {thumb ? (
+                    <img src={thumb} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <VideoIcon className="h-4 w-4 text-gold" />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-foreground truncate">
+                    {a.name || "Walkthrough Video"}
+                  </div>
+                  <a
+                    href={a.drive_url ?? "#"}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] text-gold hover:underline truncate flex items-center gap-1"
+                  >
+                    <ExternalLink className="h-3 w-3 shrink-0" />{" "}
+                    <span className="truncate">{a.drive_url}</span>
+                  </a>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-destructive hover:bg-destructive/10 shrink-0"
+                onClick={() => remove(a)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
