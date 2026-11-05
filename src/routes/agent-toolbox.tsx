@@ -632,49 +632,49 @@ function VideoCard({ video, address }: { video: any; address: string }) {
       : `${address} — Property Walkthrough`;
 
   return (
-    <div className="rounded-2xl border-2 border-gold/40 bg-surface-1 overflow-hidden shadow-lg hover:border-gold/60 transition-all duration-300 ring-1 ring-white/10">
+    <div className="rounded-2xl border border-gold/40 bg-surface-1 overflow-hidden shadow-lg hover:border-gold/60 transition-all duration-300 ring-1 ring-white/10 w-full">
       {/* Header bar */}
-      <div className="px-4 py-3 bg-surface-2/95 border-b border-border/80 flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="h-9 w-9 rounded-xl bg-gold/15 text-gold border border-gold/30 flex items-center justify-center shrink-0">
-            <VideoIcon className="h-4.5 w-4.5" />
+      <div className="px-3.5 py-2.5 sm:px-4 sm:py-3 bg-surface-2/95 border-b border-border/80 flex items-center justify-between gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2 min-w-0 max-w-[65%] sm:max-w-none">
+          <div className="h-8 w-8 rounded-xl bg-gold/15 text-gold border border-gold/30 flex items-center justify-center shrink-0">
+            <VideoIcon className="h-4 w-4" />
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-bold text-foreground truncate flex items-center gap-2">
+            <div className="text-xs sm:text-sm font-bold text-foreground truncate flex items-center gap-1.5">
               <span className="truncate">{title}</span>
-              <Badge className="bg-gold/20 text-gold border-gold/30 text-[10px] font-medium px-2 py-0.5 shrink-0">
+              <Badge className="bg-gold/20 text-gold border-gold/30 text-[9px] sm:text-[10px] font-medium px-1.5 py-0.2 shrink-0">
                 Property Video
               </Badge>
             </div>
-            <div className="text-[11px] text-muted-foreground truncate">
+            <div className="text-[10px] sm:text-[11px] text-muted-foreground truncate hidden xs:block">
               {parsed?.label ?? "Video"} · Click below to play walkthrough inline or open in Drive
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
           <Button
             size="sm"
             variant="outline"
             onClick={copyLink}
-            className="h-8 text-xs border-border/80 text-foreground hover:bg-surface-2 hover:border-gold/50"
+            className="h-7 sm:h-8 text-[11px] sm:text-xs border-border/80 text-foreground hover:bg-surface-2 hover:border-gold/50 px-2 sm:px-3"
             title="Copy video link for text / email"
           >
-            <Copy className="h-3.5 w-3.5 mr-1 text-gold" /> Copy Link
+            <Copy className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 text-gold" /> Copy Link
           </Button>
           <a
             href={video.drive_url || video.file_url}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center justify-center rounded-lg h-8 px-3 text-xs font-semibold bg-gold text-navy hover:bg-gold/90 transition shadow-xs"
+            className="inline-flex items-center justify-center rounded-lg h-7 sm:h-8 px-2.5 sm:px-3 text-[11px] sm:text-xs font-semibold bg-gold text-navy hover:bg-gold/90 transition shadow-xs"
           >
-            <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open on Drive
+            <ExternalLink className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1" /> Open Drive
           </a>
         </div>
       </div>
 
       {/* Video Viewport */}
-      <div className="relative aspect-video w-full bg-black flex items-center justify-center overflow-hidden">
+      <div className="relative aspect-video w-full bg-black overflow-hidden">
         {isPlaying && parsed?.embedUrl ? (
           parsed.type === "direct" ? (
             <video
@@ -693,7 +693,8 @@ function VideoCard({ video, address }: { video: any; address: string }) {
             />
           )
         ) : (
-          <div
+          <button
+            type="button"
             onClick={() => {
               if (parsed?.embedUrl) {
                 setIsPlaying(true);
@@ -701,36 +702,36 @@ function VideoCard({ video, address }: { video: any; address: string }) {
                 window.open(video.drive_url || video.file_url, "_blank");
               }
             }}
-            className="group/player relative w-full h-full cursor-pointer flex items-center justify-center bg-gradient-to-br from-zinc-950 via-surface-2 to-black"
+            className="group/player relative w-full h-full block cursor-pointer text-left bg-gradient-to-br from-zinc-950 via-surface-2 to-black overflow-hidden focus:outline-none"
           >
-            {/* Thumbnail */}
+            {/* Background Thumbnail Image - ABSOLUTE to avoid displacing children */}
             {parsed?.thumbnailUrl && !imgError ? (
               <img
                 src={parsed.thumbnailUrl}
                 alt={title}
                 onError={() => setImgError(true)}
-                className="w-full h-full object-cover group-hover/player:scale-105 transition-transform duration-500 opacity-75"
+                className="absolute inset-0 w-full h-full object-cover group-hover/player:scale-105 transition-transform duration-500 opacity-75"
               />
             ) : null}
 
             {/* Dark gradient overlay */}
             <div className="absolute inset-0 bg-black/45 group-hover/player:bg-black/30 transition-colors" />
 
-            {/* Prominent Play Button */}
-            <div className="relative z-10 flex flex-col items-center gap-3">
-              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-gold text-navy flex items-center justify-center shadow-[0_0_30px_rgba(212,163,115,0.6)] group-hover/player:scale-110 group-hover/player:shadow-[0_0_45px_rgba(212,163,115,0.9)] transition-all duration-300">
-                <Play className="h-8 w-8 sm:h-9 sm:w-9 fill-navy ml-1" />
+            {/* Prominent Play Button centered perfectly over the entire video viewport */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-4 gap-2.5 z-10 text-center">
+              <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gold text-navy flex items-center justify-center shadow-[0_0_25px_rgba(212,163,115,0.6)] group-hover/player:scale-110 group-hover/player:shadow-[0_0_35px_rgba(212,163,115,0.9)] transition-all duration-300">
+                <Play className="h-6 w-6 sm:h-7 sm:w-7 fill-navy ml-0.5" />
               </div>
-              <div className="text-center space-y-0.5">
-                <span className="text-xs sm:text-sm font-bold tracking-wider uppercase text-white drop-shadow-md bg-black/70 px-3.5 py-1.5 rounded-full backdrop-blur-md border border-white/15 block">
+              <div className="space-y-0.5 max-w-[90%]">
+                <span className="inline-block text-xs sm:text-sm font-bold tracking-wider uppercase text-white drop-shadow-md bg-black/70 px-3 py-1 rounded-full backdrop-blur-md border border-white/15">
                   Watch Video Walkthrough
                 </span>
-                <span className="text-[11px] text-white/70 block pt-1">
+                <span className="block text-[10px] sm:text-[11px] text-white/80 drop-shadow">
                   Click to play inline or open in Google Drive
                 </span>
               </div>
             </div>
-          </div>
+          </button>
         )}
       </div>
     </div>
@@ -741,13 +742,20 @@ function VideoShowcase({ videos, address }: { videos: any[]; address: string }) 
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-bold text-gold flex items-center gap-2">
-          <VideoIcon className="h-5 w-5 text-gold" /> Property Videos & Walkthroughs
+        <h2 className="text-sm sm:text-base font-bold text-gold flex items-center gap-2">
+          <VideoIcon className="h-4 w-4 sm:h-5 sm:w-5 text-gold" /> Property Videos & Walkthroughs
           <span className="text-xs text-muted-foreground font-normal">· {videos.length}</span>
         </h2>
       </div>
 
-      <div className="space-y-4">
+      <div
+        className={cn(
+          "gap-4",
+          videos.length === 1
+            ? "max-w-2xl sm:max-w-3xl"
+            : "grid grid-cols-1 md:grid-cols-2",
+        )}
+      >
         {videos.map((v: any) => (
           <VideoCard key={v.id} video={v} address={address} />
         ))}
