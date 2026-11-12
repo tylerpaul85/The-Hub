@@ -381,8 +381,8 @@ function buildSignatureHtml(agent: AgentSig, team: TeamConfig): string {
     email: agent.email || "",
     title: s?.title ?? "",
     mobile_phone: s?.mobile_phone ?? "",
-    office_phone: s?.office_phone ?? "",
-    headshot_url: s?.headshot_url ?? "",
+    office_phone: s?.office_phone || "(573) 451-2020",
+    headshot_url: (s?.headshot_url || agent.headshot_url || "").split("#")[0],
     office1_label: o1?.label ?? "",
     office1_addr: o1?.addr ?? "",
     office2_label: o2?.label ?? "",
@@ -542,8 +542,8 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
     setForm({
       title: s?.title ?? "",
       mobile_phone: s?.mobile_phone ?? "",
-      office_phone: s?.office_phone ?? "",
-      headshot_url: s?.headshot_url ?? "",
+      office_phone: s?.office_phone ?? "(573) 451-2020",
+      headshot_url: s?.headshot_url || agent.headshot_url || "",
       office1_label: s?.office1_label ?? "",
       office1_addr: s?.office1_addr ?? "",
       office2_label: s?.office2_label ?? "",
@@ -554,7 +554,7 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
       office_rolla_addr: s?.office_rolla_addr ?? "",
       office_strobert_addr: s?.office_strobert_addr ?? "",
       office_osage_addr: s?.office_osage_addr ?? "",
-      gmail_email: s?.gmail_email ?? agent.email ?? "",
+      gmail_email: s?.gmail_email || agent.email || "",
     });
   }, [agent]);
 
@@ -607,17 +607,22 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
     [agent, uploadFn],
   );
 
-  const handleSave = async () => {
-    if (!agent) return;
+  const handleSave = async (silent = false): Promise<boolean> => {
+    if (!agent) return false;
     setSaving(true);
     try {
       await saveFn({
-        data: { toolbox_agent_id: agent.id, ...form },
+        data: {
+          toolbox_agent_id: agent.id,
+          ...form,
+        },
       });
-      toast.success("Signature data saved");
+      if (!silent) toast.success("Signature data saved");
       onSaved();
+      return true;
     } catch (err: any) {
       toast.error(err.message ?? "Save failed");
+      return false;
     } finally {
       setSaving(false);
     }
@@ -627,19 +632,28 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
     if (!agent) return;
     setPushing(true);
     try {
-      toast.loading(`Pushing signature for ${fullName}...`, { id: "push-single" });
+      // 1. Always save the form data first so changes are persisted to the database
+      toast.loading(`Saving signature details...`, { id: "push-single" });
+      const saved = await handleSave(true);
+      if (!saved) {
+        toast.dismiss("push-single");
+        return;
+      }
+
+      // 2. Push updated signature to Gmail via Workspace API
+      toast.loading(`Publishing signature for ${fullName} to Gmail...`, { id: "push-single" });
       const results = await pushFn({
         data: { toolbox_agent_ids: [agent.id] },
       });
       const res = results[0];
-      if (res.status === "error") {
-        toast.error(res.error ?? "Failed to push signature.", { id: "push-single" });
+      if (res?.status === "error") {
+        toast.error(res.error ?? "Failed to push signature to Gmail.", { id: "push-single" });
       } else {
-        toast.success("Signature successfully pushed to Gmail!", { id: "push-single" });
-        onSaved();
+        toast.success("Signature saved and successfully published to Gmail!", { id: "push-single" });
       }
+      onSaved();
     } catch (err: any) {
-      toast.error(err.message ?? "Failed to push signature.", { id: "push-single" });
+      toast.error(err.message ?? "Failed to publish signature.", { id: "push-single" });
     } finally {
       setPushing(false);
     }
@@ -886,9 +900,10 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
         {/* Footer actions */}
         <div className="px-6 py-4 border-t border-border/70 shrink-0 flex items-center gap-3 bg-muted/20">
           <Button
-            className="bg-[var(--accent)] hover:opacity-90 text-white font-medium text-xs gap-1.5 shadow-sm"
-            onClick={handleSave}
-            disabled={saving}
+            variant="outline"
+            className="border-border text-foreground hover:bg-surface-2 font-medium text-xs gap-1.5 shadow-sm"
+            onClick={() => handleSave(false)}
+            disabled={saving || pushing}
           >
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
             Save Signature Details
@@ -908,7 +923,7 @@ function AgentSheet({ agent, team, open, onClose, onSaved }: AgentSheetProps) {
             ) : (
               <Mail className="h-3.5 w-3.5" />
             )}
-            Push to Gmail API
+            Save &amp; Publish to Gmail
           </Button>
         </div>
       </SheetContent>
@@ -1133,6 +1148,16 @@ function SignaturesPage() {
 
   const [selectedAgent, setSelectedAgent] = useState<AgentSig | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  // Keep selectedAgent synchronized with refreshed roster so edits remain visible
+  useEffect(() => {
+    if (selectedAgent && roster) {
+      const fresh = (roster as AgentSig[]).find((a) => a.id === selectedAgent.id);
+      if (fresh && fresh !== selectedAgent) {
+        setSelectedAgent(fresh);
+      }
+    }
+  }, [roster, selectedAgent]);
 
   const handlePushAll = async () => {
     const activeAgents = (roster as AgentSig[]).filter((a) => a.active);

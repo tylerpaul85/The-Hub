@@ -23,7 +23,7 @@ const AgentSigSchema = z.object({
   title: z.string().max(120).nullable().optional(),
   mobile_phone: z.string().max(30).nullable().optional(),
   office_phone: z.string().max(30).nullable().optional(),
-  headshot_url: z.string().url().max(1000).nullable().optional().or(z.literal("")),
+  headshot_url: z.string().max(1000).nullable().optional(),
   office1_label: z.string().max(80).nullable().optional(),
   office1_addr: z.string().max(200).nullable().optional(),
   office2_label: z.string().max(80).nullable().optional(),
@@ -34,7 +34,7 @@ const AgentSigSchema = z.object({
   office_rolla_addr: z.string().max(200).nullable().optional(),
   office_strobert_addr: z.string().max(200).nullable().optional(),
   office_osage_addr: z.string().max(200).nullable().optional(),
-  gmail_email: z.string().email().max(255).nullable().optional().or(z.literal("")),
+  gmail_email: z.string().max(255).nullable().optional(),
 });
 
 const TeamConfigSchema = z.object({
@@ -127,25 +127,35 @@ export const saveAgentSignatureData = createServerFn({ method: "POST" })
     const { error } = await (supabaseAdmin as any).from("agent_signature_data").upsert(
       {
         toolbox_agent_id: data.toolbox_agent_id,
-        title: data.title ?? null,
-        mobile_phone: data.mobile_phone ?? null,
-        office_phone: data.office_phone ?? null,
-        headshot_url: data.headshot_url || null,
-        office1_label: data.office1_label ?? null,
-        office1_addr: data.office1_addr ?? null,
-        office2_label: data.office2_label ?? null,
-        office2_addr: data.office2_addr ?? null,
+        title: data.title?.trim() || null,
+        mobile_phone: data.mobile_phone?.trim() || null,
+        office_phone: data.office_phone?.trim() || null,
+        headshot_url: data.headshot_url?.trim() || null,
+        office1_label: data.office1_label?.trim() || null,
+        office1_addr: data.office1_addr?.trim() || null,
+        office2_label: data.office2_label?.trim() || null,
+        office2_addr: data.office2_addr?.trim() || null,
         show_office_rolla: data.show_office_rolla ?? true,
         show_office_strobert: data.show_office_strobert ?? false,
         show_office_osage: data.show_office_osage ?? false,
-        office_rolla_addr: data.office_rolla_addr ?? null,
-        office_strobert_addr: data.office_strobert_addr ?? null,
-        office_osage_addr: data.office_osage_addr ?? null,
-        gmail_email: data.gmail_email || null,
+        office_rolla_addr: data.office_rolla_addr?.trim() || null,
+        office_strobert_addr: data.office_strobert_addr?.trim() || null,
+        office_osage_addr: data.office_osage_addr?.trim() || null,
+        gmail_email: data.gmail_email?.trim() || null,
       },
       { onConflict: "toolbox_agent_id" },
     );
     if (error) throw new Error(error.message);
+
+    // Sync headshot back to toolbox_agents if it was previously empty
+    if (data.headshot_url?.trim()) {
+      await (supabaseAdmin as any)
+        .from("toolbox_agents")
+        .update({ headshot_url: data.headshot_url.trim() })
+        .eq("id", data.toolbox_agent_id)
+        .is("headshot_url", null);
+    }
+
     return { ok: true };
   });
 
@@ -595,7 +605,7 @@ export const pushSignatureToGmail = createServerFn({ method: "POST" })
           title: sig?.title ?? "",
           mobile_phone: sig?.mobile_phone ?? "",
           office_phone: sig?.office_phone ?? "",
-          headshot_url: sig?.headshot_url ?? agent.headshot_url ?? "",
+          headshot_url: (sig?.headshot_url || agent.headshot_url || "").split("#")[0],
           office1_label: o1?.label ?? "",
           office1_addr: o1?.addr ?? "",
           office2_label: o2?.label ?? "",
@@ -661,12 +671,15 @@ export const pushSignatureToGmail = createServerFn({ method: "POST" })
         // Update signature data
         await sb
           .from("agent_signature_data")
-          .update({
-            last_pushed_at: new Date().toISOString(),
-            last_push_status: "success",
-            last_push_error: null,
-          })
-          .eq("toolbox_agent_id", agent.id);
+          .upsert(
+            {
+              toolbox_agent_id: agent.id,
+              last_pushed_at: new Date().toISOString(),
+              last_push_status: "success",
+              last_push_error: null,
+            },
+            { onConflict: "toolbox_agent_id" },
+          );
 
         results.push({
           id: agent.id,
@@ -687,11 +700,14 @@ export const pushSignatureToGmail = createServerFn({ method: "POST" })
 
         await sb
           .from("agent_signature_data")
-          .update({
-            last_push_status: "error",
-            last_push_error: errMsg.substring(0, 1000),
-          })
-          .eq("toolbox_agent_id", agent.id);
+          .upsert(
+            {
+              toolbox_agent_id: agent.id,
+              last_push_status: "error",
+              last_push_error: errMsg.substring(0, 1000),
+            },
+            { onConflict: "toolbox_agent_id" },
+          );
 
         results.push({
           id: agent.id,

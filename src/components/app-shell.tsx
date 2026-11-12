@@ -93,6 +93,7 @@ const NAV_SECTIONS: NavSection[] = [
     teamOnly: true,
     items: [
       { to: "/toolbox", label: "Agent Marketing Toolbox", icon: Layers },
+      { to: "/signatures", label: "Email Signatures", icon: Mail },
       { to: "/calendar", label: "Content Calendar", icon: Calendar, marketingOnly: true },
       { to: "/videos", label: "Video Pipeline", icon: Video, marketingOnly: true },
       { to: "/listings", label: "Active Listings", icon: Home },
@@ -133,6 +134,7 @@ const NAV_SECTIONS: NavSection[] = [
 const CLIENT_CARE_ALLOWED = [
   "/dashboard",
   "/toolbox",
+  "/signatures",
   "/special-events",
   "/tasks",
   "/requests",

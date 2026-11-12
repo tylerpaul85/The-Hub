@@ -22,6 +22,7 @@ import { format } from "date-fns";
 import {
   Boxes,
   Layers,
+  Mail,
   Send,
   Calendar,
   Calculator,
@@ -784,6 +785,28 @@ export function OperationsMissionControl() {
               </div>
               <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
                 Manage listing assets, video walkthroughs, open house media, brand assets, and marketing materials.
+              </p>
+            </div>
+          </Link>
+
+          <Link
+            to="/signatures"
+            className="p-4 rounded-xl border border-border bg-surface-1 hover:bg-surface-2 hover:border-accent/40 transition-all flex items-start gap-3 group"
+          >
+            <div className="p-2.5 rounded-lg bg-surface-2 border border-border text-accent group-hover:scale-105 transition-transform shrink-0">
+              <Mail className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <h5 className="text-sm font-semibold text-foreground group-hover:text-accent transition-colors">
+                  Email Signatures
+                </h5>
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-semibold uppercase">
+                  Gmail API
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                Configure branded HTML email signatures, office branches, and push live to Gmail via Workspace API.
               </p>
             </div>
           </Link>
