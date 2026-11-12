@@ -43,6 +43,7 @@ export const Route = createFileRoute("/referral-form")({
   head: () => ({
     meta: [
       { title: "Outbound Referral Sheet — MSREG Hub" },
+      { name: "description", content: "Submit outbound referral information sheet to Client Care." },
       { name: "description", content: "Submit outbound referral information sheet to our Client Care Specialist." },
       { name: "robots", content: "noindex, nofollow" },
     ],
@@ -163,6 +164,7 @@ function OutboundReferralPage() {
       if (res.ok) {
         setSubmittedData(payload);
         setSubmittedId(res.id);
+        toast.success("Outbound referral submitted! Client Care has been notified via email.");
         toast.success("Outbound referral submitted! Our Client Care Specialist has been notified via email.");
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
@@ -255,6 +257,7 @@ function OutboundReferralPage() {
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-surface-2/90 border border-border/80 text-[11px] text-text-secondary">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Direct Desk: Client Care</span>
               <span>Direct Desk: Client Care Specialist</span>
             </div>
             <Link
@@ -286,6 +289,7 @@ function OutboundReferralPage() {
                   Referral Successfully Dispatched
                 </h1>
                 <p className="text-sm text-text-secondary max-w-lg mx-auto leading-relaxed">
+                  The Client Care team has received an email with the complete client and transaction specifications to begin
                   Our Client Care Specialist has received an email with the complete client and transaction specifications to begin
                   outreach.
                 </p>
@@ -299,6 +303,7 @@ function OutboundReferralPage() {
                 </div>
                 <div className="p-2 rounded-lg bg-surface-2/60 border border-border/60 text-center">
                   <span className="block font-semibold text-text-primary">2. Outreach</span>
+                  <span className="text-accent text-[10px]">Client Care notified</span>
                   <span className="text-accent text-[10px]">Client Care Specialist notified</span>
                 </div>
                 <div className="p-2 rounded-lg bg-surface-2/60 border border-border/60 text-center">
@@ -494,6 +499,7 @@ function OutboundReferralPage() {
                     Outbound Referral Information Sheet
                   </h1>
                   <p className="text-sm text-text-secondary leading-relaxed">
+                    Submit client details directly to Client Care. Our team will be notified immediately to
                     Submit client details directly to our Client Care Specialist. They will be notified immediately to
                     execute destination broker outreach, referral fee agreements, and ensure seamless client
                     placement.
@@ -1052,6 +1058,7 @@ function OutboundReferralPage() {
                         ) : (
                           <>
                             <Send className="h-4 w-4" />
+                            <span>Submit Referral to Client Care</span>
                             <span>Submit Referral to Client Care Specialist</span>
                           </>
                         )}
@@ -1062,25 +1069,31 @@ function OutboundReferralPage() {
                     <div className="pt-2 flex items-start gap-2.5 text-[11px] text-text-muted border-t border-border/40">
                       <ShieldCheck className="h-4 w-4 text-accent shrink-0 mt-0.5" />
                       <p className="leading-relaxed">
+                        Instant dispatch to <strong className="text-text-secondary">Client Care</strong>.
                         Instant dispatch to our <strong className="text-text-secondary">Client Care Specialist</strong>.
                         Automatically creates a trackable record in The Hub Operations Desk.
                       </p>
                     </div>
                   </div>
 
+                  {/* Client Care Desk Context Card */}
                   {/* Client Care Specialist Context Card */}
                   <div className="rounded-2xl border border-border/80 bg-surface-1/60 p-5 space-y-3">
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-xl bg-accent/15 border border-accent/25 flex items-center justify-center font-bold text-accent text-sm shrink-0">
+                        CC
                         CS
                       </div>
                       <div>
+                        <p className="text-xs font-bold text-text-primary">Client Care Operations Desk</p>
+                        <p className="text-[11px] text-text-muted">Direct Outbound & Referral Coordination</p>
                         <p className="text-xs font-bold text-text-primary">Client Care Specialist</p>
                         <p className="text-[11px] text-text-muted">Outbound & Referral Coordination</p>
                       </div>
                     </div>
                     <p className="text-xs text-text-secondary leading-relaxed">
                       Questions on referral fee rates, out-of-state broker vetting, or custom relocation terms?
+                      Reach out directly to the Client Care team:
                       Reach out directly to our Client Care Specialist:
                     </p>
                     <a

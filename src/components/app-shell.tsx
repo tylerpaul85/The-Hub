@@ -92,6 +92,7 @@ const NAV_SECTIONS: NavSection[] = [
     code: "02 // MEDIA",
     teamOnly: true,
     items: [
+      { to: "/toolbox", label: "Agent Marketing Toolbox", icon: Layers },
       { to: "/calendar", label: "Content Calendar", icon: Calendar, marketingOnly: true },
       { to: "/videos", label: "Video Pipeline", icon: Video, marketingOnly: true },
       { to: "/listings", label: "Active Listings", icon: Home },
@@ -131,6 +132,7 @@ const NAV_SECTIONS: NavSection[] = [
 
 const CLIENT_CARE_ALLOWED = [
   "/dashboard",
+  "/toolbox",
   "/special-events",
   "/tasks",
   "/requests",
@@ -149,7 +151,7 @@ function getPageTitle(pathname: string): string {
     "/open-houses": "Open Houses Hub",
     "/special-events": "Special Events",
     "/listings": "Active Listings",
-    "/toolbox": "Brand Assets & Toolbox",
+    "/toolbox": "Agent Marketing Toolbox",
     "/videos": "Video Pipeline Kanban",
     "/requests": "Requests Inbox",
     "/tasks": "Projects & Tasks",

@@ -21,6 +21,7 @@ import { ClientCareClosingGifts } from "@/components/client-care-closing-gifts";
 import { format } from "date-fns";
 import {
   Boxes,
+  Layers,
   Send,
   Calendar,
   Calculator,
@@ -765,6 +766,28 @@ export function OperationsMissionControl() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <Link
+            to="/toolbox"
+            className="p-4 rounded-xl border border-border bg-surface-1 hover:bg-surface-2 hover:border-accent/40 transition-all flex items-start gap-3 group"
+          >
+            <div className="p-2.5 rounded-lg bg-surface-2 border border-border text-accent group-hover:scale-105 transition-transform shrink-0">
+              <Layers className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <h5 className="text-sm font-semibold text-foreground group-hover:text-accent transition-colors">
+                  Agent Marketing Toolbox
+                </h5>
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-accent/15 text-accent font-semibold uppercase">
+                  Suite
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                Manage listing assets, video walkthroughs, open house media, brand assets, and marketing materials.
+              </p>
+            </div>
+          </Link>
+
           <Link
             to="/inventory"
             className="p-4 rounded-xl border border-border bg-surface-1 hover:bg-surface-2 hover:border-accent/40 transition-all flex items-start gap-3 group"
