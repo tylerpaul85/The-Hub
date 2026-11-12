@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { cn, getGoogleDrivePreviewUrl } from "@/lib/utils";
+import { cn, getGoogleDrivePreviewUrl, parseImageSettings } from "@/lib/utils";
 import { isImageUrl } from "@/lib/sanitize-filename";
 import { DownloadPhotosButton } from "@/components/download-photos-button";
 import {
@@ -659,7 +659,9 @@ function VideoCard({ video, address }: { video: any; address: string }) {
               </Badge>
             </div>
             <div className="text-[10px] sm:text-[11px] text-muted-foreground truncate hidden xs:block">
-              {parsed?.label ?? "Video"} · Click below to play walkthrough inline or open in Drive
+              {parsed?.type === "gdrive"
+                ? "Google Drive HD Video · Click below to open and watch walkthrough in HD on Google Drive"
+                : `${parsed?.label ?? "Video"} · Click below to play walkthrough inline or open in Drive`}
             </div>
           </div>
         </div>
@@ -2200,22 +2202,30 @@ function AgentBrandedContentList({ token }: { token: string }) {
         Choose an agent to view their branded content.
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {agents.map((a) => (
-          <button
-            key={a.id}
-            onClick={() => setAgentId(a.id)}
-            className="text-left rounded-lg overflow-hidden border border-border bg-card hover:border-gold/60 active:scale-[0.99] transition p-4 flex flex-col items-center gap-2"
-          >
-            <div className="h-16 w-16 rounded-full bg-muted overflow-hidden flex items-center justify-center">
-              {a.headshot_url ? (
-                <img src={a.headshot_url} alt={a.name} className="w-full h-full object-cover" />
-              ) : (
-                <User className="h-8 w-8 text-muted-foreground" />
-              )}
-            </div>
-            <div className="font-medium text-sm text-center">{a.name}</div>
-          </button>
-        ))}
+        {agents.map((a) => {
+          const parsedHeadshot = a.headshot_url ? parseImageSettings(a.headshot_url) : null;
+          return (
+            <button
+              key={a.id}
+              onClick={() => setAgentId(a.id)}
+              className="text-left rounded-lg overflow-hidden border border-border bg-card hover:border-gold/60 active:scale-[0.99] transition p-4 flex flex-col items-center gap-2"
+            >
+              <div className="h-16 w-16 rounded-full bg-muted overflow-hidden flex items-center justify-center border border-border">
+                {parsedHeadshot ? (
+                  <img
+                    src={parsedHeadshot.cleanUrl}
+                    alt={a.name}
+                    style={parsedHeadshot.style}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="h-8 w-8 text-muted-foreground" />
+                )}
+              </div>
+              <div className="font-medium text-sm text-center">{a.name}</div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -2251,6 +2261,7 @@ function BrandedContentView({
   const items = (data?.items ?? []) as any[];
   const filtered = filter === "all" ? items : items.filter((i) => i.content_type === filter);
   const agentData = data?.agent as any;
+  const agentHeadshotParsed = agentData?.headshot_url ? parseImageSettings(agentData.headshot_url) : null;
 
   return (
     <div className="space-y-4">
@@ -2263,10 +2274,11 @@ function BrandedContentView({
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className="h-16 w-16 rounded-full bg-muted overflow-hidden shrink-0 flex items-center justify-center border border-border">
-            {agentData?.headshot_url ? (
+            {agentHeadshotParsed ? (
               <img
-                src={agentData.headshot_url}
+                src={agentHeadshotParsed.cleanUrl}
                 alt={agentName}
+                style={agentHeadshotParsed.style}
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -2278,9 +2290,9 @@ function BrandedContentView({
             <p className="text-xs text-muted-foreground">Branded content</p>
           </div>
         </div>
-        {agentData?.headshot_url && (
+        {agentHeadshotParsed && (
           <DownloadButton
-            url={agentData.headshot_url}
+            url={agentHeadshotParsed.cleanUrl}
             filename={`${agentData?.name || agentName} headshot`}
             small
           />
@@ -2330,14 +2342,31 @@ function BrandedContentView({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {filtered.map((i) => {
               const isImg = isImageUrl(i.file_url);
+              const imgParsed = isImg ? parseImageSettings(i.file_url) : null;
               return (
                 <Card key={i.id} className="overflow-hidden">
                   <div
-                    className="aspect-video bg-muted flex items-center justify-center relative cursor-pointer"
+                    className={cn(
+                      "aspect-video bg-muted flex items-center justify-center relative cursor-pointer overflow-hidden",
+                      imgParsed?.fit === "contain" && "bg-black/90",
+                    )}
                     onClick={() => setDetailItem(i)}
                   >
-                    {isImg ? (
-                      <img src={i.file_url} alt={i.title} className="w-full h-full object-cover" />
+                    {isImg && imgParsed ? (
+                      imgParsed.fit === "contain" ? (
+                        <img
+                          src={imgParsed.cleanUrl}
+                          alt={i.title}
+                          className="max-w-full max-h-full object-contain p-1"
+                        />
+                      ) : (
+                        <img
+                          src={imgParsed.cleanUrl}
+                          alt={i.title}
+                          style={imgParsed.style}
+                          className="w-full h-full object-cover"
+                        />
+                      )
                     ) : (
                       <div className="flex flex-col items-center gap-1 text-muted-foreground">
                         {i.drive_url ? (
@@ -2371,7 +2400,12 @@ function BrandedContentView({
                         </Button>
                       </>
                     )}
-                    {i.file_url && <DownloadButton url={i.file_url} filename={i.title || "file"} />}
+                    {i.file_url && (
+                      <DownloadButton
+                        url={parseImageSettings(i.file_url).cleanUrl}
+                        filename={i.title || "file"}
+                      />
+                    )}
                     {i.drive_url && (
                       <a
                         href={i.drive_url}
@@ -2411,7 +2445,7 @@ function BrandedContentView({
           <div className="flex-1 overflow-auto p-4 flex flex-col items-center justify-center gap-4">
             {isImageUrl(detailItem.file_url) ? (
               <img
-                src={detailItem.file_url}
+                src={parseImageSettings(detailItem.file_url).cleanUrl}
                 alt={detailItem.title}
                 className="max-w-full max-h-[70vh] object-contain rounded-lg"
               />
@@ -2434,7 +2468,10 @@ function BrandedContentView({
               </p>
             )}
             {detailItem.file_url && (
-              <DownloadButton url={detailItem.file_url} filename={detailItem.title || "file"} />
+              <DownloadButton
+                url={parseImageSettings(detailItem.file_url).cleanUrl}
+                filename={detailItem.title || "file"}
+              />
             )}
             {detailItem.drive_url && (
               <a

@@ -28,11 +28,16 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
-import { cn, getGoogleDrivePreviewUrl } from "@/lib/utils";
+import { cn, getGoogleDrivePreviewUrl, parseImageSettings, buildImageFramingUrl } from "@/lib/utils";
 import {
   Plus,
   Upload,
+  Camera,
+  SlidersHorizontal,
+  Crop,
+  ImagePlus,
   Trash2,
   Copy,
   Link as LinkIcon,
@@ -2791,6 +2796,8 @@ function AgentCard({
   onChanged: () => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const headshotParsed = parseImageSettings(agent.headshot_url);
+
   const remove = async () => {
     const msg =
       count > 0
@@ -2805,43 +2812,59 @@ function AgentCard({
     toast.success("Agent removed");
     onChanged();
   };
+
   return (
     <>
       <Card
         onClick={onSelect}
         className={cn(
-          "p-3 cursor-pointer hover:border-gold/60 transition group",
-          selected && "border-gold",
+          "p-3 cursor-pointer hover:border-gold/60 transition group relative",
+          selected && "border-gold shadow-sm ring-1 ring-gold/40",
         )}
       >
         <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-full bg-muted overflow-hidden shrink-0 flex items-center justify-center">
+          {/* Avatar with direct 1-click update headshot trigger */}
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditing(true);
+            }}
+            title="Click to update headshot or adjust thumbnail framing"
+            className="group/avatar relative h-12 w-12 rounded-full bg-muted overflow-hidden shrink-0 flex items-center justify-center border border-border group-hover:border-gold/50 transition-colors"
+          >
             {agent.headshot_url ? (
               <img
-                src={agent.headshot_url}
+                src={headshotParsed.cleanUrl}
                 alt={agent.name}
-                className="w-full h-full object-cover"
+                style={headshotParsed.style}
+                className="w-full h-full"
               />
             ) : (
               <span className="text-sm font-semibold text-muted-foreground">
                 {agent.name.charAt(0).toUpperCase()}
               </span>
             )}
+            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center text-white">
+              <Camera className="h-3.5 w-3.5" />
+            </div>
           </div>
+
           <div className="min-w-0 flex-1">
             <div className="font-medium text-sm truncate">{agent.name}</div>
             <div className="text-xs text-muted-foreground">
               {count} item{count === 1 ? "" : "s"}
             </div>
           </div>
-          <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+
+          <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setEditing(true);
               }}
-              className="p-1 rounded hover:bg-gold/20 text-muted-foreground hover:text-gold"
-              aria-label="Edit agent"
+              className="p-1.5 rounded hover:bg-gold/20 text-muted-foreground hover:text-gold transition-colors"
+              aria-label="Edit agent and headshot"
+              title="Edit profile & headshot"
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
@@ -2850,8 +2873,9 @@ function AgentCard({
                 e.stopPropagation();
                 remove();
               }}
-              className="p-1 rounded hover:bg-rose-600/20 text-muted-foreground hover:text-rose-400"
+              className="p-1.5 rounded hover:bg-rose-600/20 text-muted-foreground hover:text-rose-400 transition-colors"
               aria-label="Remove agent"
+              title="Remove agent"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -3134,6 +3158,12 @@ function EditAgentDialog({
   const [previewUrl, setPreviewUrl] = useState<string | null>(agent.headshot_url);
   const [busy, setBusy] = useState(false);
 
+  // Thumbnail framing controls
+  const initialFraming = useMemo(() => parseImageSettings(agent.headshot_url), [agent.headshot_url]);
+  const [yPercent, setYPercent] = useState(initialFraming.yPercent);
+  const [fit, setFit] = useState<"cover" | "contain">(initialFraming.fit);
+  const [zoom, setZoom] = useState(initialFraming.zoom);
+
   useEffect(() => {
     if (open) {
       setName(agent.name);
@@ -3141,6 +3171,10 @@ function EditAgentDialog({
       setIdentifier(agent.identifier ?? "");
       setHeadshot(null);
       setPreviewUrl(agent.headshot_url);
+      const parsed = parseImageSettings(agent.headshot_url);
+      setYPercent(parsed.yPercent);
+      setFit(parsed.fit);
+      setZoom(parsed.zoom);
     }
   }, [open, agent]);
 
@@ -3161,23 +3195,30 @@ function EditAgentDialog({
     }
     setBusy(true);
     try {
-      let headshot_url = previewUrl;
+      let finalHeadshotUrl: string | null = null;
       if (headshot) {
         const path = makeStorageKey(`agents/${agent.id}/headshot`, headshot.name);
         const { url } = await uploadFile(path, headshot);
-        headshot_url = url;
+        finalHeadshotUrl = url;
+      } else if (previewUrl) {
+        finalHeadshotUrl = previewUrl.split("#")[0];
       }
+
+      if (finalHeadshotUrl) {
+        finalHeadshotUrl = buildImageFramingUrl(finalHeadshotUrl, { fit, yPercent, zoom });
+      }
+
       const { error } = await sb
         .from("toolbox_agents")
         .update({
           name: name.trim(),
           email: email.trim() || null,
           identifier: identifier.trim() || null,
-          headshot_url,
+          headshot_url: finalHeadshotUrl,
         })
         .eq("id", agent.id);
       if (error) throw error;
-      toast.success("Agent updated");
+      toast.success("Agent profile & headshot updated");
       onSaved();
       onOpenChange(false);
     } catch (e: any) {
@@ -3191,72 +3232,508 @@ function EditAgentDialog({
     setPreviewUrl(null);
   };
 
+  const previewCleanUrl = previewUrl ? previewUrl.split("#")[0] : null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit agent</DialogTitle>
+          <DialogTitle>Edit Agent & Headshot</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="space-y-4 py-1">
           <div>
-            <Label>Agent name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Doe" />
+            <Label className="text-xs font-semibold">Agent name</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Doe" className="mt-1" />
           </div>
-          <div>
-            <Label>Email</Label>
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="jane@example.com"
-            />
-          </div>
-          <div>
-            <Label>Identifier (optional)</Label>
-            <Input
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="license #, etc."
-            />
-          </div>
-          <div>
-            <Label>Headshot</Label>
-            <div className="mt-2 flex items-center gap-4">
-              <div className="h-20 w-20 rounded-full bg-muted overflow-hidden shrink-0 flex items-center justify-center border border-border">
-                {previewUrl ? (
-                  <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-lg font-semibold text-muted-foreground">
-                    {name.charAt(0).toUpperCase()}
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-col gap-2">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => onPickFile(e.target.files?.[0] ?? null)}
-                />
-                {previewUrl && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearHeadshot}
-                    className="text-muted-foreground hover:text-rose-400 justify-start"
-                  >
-                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Remove headshot
-                  </Button>
-                )}
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs font-semibold">Email</Label>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="jane@example.com"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold">Identifier (optional)</Label>
+              <Input
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="license #, etc."
+                className="mt-1"
+              />
             </div>
           </div>
+
+          <div className="space-y-3 pt-2 border-t border-border">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold">Headshot Photo</Label>
+              {previewUrl && (
+                <button
+                  type="button"
+                  onClick={clearHeadshot}
+                  className="text-[11px] text-muted-foreground hover:text-rose-400 transition-colors flex items-center gap-1"
+                >
+                  <Trash2 className="h-3 w-3" /> Remove photo
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <label className="flex-1 cursor-pointer">
+                <div className="px-3 py-2 rounded-lg border border-dashed border-border hover:border-gold/60 bg-surface-2/40 text-center text-xs text-muted-foreground hover:text-foreground transition-all flex items-center justify-center gap-2">
+                  <Camera className="h-4 w-4 text-gold" />
+                  <span>{previewUrl ? "Replace Headshot File…" : "Upload Headshot File…"}</span>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => onPickFile(e.target.files?.[0] ?? null)}
+                />
+              </label>
+            </div>
+
+            {/* Interactive Thumbnail Framing Tool */}
+            {previewCleanUrl ? (
+              <div className="space-y-3 p-3.5 rounded-xl border border-border bg-surface-2/50">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <SlidersHorizontal className="h-3.5 w-3.5 text-gold" />
+                    Thumbnail View &amp; Framing
+                  </span>
+                  <span className="text-[11px] font-mono text-gold font-medium">
+                    Focus: {Math.round(yPercent)}%
+                  </span>
+                </div>
+
+                {/* Live Preview Row */}
+                <div className="flex items-center justify-around gap-4 py-1 bg-background/50 rounded-lg p-2.5 border border-border/40">
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="h-16 w-16 rounded-full bg-muted overflow-hidden shrink-0 border-2 border-gold/50 shadow-sm relative">
+                      <img
+                        src={previewCleanUrl}
+                        alt="Preview"
+                        className="w-full h-full"
+                        style={{
+                          objectFit: fit,
+                          objectPosition: `50% ${yPercent}%`,
+                          ...(zoom > 1 ? { transform: `scale(${zoom})`, transformOrigin: `50% ${yPercent}%` } : {}),
+                        }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground font-mono">Avatar Circle</span>
+                  </div>
+
+                  <div className="flex flex-col items-center gap-1 flex-1 max-w-[140px]">
+                    <div className="w-full h-16 rounded-md bg-muted overflow-hidden border border-border relative">
+                      <img
+                        src={previewCleanUrl}
+                        alt="Preview"
+                        className="w-full h-full"
+                        style={{
+                          objectFit: fit,
+                          objectPosition: `50% ${yPercent}%`,
+                          ...(zoom > 1 ? { transform: `scale(${zoom})`, transformOrigin: `50% ${yPercent}%` } : {}),
+                        }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground font-mono">Card Preview</span>
+                  </div>
+                </div>
+
+                {/* Quick Alignment Presets */}
+                <div className="space-y-1.5">
+                  <span className="text-[11px] text-muted-foreground font-medium block">
+                    Vertical Focal Point Presets
+                  </span>
+                  <div className="grid grid-cols-4 gap-1.5 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setYPercent(15)}
+                      className={cn(
+                        "px-2 py-1 rounded border text-xs transition-colors",
+                        yPercent <= 20
+                          ? "border-gold bg-gold/20 text-gold font-semibold"
+                          : "border-border text-muted-foreground hover:bg-surface-3",
+                      )}
+                    >
+                      Top (Face)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setYPercent(35)}
+                      className={cn(
+                        "px-2 py-1 rounded border text-xs transition-colors",
+                        yPercent > 20 && yPercent < 45
+                          ? "border-gold bg-gold/20 text-gold font-semibold"
+                          : "border-border text-muted-foreground hover:bg-surface-3",
+                      )}
+                    >
+                      Upper
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setYPercent(50)}
+                      className={cn(
+                        "px-2 py-1 rounded border text-xs transition-colors",
+                        yPercent >= 45 && yPercent <= 60
+                          ? "border-gold bg-gold/20 text-gold font-semibold"
+                          : "border-border text-muted-foreground hover:bg-surface-3",
+                      )}
+                    >
+                      Center
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setYPercent(85)}
+                      className={cn(
+                        "px-2 py-1 rounded border text-xs transition-colors",
+                        yPercent > 60
+                          ? "border-gold bg-gold/20 text-gold font-semibold"
+                          : "border-border text-muted-foreground hover:bg-surface-3",
+                      )}
+                    >
+                      Lower
+                    </button>
+                  </div>
+                </div>
+
+                {/* Vertical Position Slider */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[11px] text-muted-foreground">
+                    <span>Fine-tune Vertical Position</span>
+                    <span className="font-mono">{yPercent}%</span>
+                  </div>
+                  <Slider
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={[yPercent]}
+                    onValueChange={([val]) => setYPercent(val)}
+                  />
+                </div>
+
+                {/* Zoom & Fit Row */}
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[11px] text-muted-foreground">
+                      <span>Zoom Scale</span>
+                      <span className="font-mono">{zoom.toFixed(1)}x</span>
+                    </div>
+                    <Slider
+                      min={1}
+                      max={1.8}
+                      step={0.05}
+                      value={[zoom]}
+                      onValueChange={([val]) => setZoom(val)}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[11px] text-muted-foreground block">Display Fit</span>
+                    <div className="grid grid-cols-2 gap-1 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setFit("cover")}
+                        className={cn(
+                          "px-2 py-1 rounded border transition-colors",
+                          fit === "cover"
+                            ? "border-gold bg-gold/20 text-gold font-semibold"
+                            : "border-border text-muted-foreground hover:bg-surface-3",
+                        )}
+                      >
+                        Fill
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFit("contain")}
+                        className={cn(
+                          "px-2 py-1 rounded border transition-colors",
+                          fit === "contain"
+                            ? "border-gold bg-gold/20 text-gold font-semibold"
+                            : "border-border text-muted-foreground hover:bg-surface-3",
+                        )}
+                      >
+                        Contain
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl border border-dashed border-border text-center text-xs text-muted-foreground">
+                Upload a headshot above to enable focal adjustment &amp; thumbnail view framing.
+              </div>
+            )}
+          </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="pt-2">
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={busy} className="bg-gold text-navy hover:bg-gold/90">
+          <Button onClick={submit} disabled={busy} className="bg-gold text-navy hover:bg-gold/90 font-semibold">
+            {busy ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                Saving…
+              </>
+            ) : (
+              "Save changes"
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditAgentContentDialog({
+  open,
+  onOpenChange,
+  item,
+  onSaved,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  item: BrandedContent | null;
+  onSaved: () => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [contentType, setContentType] = useState(BRANDED_TYPES[0]);
+  const [caption, setCaption] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  // Thumbnail framing controls
+  const initialFraming = useMemo(() => parseImageSettings(item?.file_url), [item?.file_url]);
+  const [yPercent, setYPercent] = useState(initialFraming.yPercent);
+  const [fit, setFit] = useState<"cover" | "contain">(initialFraming.fit);
+  const [zoom, setZoom] = useState(initialFraming.zoom);
+
+  useEffect(() => {
+    if (open && item) {
+      setTitle(item.title);
+      setContentType(item.content_type);
+      setCaption(item.caption ?? "");
+      const parsed = parseImageSettings(item.file_url);
+      setYPercent(parsed.yPercent);
+      setFit(parsed.fit);
+      setZoom(parsed.zoom);
+    }
+  }, [open, item]);
+
+  if (!item) return null;
+
+  const isImg = item.file_url && /\.(png|jpe?g|gif|webp|svg|avif|heic)(\?|#|$)/i.test(item.file_url);
+  const cleanImgUrl = item.file_url ? item.file_url.split("#")[0] : null;
+
+  const submit = async () => {
+    if (!title.trim()) {
+      toast.error("Title required");
+      return;
+    }
+    setBusy(true);
+    try {
+      let finalFileUrl = item.file_url;
+      if (cleanImgUrl && isImg) {
+        finalFileUrl = buildImageFramingUrl(cleanImgUrl, { fit, yPercent, zoom });
+      }
+
+      const { error } = await sb
+        .from("toolbox_agent_content")
+        .update({
+          title: title.trim(),
+          content_type: contentType,
+          caption: caption.trim() || null,
+          file_url: finalFileUrl,
+        })
+        .eq("id", item.id);
+      if (error) throw error;
+      toast.success("Content item & thumbnail updated");
+      onSaved();
+      onOpenChange(false);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+    setBusy(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit Content &amp; Thumbnail View</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-1">
+          <div>
+            <Label className="text-xs font-semibold">Title</Label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1" />
+          </div>
+
+          <div>
+            <Label className="text-xs font-semibold">Content Type</Label>
+            <Select value={contentType} onValueChange={setContentType}>
+              <SelectTrigger className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {BRANDED_TYPES.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label className="text-xs font-semibold">Optional Caption</Label>
+            <Textarea
+              rows={2}
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+
+          {/* Image Thumbnail Framing Tool */}
+          {isImg && cleanImgUrl && (
+            <div className="space-y-3 p-3.5 rounded-xl border border-border bg-surface-2/50">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <SlidersHorizontal className="h-3.5 w-3.5 text-gold" />
+                  Thumbnail View &amp; Crop Framing
+                </span>
+                <span className="text-[11px] font-mono text-gold font-medium">
+                  {fit === "contain" ? "Letterbox (Full Graphic)" : `Focus: ${Math.round(yPercent)}%`}
+                </span>
+              </div>
+
+              {/* Live Preview Card */}
+              <div className="aspect-video w-full rounded-lg bg-black/40 overflow-hidden border border-border relative flex items-center justify-center">
+                <img
+                  src={cleanImgUrl}
+                  alt="Preview"
+                  className="w-full h-full transition-all"
+                  style={{
+                    objectFit: fit,
+                    objectPosition: `50% ${yPercent}%`,
+                    ...(zoom > 1 ? { transform: `scale(${zoom})`, transformOrigin: `50% ${yPercent}%` } : {}),
+                  }}
+                />
+                <Badge className="absolute top-2 left-2 bg-navy/80 border border-gold/30 text-gold text-[10px]">
+                  {contentType}
+                </Badge>
+              </div>
+
+              {/* Fit Mode Toggle */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground font-medium">
+                  <span>Display Fit Mode</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {fit === "contain" ? "Shows full flyer without clipping" : "Fills card viewport"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setFit("contain")}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg border text-xs font-medium transition-all text-center",
+                      fit === "contain"
+                        ? "border-gold bg-gold/20 text-gold font-semibold shadow-sm"
+                        : "border-border text-muted-foreground hover:bg-surface-3",
+                    )}
+                  >
+                    Contain (Full Flyer)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFit("cover")}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg border text-xs font-medium transition-all text-center",
+                      fit === "cover"
+                        ? "border-gold bg-gold/20 text-gold font-semibold shadow-sm"
+                        : "border-border text-muted-foreground hover:bg-surface-3",
+                    )}
+                  >
+                    Cover (Fill Card)
+                  </button>
+                </div>
+              </div>
+
+              {/* Vertical Focal Point Alignment (active when in cover mode) */}
+              {fit === "cover" && (
+                <>
+                  <div className="space-y-1.5">
+                    <span className="text-[11px] text-muted-foreground font-medium block">
+                      Vertical Framing Presets
+                    </span>
+                    <div className="grid grid-cols-3 gap-1.5 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setYPercent(10)}
+                        className={cn(
+                          "px-2 py-1 rounded border text-xs transition-colors",
+                          yPercent <= 20
+                            ? "border-gold bg-gold/20 text-gold font-semibold"
+                            : "border-border text-muted-foreground hover:bg-surface-3",
+                        )}
+                      >
+                        Top Headline
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setYPercent(50)}
+                        className={cn(
+                          "px-2 py-1 rounded border text-xs transition-colors",
+                          yPercent > 20 && yPercent < 80
+                            ? "border-gold bg-gold/20 text-gold font-semibold"
+                            : "border-border text-muted-foreground hover:bg-surface-3",
+                        )}
+                      >
+                        Center
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setYPercent(90)}
+                        className={cn(
+                          "px-2 py-1 rounded border text-xs transition-colors",
+                          yPercent >= 80
+                            ? "border-gold bg-gold/20 text-gold font-semibold"
+                            : "border-border text-muted-foreground hover:bg-surface-3",
+                        )}
+                      >
+                        Bottom Footer
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[11px] text-muted-foreground">
+                      <span>Vertical Focal Position</span>
+                      <span className="font-mono">{yPercent}%</span>
+                    </div>
+                    <Slider
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={[yPercent]}
+                      onValueChange={([val]) => setYPercent(val)}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+        <DialogFooter className="pt-2">
+          <Button variant="secondary" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={submit} disabled={busy} className="bg-gold text-navy hover:bg-gold/90 font-semibold">
             {busy ? (
               <>
                 <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -3282,6 +3759,11 @@ function AgentBrandedContentPanel({
   onChanged: () => void;
 }) {
   const qc = useQueryClient();
+  const [editingAgent, setEditingAgent] = useState(false);
+  const [editingContent, setEditingContent] = useState<BrandedContent | null>(null);
+
+  const headshotParsed = parseImageSettings(agent.headshot_url);
+
   const [form, setForm] = useState({
     title: "",
     content_type: BRANDED_TYPES[0],
@@ -3312,6 +3794,7 @@ function AgentBrandedContentPanel({
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["toolbox-agent-content", agent.id] });
+    qc.invalidateQueries({ queryKey: ["toolbox-agents"] });
     qc.invalidateQueries({ queryKey: ["toolbox-storage"] });
     onChanged();
   };
@@ -3382,39 +3865,79 @@ function AgentBrandedContentPanel({
   };
 
   return (
-    <Card className="p-4 space-y-4 border-gold/40">
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-full bg-muted overflow-hidden flex items-center justify-center">
-          {agent.headshot_url ? (
-            <img src={agent.headshot_url} alt={agent.name} className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-sm font-semibold text-muted-foreground">
-              {agent.name.charAt(0).toUpperCase()}
-            </span>
-          )}
+    <Card className="p-4 sm:p-5 space-y-4 border-gold/40">
+      {/* Agent Header with direct 1-click Headshot & Thumbnail Framing updater */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border/70">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setEditingAgent(true)}
+            title="Click to update headshot or adjust thumbnail framing"
+            className="group/avatar relative h-12 w-12 rounded-full bg-muted overflow-hidden flex items-center justify-center border-2 border-gold/40 hover:border-gold transition-all cursor-pointer focus:outline-none"
+          >
+            {agent.headshot_url ? (
+              <img
+                src={headshotParsed.cleanUrl}
+                alt={agent.name}
+                style={headshotParsed.style}
+                className="w-full h-full"
+              />
+            ) : (
+              <span className="text-sm font-semibold text-muted-foreground">
+                {agent.name.charAt(0).toUpperCase()}
+              </span>
+            )}
+            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center text-white">
+              <Camera className="h-3.5 w-3.5" />
+            </div>
+          </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-base text-foreground">{agent.name}</h3>
+              {agent.identifier && (
+                <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground">
+                  {agent.identifier}
+                </Badge>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {agent.email || "No email"} &bull; {items.length} branded item{items.length === 1 ? "" : "s"}
+            </div>
+          </div>
         </div>
-        <div>
-          <div className="font-semibold">{agent.name}</div>
-          <div className="text-xs text-muted-foreground">Branded content</div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setEditingAgent(true)}
+            className="h-8 text-xs gap-1.5 border-border hover:border-gold/60 text-foreground"
+          >
+            <Camera className="h-3.5 w-3.5 text-gold" />
+            <span>Update Headshot &amp; Framing</span>
+          </Button>
         </div>
       </div>
 
+      {/* Upload New Content Box */}
       <div className="rounded-lg border border-border p-3 space-y-3 bg-card/40">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <Label>Title</Label>
+            <Label className="text-xs font-semibold">Title</Label>
             <Input
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
+              className="mt-1"
+              placeholder="e.g. Just Listed Story Graphic"
             />
           </div>
           <div>
-            <Label>Type</Label>
+            <Label className="text-xs font-semibold">Content Type</Label>
             <Select
               value={form.content_type}
               onValueChange={(v) => setForm({ ...form, content_type: v })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="mt-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -3428,18 +3951,20 @@ function AgentBrandedContentPanel({
           </div>
         </div>
         <div>
-          <Label>Optional caption</Label>
+          <Label className="text-xs font-semibold">Optional Caption</Label>
           <Textarea
             rows={2}
             value={form.caption}
             onChange={(e) => setForm({ ...form, caption: e.target.value })}
+            className="mt-1"
+            placeholder="Pre-formatted social caption agents can 1-click copy..."
           />
         </div>
         <div className="flex flex-wrap gap-2 items-end">
           <Button
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
-            className="bg-gold text-navy hover:bg-gold/90"
+            className="bg-gold text-navy hover:bg-gold/90 font-semibold"
           >
             {uploading ? (
               <>
@@ -3478,8 +4003,8 @@ function AgentBrandedContentPanel({
         <button
           onClick={() => setFilter("all")}
           className={cn(
-            "text-xs px-2 py-1 rounded border",
-            filter === "all" ? "border-gold text-gold" : "border-border text-muted-foreground",
+            "text-xs px-2.5 py-1 rounded border transition-colors",
+            filter === "all" ? "border-gold text-gold bg-gold/10 font-semibold" : "border-border text-muted-foreground",
           )}
         >
           All · {items.length}
@@ -3492,8 +4017,8 @@ function AgentBrandedContentPanel({
               key={t}
               onClick={() => setFilter(t)}
               className={cn(
-                "text-xs px-2 py-1 rounded border",
-                filter === t ? "border-gold text-gold" : "border-border text-muted-foreground",
+                "text-xs px-2.5 py-1 rounded border transition-colors",
+                filter === t ? "border-gold text-gold bg-gold/10 font-semibold" : "border-border text-muted-foreground",
               )}
             >
               {t} · {n}
@@ -3503,7 +4028,7 @@ function AgentBrandedContentPanel({
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-sm text-muted-foreground text-center py-6">
+        <div className="text-sm text-muted-foreground text-center py-8">
           No items yet for this filter.
         </div>
       ) : (
@@ -3511,11 +4036,18 @@ function AgentBrandedContentPanel({
           {filtered.map((i) => {
             const isImg =
               i.file_url && /\.(png|jpe?g|gif|webp|svg|avif|heic)(\?|#|$)/i.test(i.file_url);
+            const imgParsed = isImg ? parseImageSettings(i.file_url) : null;
+
             return (
-              <Card key={i.id} className="overflow-hidden group">
-                <div className="aspect-video bg-muted relative">
-                  {isImg ? (
-                    <img src={i.file_url!} alt={i.title} className="w-full h-full object-cover" />
+              <Card key={i.id} className="overflow-hidden group border-border hover:border-border/80 transition-all flex flex-col">
+                <div className="aspect-video bg-black/40 relative overflow-hidden flex items-center justify-center">
+                  {isImg && imgParsed ? (
+                    <img
+                      src={imgParsed.cleanUrl}
+                      alt={i.title}
+                      style={imgParsed.style}
+                      className="w-full h-full transition-all"
+                    />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                       {i.drive_url ? (
@@ -3525,54 +4057,88 @@ function AgentBrandedContentPanel({
                       )}
                     </div>
                   )}
-                  <button
-                    onClick={() => remove(i.id)}
-                    className="absolute top-1 right-1 bg-black/60 hover:bg-rose-600/80 rounded p-1 opacity-0 group-hover:opacity-100"
-                  >
-                    <Trash2 className="h-3 w-3 text-white" />
-                  </button>
-                  <Badge className="absolute top-2 left-2 bg-navy/80 border border-gold/30 text-gold">
+
+                  {/* Top-right card actions */}
+                  <div className="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {isImg && (
+                      <button
+                        type="button"
+                        onClick={() => setEditingContent(i)}
+                        className="bg-black/80 hover:bg-gold/90 hover:text-navy text-white rounded p-1.5 transition-colors shadow-md"
+                        title="Adjust thumbnail view & framing"
+                      >
+                        <SlidersHorizontal className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => remove(i.id)}
+                      className="bg-black/80 hover:bg-rose-600 rounded p-1.5 transition-colors shadow-md text-white"
+                      title="Delete item"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+
+                  <Badge className="absolute top-2 left-2 bg-navy/85 border border-gold/30 text-gold text-[10px]">
                     {i.content_type}
                   </Badge>
                 </div>
-                <div className="p-3 space-y-2">
-                  <div className="font-medium text-sm">{i.title}</div>
-                  {i.caption && (
-                    <div className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">
-                      {i.caption}
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 pt-1">
-                    {i.file_url && (
-                      <a
-                        href={i.file_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs text-gold hover:underline"
-                      >
-                        File
-                      </a>
-                    )}
-                    {i.drive_url && (
-                      <a
-                        href={i.drive_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs text-gold hover:underline"
-                      >
-                        Drive
-                      </a>
-                    )}
+
+                <div className="p-3 space-y-2 flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="font-semibold text-sm text-foreground">{i.title}</div>
                     {i.caption && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="ml-auto h-7"
-                        onClick={() => copy(i.caption!)}
+                      <div className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap mt-1">
+                        {i.caption}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-border/50 text-xs">
+                    <div className="flex items-center gap-2">
+                      {i.file_url && (
+                        <a
+                          href={i.file_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-gold hover:underline font-medium"
+                        >
+                          File
+                        </a>
+                      )}
+                      {i.drive_url && (
+                        <a
+                          href={i.drive_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-gold hover:underline font-medium"
+                        >
+                          Drive
+                        </a>
+                      )}
+                      {i.caption && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => copy(i.caption!)}
+                        >
+                          <Copy className="h-3 w-3 mr-1" />
+                          Copy
+                        </Button>
+                      )}
+                    </div>
+
+                    {isImg && (
+                      <button
+                        type="button"
+                        onClick={() => setEditingContent(i)}
+                        className="text-[11px] text-muted-foreground hover:text-gold flex items-center gap-1 transition-colors"
                       >
-                        <Copy className="h-3 w-3 mr-1" />
-                        Copy
-                      </Button>
+                        <SlidersHorizontal className="h-3 w-3" />
+                        <span>Adjust View</span>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -3581,6 +4147,22 @@ function AgentBrandedContentPanel({
           })}
         </div>
       )}
+
+      {/* Profile & Headshot Editing Dialog */}
+      <EditAgentDialog
+        open={editingAgent}
+        onOpenChange={setEditingAgent}
+        agent={agent}
+        onSaved={refresh}
+      />
+
+      {/* Item Thumbnail View Adjustment Dialog */}
+      <EditAgentContentDialog
+        open={!!editingContent}
+        onOpenChange={(v) => !v && setEditingContent(null)}
+        item={editingContent}
+        onSaved={refresh}
+      />
     </Card>
   );
 }
