@@ -99,6 +99,22 @@ export interface SyncResult {
   durationMs: number;
 }
 
+// Parse city, state, zip from secondAddress ("St James, MO 65559")
+export function parseSecondAddress(
+  secondAddress?: string | null,
+): { city: string | null; state: string | null; zip: string | null } {
+  if (!secondAddress) return { city: null, state: null, zip: null };
+  const match = secondAddress.match(/^(.*?),\s*([A-Za-z]{2})\s*(\d{5})?/);
+  if (match) {
+    return {
+      city: match[1]?.trim() || null,
+      state: match[2]?.trim() || null,
+      zip: match[3]?.trim() || null,
+    };
+  }
+  return { city: null, state: null, zip: null };
+}
+
 // XML escaping helper
 export function escapeXml(unsafe: unknown): string {
   if (unsafe == null) return "";
@@ -301,7 +317,7 @@ export async function syncMetaCatalogListings(supabaseClient: any): Promise<Sync
   // Fetch all existing rows in meta_listings to identify new vs changed
   const { data: existingRows, error: fetchErr } = await supabaseClient
     .from("meta_listings")
-    .select("id, listing_number, price, status, label, updated_at, latitude, longitude, description, images");
+    .select("*");
 
   if (fetchErr) {
     const errorMsg = `Database read error on meta_listings: ${fetchErr.message}`;
@@ -353,6 +369,8 @@ export async function syncMetaCatalogListings(supabaseClient: any): Promise<Sync
       (existing.latitude == null ||
         existing.longitude == null ||
         !existing.description ||
+        !existing.city ||
+        !existing.zip ||
         !existing.images ||
         existing.images.length === 0);
 
@@ -383,21 +401,23 @@ export async function syncMetaCatalogListings(supabaseClient: any): Promise<Sync
     const existing = existingMap.get(r.id);
     const isNew = !existing;
     const detail = itemDetailMap.get(r.id);
+    const parsedAddr = parseSecondAddress(r.secondAddress);
 
-    const listingNumber = detail?.mlsRecordId || detail?.listingNumber || r.listingNumber || r.mlsRecordId || "";
-    const firstAddress = detail?.firstAddress || r.firstAddress || null;
-    const city = detail?.city || r.city || null;
-    const state = detail?.state || r.state || null;
-    const zip = detail?.postalCode || r.postalCode || r.zip || null;
-    const price = detail?.price != null ? detail.price : r.price != null ? r.price : null;
-    const oldPrice = detail?.oldPrice != null ? detail.oldPrice : r.oldPrice != null ? r.oldPrice : null;
-    const bedrooms = detail?.bedrooms != null ? detail.bedrooms : r.bedrooms != null ? r.bedrooms : null;
-    const bathrooms = detail?.bathrooms != null ? detail.bathrooms : r.bathrooms != null ? r.bathrooms : null;
-    const sqft = detail?.square != null ? detail.square : r.square != null ? r.square : null;
-    const lotAcres = detail?.lotSizeAcres != null ? detail.lotSizeAcres : r.lotSizeAcres != null ? r.lotSizeAcres : null;
-    const propertyType = detail?.type || r.type || "Residential";
-    const status = detail?.status || detail?.mlsStatus || r.status || r.mlsStatus || "Active";
-    const label = detail?.label || r.label || null;
+    const listingNumber =
+      detail?.mlsRecordId || detail?.listingNumber || r.listingNumber || r.mlsRecordId || existing?.listing_number || "";
+    const firstAddress = detail?.firstAddress || r.firstAddress || existing?.first_address || null;
+    const city = detail?.city || r.city || existing?.city || parsedAddr.city;
+    const state = detail?.state || r.state || existing?.state || parsedAddr.state;
+    const zip = detail?.postalCode || r.postalCode || r.zip || existing?.zip || parsedAddr.zip;
+    const price = detail?.price != null ? detail.price : r.price != null ? r.price : existing?.price ?? null;
+    const oldPrice = detail?.oldPrice != null ? detail.oldPrice : r.oldPrice != null ? r.oldPrice : existing?.old_price ?? null;
+    const bedrooms = detail?.bedrooms != null ? detail.bedrooms : r.bedrooms != null ? r.bedrooms : existing?.bedrooms ?? null;
+    const bathrooms = detail?.bathrooms != null ? detail.bathrooms : r.bathrooms != null ? r.bathrooms : existing?.bathrooms ?? null;
+    const sqft = detail?.square != null ? detail.square : r.square != null ? r.square : existing?.sqft ?? null;
+    const lotAcres = detail?.lotSizeAcres != null ? detail.lotSizeAcres : r.lotSizeAcres != null ? r.lotSizeAcres : existing?.lot_acres ?? null;
+    const propertyType = detail?.type || r.type || existing?.property_type || "Residential";
+    const status = detail?.status || detail?.mlsStatus || r.status || r.mlsStatus || existing?.status || "Active";
+    const label = detail?.label || r.label || existing?.label || null;
     const description = detail?.description || existing?.description || null;
 
     // Collect images (up to 20)
@@ -416,13 +436,8 @@ export async function syncMetaCatalogListings(supabaseClient: any): Promise<Sync
     }
 
     // Coordinates: pull from detail location, existing, or fallback geocode
-    let latitude: number | null = existing?.latitude ?? null;
-    let longitude: number | null = existing?.longitude ?? null;
-
-    if (detail?.location?.coordinates && Array.isArray(detail.location.coordinates) && detail.location.coordinates.length >= 2) {
-      latitude = detail.location.coordinates[0];
-      longitude = detail.location.coordinates[1];
-    }
+    let latitude: number | null = detail?.location?.coordinates?.[0] ?? existing?.latitude ?? null;
+    let longitude: number | null = detail?.location?.coordinates?.[1] ?? existing?.longitude ?? null;
 
     if ((latitude == null || longitude == null) && firstAddress && city && state) {
       const geocoded = await geocodeAddressFallback(firstAddress, city, state, zip || "");
