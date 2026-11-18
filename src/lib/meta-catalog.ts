@@ -488,10 +488,26 @@ export async function syncMetaCatalogListings(supabaseClient: any): Promise<Sync
     upsertQueue.push(upsertPayload);
   }
 
+  // Deduplicate upsertQueue by UUID and listing_number
+  const dedupedUpsertMap = new Map<string, Partial<MetaListingRow>>();
+  const seenListingNumbersInSync = new Set<string>();
+
+  for (const item of upsertQueue) {
+    if (!item.id) continue;
+    if (item.listing_number && seenListingNumbersInSync.has(item.listing_number)) {
+      console.warn(`[MetaSync] Skipping duplicate listing_number: ${item.listing_number} for id: ${item.id}`);
+      continue;
+    }
+    if (item.listing_number) seenListingNumbersInSync.add(item.listing_number);
+    dedupedUpsertMap.set(item.id, item);
+  }
+
+  const finalUpsertQueue = Array.from(dedupedUpsertMap.values());
+
   // Batch upserts into chunks of 50 to drastically reduce database roundtrips
   const BATCH_SIZE = 50;
-  for (let i = 0; i < upsertQueue.length; i += BATCH_SIZE) {
-    const chunk = upsertQueue.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < finalUpsertQueue.length; i += BATCH_SIZE) {
+    const chunk = finalUpsertQueue.slice(i, i + BATCH_SIZE);
     const { error: batchErr } = await supabaseClient
       .from("meta_listings")
       .upsert(chunk, { onConflict: "id" });
@@ -543,7 +559,28 @@ export async function syncMetaCatalogListings(supabaseClient: any): Promise<Sync
 export function generateMetaListingsXml(listings: MetaListingRow[]): string {
   let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<listings>\n  <title>Matt Smith Real Estate Group Meta Listings</title>\n  <link rel="self" href="https://mattsmithrealestategroup.com"/>\n`;
 
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const seenIds = new Set<string>();
+  const seenListingNumbers = new Set<string>();
+
   for (const item of listings) {
+    // 1. Exclude filter
+    if (item.excluded) continue;
+
+    // 2. Status filter: active or coming soon
+    const st = (item.status || "").toLowerCase().trim();
+    if (st !== "active" && !st.startsWith("coming")) continue;
+
+    // 3. ID filter: must be valid UUID
+    if (!item.id || !uuidRegex.test(item.id)) continue;
+
+    // 4. De-duplicate by UUID and listing_number
+    if (seenIds.has(item.id)) continue;
+    if (item.listing_number && seenListingNumbers.has(item.listing_number)) continue;
+
+    seenIds.add(item.id);
+    if (item.listing_number) seenListingNumbers.add(item.listing_number);
+
     const listingNumber = item.listing_number || "";
     const name = `${item.first_address || ""}, ${item.city || ""}, ${item.state || ""} ${item.zip || ""}`
       .replace(/,\s*,/g, ",")

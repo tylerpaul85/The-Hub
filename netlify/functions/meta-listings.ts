@@ -36,7 +36,6 @@ export async function handler(event: any) {
       .from("meta_listings")
       .select("*")
       .eq("excluded", false)
-      .neq("status", "removed")
       .order("updated_at", { ascending: false });
 
     if (error) {
@@ -48,14 +47,33 @@ export async function handler(event: any) {
       };
     }
 
-    const xml = generateMetaListingsXml((listings || []) as MetaListingRow[]);
+    // Filter: status = active (or ComingSoon), excluded = false, and id is a valid UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const seenUuids = new Set<string>();
+    const seenListingNumbers = new Set<string>();
+    const validListings: MetaListingRow[] = [];
+
+    for (const item of (listings || []) as MetaListingRow[]) {
+      if (item.excluded) continue;
+      const st = (item.status || "").toLowerCase().trim();
+      if (st !== "active" && !st.startsWith("coming")) continue;
+      if (!item.id || !uuidRegex.test(item.id)) continue;
+      if (seenUuids.has(item.id)) continue;
+      if (item.listing_number && seenListingNumbers.has(item.listing_number)) continue;
+
+      seenUuids.add(item.id);
+      if (item.listing_number) seenListingNumbers.add(item.listing_number);
+      validListings.push(item);
+    }
+
+    const xml = generateMetaListingsXml(validListings);
 
     return {
       statusCode: 200,
       headers: {
         "Content-Type": "application/xml; charset=utf-8",
-        "Cache-Control": "public, max-age=3600, s-maxage=3600",
-        "X-Listing-Count": String((listings || []).length),
+        "Cache-Control": "public, max-age=600, s-maxage=600",
+        "X-Listing-Count": String(validListings.length),
       },
       body: xml,
     };
