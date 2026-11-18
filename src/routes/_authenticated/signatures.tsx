@@ -114,9 +114,9 @@ function sigCompleteness(agent: AgentSig): { complete: boolean; missing: string[
   const gmailEmail = s?.gmail_email || agent.email;
   const hasOffice = s
     ? (s.show_office_rolla ?? true) ||
-      s.show_office_strobert ||
-      s.show_office_osage ||
-      !!s.office1_addr
+    s.show_office_strobert ||
+    s.show_office_osage ||
+    !!s.office1_addr
     : true;
 
   if (!title) missing.push("Title");
@@ -1471,10 +1471,10 @@ function SignaturesPage() {
                       <span className="text-[11px] text-foreground/70">
                         {lastPushed
                           ? new Date(lastPushed).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "2-digit",
-                            })
+                            month: "short",
+                            day: "numeric",
+                            year: "2-digit",
+                          })
                           : "Never"}
                       </span>
                     </div>

@@ -812,6 +812,28 @@ export function OperationsMissionControl() {
           </Link>
 
           <Link
+            to="/catalog-ads"
+            className="p-4 rounded-xl border border-border bg-surface-1 hover:bg-surface-2 hover:border-accent/40 transition-all flex items-start gap-3 group"
+          >
+            <div className="p-2.5 rounded-lg bg-surface-2 border border-border text-gold group-hover:scale-105 transition-transform shrink-0">
+              <ShoppingBag className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <h5 className="text-sm font-semibold text-foreground group-hover:text-gold transition-colors">
+                  Catalog Ads &amp; Meta Feed
+                </h5>
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-gold/15 text-gold font-semibold uppercase">
+                  Meta Real Estate
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                Automated Ruuster MLS to Meta Commerce Home Listings feed with exclude toggles, data health chips, and daily sync.
+              </p>
+            </div>
+          </Link>
+
+          <Link
             to="/inventory"
             className="p-4 rounded-xl border border-border bg-surface-1 hover:bg-surface-2 hover:border-accent/40 transition-all flex items-start gap-3 group"
           >

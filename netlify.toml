@@ -5,7 +5,17 @@
 [build.environment]
   NODE_OPTIONS = "--max-old-space-size=4096"
 
-
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+
+# Scheduled daily at 5:00 AM Central Time (10:00 AM UTC)
+[functions."meta-sync"]
+  schedule = "0 10 * * *"
+
+# Public Meta Catalog Feed Rewrite (NO auth)
+[[redirects]]
+  from = "/feeds/meta-listings.xml"
+  to = "/.netlify/functions/meta-listings"
+  status = 200
+  force = true

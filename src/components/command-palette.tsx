@@ -185,6 +185,15 @@ export function CommandPalette({
         marketingOnly: true,
       },
       {
+        id: "catalog-ads",
+        name: "Catalog Ads & Meta Feed",
+        description: "Meta Commerce Home Listings feed, Ruuster sync & exclude controls",
+        group: "Marketing & Listings",
+        to: "/catalog-ads",
+        icon: ShoppingBag,
+        marketingOnly: true,
+      },
+      {
         id: "agent-audit",
         name: "Agent Audit System",
         description: "FUB compliance, activity grading & rubric review",

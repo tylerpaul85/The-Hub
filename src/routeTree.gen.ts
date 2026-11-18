@@ -32,6 +32,7 @@ import { Route as AuthenticatedAdminNetSheetsRouteImport } from './routes/_authe
 import { Route as AuthenticatedArchiveRouteImport } from './routes/_authenticated/archive'
 import { Route as AuthenticatedAuditLogRouteImport } from './routes/_authenticated/audit-log'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
+import { Route as AuthenticatedCatalogAdsRouteImport } from './routes/_authenticated/catalog-ads'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDutyAgentsRouteImport } from './routes/_authenticated/duty-agents'
 import { Route as AuthenticatedDutyCalendarRouteImport } from './routes/_authenticated/duty-calendar'
@@ -190,6 +191,11 @@ const AuthenticatedAuditLogRoute = AuthenticatedAuditLogRouteImport.update({
 const AuthenticatedCalendarRoute = AuthenticatedCalendarRouteImport.update({
   id: '/calendar',
   path: '/calendar',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCatalogAdsRoute = AuthenticatedCatalogAdsRouteImport.update({
+  id: '/catalog-ads',
+  path: '/catalog-ads',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -455,6 +461,7 @@ export interface FileRoutesByFullPath {
   '/archive': typeof AuthenticatedArchiveRoute
   '/audit-log': typeof AuthenticatedAuditLogRoute
   '/calendar': typeof AuthenticatedCalendarRoute
+  '/catalog-ads': typeof AuthenticatedCatalogAdsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/duty-agents': typeof AuthenticatedDutyAgentsRoute
   '/duty-calendar': typeof AuthenticatedDutyCalendarRoute
@@ -521,6 +528,7 @@ export interface FileRoutesByTo {
   '/archive': typeof AuthenticatedArchiveRoute
   '/audit-log': typeof AuthenticatedAuditLogRoute
   '/calendar': typeof AuthenticatedCalendarRoute
+  '/catalog-ads': typeof AuthenticatedCatalogAdsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/duty-agents': typeof AuthenticatedDutyAgentsRoute
   '/duty-calendar': typeof AuthenticatedDutyCalendarRoute
@@ -588,6 +596,7 @@ export interface FileRoutesById {
   '/_authenticated/archive': typeof AuthenticatedArchiveRoute
   '/_authenticated/audit-log': typeof AuthenticatedAuditLogRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
+  '/_authenticated/catalog-ads': typeof AuthenticatedCatalogAdsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/duty-agents': typeof AuthenticatedDutyAgentsRoute
   '/_authenticated/duty-calendar': typeof AuthenticatedDutyCalendarRoute
@@ -658,6 +667,7 @@ export interface FileRouteTypes {
     | '/archive'
     | '/audit-log'
     | '/calendar'
+    | '/catalog-ads'
     | '/dashboard'
     | '/duty-agents'
     | '/duty-calendar'
@@ -724,6 +734,7 @@ export interface FileRouteTypes {
     | '/archive'
     | '/audit-log'
     | '/calendar'
+    | '/catalog-ads'
     | '/dashboard'
     | '/duty-agents'
     | '/duty-calendar'
@@ -790,6 +801,7 @@ export interface FileRouteTypes {
     | '/_authenticated/archive'
     | '/_authenticated/audit-log'
     | '/_authenticated/calendar'
+    | '/_authenticated/catalog-ads'
     | '/_authenticated/dashboard'
     | '/_authenticated/duty-agents'
     | '/_authenticated/duty-calendar'
@@ -1023,6 +1035,13 @@ declare module '@tanstack/react-router' {
       path: '/calendar'
       fullPath: '/calendar'
       preLoaderRoute: typeof AuthenticatedCalendarRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/catalog-ads': {
+      id: '/_authenticated/catalog-ads'
+      path: '/catalog-ads'
+      fullPath: '/catalog-ads'
+      preLoaderRoute: typeof AuthenticatedCatalogAdsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
@@ -1392,6 +1411,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedArchiveRoute: typeof AuthenticatedArchiveRoute
   AuthenticatedAuditLogRoute: typeof AuthenticatedAuditLogRoute
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
+  AuthenticatedCatalogAdsRoute: typeof AuthenticatedCatalogAdsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDutyAgentsRoute: typeof AuthenticatedDutyAgentsRoute
   AuthenticatedDutyCalendarRoute: typeof AuthenticatedDutyCalendarRoute
@@ -1427,6 +1447,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedArchiveRoute: AuthenticatedArchiveRoute,
   AuthenticatedAuditLogRoute: AuthenticatedAuditLogRoute,
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
+  AuthenticatedCatalogAdsRoute: AuthenticatedCatalogAdsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDutyAgentsRoute: AuthenticatedDutyAgentsRoute,
   AuthenticatedDutyCalendarRoute: AuthenticatedDutyCalendarRoute,
