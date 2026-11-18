@@ -129,7 +129,22 @@ function CatalogAdsPage() {
       queryClient.invalidateQueries({ queryKey: ["meta-catalog-history"] });
     },
     onError: (err: any) => {
-      toast.error(`Sync failed: ${err.message}`);
+      queryClient.invalidateQueries({ queryKey: ["meta-catalog-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["meta-catalog-listings"] });
+      queryClient.invalidateQueries({ queryKey: ["meta-catalog-history"] });
+
+      if (
+        err.message?.toLowerCase().includes("timeout") ||
+        err.message?.toLowerCase().includes("inactivity")
+      ) {
+        toast.info("Sync is running in the background. Refreshing listings now...");
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ["meta-catalog-stats"] });
+          queryClient.invalidateQueries({ queryKey: ["meta-catalog-listings"] });
+        }, 3000);
+      } else {
+        toast.error(`Sync error: ${err.message}`);
+      }
     },
   });
 

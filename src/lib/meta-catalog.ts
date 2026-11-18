@@ -334,15 +334,16 @@ export async function syncMetaCatalogListings(supabaseClient: any): Promise<Sync
   let newCount = 0;
   let updatedCount = 0;
   const activeIds = new Set<string>();
+  const upsertQueue: Partial<MetaListingRow>[] = [];
+
+  // Group items that need detail fetching
+  const itemsToFetchDetails: RuusterListRecord[] = [];
+  const itemDetailMap = new Map<string, RuusterDetailRecord>();
 
   for (const r of records) {
     activeIds.add(r.id);
     const existing = existingMap.get(r.id);
 
-    // Determine if we need to fetch detail endpoint:
-    // 1. Completely new listing
-    // 2. Existing listing missing coordinates or description
-    // 3. Price, status, or label changed
     const isNew = !existing;
     const isPriceChanged = existing && existing.price !== r.price;
     const isStatusChanged = existing && existing.status !== (r.status || r.mlsStatus);
@@ -355,14 +356,33 @@ export async function syncMetaCatalogListings(supabaseClient: any): Promise<Sync
         !existing.images ||
         existing.images.length === 0);
 
-    const needsDetail = isNew || isPriceChanged || isStatusChanged || isLabelChanged || isMissingDetails;
-
-    let detail: RuusterDetailRecord | null = null;
-    if (needsDetail) {
-      // 300ms pause between calls to respect rate limit
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      detail = await fetchRuusterListingDetail(r.id, sessionId);
+    if (isNew || isPriceChanged || isStatusChanged || isLabelChanged || isMissingDetails) {
+      itemsToFetchDetails.push(r);
     }
+  }
+
+  // Fetch details with controlled concurrency of 3 and 250ms delay
+  const CONCURRENCY = 3;
+  for (let i = 0; i < itemsToFetchDetails.length; i += CONCURRENCY) {
+    const chunk = itemsToFetchDetails.slice(i, i + CONCURRENCY);
+    const results = await Promise.all(
+      chunk.map((item) => fetchRuusterListingDetail(item.id, sessionId)),
+    );
+    for (let j = 0; j < chunk.length; j++) {
+      const detail = results[j];
+      if (detail) {
+        itemDetailMap.set(chunk[j].id, detail);
+      }
+    }
+    if (i + CONCURRENCY < itemsToFetchDetails.length) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+  }
+
+  for (const r of records) {
+    const existing = existingMap.get(r.id);
+    const isNew = !existing;
+    const detail = itemDetailMap.get(r.id);
 
     const listingNumber = detail?.mlsRecordId || detail?.listingNumber || r.listingNumber || r.mlsRecordId || "";
     const firstAddress = detail?.firstAddress || r.firstAddress || null;
@@ -443,20 +463,26 @@ export async function syncMetaCatalogListings(supabaseClient: any): Promise<Sync
       updated_at: nowIso,
     };
 
-    // If it is new, ensure excluded defaults to false
     if (isNew) {
       upsertPayload.excluded = false;
+      newCount++;
+    } else {
+      updatedCount++;
     }
 
-    const { error: upsertErr } = await supabaseClient
-      .from("meta_listings")
-      .upsert(upsertPayload, { onConflict: "id" });
+    upsertQueue.push(upsertPayload);
+  }
 
-    if (upsertErr) {
-      errors.push(`Failed upsert for listing ${r.id}: ${upsertErr.message}`);
-    } else {
-      if (isNew) newCount++;
-      else updatedCount++;
+  // Batch upserts into chunks of 50 to drastically reduce database roundtrips
+  const BATCH_SIZE = 50;
+  for (let i = 0; i < upsertQueue.length; i += BATCH_SIZE) {
+    const chunk = upsertQueue.slice(i, i + BATCH_SIZE);
+    const { error: batchErr } = await supabaseClient
+      .from("meta_listings")
+      .upsert(chunk, { onConflict: "id" });
+
+    if (batchErr) {
+      errors.push(`Failed batch upsert (${i} - ${i + chunk.length}): ${batchErr.message}`);
     }
   }
 
