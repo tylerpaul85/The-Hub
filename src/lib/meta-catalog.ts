@@ -538,12 +538,22 @@ export function generateMetaListingsXml(listings: MetaListingRow[]): string {
     const priceStr = `${item.price || 0} USD`;
     const propertyUrl = `https://mattsmithrealestategroup.com/featured-listings/?propertyId=${item.id}`;
 
+    // Append MLS # to end of description if present
+    const baseDesc = (item.description || "").trim();
+    let descriptionText = baseDesc;
+    if (listingNumber) {
+      const mlsTag = `MLS #${listingNumber}`;
+      if (!baseDesc.includes(mlsTag)) {
+        descriptionText = baseDesc ? `${baseDesc}\n\n${mlsTag}` : mlsTag;
+      }
+    }
+
     xml += `  <listing>\n`;
-    xml += `    <home_listing_id>${escapeXml(listingNumber)}</home_listing_id>\n`;
+    xml += `    <home_listing_id>${item.id}</home_listing_id>\n`;
     xml += `    <name>${escapeXml(name)}</name>\n`;
     xml += `    <availability>for_sale</availability>\n`;
     xml += `    <listing_type>for_sale_by_agent</listing_type>\n`;
-    xml += `    <description>${escapeXml(item.description || "")}</description>\n`;
+    xml += `    <description>${escapeXml(descriptionText)}</description>\n`;
     xml += `    <address format="simple">\n`;
     xml += `      <component name="addr1">${escapeXml(item.first_address || "")}</component>\n`;
     xml += `      <component name="city">${escapeXml(item.city || "")}</component>\n`;

@@ -1,6 +1,5 @@
-import { Handler } from "@netlify/functions";
 import { createClient } from "@supabase/supabase-js";
-import { syncMetaCatalogListings } from "../../src/lib/meta-catalog";
+import { syncMetaCatalogListings } from "../../src/lib/meta-catalog.ts";
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY =
@@ -9,7 +8,7 @@ const SUPABASE_SERVICE_ROLE_KEY =
   process.env.SUPABASE_PUBLISHABLE_KEY ||
   process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-export const handler: Handler = async (event) => {
+export async function handler(event: any) {
   // Can be called via Netlify Scheduled function OR manual POST/GET trigger
   console.log(`[meta-sync] Triggered at ${new Date().toISOString()} via ${event.httpMethod || "schedule"}`);
 

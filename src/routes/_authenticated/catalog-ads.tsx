@@ -76,7 +76,15 @@ function CatalogAdsPage() {
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isCopied, setIsCopied] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+  const handleCopyId = (id: string) => {
+    navigator.clipboard.writeText(id);
+    setCopiedId(id);
+    toast.success(`Copied Ruuster ID: ${id}`);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   // Server functions
   const fetchStats = useServerFn(getMetaCatalogStats);
@@ -455,7 +463,7 @@ function CatalogAdsPage() {
             <TableHeader className="bg-surface-2/60">
               <TableRow className="border-border/60 hover:bg-transparent">
                 <TableHead className="w-16 text-xs font-bold text-foreground">Photo</TableHead>
-                <TableHead className="text-xs font-bold text-foreground">Address &amp; MLS</TableHead>
+                <TableHead className="text-xs font-bold text-foreground">Address, MLS &amp; Feed ID</TableHead>
                 <TableHead className="text-xs font-bold text-foreground">Price</TableHead>
                 <TableHead className="text-xs font-bold text-foreground">Beds / Baths / Sqft</TableHead>
                 <TableHead className="text-xs font-bold text-foreground">Type &amp; Label</TableHead>
@@ -537,9 +545,9 @@ function CatalogAdsPage() {
                         </div>
                       </TableCell>
 
-                      {/* Address & MLS ID */}
+                      {/* Address, MLS & Ruuster Feed ID */}
                       <TableCell className="py-2.5">
-                        <div className="space-y-0.5">
+                        <div className="space-y-1">
                           <div className="flex items-center gap-1.5">
                             <span className="font-semibold text-foreground text-xs leading-snug">
                               {item.first_address || "Unspecified Address"}
@@ -554,12 +562,32 @@ function CatalogAdsPage() {
                               <ExternalLink className="h-3 w-3" />
                             </a>
                           </div>
-                          <div className="text-[11px] text-muted-foreground flex items-center gap-2">
+                          <div className="text-[11px] text-muted-foreground flex items-center gap-2 flex-wrap">
                             <span>
                               {item.city}, {item.state} {item.zip}
                             </span>
                             <span className="text-border">•</span>
-                            <span className="font-mono text-gold/90">MLS #{item.listing_number}</span>
+                            <span className="font-mono text-gold/90 font-medium">MLS #{item.listing_number}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 pt-0.5">
+                            <span className="text-[10px] text-muted-foreground/80 font-mono flex items-center gap-1">
+                              Feed ID: <span className="text-foreground/90 font-semibold">{item.id}</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopyId(item.id);
+                              }}
+                              className="p-1 rounded hover:bg-surface-2 text-muted-foreground hover:text-gold transition-colors inline-flex items-center"
+                              title="Copy Ruuster UUID (Feed ID)"
+                            >
+                              {copiedId === item.id ? (
+                                <Check className="h-3 w-3 text-emerald-400" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </button>
                           </div>
                         </div>
                       </TableCell>
