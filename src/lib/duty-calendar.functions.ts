@@ -20,13 +20,46 @@ const OFFICE = z.enum(["rolla", "str", "loz"]);
 export const listDutyAgents = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
+    let selectFields = "id,name,office,status,notes,email,toolbox_agent_id,created_at";
+    let { data, error } = await context.supabase
       .from("duty_calendar_agents")
-      .select("id,name,office,status,created_at")
+      .select(selectFields)
       .order("office")
       .order("name");
+
+    if (error && (error.message?.includes("column") || error.code === "PGRST204")) {
+      const fb = await context.supabase
+        .from("duty_calendar_agents")
+        .select("id,name,office,status,created_at")
+        .order("office")
+        .order("name");
+      data = fb.data;
+      error = fb.error;
+    }
     if (error) throw new Error(error.message);
-    return data ?? [];
+
+    // Fetch upcoming no-go days (unavailability) so the roster immediately reflects who has time off scheduled
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: ooo } = await context.supabase
+      .from("agent_availability")
+      .select("id,agent_id,date_start,date_end,reason,note")
+      .gte("date_end", today);
+
+    const oooByAgent = new Map<string, any[]>();
+    for (const r of ooo ?? []) {
+      const arr = oooByAgent.get(r.agent_id) ?? [];
+      arr.push(r);
+      oooByAgent.set(r.agent_id, arr);
+    }
+
+    return (data ?? []).map((agent: any) => ({
+      ...agent,
+      notes: agent.notes ?? null,
+      email: agent.email ?? null,
+      toolbox_agent_id: agent.toolbox_agent_id ?? null,
+      upcoming_ooo: oooByAgent.get(agent.id) ?? [],
+      upcoming_ooo_count: (oooByAgent.get(agent.id) ?? []).length,
+    }));
   });
 
 const upsertAgentSchema = z.object({
@@ -34,25 +67,56 @@ const upsertAgentSchema = z.object({
   name: z.string().trim().min(1).max(120),
   office: OFFICE,
   status: z.enum(["active", "inactive"]).default("active"),
+  notes: z.string().nullable().optional(),
+  email: z.string().trim().email().nullable().optional().or(z.literal("")),
+  toolbox_agent_id: z.string().uuid().nullable().optional(),
 });
+
 export const upsertDutyAgent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => upsertAgentSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdminOrCare(context.supabase, context.userId);
+    const payload: any = {
+      name: data.name,
+      office: data.office,
+      status: data.status,
+    };
+    if (data.notes !== undefined) payload.notes = data.notes?.trim() || null;
+    if (data.email !== undefined) payload.email = data.email?.trim() || null;
+    if (data.toolbox_agent_id !== undefined) payload.toolbox_agent_id = data.toolbox_agent_id || null;
+
     if (data.id) {
-      const { error } = await context.supabase
+      let { error } = await context.supabase
         .from("duty_calendar_agents")
-        .update({ name: data.name, office: data.office, status: data.status })
+        .update(payload)
         .eq("id", data.id);
+      if (error && error.message?.includes("column")) {
+        // Fallback without new columns if schema migration hasn't run
+        const fb = await context.supabase
+          .from("duty_calendar_agents")
+          .update({ name: data.name, office: data.office, status: data.status })
+          .eq("id", data.id);
+        error = fb.error;
+      }
       if (error) throw new Error(error.message);
       return { ok: true, id: data.id };
     }
-    const { data: row, error } = await context.supabase
+
+    let { data: row, error } = await context.supabase
       .from("duty_calendar_agents")
-      .insert({ name: data.name, office: data.office, status: data.status })
+      .insert(payload)
       .select("id")
       .single();
+    if (error && error.message?.includes("column")) {
+      const fb = await context.supabase
+        .from("duty_calendar_agents")
+        .insert({ name: data.name, office: data.office, status: data.status })
+        .select("id")
+        .single();
+      row = fb.data;
+      error = fb.error;
+    }
     if (error) throw new Error(error.message);
     return { ok: true, id: row!.id };
   });
@@ -70,6 +134,140 @@ export const deleteDutyAgent = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ───────────── Marketing Toolbox Integration ─────────────
+export const listToolboxAgentsForDuty = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdminOrCare(context.supabase, context.userId);
+    const { data: toolboxAgents, error: tErr } = await context.supabase
+      .from("toolbox_agents")
+      .select("id,name,email,headshot_url,active")
+      .order("name");
+    if (tErr) throw new Error(tErr.message);
+
+    let dutyAgents: any[] = [];
+    const { data: da, error: daErr } = await context.supabase
+      .from("duty_calendar_agents")
+      .select("id,name,office,status,notes,toolbox_agent_id");
+    if (daErr && daErr.message?.includes("column")) {
+      const fb = await context.supabase
+        .from("duty_calendar_agents")
+        .select("id,name,office,status");
+      dutyAgents = fb.data ?? [];
+    } else {
+      dutyAgents = da ?? [];
+    }
+
+    const byToolboxId = new Map<string, any[]>();
+    const byLowerName = new Map<string, any[]>();
+    for (const d of dutyAgents) {
+      if (d.toolbox_agent_id) {
+        const arr = byToolboxId.get(d.toolbox_agent_id) ?? [];
+        arr.push(d);
+        byToolboxId.set(d.toolbox_agent_id, arr);
+      }
+      const lower = d.name.toLowerCase().trim();
+      const arr = byLowerName.get(lower) ?? [];
+      arr.push(d);
+      byLowerName.set(lower, arr);
+    }
+
+    return (toolboxAgents ?? []).map((t: any) => {
+      const matches =
+        byToolboxId.get(t.id) ?? byLowerName.get(t.name.toLowerCase().trim()) ?? [];
+      return {
+        id: t.id,
+        name: t.name,
+        email: t.email ?? null,
+        headshot_url: t.headshot_url ?? null,
+        active: !!t.active,
+        duty_records: matches,
+        is_in_duty: matches.length > 0,
+        assigned_offices: matches.map((m: any) => m.office),
+      };
+    });
+  });
+
+const importToolboxSchema = z.object({
+  agents: z
+    .array(
+      z.object({
+        toolbox_agent_id: z.string().uuid(),
+        name: z.string().trim().min(1).max(120),
+        email: z.string().nullable().optional(),
+        office: OFFICE,
+        notes: z.string().nullable().optional(),
+        status: z.enum(["active", "inactive"]).default("active"),
+      }),
+    )
+    .min(1),
+});
+
+export const importToolboxAgentsToDuty = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => importToolboxSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdminOrCare(context.supabase, context.userId);
+    let imported = 0;
+    let updated = 0;
+
+    for (const item of data.agents) {
+      // Check if already in duty_calendar_agents for this office
+      let existing: any = null;
+      try {
+        const { data: ex } = await context.supabase
+          .from("duty_calendar_agents")
+          .select("id")
+          .eq("office", item.office)
+          .or(`toolbox_agent_id.eq.${item.toolbox_agent_id},name.ilike.${item.name}`)
+          .maybeSingle();
+        existing = ex;
+      } catch {
+        const { data: ex } = await context.supabase
+          .from("duty_calendar_agents")
+          .select("id")
+          .eq("office", item.office)
+          .ilike("name", item.name)
+          .maybeSingle();
+        existing = ex;
+      }
+
+      const payload: any = {
+        name: item.name,
+        office: item.office,
+        status: item.status,
+      };
+      if (item.notes !== undefined) payload.notes = item.notes?.trim() || null;
+      if (item.email) payload.email = item.email.trim();
+      payload.toolbox_agent_id = item.toolbox_agent_id;
+
+      if (existing?.id) {
+        let { error } = await context.supabase
+          .from("duty_calendar_agents")
+          .update(payload)
+          .eq("id", existing.id);
+        if (error && error.message?.includes("column")) {
+          await context.supabase
+            .from("duty_calendar_agents")
+            .update({ name: item.name, office: item.office, status: item.status })
+            .eq("id", existing.id);
+        }
+        updated++;
+      } else {
+        let { error } = await context.supabase
+          .from("duty_calendar_agents")
+          .insert(payload);
+        if (error && error.message?.includes("column")) {
+          await context.supabase
+            .from("duty_calendar_agents")
+            .insert({ name: item.name, office: item.office, status: item.status });
+        }
+        imported++;
+      }
+    }
+    return { ok: true, imported, updated };
+  });
+
 // Bulk import
 const bulkSchema = z.object({
   rows: z
@@ -77,6 +275,7 @@ const bulkSchema = z.object({
       z.object({
         name: z.string().trim().min(1).max(120),
         office: OFFICE,
+        notes: z.string().nullable().optional(),
       }),
     )
     .min(1),
@@ -92,9 +291,19 @@ export const bulkImportDutyAgents = createServerFn({ method: "POST" })
     const seen = new Set((existing ?? []).map((e: any) => `${e.name.toLowerCase()}|${e.office}`));
     const toInsert = data.rows
       .filter((r) => !seen.has(`${r.name.toLowerCase()}|${r.office}`))
-      .map((r) => ({ name: r.name, office: r.office, status: "active" as const }));
+      .map((r) => ({
+        name: r.name,
+        office: r.office,
+        status: "active" as const,
+        notes: r.notes?.trim() || null,
+      }));
     if (toInsert.length === 0) return { inserted: 0, skipped: data.rows.length };
-    const { error } = await context.supabase.from("duty_calendar_agents").insert(toInsert);
+    let { error } = await context.supabase.from("duty_calendar_agents").insert(toInsert);
+    if (error && error.message?.includes("column")) {
+      const fb = toInsert.map((r) => ({ name: r.name, office: r.office, status: r.status }));
+      const res = await context.supabase.from("duty_calendar_agents").insert(fb);
+      error = res.error;
+    }
     if (error) throw new Error(error.message);
     return { inserted: toInsert.length, skipped: data.rows.length - toInsert.length };
   });
@@ -105,46 +314,78 @@ export const listAllActiveAgents = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("duty_calendar_agents")
-      .select("id,name,office")
+      .select("id,name,office,notes")
       .eq("status", "active")
       .order("office")
       .order("name");
-    if (error) throw new Error(error.message);
+    if (error) {
+      const fb = await context.supabase
+        .from("duty_calendar_agents")
+        .select("id,name,office")
+        .eq("status", "active")
+        .order("office")
+        .order("name");
+      if (fb.error) throw new Error(fb.error.message);
+      return fb.data ?? [];
+    }
     return data ?? [];
   });
 
-// ───────────── Availability ─────────────
+// ───────────── Availability / No-Go Days ─────────────
 const availabilitySchema = z.object({
   id: z.string().uuid().optional(),
   agent_id: z.string().uuid(),
   date_start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   date_end: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   reason: z.enum(["vacation", "sick", "personal", "other"]).nullable().optional(),
+  note: z.string().max(500).nullable().optional(),
 });
+
 export const submitAvailability = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => availabilitySchema.parse(d))
   .handler(async ({ data, context }) => {
     if (data.date_end < data.date_start) throw new Error("End date must be on or after start date");
-    const payload = {
+    const payload: any = {
       agent_id: data.agent_id,
       date_start: data.date_start,
       date_end: data.date_end,
       reason: data.reason ?? null,
     };
+    if (data.note !== undefined) payload.note = data.note?.trim() || null;
+
     if (data.id) {
-      const { error } = await context.supabase
+      let { error } = await context.supabase
         .from("agent_availability")
         .update(payload)
         .eq("id", data.id);
+      if (error && error.message?.includes("column")) {
+        delete payload.note;
+        const fb = await context.supabase
+          .from("agent_availability")
+          .update(payload)
+          .eq("id", data.id);
+        error = fb.error;
+      }
       if (error) throw new Error(error.message);
       return { ok: true, id: data.id };
     }
-    const { data: row, error } = await context.supabase
+
+    let { data: row, error } = await context.supabase
       .from("agent_availability")
       .insert(payload)
       .select("id")
       .single();
+    if (error && error.message?.includes("column")) {
+      delete payload.note;
+      const fb = await context.supabase
+        .from("agent_availability")
+        .insert(payload)
+        .select("id")
+        .single();
+      row = fb.data;
+      error = fb.error;
+    }
     if (error) throw new Error(error.message);
     return { ok: true, id: row!.id };
   });
@@ -162,11 +403,21 @@ export const listAvailabilityForAgent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ agent_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { data: rows, error } = await context.supabase
+    let { data: rows, error } = await context.supabase
       .from("agent_availability")
-      .select("id,agent_id,date_start,date_end,reason,created_at")
+      .select("id,agent_id,date_start,date_end,reason,note,created_at")
       .eq("agent_id", data.agent_id)
       .order("date_start", { ascending: false });
+
+    if (error && error.message?.includes("column")) {
+      const fb = await context.supabase
+        .from("agent_availability")
+        .select("id,agent_id,date_start,date_end,reason,created_at")
+        .eq("agent_id", data.agent_id)
+        .order("date_start", { ascending: false });
+      rows = fb.data;
+      error = fb.error;
+    }
     if (error) throw new Error(error.message);
     return rows ?? [];
   });
@@ -192,19 +443,38 @@ export const getDutyCalendar = createServerFn({ method: "POST" })
       .eq("office", data.office);
     if (error) throw new Error(error.message);
 
-    const { data: agents } = await context.supabase
+    let { data: agents } = await context.supabase
       .from("duty_calendar_agents")
-      .select("id,name,office,status")
+      .select("id,name,office,status,notes")
       .eq("office", data.office);
+    if (!agents) {
+      const fb = await context.supabase
+        .from("duty_calendar_agents")
+        .select("id,name,office,status")
+        .eq("office", data.office);
+      agents = fb.data ?? [];
+    }
 
     const first = `${data.year}-${String(data.month).padStart(2, "0")}-01`;
     const dim = daysInMonth(data.year, data.month);
     const last = `${data.year}-${String(data.month).padStart(2, "0")}-${String(dim).padStart(2, "0")}`;
-    const { data: ooo } = await context.supabase
+
+    let ooo: any[] = [];
+    const { data: oooData, error: oooErr } = await context.supabase
       .from("agent_availability")
-      .select("agent_id,date_start,date_end,reason")
+      .select("id,agent_id,date_start,date_end,reason,note")
       .lte("date_start", last)
       .gte("date_end", first);
+    if (oooErr && oooErr.message?.includes("column")) {
+      const fb = await context.supabase
+        .from("agent_availability")
+        .select("id,agent_id,date_start,date_end,reason")
+        .lte("date_start", last)
+        .gte("date_end", first);
+      ooo = fb.data ?? [];
+    } else {
+      ooo = oooData ?? [];
+    }
 
     const byDay = new Map<number, string | null>();
     for (const r of rows ?? []) byDay.set(r.duty_day, r.assigned_agent_id);
@@ -227,11 +497,15 @@ export const getDutyCalendar = createServerFn({ method: "POST" })
       .map((o: any) => {
         const agent = agents?.find((a: any) => a.id === o.agent_id);
         return {
+          id: o.id,
           agent_id: o.agent_id,
           agent_name: agent?.name ?? "Unknown",
           date_start: o.date_start < first ? first : o.date_start,
           date_end: o.date_end > last ? last : o.date_end,
+          raw_start: o.date_start,
+          raw_end: o.date_end,
           reason: o.reason ?? null,
+          note: o.note ?? null,
         };
       })
       .sort((a: any, b: any) =>
@@ -322,23 +596,35 @@ export const deleteDutyCalendarMonth = createServerFn({ method: "POST" })
   });
 
 // ───────────── Analyze with Claude ─────────────
+const analyzeSchema = z.object({
+  month: z.number().int().min(1).max(12),
+  year: z.number().int(),
+  office: OFFICE,
+  promptNotes: z.string().optional(),
+});
+
 export const analyzeDutyAssignments = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    z
-      .object({ month: z.number().int().min(1).max(12), year: z.number().int(), office: OFFICE })
-      .parse(d),
-  )
+  .inputValidator((d: unknown) => analyzeSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdminOrCare(context.supabase, context.userId);
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("Missing ANTHROPIC_API_KEY");
 
-    const { data: agents } = await context.supabase
+    let { data: agents } = await context.supabase
       .from("duty_calendar_agents")
-      .select("id,name")
+      .select("id,name,notes")
       .eq("office", data.office)
       .eq("status", "active");
+
+    if (!agents || agents.length === 0) {
+      const fb = await context.supabase
+        .from("duty_calendar_agents")
+        .select("id,name")
+        .eq("office", data.office)
+        .eq("status", "active");
+      agents = fb.data ?? [];
+    }
 
     if (!agents || agents.length === 0) {
       throw new Error("No active agents in this office. Add agents to the duty roster first.");
@@ -350,7 +636,7 @@ export const analyzeDutyAssignments = createServerFn({ method: "POST" })
     const last = `${data.year}-${String(data.month).padStart(2, "0")}-${String(dim).padStart(2, "0")}`;
     const { data: ooo } = await context.supabase
       .from("agent_availability")
-      .select("agent_id,date_start,date_end")
+      .select("agent_id,date_start,date_end,reason,note")
       .in("agent_id", ids)
       .lte("date_start", last)
       .gte("date_end", first);
@@ -431,8 +717,9 @@ export const analyzeDutyAssignments = createServerFn({ method: "POST" })
 
     const agentLines = agents
       .map((a: any) => {
-        const ooo = oooByAgent[a.name] ?? [];
-        return `- ${a.name} | OOO this month: ${ooo.length ? ooo.join(", ") : "none"} | Last month duty days: ${prevByAgentName[a.name].count}`;
+        const oooDates = oooByAgent[a.name] ?? [];
+        const notesStr = a.notes?.trim() ? ` | Agent Profile Notes: "${a.notes.replace(/\n+/g, " ").trim()}"` : "";
+        return `- ${a.name} | OOO this month: ${oooDates.length ? oooDates.join(", ") : "none"} | Last month duty days: ${prevByAgentName[a.name].count}${notesStr}`;
       })
       .join("\n");
 
@@ -448,16 +735,21 @@ export const analyzeDutyAssignments = createServerFn({ method: "POST" })
         )
         .join("\n") || "- No previous month data available";
 
+    const customInstructions = data.promptNotes?.trim()
+      ? `\nSPECIAL ADMIN INSTRUCTIONS FOR THIS RUN (MANDATORY):\n"""\n${data.promptNotes.trim()}\n"""\nYou MUST strictly follow all requirements in the special admin instructions above along with the core constraints.\n`
+      : "";
+
     const prompt = `You are scheduling duty days for a real estate office for ${monthLabel}.
 Office: ${officeLabel}
 
-CONSTRAINTS:
+CORE CONSTRAINTS:
 1. Do NOT assign any agent to Sundays
-2. Do NOT assign an agent on their OOO dates (see list below)
-3. Distribute duty days as evenly as possible across all agents
+2. Do NOT assign an agent on their OOO (No-Go) dates (see list below)
+3. Distribute duty days as evenly as possible across all active agents
 4. Do NOT schedule the same agent more than once per week (Mon-Sat)
 5. Consider workload balance from previous month (if available)
-
+6. STRICTLY RESPECT AGENT PROFILE NOTES: Each agent may have individual schedule notes (e.g. preferences, days they cannot work, frequency limits). Adhere to these notes.
+${customInstructions}
 AGENTS & AVAILABILITY:
 ${agentLines}
 
@@ -475,7 +767,7 @@ WORKLOAD BALANCING LOGIC:
 - If an agent was OOO last month, they may have more duty days this month to catch up (unless OOO this month too)
 - Goal: long-term balance, not just this month
 
-Generate optimal duty day assignments following all constraints above.
+Generate optimal duty day assignments following all constraints and instructions above.
 Only include Mon-Sat days from the eligible list. Do not assign on OOO dates.
 
 Return ONLY JSON in this exact shape with no commentary:

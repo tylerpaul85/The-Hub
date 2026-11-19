@@ -68,6 +68,7 @@ export type Database = {
           date_end: string;
           date_start: string;
           id: string;
+          note: string | null;
           reason: string | null;
           updated_at: string;
         };
@@ -77,6 +78,7 @@ export type Database = {
           date_end: string;
           date_start: string;
           id?: string;
+          note?: string | null;
           reason?: string | null;
           updated_at?: string;
         };
@@ -86,6 +88,7 @@ export type Database = {
           date_end?: string;
           date_start?: string;
           id?: string;
+          note?: string | null;
           reason?: string | null;
           updated_at?: string;
         };
@@ -551,29 +554,46 @@ export type Database = {
       duty_calendar_agents: {
         Row: {
           created_at: string;
+          email: string | null;
           id: string;
           name: string;
+          notes: string | null;
           office: string;
           status: string;
+          toolbox_agent_id: string | null;
           updated_at: string;
         };
         Insert: {
           created_at?: string;
+          email?: string | null;
           id?: string;
           name: string;
+          notes?: string | null;
           office: string;
           status?: string;
+          toolbox_agent_id?: string | null;
           updated_at?: string;
         };
         Update: {
           created_at?: string;
+          email?: string | null;
           id?: string;
           name?: string;
+          notes?: string | null;
           office?: string;
           status?: string;
+          toolbox_agent_id?: string | null;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "duty_calendar_agents_toolbox_agent_id_fkey";
+            columns: ["toolbox_agent_id"];
+            isOneToOne: false;
+            referencedRelation: "toolbox_agents";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       event_checklist_items: {
         Row: {

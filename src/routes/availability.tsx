@@ -106,12 +106,14 @@ function PublicAvailabilityPage() {
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [reason, setReason] = useState<string>("none");
+  const [note, setNote] = useState<string>("");
 
   function openNew() {
     setEditing(null);
     setStart("");
     setEnd("");
     setReason("none");
+    setNote("");
     setOpen(true);
   }
   function openEdit(row: any) {
@@ -119,6 +121,7 @@ function PublicAvailabilityPage() {
     setStart(row.date_start);
     setEnd(row.date_end);
     setReason(row.reason ?? "none");
+    setNote(row.note ?? "");
     setOpen(true);
   }
 
@@ -133,6 +136,7 @@ function PublicAvailabilityPage() {
           date_start: start,
           date_end: end,
           reason: reason === "none" ? null : (reason as any),
+          note: note.trim() || null,
         },
       });
     },
@@ -281,7 +285,14 @@ function PublicAvailabilityPage() {
                     return (
                       <TableRow key={row.id} className="border-border/50 hover:bg-surface-2/60">
                         <TableCell className="text-xs font-medium text-foreground">
-                          {format(s, "MMM d, yyyy")} – {format(e, "MMM d, yyyy")}
+                          <div>
+                            {format(s, "MMM d, yyyy")} – {format(e, "MMM d, yyyy")}
+                          </div>
+                          {row.note && (
+                            <div className="text-[11px] text-muted-foreground italic font-normal mt-0.5">
+                              "{row.note}"
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell>
                           <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-surface-2 text-muted-foreground border border-border/60 capitalize">
@@ -361,6 +372,15 @@ function PublicAvailabilityPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-foreground">Notes / Details (Optional)</Label>
+              <Input
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="e.g. out of town, family event, medical"
+                className="h-11 rounded-xl bg-surface-2/80 border-border/80 text-foreground text-xs"
+              />
             </div>
           </div>
           <DialogFooter className="pt-4 border-t border-border/60">
