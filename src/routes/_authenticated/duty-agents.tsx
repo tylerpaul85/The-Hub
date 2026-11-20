@@ -76,6 +76,7 @@ function officeLabel(v: string) {
   return OFFICES.find((o) => o.value === v)?.label ?? v;
 }
 
+// Parse a free-text office tag into our enum.
 function parseOffice(raw: string): "rolla" | "str" | "loz" | null {
   const s = raw.trim().toLowerCase();
   if (!s) return null;
@@ -89,7 +90,7 @@ function formatDate(iso: string) {
   if (!iso) return "";
   const parts = iso.split("-");
   if (parts.length !== 3) return iso;
-  return `${parts[1]}/${parts[2]}/${parts[0]}`;
+  return `${Number(parts[1])}/${Number(parts[2])}`;
 }
 
 function DutyAgentsPage() {
@@ -317,7 +318,7 @@ function DutyAgentsPage() {
       setBulkText("");
       qc.invalidateQueries({ queryKey: ["duty-agents"] });
     },
-    onError: (e: any) => toast.error(e?.message ?? "Failed"),
+    onError: (e: any) => toast.error(e?.message ?? "Failed to bulk import"),
   });
 
   // Filtered and sorted duty agents

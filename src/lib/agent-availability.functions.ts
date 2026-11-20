@@ -7,12 +7,22 @@ import { z } from "zod";
 
 export const publicListActiveAgents = createServerFn({ method: "GET" }).handler(async () => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await (supabaseAdmin as any)
+  let { data, error } = await (supabaseAdmin as any)
     .from("duty_calendar_agents")
-    .select("id,name,office")
+    .select("id,name,office,email")
     .eq("status", "active")
     .order("office")
     .order("name");
+  if (error && error.message?.includes("email")) {
+    const fb = await (supabaseAdmin as any)
+      .from("duty_calendar_agents")
+      .select("id,name,office")
+      .eq("status", "active")
+      .order("office")
+      .order("name");
+    data = fb.data;
+    error = fb.error;
+  }
   if (error) throw new Error(error.message);
   return data ?? [];
 });

@@ -7,6 +7,7 @@ async function getRoles(supabase: any, userId: string): Promise<string[]> {
   if (error) throw new Error(error.message);
   return (data ?? []).map((r: any) => r.role);
 }
+
 async function assertAdminOrCare(supabase: any, userId: string) {
   const roles = await getRoles(supabase, userId);
   if (!roles.includes("admin") && !roles.includes("client_care")) {
@@ -212,7 +213,6 @@ export const importToolboxAgentsToDuty = createServerFn({ method: "POST" })
     let updated = 0;
 
     for (const item of data.agents) {
-      // Check if already in duty_calendar_agents for this office
       let existing: any = null;
       try {
         const { data: ex } = await context.supabase
@@ -280,6 +280,7 @@ const bulkSchema = z.object({
     )
     .min(1),
 });
+
 export const bulkImportDutyAgents = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => bulkSchema.parse(d))
@@ -298,6 +299,7 @@ export const bulkImportDutyAgents = createServerFn({ method: "POST" })
         notes: r.notes?.trim() || null,
       }));
     if (toInsert.length === 0) return { inserted: 0, skipped: data.rows.length };
+
     let { error } = await context.supabase.from("duty_calendar_agents").insert(toInsert);
     if (error && error.message?.includes("column")) {
       const fb = toInsert.map((r) => ({ name: r.name, office: r.office, status: r.status }));
@@ -312,7 +314,7 @@ export const bulkImportDutyAgents = createServerFn({ method: "POST" })
 export const listAllActiveAgents = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
+    let { data, error } = await context.supabase
       .from("duty_calendar_agents")
       .select("id,name,office,notes")
       .eq("status", "active")
@@ -634,12 +636,26 @@ export const analyzeDutyAssignments = createServerFn({ method: "POST" })
     const first = `${data.year}-${String(data.month).padStart(2, "0")}-01`;
     const dim = daysInMonth(data.year, data.month);
     const last = `${data.year}-${String(data.month).padStart(2, "0")}-${String(dim).padStart(2, "0")}`;
-    const { data: ooo } = await context.supabase
+
+    let ooo: any[] = [];
+    const { data: oooData, error: oooErr } = await context.supabase
       .from("agent_availability")
       .select("agent_id,date_start,date_end,reason,note")
       .in("agent_id", ids)
       .lte("date_start", last)
       .gte("date_end", first);
+
+    if (oooErr && oooErr.message?.includes("column")) {
+      const fb = await context.supabase
+        .from("agent_availability")
+        .select("agent_id,date_start,date_end")
+        .in("agent_id", ids)
+        .lte("date_start", last)
+        .gte("date_end", first);
+      ooo = fb.data ?? [];
+    } else {
+      ooo = oooData ?? [];
+    }
 
     const oooByAgent: Record<string, string[]> = {};
     for (const a of agents) {

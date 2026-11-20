@@ -35,7 +35,6 @@ import {
   CalendarClock,
   Users,
   FileText,
-  UserCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -191,6 +190,14 @@ function DutyCalendarPage() {
     onError: (e: any) => toast.error(e?.message ?? "Failed to save schedule"),
   });
 
+  const createNextMonth = () => {
+    const ny = month === 12 ? year + 1 : year;
+    const nm = month === 12 ? 1 : month + 1;
+    setYear(ny);
+    setMonth(nm);
+    toast.info(`Switched to ${monthLabel(ny, nm)} — assign agents or click Analyze`);
+  };
+
   const deleteMonthMut = useMutation({
     mutationFn: () => delMonth({ data: { year, month, office } }),
     onSuccess: () => {
@@ -233,14 +240,6 @@ function DutyCalendarPage() {
     },
     onError: (e: any) => toast.error(e?.message ?? "Failed to delete no-go day"),
   });
-
-  const createNextMonth = () => {
-    const ny = month === 12 ? year + 1 : year;
-    const nm = month === 12 ? 1 : month + 1;
-    setYear(ny);
-    setMonth(nm);
-    toast.info(`Switched to ${monthLabel(ny, nm)}`);
-  };
 
   const grid = calQ.data?.grid ?? [];
   const agents: any[] = calQ.data?.agents ?? [];
@@ -390,10 +389,11 @@ function DutyCalendarPage() {
           <Button
             size="sm"
             onClick={() => setClaudeOpen(true)}
+            disabled={analyzeMut.isPending}
             className="bg-gold text-navy hover:bg-gold/90 font-medium"
           >
             <Sparkles className="h-4 w-4 mr-1.5" />
-            Analyze with Claude
+            {analyzeMut.isPending ? "Analyzing…" : "Analyze with Claude"}
           </Button>
           <Button size="sm" variant="outline" onClick={createNextMonth}>
             <Plus className="h-4 w-4 mr-1" /> Next Month
