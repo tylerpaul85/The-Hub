@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -10,13 +10,10 @@ import {
   Trash2,
   Calendar as CalendarIcon,
   Sparkles,
-  CheckCircle2,
-  AlertCircle,
-  Info,
   CalendarRange,
 } from "lucide-react";
 import { toast } from "sonner";
-import { format, parseISO, isWithinInterval, startOfDay, addDays } from "date-fns";
+import { format, parseISO, addDays } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +41,7 @@ import {
 } from "@/components/ui/dialog";
 import logo from "@/assets/msreg-logo.png";
 import { useAgentAuth } from "@/hooks/use-agent-auth";
+import { useAuth } from "@/hooks/use-auth";
 import {
   publicListActiveAgents,
   publicListAvailability,
@@ -62,13 +60,6 @@ export const Route = createFileRoute("/availability")({
   }),
 });
 
-const REASONS = [
-  { value: "vacation", label: "Vacation" },
-  { value: "sick", label: "Sick" },
-  { value: "personal", label: "Personal" },
-  { value: "other", label: "Other" },
-] as const;
-
 const OFFICES = [
   { value: "all", label: "All Offices" },
   { value: "rolla", label: "Rolla" },
@@ -81,6 +72,7 @@ const STORAGE_KEY = "msreg-availability-selected-agent";
 function PublicAvailabilityPage() {
   const qc = useQueryClient();
   const { agent: loggedInAgent } = useAgentAuth();
+  const { user: authUser } = useAuth();
 
   const allAgents = useServerFn(publicListActiveAgents);
   const listForAgent = useServerFn(publicListAvailability);
@@ -93,38 +85,136 @@ function PublicAvailabilityPage() {
   const [selectedAgent, setSelectedAgent] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"calendar" | "list">("calendar");
 
+  // Track if user explicitly clicked/changed the agent dropdown in this session
+  const userChangedManual = useRef(false);
+
   // Determine January target year (e.g. if Nov/Dec 2026, target is 2027)
   const targetJanYear = useMemo(() => {
     const now = new Date();
     return now.getMonth() >= 10 ? now.getFullYear() + 1 : now.getFullYear();
   }, []);
 
-  // 1. Initial agent auto-select from localStorage
+  // Display name for the signed-in user
+  const signedInDisplayName = useMemo(() => {
+    return (
+      loggedInAgent?.full_name ||
+      (authUser?.user_metadata as any)?.full_name ||
+      (authUser?.user_metadata as any)?.name ||
+      authUser?.email?.split("@")[0] ||
+      null
+    );
+  }, [loggedInAgent, authUser]);
+
+  // Intelligent auto-match for whoever is signed in (Tyler, agent accounts, or client care)
   useEffect(() => {
-    const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-    if (saved) setSelectedAgent(saved);
-  }, []);
+    if (!agentsQ.data || agentsQ.data.length === 0) return;
 
-  // 2. Auto-match from logged-in agent session if available
-  useEffect(() => {
-    if (!loggedInAgent || !agentsQ.data || agentsQ.data.length === 0) return;
+    // If user already manually selected an agent in this session, keep their choice
+    if (userChangedManual.current && selectedAgent) return;
 
-    // Try matching by email first, then full name
-    const match = agentsQ.data.find((a: any) => {
-      const emailMatch =
-        a.email && loggedInAgent.email && a.email.toLowerCase().trim() === loggedInAgent.email.toLowerCase().trim();
-      const nameMatch =
-        a.name && loggedInAgent.full_name && a.name.toLowerCase().trim() === loggedInAgent.full_name.toLowerCase().trim();
-      return emailMatch || nameMatch;
-    });
+    const emails = [loggedInAgent?.email, authUser?.email]
+      .filter(Boolean)
+      .map((e) => e!.toLowerCase().trim());
 
-    if (match && (!selectedAgent || !agentsQ.data.some((a: any) => a.id === selectedAgent))) {
-      setSelectedAgent(match.id);
-      if (match.office && (match.office === "rolla" || match.office === "str" || match.office === "loz")) {
-        setOfficeFilter(match.office);
+    const names = [
+      loggedInAgent?.full_name,
+      (authUser?.user_metadata as any)?.full_name,
+      (authUser?.user_metadata as any)?.name,
+    ]
+      .filter(Boolean)
+      .map((n) => n!.toLowerCase().trim());
+
+    let match: any = null;
+
+    // Tier 1: exact email match
+    for (const a of agentsQ.data) {
+      if (a.email && emails.includes(a.email.toLowerCase().trim())) {
+        match = a;
+        break;
       }
     }
-  }, [loggedInAgent, agentsQ.data, selectedAgent]);
+
+    // Tier 2: exact full name match
+    if (!match) {
+      for (const a of agentsQ.data) {
+        const aName = a.name.toLowerCase().trim();
+        if (names.some((n) => n === aName)) {
+          match = a;
+          break;
+        }
+      }
+    }
+
+    // Tier 3: First name + Last initial match (e.g. "Tyler p" vs "Tyler Paul")
+    if (!match) {
+      for (const cn of names) {
+        const parts = cn.split(/\s+/).filter(Boolean);
+        if (parts.length >= 2) {
+          const first = parts[0];
+          const lastInit = parts[parts.length - 1][0];
+          for (const a of agentsQ.data) {
+            const aParts = a.name.toLowerCase().trim().split(/\s+/).filter(Boolean);
+            if (aParts.length >= 2 && aParts[0] === first && aParts[aParts.length - 1][0] === lastInit) {
+              match = a;
+              break;
+            }
+          }
+        }
+        if (match) break;
+      }
+    }
+
+    // Tier 4: Email prefix / username match (e.g. "tyler.p" in tyler.p@mattsmithrealestategroup.com matches Tyler Paul)
+    if (!match) {
+      for (const em of emails) {
+        const prefix = em.split("@")[0].replace(/[^a-z0-9]/g, "");
+        for (const a of agentsQ.data) {
+          const cleaned = a.name.toLowerCase().replace(/[^a-z0-9]/g, "");
+          if (
+            (prefix.length >= 4 && cleaned.startsWith(prefix)) ||
+            (cleaned.length >= 4 && prefix.startsWith(cleaned)) ||
+            (prefix.startsWith("tyler") && cleaned.startsWith("tyler"))
+          ) {
+            match = a;
+            break;
+          }
+        }
+        if (match) break;
+      }
+    }
+
+    // Tier 5: First name match if unique in roster
+    if (!match) {
+      for (const cn of names) {
+        const first = cn.split(/\s+/)[0];
+        if (first && first.length >= 3) {
+          const candidates = agentsQ.data.filter(
+            (a: any) => a.name.toLowerCase().trim().split(/\s+/)[0] === first,
+          );
+          if (candidates.length === 1) {
+            match = candidates[0];
+            break;
+          }
+        }
+      }
+    }
+
+    if (match) {
+      setSelectedAgent(match.id);
+      if (match.office && ["rolla", "str", "loz"].includes(match.office)) {
+        setOfficeFilter(match.office);
+      }
+      return;
+    }
+
+    // Fallback to localStorage if no signed-in match was made
+    if (!selectedAgent) {
+      const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+      if (saved && agentsQ.data.some((a: any) => a.id === saved)) {
+        setSelectedAgent(saved);
+      }
+    }
+  }, [loggedInAgent, authUser, agentsQ.data, selectedAgent]);
 
   // Persist selectedAgent
   useEffect(() => {
@@ -157,15 +247,13 @@ function PublicAvailabilityPage() {
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [isSingleDay, setIsSingleDay] = useState(false);
-  const [reason, setReason] = useState<string>("none");
-  const [note, setNote] = useState<string>("");
+  const [note, setNote] = useState<string>("" );
 
   function openNew(defaultStart?: string, defaultEnd?: string) {
     setEditing(null);
     setStart(defaultStart || "");
     setEnd(defaultEnd || defaultStart || "");
     setIsSingleDay(!!defaultStart && defaultStart === defaultEnd);
-    setReason("none");
     setNote("");
     setOpen(true);
   }
@@ -180,7 +268,6 @@ function PublicAvailabilityPage() {
     setStart(row.date_start);
     setEnd(row.date_end);
     setIsSingleDay(row.date_start === row.date_end);
-    setReason(row.reason ?? "none");
     setNote(row.note ?? "");
     setOpen(true);
   }
@@ -199,7 +286,7 @@ function PublicAvailabilityPage() {
           agent_id: selectedAgent,
           date_start: start,
           date_end: effectiveEnd,
-          reason: reason === "none" ? null : (reason as any),
+          reason: null,
           note: note.trim() || null,
         },
       });
@@ -243,7 +330,6 @@ function PublicAvailabilityPage() {
 
   // Generate January calendar cells
   const janCalendarGrid = useMemo(() => {
-    // January 1st day of week
     const firstDay = new Date(targetJanYear, 0, 1);
     const startDayOfWeek = firstDay.getDay(); // 0 = Sun, 1 = Mon ...
     const totalDaysInJan = 31;
@@ -289,7 +375,7 @@ function PublicAvailabilityPage() {
       </div>
 
       <div className="max-w-3xl mx-auto relative z-10 space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <Link
             to="/agents"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/80 bg-surface-2/70 hover:bg-surface-2 hover:border-gold/50 text-xs text-muted-foreground hover:text-foreground transition-all shadow-2xs backdrop-blur-md"
@@ -297,10 +383,12 @@ function PublicAvailabilityPage() {
             <ChevronLeft className="h-3.5 w-3.5" /> Back to Agent Hub
           </Link>
 
-          {loggedInAgent && (
+          {signedInDisplayName && (
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-2/80 border border-border/80 text-[11px] text-muted-foreground">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              <span>Signed in as <strong className="text-foreground font-medium">{loggedInAgent.full_name}</strong></span>
+              <span>
+                Signed in as <strong className="text-foreground font-medium">{signedInDisplayName}</strong>
+              </span>
             </div>
           )}
         </div>
@@ -309,10 +397,10 @@ function PublicAvailabilityPage() {
           <img src={logo} alt="MSREG" className="h-16 sm:h-20 w-auto mx-auto drop-shadow-sm" />
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-              Duty Day Time Off &amp; Availability
+              Duty Day Time Off
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-xl mx-auto">
-              Request days off for the upcoming duty rotation. Blackout dates will be honored when generating floor and weekend schedules.
+              Submit your blackout dates for the duty rotation. Client care will automatically honor these when scheduling floor and weekend duty.
             </p>
           </div>
         </header>
@@ -334,7 +422,7 @@ function PublicAvailabilityPage() {
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  We are actively building the January schedule! Please submit all vacations, trips, or days you cannot work so our client care team can balance duty days fairly.
+                  We are actively building the January schedule! Submit any dates you cannot work so our client care team can balance duty days without scheduling conflicts.
                 </p>
               </div>
             </div>
@@ -353,7 +441,13 @@ function PublicAvailabilityPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-foreground">Office Filter</Label>
-              <Select value={officeFilter} onValueChange={setOfficeFilter}>
+              <Select
+                value={officeFilter}
+                onValueChange={(val) => {
+                  userChangedManual.current = true;
+                  setOfficeFilter(val);
+                }}
+              >
                 <SelectTrigger className="h-11 rounded-xl bg-surface-2/80 border-border/80 text-foreground">
                   <SelectValue />
                 </SelectTrigger>
@@ -367,8 +461,21 @@ function PublicAvailabilityPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-foreground">Select Your Name *</Label>
-              <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-medium text-foreground">Select Your Name *</Label>
+                {selectedAgent && currentAgent && (
+                  <span className="text-[11px] text-muted-foreground">
+                    Change anytime below
+                  </span>
+                )}
+              </div>
+              <Select
+                value={selectedAgent}
+                onValueChange={(val) => {
+                  userChangedManual.current = true;
+                  setSelectedAgent(val);
+                }}
+              >
                 <SelectTrigger className="h-11 rounded-xl bg-surface-2/80 border-border/80 text-foreground">
                   <SelectValue placeholder={agentsQ.isLoading ? "Loading agents…" : "Choose your name"} />
                 </SelectTrigger>
@@ -385,14 +492,14 @@ function PublicAvailabilityPage() {
 
           {selectedAgent && (
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 pb-1 border-t border-border/60">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Managing availability for:</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-muted-foreground">Managing time off for:</span>
                 <span className="text-xs font-semibold text-foreground px-2.5 py-0.5 rounded-full bg-surface-2 border border-border/70">
                   {currentAgent?.name} {currentAgent?.office ? `(${currentAgent.office.toUpperCase()})` : ""}
                 </span>
                 {janCount > 0 && (
                   <span className="text-[11px] font-medium text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-full">
-                    {janCount} {janCount === 1 ? "day" : "days"} off in Jan
+                    {janCount} {janCount === 1 ? "day" : "days"} requested in Jan
                   </span>
                 )}
               </div>
@@ -402,7 +509,7 @@ function PublicAvailabilityPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab("calendar")}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                     activeTab === "calendar"
                       ? "bg-surface-1 text-foreground shadow-xs font-semibold"
                       : "text-muted-foreground hover:text-foreground"
@@ -413,7 +520,7 @@ function PublicAvailabilityPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab("list")}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                     activeTab === "list"
                       ? "bg-surface-1 text-foreground shadow-xs font-semibold"
                       : "text-muted-foreground hover:text-foreground"
@@ -432,7 +539,7 @@ function PublicAvailabilityPage() {
                 <div>
                   <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                     <CalendarIcon className="h-4 w-4 text-gold" />
-                    January {targetJanYear} Availability Grid
+                    January {targetJanYear} Time Off Grid
                   </h3>
                   <p className="text-[11px] text-muted-foreground">
                     Click any day to request off or adjust an existing blackout date.
@@ -515,11 +622,11 @@ function PublicAvailabilityPage() {
 
                         {isCovered ? (
                           <div className="w-full">
-                            <span className="inline-block w-full truncate text-[9px] sm:text-[10px] font-medium text-rose-300 capitalize leading-tight">
-                              {cov.reason ?? "Off"}
+                            <span className="inline-block w-full truncate text-[10px] font-semibold text-rose-300 leading-tight">
+                              Time Off
                             </span>
                             {cov.note && (
-                              <span className="hidden sm:inline-block w-full truncate text-[9px] text-rose-300/70 italic leading-none">
+                              <span className="hidden sm:inline-block w-full truncate text-[9px] text-rose-300/80 italic leading-none">
                                 {cov.note}
                               </span>
                             )}
@@ -575,7 +682,6 @@ function PublicAvailabilityPage() {
                   <TableHeader className="bg-surface-2/80">
                     <TableRow className="border-border/60">
                       <TableHead className="text-xs font-semibold text-foreground">Date Range</TableHead>
-                      <TableHead className="text-xs font-semibold text-foreground">Reason</TableHead>
                       <TableHead className="text-right text-xs font-semibold text-foreground">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -583,7 +689,7 @@ function PublicAvailabilityPage() {
                     {!selectedAgent ? (
                       <TableRow>
                         <TableCell
-                          colSpan={3}
+                          colSpan={2}
                           className="text-center text-xs text-muted-foreground py-10"
                         >
                           Select your name above to view and submit time off.
@@ -592,7 +698,7 @@ function PublicAvailabilityPage() {
                     ) : listQ.isLoading ? (
                       <TableRow>
                         <TableCell
-                          colSpan={3}
+                          colSpan={2}
                           className="text-center text-xs text-muted-foreground py-10"
                         >
                           Loading your schedule…
@@ -601,7 +707,7 @@ function PublicAvailabilityPage() {
                     ) : (listQ.data ?? []).length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={3}
+                          colSpan={2}
                           className="text-center text-xs text-muted-foreground py-10"
                         >
                           No time off submitted yet. Click "Add Time Off" to request blackout days for January.
@@ -639,17 +745,12 @@ function PublicAvailabilityPage() {
                                 </div>
                               )}
                             </TableCell>
-                            <TableCell>
-                              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-surface-2 text-muted-foreground border border-border/60 capitalize">
-                                {row.reason ?? "Unavailable"}
-                              </span>
-                            </TableCell>
                             <TableCell className="text-right">
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => openEdit(row)}
-                                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
                               >
                                 <Pencil className="h-3.5 w-3.5" />
                               </Button>
@@ -659,7 +760,7 @@ function PublicAvailabilityPage() {
                                 onClick={() => {
                                   if (confirm("Delete this time off entry?")) delMut.mutate(row.id);
                                 }}
-                                className="h-8 w-8 p-0 text-muted-foreground hover:text-rose-400"
+                                className="h-8 w-8 p-0 text-muted-foreground hover:text-rose-400 cursor-pointer"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
@@ -703,7 +804,6 @@ function PublicAvailabilityPage() {
                     setStart(`${targetJanYear}-01-01`);
                     setEnd(`${targetJanYear}-01-03`);
                     setIsSingleDay(false);
-                    if (reason === "none") setReason("vacation");
                   }}
                   className="text-xs px-2.5 py-1 rounded-lg bg-surface-2 border border-border/70 hover:border-gold/50 text-foreground transition-all cursor-pointer"
                 >
@@ -715,7 +815,6 @@ function PublicAvailabilityPage() {
                     setStart(`${targetJanYear}-01-15`);
                     setEnd(`${targetJanYear}-01-18`);
                     setIsSingleDay(false);
-                    if (reason === "none") setReason("vacation");
                   }}
                   className="text-xs px-2.5 py-1 rounded-lg bg-surface-2 border border-border/70 hover:border-gold/50 text-foreground transition-all cursor-pointer"
                 >
@@ -727,7 +826,6 @@ function PublicAvailabilityPage() {
                     setStart(`${targetJanYear}-01-01`);
                     setEnd(`${targetJanYear}-01-31`);
                     setIsSingleDay(false);
-                    if (reason === "none") setReason("other");
                   }}
                   className="text-xs px-2.5 py-1 rounded-lg bg-surface-2 border border-border/70 hover:border-gold/50 text-foreground transition-all cursor-pointer"
                 >
@@ -785,27 +883,9 @@ function PublicAvailabilityPage() {
               )}
             </div>
 
-            {/* Reason */}
+            {/* Optional Note */}
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-foreground">Reason (Optional)</Label>
-              <Select value={reason} onValueChange={setReason}>
-                <SelectTrigger className="h-11 rounded-xl bg-surface-2/80 border-border/80 text-foreground">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Not Specified</SelectItem>
-                  {REASONS.map((r) => (
-                    <SelectItem key={r.value} value={r.value}>
-                      {r.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Note */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-foreground">Notes / Details (Optional)</Label>
+              <Label className="text-xs font-medium text-foreground">Optional Note / Details</Label>
               <Input
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
@@ -813,7 +893,7 @@ function PublicAvailabilityPage() {
                 className="h-11 rounded-xl bg-surface-2/80 border-border/80 text-foreground text-xs"
               />
               <p className="text-[11px] text-muted-foreground">
-                Notes will be visible to client care admins and factored into Claude schedule planning.
+                No reason is required. Optional details help client care and Claude schedule coverage around your plans.
               </p>
             </div>
           </div>
@@ -822,14 +902,14 @@ function PublicAvailabilityPage() {
             <Button
               variant="outline"
               onClick={() => setOpen(false)}
-              className="rounded-xl border-border text-xs h-10"
+              className="rounded-xl border-border text-xs h-10 cursor-pointer"
             >
               Cancel
             </Button>
             <Button
               onClick={() => saveMut.mutate()}
               disabled={saveMut.isPending}
-              className="bg-gold text-navy hover:bg-gold/90 font-bold rounded-xl text-xs h-10 px-5 shadow-md shadow-gold/20"
+              className="bg-gold text-navy hover:bg-gold/90 font-bold rounded-xl text-xs h-10 px-5 shadow-md shadow-gold/20 cursor-pointer"
             >
               {saveMut.isPending ? "Saving…" : editing ? "Update Request" : "Submit Request"}
             </Button>
