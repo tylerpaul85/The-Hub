@@ -455,7 +455,7 @@ function AgentsHome() {
 
         {/* Footer */}
         <footer className="pt-6 pb-2 text-center text-[11px] text-muted-foreground space-y-2 border-t border-border/40">
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
               to={user ? "/dashboard" : "/auth"}
               className="hover:text-gold transition-colors font-medium"
@@ -465,6 +465,10 @@ function AgentsHome() {
             <span>·</span>
             <Link to="/privacy-policy" className="hover:text-gold transition-colors">
               Privacy Policy
+            </Link>
+            <span>·</span>
+            <Link to="/sms-terms" className="hover:text-gold transition-colors">
+              SMS Terms &amp; Conditions
             </Link>
           </div>
           <div>© Matt Smith Real Estate Group · All Rights Reserved</div>

@@ -172,6 +172,35 @@ function Gate({ onUnlock }: { onUnlock: (token: string) => void }) {
           You'll only need to enter this code once on this device.
         </p>
       </div>
+
+      {/* Public Compliance Links (Accessible without passcode for compliance verification) */}
+      <footer className="mt-8 text-center text-xs text-muted-foreground space-y-2 relative z-10 max-w-sm sm:max-w-md">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          <Link
+            to="/privacy-policy"
+            className="hover:text-gold underline-offset-4 hover:underline transition-colors font-medium"
+          >
+            Privacy Policy
+          </Link>
+          <span className="text-border">·</span>
+          <Link
+            to="/sms-terms"
+            className="hover:text-gold underline-offset-4 hover:underline transition-colors font-medium"
+          >
+            SMS Terms &amp; Conditions
+          </Link>
+          <span className="text-border">·</span>
+          <Link
+            to="/data-deletion"
+            className="hover:text-gold underline-offset-4 hover:underline transition-colors font-medium"
+          >
+            Data Deletion
+          </Link>
+        </div>
+        <div className="text-[11px] text-muted-foreground/70">
+          © {new Date().getFullYear()} Matt Smith Real Estate Group · All Rights Reserved
+        </div>
+      </footer>
     </div>
   );
 }

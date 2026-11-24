@@ -27,6 +27,7 @@ import { Route as ReferralsRouteImport } from './routes/referrals'
 import { Route as RequestRouteImport } from './routes/request'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SellerNetProceedsRouteImport } from './routes/seller-net-proceeds'
+import { Route as SmsTermsRouteImport } from './routes/sms-terms'
 import { Route as VendorGuideRouteImport } from './routes/vendor-guide'
 import { Route as AuthenticatedAdminNetSheetsRouteImport } from './routes/_authenticated/admin-net-sheets'
 import { Route as AuthenticatedArchiveRouteImport } from './routes/_authenticated/archive'
@@ -165,6 +166,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const SellerNetProceedsRoute = SellerNetProceedsRouteImport.update({
   id: '/seller-net-proceeds',
   path: '/seller-net-proceeds',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SmsTermsRoute = SmsTermsRouteImport.update({
+  id: '/sms-terms',
+  path: '/sms-terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VendorGuideRoute = VendorGuideRouteImport.update({
@@ -456,6 +462,7 @@ export interface FileRoutesByFullPath {
   '/request': typeof RequestRoute
   '/reset-password': typeof ResetPasswordRoute
   '/seller-net-proceeds': typeof SellerNetProceedsRoute
+  '/sms-terms': typeof SmsTermsRoute
   '/vendor-guide': typeof VendorGuideRoute
   '/admin-net-sheets': typeof AuthenticatedAdminNetSheetsRoute
   '/archive': typeof AuthenticatedArchiveRoute
@@ -523,6 +530,7 @@ export interface FileRoutesByTo {
   '/request': typeof RequestRoute
   '/reset-password': typeof ResetPasswordRoute
   '/seller-net-proceeds': typeof SellerNetProceedsRoute
+  '/sms-terms': typeof SmsTermsRoute
   '/vendor-guide': typeof VendorGuideRoute
   '/admin-net-sheets': typeof AuthenticatedAdminNetSheetsRoute
   '/archive': typeof AuthenticatedArchiveRoute
@@ -591,6 +599,7 @@ export interface FileRoutesById {
   '/request': typeof RequestRoute
   '/reset-password': typeof ResetPasswordRoute
   '/seller-net-proceeds': typeof SellerNetProceedsRoute
+  '/sms-terms': typeof SmsTermsRoute
   '/vendor-guide': typeof VendorGuideRoute
   '/_authenticated/admin-net-sheets': typeof AuthenticatedAdminNetSheetsRoute
   '/_authenticated/archive': typeof AuthenticatedArchiveRoute
@@ -662,6 +671,7 @@ export interface FileRouteTypes {
     | '/request'
     | '/reset-password'
     | '/seller-net-proceeds'
+    | '/sms-terms'
     | '/vendor-guide'
     | '/admin-net-sheets'
     | '/archive'
@@ -729,6 +739,7 @@ export interface FileRouteTypes {
     | '/request'
     | '/reset-password'
     | '/seller-net-proceeds'
+    | '/sms-terms'
     | '/vendor-guide'
     | '/admin-net-sheets'
     | '/archive'
@@ -796,6 +807,7 @@ export interface FileRouteTypes {
     | '/request'
     | '/reset-password'
     | '/seller-net-proceeds'
+    | '/sms-terms'
     | '/vendor-guide'
     | '/_authenticated/admin-net-sheets'
     | '/_authenticated/archive'
@@ -867,6 +879,7 @@ export interface RootRouteChildren {
   RequestRoute: typeof RequestRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SellerNetProceedsRoute: typeof SellerNetProceedsRoute
+  SmsTermsRoute: typeof SmsTermsRoute
   VendorGuideRoute: typeof VendorGuideRoute
   OpenHouseSigninIdRoute: typeof OpenHouseSigninIdRoute
   ApiPublicHooksScorecardRemindersRoute: typeof ApiPublicHooksScorecardRemindersRoute
@@ -1000,6 +1013,13 @@ declare module '@tanstack/react-router' {
       path: '/seller-net-proceeds'
       fullPath: '/seller-net-proceeds'
       preLoaderRoute: typeof SellerNetProceedsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sms-terms': {
+      id: '/sms-terms'
+      path: '/sms-terms'
+      fullPath: '/sms-terms'
+      preLoaderRoute: typeof SmsTermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/vendor-guide': {
@@ -1535,6 +1555,7 @@ const rootRouteChildren: RootRouteChildren = {
   RequestRoute: RequestRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SellerNetProceedsRoute: SellerNetProceedsRoute,
+  SmsTermsRoute: SmsTermsRoute,
   VendorGuideRoute: VendorGuideRoute,
   OpenHouseSigninIdRoute: OpenHouseSigninIdRoute,
   ApiPublicHooksScorecardRemindersRoute: ApiPublicHooksScorecardRemindersRoute,

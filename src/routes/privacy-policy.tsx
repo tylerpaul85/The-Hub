@@ -11,6 +11,9 @@ import {
   CheckCircle2,
   Building,
   ExternalLink,
+  MessageSquare,
+  Phone,
+  MapPin,
 } from "lucide-react";
 import logo from "@/assets/msreg-logo.png";
 import { Button } from "@/components/ui/button";
@@ -71,6 +74,11 @@ export function PrivacyPolicyPage() {
               <Printer className="h-3.5 w-3.5" />
               Print Policy
             </Button>
+            <Link to="/sms-terms">
+              <Button variant="outline" size="sm" className="text-xs font-medium border-border/60">
+                SMS Terms
+              </Button>
+            </Link>
             <Link to="/data-deletion">
               <Button variant="secondary" size="sm" className="text-xs font-medium">
                 Data Deletion
@@ -146,25 +154,31 @@ export function PrivacyPolicyPage() {
                 href="#data-sharing"
                 className="block text-muted-foreground hover:text-gold transition-colors py-1"
               >
-                5. Sharing & Processors
+                5. Sharing &amp; Processors
+              </a>
+              <a
+                href="#sms-messaging"
+                className="block text-muted-foreground hover:text-gold transition-colors py-1 font-medium text-foreground"
+              >
+                6. SMS / Text Messaging
               </a>
               <a
                 href="#security-retention"
                 className="block text-muted-foreground hover:text-gold transition-colors py-1"
               >
-                6. Security & Retention
+                7. Security &amp; Retention
               </a>
               <a
                 href="#user-rights"
-                className="block text-muted-foreground hover:text-gold transition-colors py-1 font-medium text-foreground"
+                className="block text-muted-foreground hover:text-gold transition-colors py-1"
               >
-                7. Your Rights & Deletion
+                8. Your Rights &amp; Deletion
               </a>
               <a
                 href="#contact"
                 className="block text-muted-foreground hover:text-gold transition-colors py-1"
               >
-                8. Contact Information
+                9. Contact Information
               </a>
             </div>
           </aside>
@@ -289,7 +303,7 @@ export function PrivacyPolicyPage() {
             <section id="data-sharing" className="space-y-3">
               <h2 className="text-xl font-semibold text-foreground tracking-tight flex items-center gap-2">
                 <Building className="h-5 w-5 text-gold" />
-                5. Third-Party Service Providers
+                5. Third-Party Service Providers &amp; Sharing Your Information
               </h2>
               <p>
                 We do not sell your personal data. We only disclose information to vetted
@@ -305,7 +319,7 @@ export function PrivacyPolicyPage() {
                   </p>
                 </div>
                 <div className="rounded-lg border border-border/60 bg-card/30 p-3">
-                  <p className="font-semibold text-foreground text-xs">Netlify & Cloudflare</p>
+                  <p className="font-semibold text-foreground text-xs">Netlify &amp; Cloudflare</p>
                   <p className="text-[11px] text-muted-foreground mt-1">
                     Application edge hosting, TLS encryption, and secure CDN delivery.
                   </p>
@@ -323,13 +337,78 @@ export function PrivacyPolicyPage() {
                   </p>
                 </div>
               </div>
+              <div className="mt-3 rounded-lg border border-border/70 bg-card/40 p-3.5 text-xs text-foreground font-medium">
+                Notwithstanding the above, SMS opt-in data and mobile numbers collected for text
+                messaging are never shared with third parties for marketing purposes.
+              </div>
             </section>
 
-            {/* 6. Security & Retention */}
+            {/* 6. SMS / Text Messaging */}
+            <section id="sms-messaging" className="space-y-4">
+              <h2 className="text-xl font-semibold text-foreground tracking-tight flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-gold" />
+                6. SMS / Text Messaging
+              </h2>
+
+              <div className="rounded-xl border border-gold/40 bg-gold/10 p-4 text-xs sm:text-sm text-foreground leading-relaxed">
+                <p>
+                  <strong>Program name:</strong> Matt Smith Real Estate Group Agent Alerts. For
+                  help, reply <strong>HELP</strong> or contact{" "}
+                  <a
+                    href="mailto:info@mattsmithrealestategroup.com"
+                    className="text-gold underline hover:opacity-80 font-medium"
+                  >
+                    info@mattsmithrealestategroup.com
+                  </a>{" "}
+                  or{" "}
+                  <a
+                    href="tel:5734512020"
+                    className="text-gold underline hover:opacity-80 font-medium"
+                  >
+                    573-451-2020
+                  </a>
+                  . To opt out, reply <strong>STOP</strong>; you will receive one confirmation and no
+                  further messages. Reply <strong>START</strong> to rejoin.
+                </p>
+              </div>
+
+              <p>
+                Matt Smith Real Estate Group LLC (operating as Matt Smith Real Estate Group) may send
+                text messages to agents on our team who have opted in to receive appointment check-in
+                notifications. We collect the mobile number and consent information provided during
+                opt-in and use it only to send these operational messages and to record responses in
+                our internal systems. Message frequency varies (up to 3 messages per appointment).
+                Message and data rates may apply. Reply <strong>HELP</strong> for help or{" "}
+                <strong>STOP</strong> to opt out at any time.
+              </p>
+
+              <div className="rounded-xl border border-border/80 bg-card/60 p-4 space-y-2">
+                <p className="font-semibold text-foreground">
+                  No mobile information will be shared with third parties or affiliates for
+                  marketing or promotional purposes. We do not sell or share your SMS opt-in data or
+                  personal information with third parties for marketing purposes. All other
+                  categories of information described in this policy exclude SMS opt-in data and
+                  consent.
+                </p>
+                <p className="text-xs text-muted-foreground pt-1">
+                  For full program terms, frequency details, and opt-out details, please see our
+                  dedicated{" "}
+                  <Link
+                    to="/sms-terms"
+                    className="text-gold underline hover:opacity-80 font-medium"
+                  >
+                    SMS Terms &amp; Conditions
+                  </Link>
+                  .
+                </p>
+              </div>
+            </section>
+
+            {/* 7. Security & Retention */}
             <section id="security-retention" className="space-y-3">
               <h2 className="text-xl font-semibold text-foreground tracking-tight flex items-center gap-2">
                 <Lock className="h-5 w-5 text-gold" />
-                6. Security & Retention
+                7. Security &amp; Retention
               </h2>
               <p>
                 We employ industry-standard administrative, physical, and technical security
@@ -350,11 +429,11 @@ export function PrivacyPolicyPage() {
               </p>
             </section>
 
-            {/* 7. User Rights & Data Deletion */}
+            {/* 8. User Rights & Data Deletion */}
             <section id="user-rights" className="space-y-4">
               <h2 className="text-xl font-semibold text-foreground tracking-tight flex items-center gap-2">
                 <Shield className="h-5 w-5 text-gold" />
-                7. Your Rights & Data Deletion
+                8. Your Rights &amp; Data Deletion
               </h2>
               <p>
                 Depending on your jurisdiction (such as under GDPR, CCPA, or Meta Developer Platform
@@ -389,39 +468,62 @@ export function PrivacyPolicyPage() {
               </Card>
             </section>
 
-            {/* 8. Contact Information */}
+            {/* 9. Contact Information */}
             <section id="contact" className="space-y-3 pt-4 border-t border-border/40">
               <h2 className="text-xl font-semibold text-foreground tracking-tight flex items-center gap-2">
                 <Mail className="h-5 w-5 text-gold" />
-                8. Contact Information
+                9. Contact Information
               </h2>
               <p>
                 If you have questions, feedback, or wish to exercise your privacy rights, please
                 contact our privacy compliance team:
               </p>
-              <div className="rounded-xl border border-border/60 bg-card/40 p-4 text-xs space-y-1.5">
+              <div className="rounded-xl border border-border/60 bg-card/40 p-4 text-xs space-y-2">
                 <p className="font-semibold text-foreground text-sm">
                   Matt Smith Real Estate Group
                 </p>
-                <p>Attention: Privacy & Compliance Officer</p>
-                <p>
-                  Email:{" "}
+                <p className="text-muted-foreground">Attention: Privacy &amp; Compliance Officer</p>
+                <p className="flex items-center gap-2">
+                  <MapPin className="h-3.5 w-3.5 text-gold shrink-0" />
+                  713 Missouri Avenue, St. Robert, MO 65584
+                </p>
+                <p className="flex items-center gap-2">
+                  <Phone className="h-3.5 w-3.5 text-gold shrink-0" />
+                  <a href="tel:5734512020" className="hover:text-gold transition-colors">
+                    573-451-2020
+                  </a>
+                </p>
+                <p className="flex items-center gap-2">
+                  <Mail className="h-3.5 w-3.5 text-gold shrink-0" />
+                  <a
+                    href="mailto:info@mattsmithrealestategroup.com"
+                    className="hover:text-gold transition-colors"
+                  >
+                    info@mattsmithrealestategroup.com
+                  </a>
+                  <span className="text-border">·</span>
                   <a
                     href="mailto:privacy@msreginternal.com"
-                    className="text-gold underline hover:opacity-80"
+                    className="hover:text-gold transition-colors"
                   >
                     privacy@msreginternal.com
                   </a>
                 </p>
-                <p>
-                  Alternative Support:{" "}
+                <div className="pt-2 border-t border-border/40 text-[11px] text-muted-foreground leading-relaxed">
+                  <strong>SMS Support Disclosure:</strong> Matt Smith Real Estate Group Agent
+                  Alerts: For help, contact{" "}
                   <a
-                    href="mailto:notifications@msreginternal.com"
+                    href="mailto:info@mattsmithrealestategroup.com"
                     className="text-gold underline hover:opacity-80"
                   >
-                    notifications@msreginternal.com
+                    info@mattsmithrealestategroup.com
+                  </a>{" "}
+                  or{" "}
+                  <a href="tel:5734512020" className="text-gold underline hover:opacity-80">
+                    573-451-2020
                   </a>
-                </p>
+                  . Msg &amp; data rates may apply. Reply <strong>STOP</strong> to cancel.
+                </div>
               </div>
             </section>
 
